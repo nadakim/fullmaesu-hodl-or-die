@@ -1252,7 +1252,7 @@ const STOCK_BY_ID = {};
 STOCKS.forEach(s => { STOCK_BY_ID[s.id] = s; });
 
 /* 유물 — 한 판 동안 상시 발동(패시브). 효과는 ENGINE의 계산 지점에서 hasRelic()으로 개입한다.
-   획득: RELIC_REWARD_WEEKS 주차 결산 보상(카드 대신 선택) + 암시장 진열. */
+   획득: 매주 결산 보상에서 카드 보상 다음 단계로 2개 중 1개 선택 + 암시장 진열. */
 const RELIC_GUKBAP_SECTORS       = ['방어주', '우량주']; // 국밥 정신 적용 섹터
 const RELIC_GUKBAP_LOSS_CUT      = 0.5;   // 국밥 정신: 평가손실 50% 감소
 const RELIC_SEAL_DAYS            = 3;     // 존버의 인장: 장 마감을 이만큼 넘긴 포지션부터
@@ -1261,8 +1261,7 @@ const RELIC_VIP_PUMP_CHANCE      = 0.85;  // 리딩방 VIP: 찌라시 급등 확
 const RELIC_HANRIVER_PENALTY_CUT = 1.0;   // 한강 수온 알림: 반대매매 투매 손실 면제 비율
 const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
 const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
-const RELIC_REWARD_WEEKS         = [2, 4, 6]; // 이 주차 결산 보상에 유물 선택지 추가
-const RELIC_REWARD_CHOICES       = 2;     // 보상에 나오는 유물 수
+const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
 const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
 const RELIC_PRICE                = { common:900, uncommon:1300, legendary:2000 }; // 암시장 유물 가격 (만원)
 
@@ -2273,7 +2272,7 @@ function newRun(){
     pendingTip: null, tipsToday: 0, ticksSinceTip: 0, lastTipId: '', tipLog: [],
     eventTicksLeft: 0, ticksSinceEvent: 0,
     rewardChoices: [], endReason: '', endEquity: 0,
-    relics: [], relicChoices: [],
+    relics: [], relicChoices: [], rewardStep: '',
     shop: { singles: [], singlesBought: [], removed: 0, relics: [] }
   };
 }
@@ -2460,15 +2459,16 @@ function endOfRound(){
   if(eq < target) return endRun('MISSED');
   if(run.round >= MAX_ROUND) return endRun('VICTORY');
   run.phase = 'reward';
-  run.rewardChoices = rollRewards(REWARD_CHOICES);
-  run.relicChoices = RELIC_REWARD_WEEKS.indexOf(run.round) >= 0 ? rollRelics(RELIC_REWARD_CHOICES) : [];
+  run.rewardStep = 'card';                                        // 카드 보상 → 유물 보상 → 암시장
+  run.rewardChoices = rollRewards(REWARD_CHOICES, run.masterDeck); // 이미 덱에 있는 카드는 제외
+  run.relicChoices = rollRelics(RELIC_REWARD_CHOICES);             // 아직 없는 유물만
   emit('roundClear', {eq, target, diamondBonus});
 }
 
-/* 희귀도 가중치로 서로 다른 카드 n장 */
-function rollRewards(n){
+/* 희귀도 가중치로 서로 다른 카드 n장 (exclude에 있는 카드 id는 빼고, 모자라면 있는 만큼만) */
+function rollRewards(n, exclude = []){
   const picks = [];
-  const pool = CARDS.filter(c => c.type !== 'status');
+  const pool = CARDS.filter(c => c.type !== 'status' && exclude.indexOf(c.id) < 0);
   while(picks.length < n){
     const cands = pool.filter(c => picks.indexOf(c.id) < 0);
     if(cands.length === 0) break;
@@ -2484,14 +2484,11 @@ function rollRewards(n){
   return picks;
 }
 
-/* kind: 'take'(카드 id) | 'remove'(masterDeck 인덱스) | 'relic'(유물 id) | 'skip' */
+/* 1단계 카드 보상 — kind: 'take'(카드 id) | 'remove'(masterDeck 인덱스) | 'skip' */
 function chooseReward(kind, value){
-  if(!run || run.phase !== 'reward') return false;
-  let cardId = '', relicId = '';
-  if(kind === 'relic'){
-    if(run.relicChoices.indexOf(value) < 0 || !gainRelic(value, 'reward')) return false;
-    relicId = value;
-  } else if(kind === 'take'){
+  if(!run || run.phase !== 'reward' || run.rewardStep !== 'card') return false;
+  let cardId = '';
+  if(kind === 'take'){
     if(run.rewardChoices.indexOf(value) < 0) return false;
     run.masterDeck.push(value);
     cardId = value;
@@ -2500,10 +2497,27 @@ function chooseReward(kind, value){
     cardId = run.masterDeck[value];
     run.masterDeck.splice(value, 1);
   }
-  run.relicChoices = [];
-  emit('rewardChosen', {kind, cardId, relicId, deckSize: run.masterDeck.length});
-  openShop();
+  emit('rewardChosen', {kind, cardId, deckSize: run.masterDeck.length});
+  if(run.relicChoices.length){
+    run.rewardStep = 'relic';
+    emit('relicRewardOpen', {choices: run.relicChoices});
+  } else finishReward();   // 유물을 다 모았으면 유물 단계는 건너뛴다
   return true;
+}
+
+/* 2단계 유물 보상 — relicId: 고른 유물, '' = 건너뛰기 */
+function chooseRelicReward(relicId){
+  if(!run || run.phase !== 'reward' || run.rewardStep !== 'relic') return false;
+  if(relicId && (run.relicChoices.indexOf(relicId) < 0 || !gainRelic(relicId, 'reward'))) return false;
+  emit('relicRewardChosen', {relicId});
+  finishReward();
+  return true;
+}
+
+function finishReward(){
+  run.rewardStep = '';
+  run.relicChoices = [];
+  openShop();
 }
 
 /* ══ 암시장: phase 'shop' 동안만 거래 가능 ══ */
@@ -2645,7 +2659,7 @@ const $ = id => document.getElementById(id);
 let currentTab = 'title';
 let chartTarget = 'idx';
 let shopPickIdx = -1;
-let pendingRewardToast = null;
+let pendingRewardToasts = [];   // 보상 선택 알림 → 암시장 화면에서 표시
 let relicTipId = '', relicSig = '';   // 설명을 펼친 유물   // 보상 선택 알림 → 암시장 화면에서 표시      // 암시장 카드 제거에서 고른 덱 카드   // 큰 차트에 보이는 것: 'idx'(지수) 또는 종목 id
 let overlayOpen = false;
 let selectedIdx = -1;      // 대상 지정 중인 손패 카드 (-1 = 없음)
@@ -2754,16 +2768,20 @@ function onGameEvent(type, d){
       break;
     case 'eventEnd': resetNews(); break;
     case 'roundClear': lastRoundClear = d; showReward(d); break;
-    case 'rewardChosen':   // 바로 암시장으로 넘어가므로 거기서 보여준다
-      pendingRewardToast = d.kind === 'relic' ? [`${RELIC_BY_ID[d.relicId].icon} 유물 획득: ${RELIC_BY_ID[d.relicId].name}`, 'good']
-        : d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
-        : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['보상 건너뜀', 'info'];
+    case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
+      pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
+        : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['카드 보상 건너뜀', 'info']);
+      break;
+    case 'relicRewardOpen': showRelicReward(); break;
+    case 'relicRewardChosen':
+      pendingRewardToasts.push(d.relicId ? [`${RELIC_BY_ID[d.relicId].icon} 유물 획득: ${RELIC_BY_ID[d.relicId].name}`, 'good'] : ['유물 보상 건너뜀', 'info']);
       break;
     case 'roundStart': toast(`WEEK ${d.round} 개장 — 목표 ${fmtMoney(d.target)} · DAY 1 장전`, 'good'); break;
     case 'shopOpen':
       shopPickIdx = -1;
       switchTab('shop');
-      if(pendingRewardToast){ toast(pendingRewardToast[0], pendingRewardToast[1]); pendingRewardToast = null; }
+      pendingRewardToasts.forEach(t => toast(t[0], t[1]));
+      pendingRewardToasts = [];
       toast('◈ 암시장 개장 — 다음 주 개장 전까지', 'info');
       break;
     case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); break;
@@ -3039,12 +3057,20 @@ function showReward(d){
       ${statRow('보유 포지션', run.positions.length + '개 (이월)')}
       ${statRow('덱', run.masterDeck.length + '장')}
     </div>
-    <div class="pile-title">▌ 카드 획득 — 1장 선택</div>
-    <div class="ov-cards">${run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')}</div>
-    ${run.relicChoices.length ? `<div class="pile-title">▌ 또는 유물 — 카드 대신 1개 (상시 발동)</div>
-      <div class="ov-cards">${run.relicChoices.map(id => relicTile(RELIC_BY_ID[id], { attrs: `data-relic-reward="${id}"` })).join('')}</div>` : ''}
+    <div class="pile-title">▌ 카드 획득 — 덱에 없는 새 카드 중 1장${run.relicChoices.length ? ' (다음: 유물 선택)' : ''}</div>
+    <div class="ov-cards">${run.rewardChoices.length
+      ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
+      : '<div class="empty-note">덱에 없는 카드가 더 이상 없습니다</div>'}</div>
     <button class="ov-btn alt" data-act="removeMode" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거 (덱 압축)</button>
     <button class="ov-btn alt" data-act="skip">▷ 건너뛰기</button>`);
+}
+
+function showRelicReward(){
+  showOverlay(`
+    <div class="ov-title" style="color:var(--gold)">WEEK ${run.round} 결산 — 유물</div>
+    <div class="ov-sub">아직 없는 유물 ${run.relicChoices.length}개 중 1개. 한 판 동안 상시 발동합니다.</div>
+    <div class="ov-cards">${run.relicChoices.map(id => relicTile(RELIC_BY_ID[id], { attrs: `data-relic-reward="${id}"` })).join('')}</div>
+    <button class="ov-btn alt" data-act="skipRelic">▷ 유물 건너뛰기</button>`);
 }
 
 function showRemove(){
@@ -3184,7 +3210,7 @@ function renderRelics(){
   $('relicBar').innerHTML = '<span class="relic-label">▌ 유물</span>' + (run.relics.length
     ? run.relics.map(id => { const r = RELIC_BY_ID[id];
         return `<button class="relic ${r.rarity} ${id === relicTipId ? 'on' : ''}" data-relic="${id}" title="${r.name}" aria-label="${r.name}">${r.icon}</button>`; }).join('')
-    : `<span class="relic-empty">없음 — ${RELIC_REWARD_WEEKS.join('·')}주차 결산 보상이나 암시장에서 얻는다</span>`);
+    : '<span class="relic-empty">없음 — 매주 결산 보상이나 암시장에서 얻는다</span>');
   const tip = $('relicTip');
   if(relicTipId){
     const r = RELIC_BY_ID[relicTipId];
@@ -3454,7 +3480,7 @@ $('overlay').addEventListener('click', e => {
   const tc = e.target.closest('[data-tip-choice]');
   if(tc){ chooseTip(+tc.dataset.tipChoice); return; }
   const rr = e.target.closest('[data-relic-reward]');
-  if(rr){ hideOverlay(); chooseReward('relic', rr.dataset.relicReward); renderAll(); return; }
+  if(rr){ hideOverlay(); chooseRelicReward(rr.dataset.relicReward); renderAll(); return; }
   const r = e.target.closest('[data-reward]');
   if(r){ hideOverlay(); chooseReward('take', r.dataset.reward); renderAll(); return; }
   const rm = e.target.closest('[data-remove]');
@@ -3463,6 +3489,7 @@ $('overlay').addEventListener('click', e => {
   if(!b || b.disabled) return;
   const act = b.dataset.act;
   if(act === 'skip'){ hideOverlay(); chooseReward('skip'); renderAll(); }
+  else if(act === 'skipRelic'){ hideOverlay(); chooseRelicReward(''); renderAll(); }
   else if(act === 'removeMode') showRemove();
   else if(act === 'backReward') showReward(lastRoundClear);
   else if(act === 'close') hideOverlay();
