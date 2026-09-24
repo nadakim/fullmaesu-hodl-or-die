@@ -868,6 +868,26 @@ body::after{
 }
 .ov-btn:hover{transform:translate(-2px,-2px);}
 .ov-btn.alt{background:var(--panel2);color:var(--muted);box-shadow:0 0 0 2px var(--line),4px 4px 0 #000;}
+.ov-btn.warn{background:var(--red-dim);color:var(--red);box-shadow:0 0 0 2px var(--red2),4px 4px 0 #000;}
+
+/* 라운드 결과 · 게임오버 */
+.result-kicker{font-family:'Press Start 2P';font-size:8px;color:var(--muted);margin-bottom:6px;}
+.result-hero{font-family:'Press Start 2P';font-size:20px;margin:6px 0 4px;text-shadow:2px 2px 0 #000;}
+.result-bar{position:relative;height:12px;margin:8px 0 4px;background:#000;box-shadow:0 0 0 2px var(--line);}
+.result-bar i{position:absolute;inset:0 auto 0 0;background:var(--gold2);}
+.result-bar i.done{background:var(--green);}
+.result-bar b{position:absolute;top:-2px;bottom:-2px;left:calc(100% / 1.5 - 1px);width:2px;background:var(--text);}
+.result-pct{font-family:'Press Start 2P';font-size:8px;color:var(--muted);text-align:right;margin-bottom:12px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px;text-align:left;}
+.stat-grid div{background:#000;box-shadow:0 0 0 2px var(--line);padding:7px 9px;font-family:'Press Start 2P';font-size:6.5px;color:var(--muted);line-height:1.5;}
+.stat-grid div b{display:block;margin-top:4px;font-family:'VT323';font-size:20px;font-weight:normal;color:var(--text);}
+.stat-grid .wide{grid-column:1 / -1;}
+.stat-caption{font-family:'Press Start 2P';font-size:7px;color:var(--gold);text-align:left;margin-top:12px;}
+.ending-badge{
+  display:inline-block;margin:4px 0 10px;padding:5px 8px;background:#000;
+  font-family:'Press Start 2P';font-size:7.5px;color:var(--gold);box-shadow:0 0 0 2px var(--gold2);
+}
+.ending-cause{font-family:'VT323';font-size:17px;color:var(--muted);margin-bottom:6px;}
 .ov-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
 .ov-cards,.deck-list{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:6px 4px 12px;}
 .deck-list{max-height:46vh;overflow-y:auto;}
@@ -1358,6 +1378,11 @@ const TIP_EVENTS = [
       { label:'"적금 들고 있어요"', outcomes:[
         { chance:1, tag:'확정', text:'"기특하네" 적금에 보태라며 입금', effects:[{ kind:'cash', amount:120 }] } ] } ] }
 ];
+
+/* 게임오버 원인 판정 기준 (문구는 UI의 ENDINGS) */
+const END_NEAR_MISS_PCT = 0.90;  // 목표의 90% 이상에서 미달 → '아깝다'
+const END_HODL_SHARE    = 0.50;  // 부족분의 절반 이상이 평가손실 → '존버 실패'
+const END_LIQ_ADDICT    = 3;     // 한 판 반대매매 이 횟수 이상 → '반대매매 단골'
 
 /* 시작 덱 15장: 종목 8 + 증강 7 */
 const STARTER_DECK = [
@@ -1986,6 +2011,7 @@ function checkMarginCalls(){
       const penalty = fullPenalty - saved;
       const pnl = closePosition(p, penalty);
       run.liquidations++;
+      run.lastLiquidation = { lev: p.lev, dir: p.dir, round: run.round, day: run.day };
       run.discard.push(newCard('trauma'));   // 반대매매 트라우마: 덱 오염
       emit('marginCall', {pos: p, pnl, penalty, saved});
     });
@@ -2263,6 +2289,9 @@ function newRun(){
     round: 1, day: 1, tickInDay: 0,
     cash: START_CASH, realized: 0, interestPaid: 0, overdraft: 0,
     liquidations: 0, peakEquity: START_CASH,
+    weekStart: { equity: START_CASH, realized: 0, liquidations: 0, interestPaid: 0 },   // 주간 결산 비교 기준
+    lastLiquidation: { lev: 0, dir: 0, round: 0, day: 0 },   // 파산 원인 판정용
+    weeksCleared: 0, lastWeek: null, endCause: '',
     positions: [], nextPosId: 1, nextUid: 1,
     masterDeck: STARTER_DECK.slice(), drawPile: [], hand: [], discard: [], exhausted: [],
     ap: AP_PER_DAY,
@@ -2449,20 +2478,58 @@ function endOfRound(){
   run.cash += diamondBonus;
   const target = currentTarget();
   let eq = netEquity();
+  let bailout = 0;
   if(eq < target && hasRelic('parents')){   // 부모님 카드: 한 번만 부족분을 메워준다
-    const bailout = Math.ceil(target - eq);
+    bailout = Math.ceil(target - eq);
     run.cash += bailout;
     loseRelic('parents');
     emit('relicTriggered', {id: 'parents', amount: bailout});
     eq = netEquity();
   }
+  run.peakEquity = Math.max(run.peakEquity, eq);   // 틱 밖(카드·찌라시·결산 보너스)에서 오른 순자산도 최고 기록에 반영
+  run.lastWeek = weekSummary(eq, target, diamondBonus, bailout);
   if(eq < target) return endRun('MISSED');
+  run.weeksCleared = run.round;
   if(run.round >= MAX_ROUND) return endRun('VICTORY');
   run.phase = 'reward';
   run.rewardStep = 'card';                                        // 카드 보상 → 유물 보상 → 암시장
   run.rewardChoices = rollRewards(REWARD_CHOICES, run.masterDeck); // 이미 덱에 있는 카드는 제외
   run.relicChoices = rollRelics(RELIC_REWARD_CHOICES);             // 아직 없는 유물만
-  emit('roundClear', {eq, target, diamondBonus});
+  emit('roundClear', run.lastWeek);
+}
+
+/* 이번 주 요약 (결산·게임오버 화면용) */
+function weekSummary(eq, target, diamondBonus, bailout){
+  const ws = run.weekStart;
+  return {
+    round: run.round, eq, target, pct: eq / target,
+    weekPnl: eq - ws.equity, weekReturn: ws.equity > 0 ? eq / ws.equity - 1 : 0,
+    realized: run.realized - ws.realized, liquidations: run.liquidations - ws.liquidations,
+    interest: run.interestPaid - ws.interestPaid, diamondBonus, bailout,
+    positions: run.positions.length, unrealized: run.positions.reduce((sum, p) => sum + posPnl(p), 0)
+  };
+}
+
+function markWeekStart(){
+  run.weekStart = { equity: netEquity(), realized: run.realized, liquidations: run.liquidations, interestPaid: run.interestPaid };
+}
+
+/* 게임오버 원인: 파산은 직전 반대매매의 종류로, 목표 미달은 이번 주 내용으로 */
+function classifyEnd(reason){
+  if(reason === 'VICTORY') return 'VICTORY';
+  if(reason === 'BANKRUPT'){
+    const L = run.lastLiquidation;
+    const recent = L.round === run.round && L.day === run.day;
+    if(recent && L.dir < 0) return 'SHORT_SQUEEZE';
+    if(recent && L.lev >= YOLO_LEV) return 'YOLO_BUST';
+    if(recent) return 'MARGIN_CALL';
+    return 'DEBT_SPIRAL';
+  }
+  const w = run.lastWeek;
+  if(w.pct >= END_NEAR_MISS_PCT) return 'NEAR_MISS';
+  if(w.unrealized < 0 && -w.unrealized >= (w.target - w.eq) * END_HODL_SHARE) return 'HODL_FAIL';
+  if(run.liquidations >= END_LIQ_ADDICT) return 'LIQ_ADDICT';
+  return 'SLOW_BLEED';
 }
 
 /* 희귀도 가중치로 서로 다른 카드 n장 (exclude에 있는 카드 id는 빼고, 모자라면 있는 만큼만) */
@@ -2638,6 +2705,7 @@ function startNextRound(){
   run.round++;
   run.day = 1;
   run.rewardChoices = [];
+  markWeekStart();
   buildWeekPiles();
   emit('roundStart', {round: run.round, target: currentTarget()});
   startDay();
@@ -2647,6 +2715,8 @@ function endRun(reason){
   run.phase = 'over';
   run.endReason = reason;
   run.endEquity = netEquity();
+  run.peakEquity = Math.max(run.peakEquity, run.endEquity);
+  run.endCause = classifyEnd(reason);
   emit('runOver', {reason});
   return true;
 }
@@ -2772,7 +2842,7 @@ function onGameEvent(type, d){
       $('marketStateTag').textContent = '■ ' + d.state;
       break;
     case 'eventEnd': resetNews(); break;
-    case 'roundClear': lastRoundClear = d; showReward(d); break;
+    case 'roundClear': lastRoundClear = d; showRoundResult(d); break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
         : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['카드 보상 건너뜀', 'info']);
@@ -3053,15 +3123,8 @@ const sortedCardIds = ids => ids.slice().sort((a, b) => CARD_ORDER[a] - CARD_ORD
 
 function showReward(d){
   showOverlay(`
-    <div class="ov-title" style="color:var(--green)">WEEK ${run.round} 결산 ✓</div>
-    <div class="ov-sub">목표 달성! 보상을 하나 고르세요.<br>다음 주 목표 <span style="color:var(--gold)">${fmtMoney(ROUND_TARGETS[run.round])}</span></div>
-    <div class="ov-stats">
-      ${statRow('이번 주 순자산', fmtMoney(d.eq))}
-      ${statRow('이번 주 목표', fmtMoney(d.target))}
-      ${d.diamondBonus > 0 ? statRow('💎 다이아몬드 보너스', '+' + fmtMoney(d.diamondBonus)) : ''}
-      ${statRow('보유 포지션', run.positions.length + '개 (이월)')}
-      ${statRow('덱', run.masterDeck.length + '장')}
-    </div>
+    <div class="ov-title" style="color:var(--green)">WEEK ${run.round} 보상</div>
+    <div class="ov-sub">카드 1장을 고르세요. 덱 ${run.masterDeck.length}장 · 다음 주 목표 <span style="color:var(--gold)">${fmtMoney(ROUND_TARGETS[run.round])}</span></div>
     <div class="pile-title">▌ 카드 획득 — 덱에 없는 새 카드 중 1장${run.relicChoices.length ? ' (다음: 유물 선택)' : ''}</div>
     <div class="ov-cards">${run.rewardChoices.length
       ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
@@ -3098,28 +3161,118 @@ function showDeck(){
     <button class="ov-btn alt" data-act="close">✕ 닫기</button>`);
 }
 
+/* 게임오버 문구 — 전부 재정적 파산 소재(반대매매·깡통계좌·존버/영끌 실패)로만 쓴다 */
+const ENDINGS = {
+  YOLO_BUST:     { title:'영끌 실패',              color:'var(--red)',
+                   sub:'영혼까지 끌어모았는데, 영혼까지 청산됐습니다.',
+                   cause:() => '3배 레버리지 포지션이 반대매매되며 순자산이 0 아래로.' },
+  SHORT_SQUEEZE: { title:'숏 스퀴즈에 털렸습니다', color:'var(--red)',
+                   sub:'"떨어진다"에 걸었는데 로켓이 떴습니다. 공매도의 손실엔 천장이 없습니다.',
+                   cause:() => '숏 포지션이 급등에 반대매매되며 순자산이 0 아래로.' },
+  MARGIN_CALL:   { title:'반대매매 당했습니다',    color:'var(--red)',
+                   sub:'증권사가 당신 대신 매도 버튼을 눌렀습니다. 담보비율은 기다려주지 않습니다.',
+                   cause:() => '신용 포지션이 반대매매되며 순자산이 0 아래로.' },
+  DEBT_SPIRAL:   { title:'계좌가 녹았습니다',      color:'var(--red)',
+                   sub:'이자에 미수에 마이너스 통장까지. 잔고가 조용히 0을 뚫었습니다.',
+                   cause:() => `반대매매 없이 빚과 이자로 파산 (누적 이자 ${fmtMoney(run.interestPaid)}).` },
+  NEAR_MISS:     { title:'아깝다, 강제 은퇴',      color:'var(--gold)',
+                   sub:'한 틱만 더 올랐어도… 차트는 당신이 떠난 다음 날 올랐습니다.',
+                   cause:w => `목표까지 ${fmtMoney(w.target - w.eq)} 모자람 (달성률 ${Math.floor(w.pct * 100)}%).` },
+  HODL_FAIL:     { title:'존버 실패',              color:'var(--gold)',
+                   sub:'"언젠가 오른다"의 언젠가는 이번 주가 아니었습니다.',
+                   cause:w => `평가손실 ${fmtMoney(-w.unrealized)}을 안고 결산 — 부족분의 대부분이 물린 돈.` },
+  LIQ_ADDICT:    { title:'반대매매 단골손님',      color:'var(--gold)',
+                   sub:'증권사 VIP 등극. 담보 부족 문자는 이제 알림음만 들어도 압니다.',
+                   cause:() => `이번 판 반대매매 ${run.liquidations}회. 그래도 레버리지는 못 끊었습니다.` },
+  SLOW_BLEED:    { title:'깡통 계좌',              color:'var(--gold)',
+                   sub:'큰 한 방은 없었습니다. 조금씩, 꾸준히, 확실하게 잃었습니다.',
+                   cause:w => `목표 미달 (달성률 ${Math.floor(w.pct * 100)}%).` },
+  VICTORY:       { title:'개미 졸업!',             color:'var(--green)',
+                   sub:`${MAX_ROUND}주 연속 목표 달성. 이제 당신이 세력입니다.`,
+                   cause:() => '모든 주간 목표를 넘겼습니다.' }
+};
+
+/* 생존 주 수에 따른 등급 */
+function antGrade(weeks){
+  if(weeks >= MAX_ROUND) return '세력';
+  if(weeks >= 6) return '고수 개미';
+  if(weeks >= 3) return '중수 개미';
+  if(weeks >= 1) return '주린이';
+  return '1주 컷';
+}
+
+/* 이 브라우저에서 끝낸 판 수 ("개미 N회차") — 저장이 막혀 있으면 이번 세션만 센다 */
+let antRunsFallback = 0;
+function countFinishedRun(){
+  let n = antRunsFallback + 1;
+  try { n = (parseInt(localStorage.getItem('hodl.antRuns'), 10) || 0) + 1; localStorage.setItem('hodl.antRuns', String(n)); } catch(e) {}
+  antRunsFallback = n;
+  return n;
+}
+
+function statTile(label, value, cls){ return `<div class="${cls || ''}">${label}<b>${value}</b></div>`; }
+const signCls = v => v >= 0 ? 'pnl-up' : 'pnl-down';
+
 function showRunOver(reason){
-  const endings = {
-    BANKRUPT: { title:'반대매매 당했습니다',   color:'var(--red)',   sub:'순자산이 0원 아래로 떨어졌습니다. 계좌가 녹았습니다.' },
-    MISSED:   { title:'목표 미달 · 강제 은퇴', color:'var(--gold)',  sub:`순자산 ${fmtMoney(run.endEquity)} / 목표 ${fmtMoney(currentTarget())}` },
-    VICTORY:  { title:'개미 졸업!',            color:'var(--green)', sub:`${MAX_ROUND}주 연속 목표 달성. 이제 당신이 세력입니다.` }
-  };
-  const e = endings[reason];
+  const cause = run.endCause || reason, e = ENDINGS[cause], w = run.lastWeek;
+  const n = countFinishedRun();
+  const weeks = run.weeksCleared;
   showOverlay(`
-    <div class="ov-title" style="color:${e.color}">${e.title}</div>
+    <div class="result-kicker">GAME OVER · WEEK ${run.round} DAY ${run.day}</div>
+    <div class="ov-title ending-title" style="color:${e.color}" data-cause="${cause}">${e.title}</div>
     <div class="ov-sub">${e.sub}</div>
-    <div class="ov-stats">
-      ${statRow('도달 주차', `WEEK ${run.round}/${MAX_ROUND} · DAY ${run.day}`)}
-      ${statRow('최종 순자산', fmtMoney(run.endEquity))}
-      ${statRow('최고 순자산', fmtMoney(run.peakEquity))}
-      ${statRow('확정손익', '₩ ' + fmtSigned(run.realized))}
-      ${statRow('반대매매', run.liquidations + '회')}
-      ${statRow('누적 이자', fmtMoney(run.interestPaid))}
-      ${statRow('덱', run.masterDeck.length + '장')}
+    <div class="ending-cause">${e.cause(w)}</div>
+    <div class="ending-badge">${cause === 'VICTORY' ? `개미 ${n}회차 만에 졸업` : `당신은 이제 개미 ${n}회차`} · 등급: ${antGrade(weeks)}</div>
+    <div class="stat-grid">
+      ${statTile('최종 순자산', `<span class="${signCls(run.endEquity - START_CASH)}">${fmtMoney(run.endEquity)}</span>`)}
+      ${statTile('최고 순자산', fmtMoney(run.peakEquity))}
+      ${statTile('생존 라운드', `${weeks} / ${MAX_ROUND}주`)}
+      ${statTile('반대매매', run.liquidations + '회')}
+      ${statTile('확정손익', `<span class="${signCls(run.realized)}">₩ ${fmtSigned(run.realized)}</span>`)}
+      ${statTile('누적 이자', fmtMoney(run.interestPaid))}
+      ${statTile('수익률 (시작 대비)', `<span class="${signCls(run.endEquity - START_CASH)}">${fmtPct(run.endEquity / START_CASH - 1)}</span>`)}
+      ${statTile('덱 · 유물', `${run.masterDeck.length}장 · ${run.relics.length}개`)}
     </div>
-    <button class="ov-btn" data-act="restart">▶ 다시 영끌</button>
+    <button class="ov-btn" data-act="restart">↺ 다시 시작</button>
     <button class="ov-btn alt" data-act="title">◀ 타이틀로</button>`);
   if(reason === 'VICTORY') cashRain();
+}
+
+/* 주간 결산 결과 → 보상 → 암시장 */
+function roundResultLine(w){
+  if(w.bailout > 0) return '부모님 카드로 겨우 통과. 다음 주엔 기댈 곳이 없습니다.';
+  if(w.pct >= 1.5) return '떡상! 리딩방에서 스카우트 연락이 올 수준.';
+  if(w.pct >= 1.2) return '여유 있게 통과. 오늘만큼은 개미 탈출.';
+  return '턱걸이 통과. 심장은 이미 반대매매 당했습니다.';
+}
+
+function showRoundResult(w){
+  const barPct = Math.min(1.5, w.pct) / 1.5 * 100;   // 막대 끝 = 목표의 150%, 흰 선 = 목표
+  showOverlay(`
+    <div class="result-kicker">WEEK ${w.round} / ${MAX_ROUND} 결산</div>
+    <div class="ov-title" style="color:var(--green)">목표 달성 ✓</div>
+    <div class="ov-sub">${roundResultLine(w)}</div>
+    <div class="result-hero ${signCls(w.weekPnl)}">${fmtMoney(w.eq)}</div>
+    <div class="result-bar"><i class="${w.pct >= 1 ? 'done' : ''}" style="width:${barPct}%"></i><b></b></div>
+    <div class="result-pct">목표 ${fmtMoney(w.target)} 대비 <span class="${w.pct >= 1 ? 'pnl-up' : 'pnl-down'}">${(w.pct * 100).toFixed(1)}%</span></div>
+    <div class="stat-grid">
+      ${statTile('이번 주 수익', `<span class="${signCls(w.weekPnl)}">${fmtSigned(w.weekPnl)} (${fmtPct(w.weekReturn)})</span>`)}
+      ${statTile('이번 주 확정손익', `<span class="${signCls(w.realized)}">${fmtSigned(w.realized)}</span>`)}
+      ${statTile('이번 주 반대매매', w.liquidations + '회')}
+      ${statTile('이번 주 이자', fmtMoney(w.interest))}
+      ${statTile('이월 포지션', `${w.positions}개 · 평가 <span class="${signCls(w.unrealized)}">${fmtSigned(w.unrealized)}</span>`, 'wide')}
+      ${w.diamondBonus > 0 ? statTile('💎 다이아몬드 보너스', '+' + fmtMoney(w.diamondBonus)) : ''}
+      ${w.bailout > 0 ? statTile('💌 부모님 카드', '+' + fmtMoney(w.bailout)) : ''}
+    </div>
+    <div class="stat-caption">▌ 이번 판 누적</div>
+    <div class="stat-grid">
+      ${statTile('최고 순자산', fmtMoney(run.peakEquity))}
+      ${statTile('생존 라운드', `${run.weeksCleared} / ${MAX_ROUND}주`)}
+      ${statTile('총 반대매매', run.liquidations + '회')}
+      ${statTile('다음 주 목표', fmtMoney(ROUND_TARGETS[w.round]))}
+    </div>
+    <button class="ov-btn" data-act="toReward">▶ 보상 고르고 WEEK ${w.round + 1}로</button>
+    <button class="ov-btn warn" data-act="restartAsk">↺ 다시 시작</button>`);
 }
 
 /* ── 찌라시 ── */
@@ -3500,6 +3653,8 @@ $('overlay').addEventListener('click', e => {
   else if(act === 'backReward') showReward(lastRoundClear);
   else if(act === 'close') hideOverlay();
   else if(act === 'restart') startRun();
+  else if(act === 'toReward') showReward(lastRoundClear);
+  else if(act === 'restartAsk'){ b.dataset.act = 'restart'; b.textContent = '↺ 정말 처음부터? 한 번 더 누르면 새 판'; }
   else if(act === 'title'){ hideOverlay(); switchTab('title'); }
 });
 
