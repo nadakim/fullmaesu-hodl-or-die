@@ -1612,10 +1612,28 @@ const longExposure  = () => run.positions
   .reduce((s, p) => s + exposure(p), 0);
 const hedgeAmount   = () => Math.round(Math.min(longExposure() * HEDGE_RATIO, run.cash));
 
+/* 기존 포지션에 추가 매수: 원금·수량·진입노출액을 더해 평단이 자연히 섞인다 */
+function addToPosition(p, principal){
+  const exp = principal * p.lev;
+  p.principal += principal;
+  p.shares += exp / assets[p.assetId].price;
+  p.entryExposure += exp;
+}
+
+/* 같은 종목·방향·레버리지 포지션이 이미 있으면 거기에 합친다 (레버리지·방향이 다르면 별도 포지션) */
+const findSamePosition = (stockId, lev, dir) =>
+  run.positions.find(p => p.assetId === stockId && p.lev === lev && p.dir === dir) || null;
+
 function openPosition(stockId, principal, lev, dir, payCash){
   const s = STOCK_BY_ID[stockId];
   const exp = principal * lev;
   if(payCash) run.cash -= principal;
+  const same = findSamePosition(stockId, lev, dir);
+  if(same){
+    addToPosition(same, principal);
+    emit('bought', {pos: same, merged: true, added: principal});
+    return same;
+  }
   const p = {
     id: run.nextPosId++, assetId: stockId, name: s.name, dir, lev,
     principal, shares: exp / assets[stockId].price, entryExposure: exp,
@@ -1623,7 +1641,7 @@ function openPosition(stockId, principal, lev, dir, payCash){
     protectedToday: false, diamond: false
   };
   run.positions.push(p);
-  emit('bought', {pos: p});
+  emit('bought', {pos: p, merged: false, added: principal});
   return p;
 }
 
@@ -1748,11 +1766,9 @@ defCard('avgDown', '물타기', 'buy', 1, 'common', 'position', false,
   `손실 중인 포지션에 원금의 ${pct(AVG_DOWN_RATIO)}를 같은 레버리지로 추가 매수.`,
   p => isLosing(p) && run.cash >= p.principal * AVG_DOWN_RATIO,
   p => {
-    const add = p.principal * AVG_DOWN_RATIO, exp = add * p.lev;
+    const add = p.principal * AVG_DOWN_RATIO;
     run.cash -= add;
-    p.principal += add;
-    p.shares += exp / assets[p.assetId].price;
-    p.entryExposure += exp;
+    addToPosition(p, add);
   });
 defCard('ipo', '공모주 청약', 'buy', 1, 'uncommon', null, true,
   `무작위 종목(인버스 제외)을 ₩${IPO_AMOUNT}만어치 공짜로 1x 매수.`,
@@ -2211,6 +2227,9 @@ function resetNews(){
 function onGameEvent(type, d){
   switch(type){
     case 'cardRejected': toast(REJECT_TEXT[d.reason] || d.reason, 'bad'); break;
+    case 'bought':
+      if(d.merged) toast(`${d.pos.name} ${posLabel(d.pos)} 추가 매수 +${Math.round(d.added).toLocaleString()}만 → 평단 ${fmtPrice(avgPrice(d.pos))}`, 'info');
+      break;
     case 'cardPlayed':   if(d.card.type !== 'stock') toast('▶ ' + d.card.name, 'info'); break;
     case 'sold':
       showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
