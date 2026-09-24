@@ -563,6 +563,40 @@ body::after{
   transform:translate(-2px,-2px);
 }
 .tabnav button.locked{color:var(--line);cursor:not-allowed;}
+
+/* 유물 */
+.relic-bar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:2px 0 8px;font-family:'Press Start 2P';font-size:7px;color:var(--muted);}
+.relic-bar .relic-label{color:var(--gold);margin-right:2px;}
+.relic{
+  width:30px;height:30px;padding:0;border:none;cursor:pointer;font-size:17px;line-height:30px;
+  background:var(--panel2);box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
+}
+.relic.uncommon{box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;}
+.relic.legendary{box-shadow:0 0 0 2px var(--gold),2px 2px 0 #000;}
+.relic:hover,.relic.on{transform:translate(-1px,-2px);background:var(--panel);}
+.relic.on{box-shadow:0 0 0 2px var(--text),3px 3px 0 #000;}
+.relic-empty{font-family:'VT323';font-size:15px;}
+.relic-tip{
+  margin:0 0 8px;padding:8px 10px;background:#000;box-shadow:0 0 0 2px var(--gold2),3px 3px 0 #000;
+  font-family:'VT323';font-size:17px;line-height:1.2;color:var(--text);
+}
+.relic-tip b{font-family:'Press Start 2P';font-size:8px;font-weight:normal;color:var(--gold);}
+.relic-tip i{display:block;margin-top:4px;color:var(--muted);}
+.relic-tile{
+  width:170px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;text-align:center;
+  background:var(--panel2);box-shadow:0 0 0 2px var(--line),0 0 0 4px #000,3px 3px 0 #000;
+}
+.relic-tile.uncommon{box-shadow:0 0 0 2px var(--cyan),0 0 0 4px #000,3px 3px 0 #000;}
+.relic-tile.legendary{box-shadow:0 0 0 2px var(--gold),0 0 0 4px #000,3px 3px 0 #000;}
+.relic-tile[data-relic-reward]{cursor:pointer;}
+.relic-tile[data-relic-reward]:hover{transform:translate(-2px,-2px);}
+.relic-tile .rt-icon{font-size:26px;}
+.relic-tile .rt-name{font-family:'Press Start 2P';font-size:8px;color:var(--text);line-height:1.5;}
+.relic-tile .c-rar{font-family:'Press Start 2P';font-size:6px;}
+.relic-tile .rt-desc{font-family:'VT323';font-size:16px;line-height:1.1;color:var(--text);}
+.relic-tile .rt-flavor{font-family:'VT323';font-size:14px;line-height:1.1;color:var(--muted);}
+.relic-row{display:flex;flex-wrap:wrap;gap:14px;padding:6px 4px 12px;}
+.o-tag.relic-on{color:var(--gold);}
 .tabnav button.locked:hover{color:var(--muted);}
 .shop-locked{
   margin-top:24px;padding:28px 18px;text-align:center;background:var(--panel);
@@ -1039,6 +1073,8 @@ body::after{
     </div>
 
     <div class="play-right">
+      <div class="relic-bar" id="relicBar"></div>
+      <div class="relic-tip" id="relicTip" hidden></div>
       <div class="turn-bar">
         <span>행동력</span>
         <span class="ap-pips" id="apPips"></span>
@@ -1194,6 +1230,45 @@ const STOCKS = [
 ];
 const STOCK_BY_ID = {};
 STOCKS.forEach(s => { STOCK_BY_ID[s.id] = s; });
+
+/* 유물 — 한 판 동안 상시 발동(패시브). 효과는 ENGINE의 계산 지점에서 hasRelic()으로 개입한다.
+   획득: RELIC_REWARD_WEEKS 주차 결산 보상(카드 대신 선택) + 암시장 진열. */
+const RELIC_GUKBAP_SECTORS       = ['방어주', '우량주']; // 국밥 정신 적용 섹터
+const RELIC_GUKBAP_LOSS_CUT      = 0.5;   // 국밥 정신: 평가손실 50% 감소
+const RELIC_SEAL_DAYS            = 3;     // 존버의 인장: 장 마감을 이만큼 넘긴 포지션부터
+const RELIC_SEAL_BONUS           = 0.10;  // 존버의 인장: 평가이익 +10%
+const RELIC_VIP_PUMP_CHANCE      = 0.85;  // 리딩방 VIP: 찌라시 급등 확률
+const RELIC_HANRIVER_PENALTY_CUT = 1.0;   // 한강 수온 알림: 반대매매 투매 손실 면제 비율
+const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
+const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
+const RELIC_REWARD_WEEKS         = [2, 4, 6]; // 이 주차 결산 보상에 유물 선택지 추가
+const RELIC_REWARD_CHOICES       = 2;     // 보상에 나오는 유물 수
+const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
+const RELIC_PRICE                = { common:900, uncommon:1300, legendary:2000 }; // 암시장 유물 가격 (만원)
+
+const RELICS = [
+  { id:'gukbap',   icon:'🍲', name:'국밥 정신',       rarity:'common',
+    desc:`${RELIC_GUKBAP_SECTORS.join('·')} 종목 포지션의 평가손실 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}% 감소. 청산·반대매매 계산에도 적용.`,
+    flavor:'든든하게 한 그릇 말고 오면 손실도 반만 아프다.' },
+  { id:'seal',     icon:'🔏', name:'존버의 인장',     rarity:'uncommon',
+    desc:`장 마감을 ${RELIC_SEAL_DAYS}번 이상 넘긴 포지션은 평가이익 +${Math.round(RELIC_SEAL_BONUS * 100)}%.`,
+    flavor:'팔면 끝이고, 안 팔면 아직 끝난 게 아니다.' },
+  { id:'vip',      icon:'📱', name:'리딩방 VIP',      rarity:'uncommon',
+    desc:`리딩방 찌라시 급등 확률 ${Math.round(PUMP_UP_CHANCE * 100)}% → ${Math.round(RELIC_VIP_PUMP_CHANCE * 100)}%.`,
+    flavor:'월 99만원. 무료방보다 3초 빨리 알려준다.' },
+  { id:'hanriver', icon:'🌊', name:'한강 수온 알림',  rarity:'uncommon',
+    desc:`반대매매 때 투매 손실(노출액 ${Math.round(LIQUIDATION_PENALTY * 100)}%)이 ${Math.round(RELIC_HANRIVER_PENALTY_CUT * 100)}% 면제된다.`,
+    flavor:'오늘 한강 수온 4℃. 아직은 아닙니다.' },
+  { id:'capital',  icon:'🏦', name:'캐피탈 VVIP 카드', rarity:'common',
+    desc:`신용·대차·마이너스 통장 이자 ${Math.round(RELIC_CAPITAL_INTEREST_CUT * 100)}% 할인.`,
+    flavor:'고객님은 저희 캐피탈의 소중한 VVIP입니다. (연 19.9%)' },
+  { id:'talisman', icon:'🧿', name:'떡상 기원 부적',  rarity:'legendary',
+    desc:`매일 장전 행동력 +${RELIC_TALISMAN_AP}.`,
+    flavor:'타이틀 화면에 붙어 있던 그 부적. 효과는 과학적으로 검증되지 않았다.' },
+  { id:'parents',  icon:'💌', name:'부모님 카드',     rarity:'legendary',
+    desc:'목표 미달로 강제 은퇴될 때 딱 한 번, 부족한 금액을 채워 결산을 통과시킨다. 쓰면 사라진다.',
+    flavor:'"이번이 진짜 마지막이다." 이후 연락 두절.' }
+];
 
 /* 시작 덱 15장: 종목 8 + 증강 7 */
 const STARTER_DECK = [
@@ -1648,7 +1723,50 @@ function updateAssetPrices(idxLogRet, pumps){
    포지션순자산 = 원금 + dir × (노출액 − 진입노출액)
    증거금률 = 포지션순자산 ÷ 노출액                                       */
 const exposure     = p => p.shares * assets[p.assetId].price;
-const posEquity    = p => p.principal + p.dir * (exposure(p) - p.entryExposure);
+/* ── 유물 ── */
+const RELIC_BY_ID = {};
+RELICS.forEach(r => { RELIC_BY_ID[r.id] = r; });
+const hasRelic = id => !!run && run.relics.indexOf(id) >= 0;
+
+function gainRelic(id, source){
+  if(!RELIC_BY_ID[id] || hasRelic(id)) return false;
+  run.relics.push(id);
+  emit('relicGained', {id, source});
+  return true;
+}
+function loseRelic(id){ run.relics = run.relics.filter(x => x !== id); }
+
+/* 아직 없는 유물 n개 (희귀도 가중치, 중복 없음) */
+function rollRelics(n){
+  const picks = [];
+  while(picks.length < n){
+    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0);
+    if(cands.length === 0) break;
+    const total = cands.reduce((sum, r) => sum + RARITY_WEIGHTS[r.rarity], 0);
+    let roll = Math.random() * total, chosen = cands[cands.length - 1];
+    for(let i = 0; i < cands.length; i++){
+      roll -= RARITY_WEIGHTS[cands[i].rarity];
+      if(roll < 0){ chosen = cands[i]; break; }
+    }
+    picks.push(chosen.id);
+  }
+  return picks;
+}
+
+const pumpUpChance = () => hasRelic('vip') ? RELIC_VIP_PUMP_CHANCE : PUMP_UP_CHANCE;
+const maxAp        = () => AP_PER_DAY + (hasRelic('talisman') ? RELIC_TALISMAN_AP : 0);
+const interestRate = () => DAILY_INTEREST * (hasRelic('capital') ? 1 - RELIC_CAPITAL_INTEREST_CUT : 1);
+const gukbapApplies = p => hasRelic('gukbap') && RELIC_GUKBAP_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0;
+const sealApplies   = p => hasRelic('seal') && p.daysHeld >= RELIC_SEAL_DAYS;
+
+/* 가격만으로 계산한 손익 → 유물 보정 (국밥 정신: 손실 감소 / 존버의 인장: 이익 증가) */
+const rawPnl = p => p.dir * (exposure(p) - p.entryExposure);
+function relicAdjustedPnl(p, pnl){
+  if(pnl < 0 && gukbapApplies(p)) return pnl * (1 - RELIC_GUKBAP_LOSS_CUT);
+  if(pnl > 0 && sealApplies(p))   return pnl * (1 + RELIC_SEAL_BONUS);
+  return pnl;
+}
+const posEquity    = p => p.principal + relicAdjustedPnl(p, rawPnl(p));
 const posPnl       = p => posEquity(p) - p.principal;
 const posReturn    = p => posPnl(p) / p.principal;
 const avgPrice     = p => p.entryExposure / p.shares;
@@ -1695,7 +1813,7 @@ function openPosition(stockId, principal, lev, dir, payCash){
     id: run.nextPosId++, assetId: stockId, name: s.name, dir, lev,
     principal, shares: exp / assets[stockId].price, entryExposure: exp,
     stopLoss: false, takeProfit: false, trailing: false, trailPeak: 0,
-    protectedToday: false, diamond: false
+    protectedToday: false, diamond: false, daysHeld: 0
   };
   run.positions.push(p);
   emit('bought', {pos: p, merged: false, added: principal});
@@ -1774,11 +1892,13 @@ function checkMarginCalls(){
   run.positions
     .filter(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < MARGIN_CALL_RATIO)
     .forEach(p => {
-      const penalty = exposure(p) * LIQUIDATION_PENALTY;
+      const fullPenalty = exposure(p) * LIQUIDATION_PENALTY;
+      const saved = hasRelic('hanriver') ? fullPenalty * RELIC_HANRIVER_PENALTY_CUT : 0;
+      const penalty = fullPenalty - saved;
       const pnl = closePosition(p, penalty);
       run.liquidations++;
       run.discard.push(newCard('trauma'));   // 반대매매 트라우마: 덱 오염
-      emit('marginCall', {pos: p, pnl, penalty});
+      emit('marginCall', {pos: p, pnl, penalty, saved});
     });
 }
 
@@ -1922,7 +2042,7 @@ defCard('hodlWins', '존버는 승리한다', 'hold', 2, 'legendary', null, true
 defCard('pump', '리딩방 찌라시', 'action', 1, 'uncommon', 'asset', false,
   `오늘 이 종목에 작전. ${pct(PUMP_UP_CHANCE)} 급등, ${pct(1 - PUMP_UP_CHANCE)} 설거지. 결과는 장이 열려야 안다.`,
   s => !run.pumps[s.id],
-  s => { run.pumps[s.id] = Math.random() < PUMP_UP_CHANCE ? 1 : -1; });
+  s => { run.pumps[s.id] = Math.random() < pumpUpChance() ? 1 : -1; });
 defCard('dove', '연준 비둘기 발언', 'action', 1, 'common', null, false,
   '오늘 장을 강세장(BULL)으로.',
   () => run.forcedState !== 'BULL',
@@ -2062,7 +2182,8 @@ function newRun(){
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
     eventTicksLeft: 0, ticksSinceEvent: 0,
     rewardChoices: [], endReason: '', endEquity: 0,
-    shop: { singles: [], singlesBought: [], removed: 0 }
+    relics: [], relicChoices: [],
+    shop: { singles: [], singlesBought: [], removed: 0, relics: [] }
   };
 }
 
@@ -2079,7 +2200,7 @@ function startNewRun(){
 function startDay(){
   run.phase = 'premarket';
   run.tickInDay = 0;
-  run.ap = AP_PER_DAY;
+  run.ap = maxAp();
   run.forcedState = '';
   run.pumps = {};
   run.noSellToday = false;
@@ -2135,12 +2256,13 @@ function tick(){
 function endOfDay(){
   run.discard = run.discard.concat(run.hand);   // 쓰지 않은 손패는 전부 버린다
   run.hand = [];
-  const interest = run.interestFree ? 0 : totalBorrowed() * DAILY_INTEREST;
+  run.positions.forEach(p => { p.daysHeld++; });   // 존버의 인장: 장 마감을 넘긴 횟수
+  const interest = run.interestFree ? 0 : totalBorrowed() * interestRate();
   run.cash -= interest;
   run.interestPaid += interest;
   if(run.forcedState){ marketState = 'NORMAL'; emit('eventEnd'); }
   STOCKS.forEach(s => { assets[s.id].dayOpen = assets[s.id].price; });
-  emit('dayEnd', {day: run.day, interest, waived: run.interestFree});
+  emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital')});
   if(checkBankruptcy()) return;
   if(run.day >= DAYS_PER_ROUND){ endOfRound(); return; }
   run.day++;
@@ -2157,11 +2279,20 @@ function endOfRound(){
     p.diamond = false;
   });
   run.cash += diamondBonus;
-  const eq = netEquity(), target = currentTarget();
+  const target = currentTarget();
+  let eq = netEquity();
+  if(eq < target && hasRelic('parents')){   // 부모님 카드: 한 번만 부족분을 메워준다
+    const bailout = Math.ceil(target - eq);
+    run.cash += bailout;
+    loseRelic('parents');
+    emit('relicTriggered', {id: 'parents', amount: bailout});
+    eq = netEquity();
+  }
   if(eq < target) return endRun('MISSED');
   if(run.round >= MAX_ROUND) return endRun('VICTORY');
   run.phase = 'reward';
   run.rewardChoices = rollRewards(REWARD_CHOICES);
+  run.relicChoices = RELIC_REWARD_WEEKS.indexOf(run.round) >= 0 ? rollRelics(RELIC_REWARD_CHOICES) : [];
   emit('roundClear', {eq, target, diamondBonus});
 }
 
@@ -2184,11 +2315,14 @@ function rollRewards(n){
   return picks;
 }
 
-/* kind: 'take'(카드 id) | 'remove'(masterDeck 인덱스) | 'skip' */
+/* kind: 'take'(카드 id) | 'remove'(masterDeck 인덱스) | 'relic'(유물 id) | 'skip' */
 function chooseReward(kind, value){
   if(!run || run.phase !== 'reward') return false;
-  let cardId = '';
-  if(kind === 'take'){
+  let cardId = '', relicId = '';
+  if(kind === 'relic'){
+    if(run.relicChoices.indexOf(value) < 0 || !gainRelic(value, 'reward')) return false;
+    relicId = value;
+  } else if(kind === 'take'){
     if(run.rewardChoices.indexOf(value) < 0) return false;
     run.masterDeck.push(value);
     cardId = value;
@@ -2197,7 +2331,8 @@ function chooseReward(kind, value){
     cardId = run.masterDeck[value];
     run.masterDeck.splice(value, 1);
   }
-  emit('rewardChosen', {kind, cardId, deckSize: run.masterDeck.length});
+  run.relicChoices = [];
+  emit('rewardChosen', {kind, cardId, relicId, deckSize: run.masterDeck.length});
   openShop();
   return true;
 }
@@ -2249,7 +2384,7 @@ const shopOpenNow    = () => !!run && run.phase === 'shop';
 function openShop(){
   run.phase = 'shop';
   const count = SHOP_SINGLE_MIN + randInt(SHOP_SINGLE_MAX - SHOP_SINGLE_MIN + 1);
-  run.shop = { singles: rollRewards(count), singlesBought: [], removed: 0 };
+  run.shop = { singles: rollRewards(count), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT) };
   emit('shopOpen', {round: run.round});
 }
 
@@ -2295,6 +2430,17 @@ function shopRemoveCard(deckIdx){
   return true;
 }
 
+function buyRelic(id){
+  if(!shopOpenNow()) return shopReject('phase');
+  if(run.shop.relics.indexOf(id) < 0) return shopReject('none');
+  if(hasRelic(id)) return shopReject('sold');
+  const price = RELIC_PRICE[RELIC_BY_ID[id].rarity];
+  if(run.cash < price) return shopReject('cash');
+  run.cash -= price;
+  gainRelic(id, 'shop');
+  return true;
+}
+
 function leaveShop(){
   if(!shopOpenNow()) return false;
   startNextRound();
@@ -2330,7 +2476,8 @@ const $ = id => document.getElementById(id);
 let currentTab = 'title';
 let chartTarget = 'idx';
 let shopPickIdx = -1;
-let pendingRewardToast = null;   // 보상 선택 알림 → 암시장 화면에서 표시      // 암시장 카드 제거에서 고른 덱 카드   // 큰 차트에 보이는 것: 'idx'(지수) 또는 종목 id
+let pendingRewardToast = null;
+let relicTipId = '', relicSig = '';   // 설명을 펼친 유물   // 보상 선택 알림 → 암시장 화면에서 표시      // 암시장 카드 제거에서 고른 덱 카드   // 큰 차트에 보이는 것: 'idx'(지수) 또는 종목 id
 let overlayOpen = false;
 let selectedIdx = -1;      // 대상 지정 중인 손패 카드 (-1 = 없음)
 let lastRoundClear = null; // 카드 제거 화면에서 보상 화면으로 돌아갈 때 사용
@@ -2414,7 +2561,8 @@ function onGameEvent(type, d){
       showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
       break;
     case 'marginCall':
-      toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (투매 −${Math.round(d.penalty)}만 · 트라우마 +1)`, 'bad');
+      toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (` +
+        (d.saved > 0 ? `🌊 투매 손실 ${Math.round(d.saved)}만 면제` : `투매 −${Math.round(d.penalty)}만`) + ' · 트라우마 +1)', 'bad');
       flashLiquidation();
       break;
     case 'reshuffle': toast('버린 카드를 섞어 새 덱으로', 'info'); break;
@@ -2429,7 +2577,7 @@ function onGameEvent(type, d){
       break;
     case 'dayEnd':
       if(d.waived) toast('장 마감 · 오늘 이자 면제', 'good');
-      else if(d.interest > 0.5) toast(`장 마감 · 이자 −${Math.round(d.interest).toLocaleString()}만`, 'warn');
+      else if(d.interest > 0.5) toast(`장 마감 · 이자 −${Math.round(d.interest).toLocaleString()}만` + (d.discounted ? ' (🏦 VVIP 할인)' : ''), 'warn');
       break;
     case 'event':
       $('newsText').textContent = d.text;
@@ -2438,7 +2586,8 @@ function onGameEvent(type, d){
     case 'eventEnd': resetNews(); break;
     case 'roundClear': lastRoundClear = d; showReward(d); break;
     case 'rewardChosen':   // 바로 암시장으로 넘어가므로 거기서 보여준다
-      pendingRewardToast = d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
+      pendingRewardToast = d.kind === 'relic' ? [`${RELIC_BY_ID[d.relicId].icon} 유물 획득: ${RELIC_BY_ID[d.relicId].name}`, 'good']
+        : d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
         : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['보상 건너뜀', 'info'];
       break;
     case 'roundStart': toast(`WEEK ${d.round} 개장 — 목표 ${fmtMoney(d.target)} · DAY 1 장전`, 'good'); break;
@@ -2453,6 +2602,12 @@ function onGameEvent(type, d){
     case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${d.price}만 · 덱 ${d.deckSize}장`, 'good'); break;
     case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${d.price}만 · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver': showRunOver(d.reason); break;
+    case 'relicGained':
+      if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
+      break;
+    case 'relicTriggered':
+      if(d.id === 'parents') toast(`💌 부모님 카드 발동: +₩${d.amount.toLocaleString()}만. 이번이 진짜 마지막이란다.`, 'warn');
+      break;
   }
 }
 
@@ -2568,9 +2723,9 @@ function renderQuotes(){
 function renderTurn(){
   const pre = run.phase === 'premarket';
   let pips = '';
-  for(let i = 0; i < Math.max(run.ap, AP_PER_DAY); i++) pips += `<span class="ap-pip ${i < run.ap ? 'on' : ''}"></span>`;
+  for(let i = 0; i < Math.max(run.ap, maxAp()); i++) pips += `<span class="ap-pip ${i < run.ap ? 'on' : ''}"></span>`;
   $('apPips').innerHTML = pips;
-  $('apText').textContent = `${run.ap}/${AP_PER_DAY}`;
+  $('apText').textContent = `${run.ap}/${maxAp()}`;
   $('pileText').textContent = `덱 ${run.drawPile.length} · 버림 ${run.discard.length} · 소멸 ${run.exhausted.length}`;
 
   const chips = [];
@@ -2627,12 +2782,14 @@ function orderTags(p){
   if(p.trailing)       t.push(`<span class="o-tag trail">트레일 ${Math.round(TRAIL_GAP * 100)}%p</span>`);
   if(p.protectedToday) t.push('<span class="o-tag hodl">존버</span>');
   if(p.diamond)        t.push('<span class="o-tag diamond">💎 다이아몬드</span>');
+  if(gukbapApplies(p)) t.push(`<span class="o-tag relic-on">🍲 손실 −${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%</span>`);
+  if(sealApplies(p))   t.push(`<span class="o-tag relic-on">🔏 이익 +${Math.round(RELIC_SEAL_BONUS * 100)}%</span>`);
   return t.join('');
 }
 
 function renderPositions(){
   const box = $('positionsBox');
-  const sig = run.positions.map(p => [p.id, p.lev, p.dir, Math.round(p.principal), p.stopLoss, p.takeProfit, p.trailing, p.protectedToday, p.diamond].join(':')).join()
+  const sig = run.positions.map(p => [p.id, p.lev, p.dir, Math.round(p.principal), p.stopLoss, p.takeProfit, p.trailing, p.protectedToday, p.diamond, p.daysHeld].join(':')).join() + '|' + run.relics.join()
     + '|' + run.noSellToday + run.allProtectedToday;
   if(sig !== posSig){
     posSig = sig;
@@ -2643,7 +2800,7 @@ function renderPositions(){
           <div class="pos-info">
             <div class="name">${p.name}${p.dir < 0 ? '<span class="lev-badge short">숏</span>' : ''}${p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : ''}</div>
             <div class="detail" data-f="price"></div>
-            <div class="detail">원금 ₩${Math.round(p.principal).toLocaleString()}만 · 노출 <span data-f="exp"></span></div>
+            <div class="detail">원금 ₩${Math.round(p.principal).toLocaleString()}만 · 노출 <span data-f="exp"></span> · 보유 ${p.daysHeld}일</div>
             ${isMarginable(p) ? '<div class="ratio" data-f="ratio"></div>' : ''}
             ${orderTags(p) ? `<div class="o-tags">${orderTags(p)}</div>` : ''}
           </div>
@@ -2683,6 +2840,7 @@ function renderAll(){
   renderTurn();
   renderHand();
   renderPositions();
+  renderRelics();
 }
 
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
@@ -2705,6 +2863,8 @@ function showReward(d){
     </div>
     <div class="pile-title">▌ 카드 획득 — 1장 선택</div>
     <div class="ov-cards">${run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')}</div>
+    ${run.relicChoices.length ? `<div class="pile-title">▌ 또는 유물 — 카드 대신 1개 (상시 발동)</div>
+      <div class="ov-cards">${run.relicChoices.map(id => relicTile(RELIC_BY_ID[id], { attrs: `data-relic-reward="${id}"` })).join('')}</div>` : ''}
     <button class="ov-btn alt" data-act="removeMode" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거 (덱 압축)</button>
     <button class="ov-btn alt" data-act="skip">▷ 건너뛰기</button>`);
 }
@@ -2752,6 +2912,39 @@ function showRunOver(reason){
     <button class="ov-btn alt" data-act="title">◀ 타이틀로</button>`);
   if(reason === 'VICTORY') cashRain();
 }
+
+/* ── 유물 ── */
+function relicTile(r, o){
+  return `<div class="relic-tile ${r.rarity} ${o.cls || ''}" ${o.attrs || ''}>
+    <div class="rt-icon">${r.icon}</div><div class="rt-name">${r.name}</div>
+    <div class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</div>
+    <div class="rt-desc">${r.desc}</div><div class="rt-flavor">${r.flavor}</div>
+    ${o.extra || ''}</div>`;
+}
+
+function renderRelics(){
+  if(relicTipId && !hasRelic(relicTipId)) relicTipId = '';
+  const sig = run.relics.join() + '|' + relicTipId;
+  if(sig === relicSig) return;
+  relicSig = sig;
+  $('relicBar').innerHTML = '<span class="relic-label">▌ 유물</span>' + (run.relics.length
+    ? run.relics.map(id => { const r = RELIC_BY_ID[id];
+        return `<button class="relic ${r.rarity} ${id === relicTipId ? 'on' : ''}" data-relic="${id}" title="${r.name}" aria-label="${r.name}">${r.icon}</button>`; }).join('')
+    : `<span class="relic-empty">없음 — ${RELIC_REWARD_WEEKS.join('·')}주차 결산 보상이나 암시장에서 얻는다</span>`);
+  const tip = $('relicTip');
+  if(relicTipId){
+    const r = RELIC_BY_ID[relicTipId];
+    tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${r.desc}<i>${r.flavor}</i>`;
+    tip.hidden = false;
+  } else tip.hidden = true;
+}
+
+$('relicBar').addEventListener('click', e => {
+  const b = e.target.closest('[data-relic]');
+  if(!b) return;
+  relicTipId = relicTipId === b.dataset.relic ? '' : b.dataset.relic;   // 다시 누르면 닫힘
+  renderRelics();
+});
 
 /* ── 암시장 ── */
 function renderTabs(){
@@ -2814,6 +3007,12 @@ function renderShop(){
         <button class="buy-btn" data-single="${i}" ${bought || singlesLeft <= 0 || run.cash < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
+    <span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>
+    <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
+      const r = RELIC_BY_ID[id], price = RELIC_PRICE[r.rarity], owned = hasRelic(id);
+      return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.cash < price ? 'disabled' : ''}>${owned ? '보유 중' : `₩${price.toLocaleString()}만 구매`}</button>` });
+    }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
+
     <span class="section-label">▌ 카드 제거 (덱 압축) — 주 ${SHOP_REMOVE_LIMIT}회 · 이번 주 ₩${removeCost.toLocaleString()}만 (주차마다 +₩${SHOP_REMOVE_PER_WEEK}만)</span>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
       cardHtml(CARD_BY_ID[id], { attrs: canRemove ? `data-shop-remove="${i}"` : '', cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
@@ -2840,7 +3039,9 @@ $('shopBox').addEventListener('click', e => {
   const pk = e.target.closest('[data-pack]');
   const single = e.target.closest('[data-single]');
   const rm = e.target.closest('[data-shop-remove]');
-  if(pk) buyPack(pk.dataset.pack);
+  const relic = e.target.closest('[data-buy-relic]');
+  if(relic) buyRelic(relic.dataset.buyRelic);
+  else if(pk) buyPack(pk.dataset.pack);
   else if(single) buySingle(+single.dataset.single);
   else if(rm){ const i = +rm.dataset.shopRemove; shopPickIdx = shopPickIdx === i ? -1 : i; }
   else if(e.target.closest('#shopRemoveBtn')){ if(shopRemoveCard(shopPickIdx)) shopPickIdx = -1; }
@@ -2856,11 +3057,13 @@ $('shopBox').addEventListener('click', e => {
 function buildCollection(){
   const augments = CARDS.filter(c => c.type !== 'stock' && c.type !== 'status').length;
   $('collectionSub').textContent = `종목 ${STOCKS.length} · 증강 ${augments} · 상태 ${CARDS.filter(c => c.type === 'status').length}`;
+  $('collectionSub').textContent += ` · 유물 ${RELICS.length}`;
   $('collectionBox').innerHTML = TYPE_ORDER.map(t => {
     const list = CARDS.filter(c => c.type === t);
     return `<div class="pile-title">▌ ${TYPE_LABEL[t]} (${list.length})</div>
       <div class="coll-grid">${list.map(c => cardHtml(c, {})).join('')}</div>`;
-  }).join('');
+  }).join('') + `<div class="pile-title">▌ 유물 (${RELICS.length})</div>
+      <div class="relic-row">${RELICS.map(r => relicTile(r, {})).join('')}</div>`;
 }
 
 /* ── 연출 (원본 유지) ── */
@@ -2895,6 +3098,7 @@ function cashRain(){
 ══════════════════════════════════════════════════════════ */
 function startRun(){
   selectedIdx = -1;
+  relicTipId = ''; relicSig = '';
   chartTarget = 'idx';
   handSig = ''; posSig = '';
   hideOverlay();
@@ -2987,6 +3191,8 @@ document.addEventListener('keydown', e => {
 });
 
 $('overlay').addEventListener('click', e => {
+  const rr = e.target.closest('[data-relic-reward]');
+  if(rr){ hideOverlay(); chooseReward('relic', rr.dataset.relicReward); renderAll(); return; }
   const r = e.target.closest('[data-reward]');
   if(r){ hideOverlay(); chooseReward('take', r.dataset.reward); renderAll(); return; }
   const rm = e.target.closest('[data-remove]');
