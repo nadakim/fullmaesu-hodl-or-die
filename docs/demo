@@ -562,6 +562,59 @@ body::after{
   box-shadow:0 0 0 2px var(--purple),0 0 0 4px #000,5px 5px 0 #000;
   transform:translate(-2px,-2px);
 }
+.tabnav button.locked{color:var(--line);cursor:not-allowed;}
+.tabnav button.locked:hover{color:var(--muted);}
+.shop-locked{
+  margin-top:24px;padding:28px 18px;text-align:center;background:var(--panel);
+  box-shadow:0 0 0 2px var(--line),4px 4px 0 #000;
+  font-family:'Press Start 2P';font-size:10px;color:var(--muted);line-height:1.8;
+}
+.shop-locked small{display:block;margin-top:10px;font-family:'VT323';font-size:18px;}
+.shop-bar{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;background:#000;box-shadow:0 0 0 2px var(--purple),3px 3px 0 #000;
+  font-family:'Press Start 2P';font-size:8.5px;line-height:2;color:var(--muted);
+}
+.shop-bar b{color:var(--gold);font-weight:normal;}
+.shop-bar .open-btn{width:auto;margin:0;padding:10px 14px;font-size:9px;}
+.shop-note{font-family:'VT323';font-size:16px;color:var(--muted);margin:6px 2px 0;}
+.pack-row{gap:16px;padding:6px 6px 10px;flex-wrap:wrap;overflow:visible;}
+.pack-col{display:flex;flex-direction:column;gap:8px;width:170px;}
+.pack{width:100%;height:auto;min-height:150px;gap:7px;padding:12px 8px;border:none;color:var(--text);}
+.pack .pk-icon{font-size:24px;font-family:'VT323';}
+.pack .pk-price{color:var(--gold);font-size:9px;}
+.pack .pk-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:7.5px;color:var(--muted);}
+.pack .pk-desc{font-family:'VT323';font-size:15px;color:var(--muted);}
+.pack.disabled,.pack:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.pk-detail{font-family:'VT323';font-size:15px;color:var(--muted);}
+.pk-detail summary{cursor:pointer;font-family:'Press Start 2P';font-size:6.5px;color:var(--cyan);}
+.pk-detail ol{margin:6px 0 0;padding-left:0;list-style:none;max-height:180px;overflow-y:auto;}
+.pk-detail li{display:flex;justify-content:space-between;gap:6px;padding:1px 4px;}
+.pk-detail li:nth-child(odd){background:var(--panel);}
+.deck-list.shop-singles,.deck-list.shop-remove{justify-content:flex-start;max-height:none;overflow:visible;}
+.shop-item{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.buy-btn{
+  border:none;cursor:pointer;padding:7px 10px;min-width:108px;
+  font-family:'Press Start 2P';font-size:7.5px;background:var(--green-dim);color:var(--green);
+  box-shadow:0 0 0 2px var(--green2),2px 2px 0 #000;
+}
+.buy-btn:disabled{background:var(--panel);color:var(--muted);box-shadow:0 0 0 2px var(--line);cursor:not-allowed;}
+.shop-remove .card[data-shop-remove]{cursor:pointer;}
+.shop-remove .card.picked{transform:translate(-2px,-5px);box-shadow:0 0 0 2px var(--red),0 0 0 4px #000,5px 7px 0 #000;}
+.shop-remove-btn{max-width:360px;}
+
+/* 팩 개봉: 카드가 한 번 뒤집히는 것뿐 */
+.flip-stage{perspective:600px;display:flex;justify-content:center;padding:10px 0 16px;}
+.flip-card{position:relative;width:108px;height:158px;transform-style:preserve-3d;animation:cardFlip .6s steps(6) .2s both;}
+@keyframes cardFlip{from{transform:rotateY(180deg);}to{transform:rotateY(0);}}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+.flip-face .card{cursor:default;}
+.flip-back{
+  transform:rotateY(180deg);display:flex;align-items:center;justify-content:center;
+  background:var(--panel2);box-shadow:0 0 0 2px var(--purple),0 0 0 4px #000,3px 3px 0 #000;
+  font-family:'Press Start 2P';font-size:22px;color:var(--purple);
+}
+@media (prefers-reduced-motion: reduce){ .flip-card{animation:none;} }
 
 /* ═══════════════════════════════════════════════════════════
    04 EVENT
@@ -1016,25 +1069,8 @@ body::after{
   <!-- ====== 03 SHOP ====== -->
   <section id="screen-shop" class="screen">
     <div class="shop-title">◈ 암시장 상점</div>
-    <div class="shop-sub">지하주차장 트렁크 · 오늘만 특가 · 문의 금지</div>
-    <span class="section-label">▌ 카드 팩 구매</span>
-    <div class="pack-row">
-      <div class="pack">
-        <div style="font-size:22px;font-family:'VT323'">📦</div>
-        <div>잡코인 팩</div>
-        <div style="color:var(--gold);font-size:8px;">₩120만</div>
-      </div>
-      <div class="pack">
-        <div style="font-size:22px;font-family:'VT323'">🧧</div>
-        <div>주도주 팩</div>
-        <div style="color:var(--gold);font-size:8px;">₩350만</div>
-      </div>
-      <div class="pack">
-        <div style="font-size:22px;font-family:'VT323'">💀</div>
-        <div>파산각 팩</div>
-        <div style="color:var(--red);font-size:8px;">₩666만</div>
-      </div>
-    </div>
+    <div class="shop-sub">지하주차장 트렁크 · 주말에만 영업 · 문의 금지</div>
+    <div id="shopBox"></div>
   </section>
 
   <!-- ====== 04 EVENT ====== -->
@@ -1124,6 +1160,27 @@ const HEDGE_RATIO         = 0.30;  // 인버스 헤지: 롱 노출액의 30%
 const HEDGE_STOCK         = 'inv'; // 인버스 헤지로 사는 종목
 const OVERDRAFT_AMOUNT    = 1500;  // 마이너스 통장 (만원)
 const SAVINGS_AMOUNT      = 800;   // 적금 깨기 (만원)
+
+// 암시장 (주간 결산 → 보상 선택 후, 다음 주 개장 전까지만 열림). 돈은 현금(=순자산)에서 나간다.
+// 카드 팩: 희귀도를 weights로 먼저 뽑고, 그 희귀도 안에서 풀의 카드를 균등하게 뽑는다 → 화면의 %가 곧 실제 확률.
+// pool이 빈 배열이면 전체 카드(상태 카드 제외).
+const SHOP_PACKS = [
+  { id:'junk',   name:'잡코인 팩', icon:'📦', price:250, desc:'싸다. 대부분 일반 카드.',
+    weights:{ common:70, uncommon:25, legendary:5 },  pool:[] },
+  { id:'leader', name:'주도주 팩', icon:'🧧', price:500, desc:'고급 이상이 과반.',
+    weights:{ common:30, uncommon:55, legendary:15 }, pool:[] },
+  { id:'ruin',   name:'파산각 팩', icon:'💀', price:666, desc:'고위험 카드만. 전설 40%.',
+    weights:{ common:15, uncommon:45, legendary:40 },
+    pool:['credit', 'hodl', 'avgDown', 'short', 'forgotPw', 'pump', 'ceoTweet', 'overdraft',
+          'stk_meme', 'stk_sc', 'stk_coin', 'stk_inv2', 'yolo', 'fullBuy', 'hodlWins', 'diamond'] }
+];
+const SHOP_SINGLE_MIN     = 3;     // 낱장 진열 최소 장수
+const SHOP_SINGLE_MAX     = 5;     // 낱장 진열 최대 장수
+const SHOP_SINGLE_LIMIT   = 1;     // 주당 낱장 구매 가능 수
+const SHOP_SINGLE_PRICE   = { common:300, uncommon:550, legendary:1000 }; // 낱장 정가 (만원)
+const SHOP_REMOVE_BASE    = 400;   // 카드 제거 기본 비용 (만원)
+const SHOP_REMOVE_PER_WEEK = 200;  // 주차가 지날 때마다 제거 비용 증가
+const SHOP_REMOVE_LIMIT   = 1;     // 주당 제거 가능 수
 
 /* 종목. 인버스 종목은 beta가 음수 → 같은 가격 공식으로 지수와 반대로 움직인다. */
 const STOCKS = [
@@ -1993,7 +2050,7 @@ function drawCards(n){
 /* ── 한 판 / 하루(장전 → 장중 → 장 마감) / 한 주 ── */
 function newRun(){
   return {
-    phase: 'premarket',          // premarket | market | reward | over
+    phase: 'premarket',          // premarket | market | reward | shop | over
     round: 1, day: 1, tickInDay: 0,
     cash: START_CASH, realized: 0, interestPaid: 0, overdraft: 0,
     liquidations: 0, peakEquity: START_CASH,
@@ -2004,7 +2061,8 @@ function newRun(){
     // 오늘만 유효한 효과 (startDay에서 초기화)
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
     eventTicksLeft: 0, ticksSinceEvent: 0,
-    rewardChoices: [], endReason: '', endEquity: 0
+    rewardChoices: [], endReason: '', endEquity: 0,
+    shop: { singles: [], singlesBought: [], removed: 0 }
   };
 }
 
@@ -2140,6 +2198,105 @@ function chooseReward(kind, value){
     run.masterDeck.splice(value, 1);
   }
   emit('rewardChosen', {kind, cardId, deckSize: run.masterDeck.length});
+  openShop();
+  return true;
+}
+
+/* ══ 암시장: phase 'shop' 동안만 거래 가능 ══ */
+const SHOP_PACK_BY_ID = {};
+SHOP_PACKS.forEach(pk => { SHOP_PACK_BY_ID[pk.id] = pk; });
+const RARITIES = ['common', 'uncommon', 'legendary'];
+
+function packPool(pk){
+  const ids = pk.pool.length ? pk.pool : CARDS.filter(c => c.type !== 'status').map(c => c.id);
+  return ids.filter(id => CARD_BY_ID[id]);
+}
+
+/* 희귀도별 실제 확률 (풀에 없는 희귀도는 빼고 다시 나눈다) */
+function packRarityOdds(pk){
+  const pool = packPool(pk);
+  const present = RARITIES.filter(r => pool.some(id => CARD_BY_ID[id].rarity === r));
+  const total = present.reduce((sum, r) => sum + pk.weights[r], 0);
+  return present.map(r => ({ rarity: r, chance: pk.weights[r] / total }));
+}
+
+/* 카드별 실제 확률 */
+function packCardOdds(pk){
+  const pool = packPool(pk);
+  const out = [];
+  packRarityOdds(pk).forEach(o => {
+    const ids = pool.filter(id => CARD_BY_ID[id].rarity === o.rarity);
+    ids.forEach(id => out.push({ cardId: id, chance: o.chance / ids.length }));
+  });
+  return out;
+}
+
+function rollPack(pk){
+  const odds = packRarityOdds(pk);
+  let roll = Math.random(), rarity = odds[odds.length - 1].rarity;
+  for(let i = 0; i < odds.length; i++){
+    roll -= odds[i].chance;
+    if(roll < 0){ rarity = odds[i].rarity; break; }
+  }
+  const ids = packPool(pk).filter(id => CARD_BY_ID[id].rarity === rarity);
+  return ids[randInt(ids.length)];
+}
+
+const shopRemoveCost = () => SHOP_REMOVE_BASE + SHOP_REMOVE_PER_WEEK * (run.round - 1);
+const singlePrice    = id => SHOP_SINGLE_PRICE[CARD_BY_ID[id].rarity];
+const shopOpenNow    = () => !!run && run.phase === 'shop';
+
+function openShop(){
+  run.phase = 'shop';
+  const count = SHOP_SINGLE_MIN + randInt(SHOP_SINGLE_MAX - SHOP_SINGLE_MIN + 1);
+  run.shop = { singles: rollRewards(count), singlesBought: [], removed: 0 };
+  emit('shopOpen', {round: run.round});
+}
+
+function shopReject(reason){ emit('shopRejected', {reason}); return false; }
+
+function buyPack(packId){
+  const pk = SHOP_PACK_BY_ID[packId];
+  if(!shopOpenNow() || !pk) return shopReject('phase');
+  if(run.cash < pk.price) return shopReject('cash');
+  run.cash -= pk.price;
+  const cardId = rollPack(pk);
+  run.masterDeck.push(cardId);
+  emit('packOpened', {packId, cardId, deckSize: run.masterDeck.length});
+  return cardId;
+}
+
+function buySingle(idx){
+  if(!shopOpenNow()) return shopReject('phase');
+  const cardId = run.shop.singles[idx];
+  if(!cardId || run.shop.singlesBought.indexOf(idx) >= 0) return shopReject('sold');
+  if(run.shop.singlesBought.length >= SHOP_SINGLE_LIMIT) return shopReject('limit');
+  const price = singlePrice(cardId);
+  if(run.cash < price) return shopReject('cash');
+  run.cash -= price;
+  run.shop.singlesBought.push(idx);
+  run.masterDeck.push(cardId);
+  emit('singleBought', {cardId, price, deckSize: run.masterDeck.length});
+  return true;
+}
+
+function shopRemoveCard(deckIdx){
+  if(!shopOpenNow()) return shopReject('phase');
+  if(run.shop.removed >= SHOP_REMOVE_LIMIT) return shopReject('limit');
+  if(run.masterDeck.length <= MIN_DECK_SIZE) return shopReject('deckMin');
+  if(deckIdx < 0 || deckIdx >= run.masterDeck.length) return shopReject('none');
+  const price = shopRemoveCost();
+  if(run.cash < price) return shopReject('cash');
+  run.cash -= price;
+  const cardId = run.masterDeck[deckIdx];
+  run.masterDeck.splice(deckIdx, 1);
+  run.shop.removed++;
+  emit('shopRemoved', {cardId, price, deckSize: run.masterDeck.length});
+  return true;
+}
+
+function leaveShop(){
+  if(!shopOpenNow()) return false;
   startNextRound();
   return true;
 }
@@ -2171,7 +2328,8 @@ function checkBankruptcy(){
 ══════════════════════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
 let currentTab = 'title';
-let chartTarget = 'idx';   // 큰 차트에 보이는 것: 'idx'(지수) 또는 종목 id
+let chartTarget = 'idx';
+let shopPickIdx = -1;      // 암시장 카드 제거에서 고른 덱 카드   // 큰 차트에 보이는 것: 'idx'(지수) 또는 종목 id
 let overlayOpen = false;
 let selectedIdx = -1;      // 대상 지정 중인 손패 카드 (-1 = 없음)
 let lastRoundClear = null; // 카드 제거 화면에서 보상 화면으로 돌아갈 때 사용
@@ -2183,6 +2341,11 @@ const RARITY_LABEL = { common:'일반', uncommon:'고급', legendary:'전설' };
 const TARGET_LABEL = { position:'▶포지션', asset:'▶종목' };
 const ORDER_LABEL  = { stop:'손절 예약', take:'익절 예약', trail:'트레일링 스탑' };
 const FORCED_NEWS  = { BULL:'연준 비둘기 발언! 강세장 진입', BEAR:'연준 매파 발언! 약세장 진입', VOLATILE:'CEO 밈 트윗으로 변동성 폭발!' };
+const SHOP_REJECT_TEXT = {
+  phase:'암시장은 라운드 종료 후 이용 가능', cash:'현금이 부족합니다',
+  limit:'이번 주에는 더 이상 할 수 없습니다', sold:'이미 산 카드입니다',
+  deckMin:`덱은 ${MIN_DECK_SIZE}장 아래로 줄일 수 없습니다`, none:'카드를 고르세요'
+};
 const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
   invalid:'지금은 쓸 수 없는 카드입니다', target:'대상을 고르세요',
@@ -2273,6 +2436,15 @@ function onGameEvent(type, d){
       else toast('보상 건너뜀', 'info');
       break;
     case 'roundStart': toast(`WEEK ${d.round} 개장 — 목표 ${fmtMoney(d.target)}`, 'good'); break;
+    case 'shopOpen':
+      shopPickIdx = -1;
+      toast('◈ 암시장 개장 — 다음 주 개장 전까지', 'info');
+      switchTab('shop');
+      break;
+    case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); break;
+    case 'packOpened':   showPackResult(d); break;
+    case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${d.price}만 · 덱 ${d.deckSize}장`, 'good'); break;
+    case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${d.price}만 · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver': showRunOver(d.reason); break;
   }
 }
@@ -2406,8 +2578,10 @@ function renderTurn(){
   $('chipBox').innerHTML = chips.join('');
 
   const btn = $('openBtn');
-  btn.disabled = !pre;
-  btn.textContent = pre ? '▶ 장 시작' : run.phase === 'market' ? `장중 · 캔들 ${run.tickInDay}/${TICKS_PER_DAY}` : '결산 중';
+  const shop = run.phase === 'shop';
+  btn.disabled = !pre && !shop;
+  btn.textContent = pre ? '▶ 장 시작' : shop ? '◈ 암시장에 들렀다가 다음 주 개장'
+    : run.phase === 'market' ? `장중 · 캔들 ${run.tickInDay}/${TICKS_PER_DAY}` : '결산 중';
   $('handHint').textContent = selectedIdx >= 0 ? '대상을 클릭 · 다시 누르면 취소'
     : pre ? '카드를 눌러 사용' : '장중에는 카드 사용 불가';
 }
@@ -2493,6 +2667,7 @@ function renderPositions(){
 }
 
 function renderAll(){
+  renderTabs();
   if(!run) return;
   if(run.phase !== 'premarket') selectedIdx = -1;
   renderMainChart();
@@ -2504,7 +2679,7 @@ function renderAll(){
 }
 
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
-function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && currentTab === 'play'); }
+function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && (currentTab === 'play' || currentTab === 'shop')); }
 function showOverlay(html){ $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); }
 function hideOverlay(){ overlayOpen = false; syncOverlay(); }
 function statRow(label, value){ return `<div>${label}<b>${value}</b></div>`; }
@@ -2571,6 +2746,103 @@ function showRunOver(reason){
   if(reason === 'VICTORY') cashRain();
 }
 
+/* ── 암시장 ── */
+function renderTabs(){
+  const b = document.querySelector('.tabnav button[data-s="shop"]');
+  const locked = !shopOpenNow();
+  b.classList.toggle('locked', locked);
+  b.textContent = locked ? '03 암시장 🔒' : '03 암시장 ◈';
+  b.title = locked ? '라운드 종료 후 이용 가능' : '다음 주 개장 전까지 이용 가능';
+}
+
+const fmtChance = c => (Math.round(c * 1000) / 10) + '%';
+
+function packHtml(pk){
+  const afford = run.cash >= pk.price;
+  const odds = packRarityOdds(pk).map(o => `<span class="c-rar ${o.rarity}">${RARITY_LABEL[o.rarity]} ${fmtChance(o.chance)}</span>`).join('');
+  const cards = packCardOdds(pk).sort((a, b) => b.chance - a.chance || CARD_ORDER[a.cardId] - CARD_ORDER[b.cardId]);
+  return `
+    <div class="pack-col">
+      <button class="pack ${afford ? '' : 'disabled'}" data-pack="${pk.id}">
+        <div class="pk-icon">${pk.icon}</div>
+        <div>${pk.name}</div>
+        <div class="pk-price">₩${pk.price.toLocaleString()}만</div>
+        <div class="pk-odds">${odds}</div>
+        <div class="pk-desc">${pk.desc}</div>
+      </button>
+      <details class="pk-detail">
+        <summary>카드별 확률 (${cards.length}종)</summary>
+        <ol>${cards.map(o => `<li><span class="c-rar ${CARD_BY_ID[o.cardId].rarity}">${CARD_BY_ID[o.cardId].name}</span><span>${fmtChance(o.chance)}</span></li>`).join('')}</ol>
+      </details>
+    </div>`;
+}
+
+function renderShop(){
+  const box = $('shopBox');
+  if(!shopOpenNow()){
+    box.innerHTML = `<div class="shop-locked">🔒 라운드 종료 후 이용 가능
+      <small>주간 결산에서 목표를 달성하고 보상을 고르면, 다음 주 개장 전까지 열립니다.</small></div>`;
+    return;
+  }
+  const sh = run.shop, removeCost = shopRemoveCost();
+  const singlesLeft = SHOP_SINGLE_LIMIT - sh.singlesBought.length;
+  const canRemove = sh.removed < SHOP_REMOVE_LIMIT && run.masterDeck.length > MIN_DECK_SIZE;
+  if(shopPickIdx >= run.masterDeck.length) shopPickIdx = -1;
+  box.innerHTML = `
+    <div class="shop-bar">
+      <span>WEEK ${run.round} 결산 완료 · 현금 <b>${fmtMoney(run.cash)}</b> · 덱 <b>${run.masterDeck.length}장</b><br>
+        다음 주 목표 <b>${fmtMoney(ROUND_TARGETS[run.round])}</b> · 순자산 <b>${fmtMoney(netEquity())}</b></span>
+      <button class="open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
+    </div>
+    <div class="shop-note">여기서 쓰는 돈은 현금(=순자산)에서 빠집니다. 다음 주 목표와 저울질하세요.</div>
+
+    <span class="section-label">▌ 카드 팩 — 1장 무작위 · 희귀도 확률 공개</span>
+    <div class="pack-row">${SHOP_PACKS.map(packHtml).join('')}</div>
+
+    <span class="section-label">▌ 낱장 구매 — 원하는 카드 확정 구매 · 주 ${SHOP_SINGLE_LIMIT}장 (남은 ${singlesLeft})</span>
+    <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
+      const bought = sh.singlesBought.indexOf(i) >= 0, price = singlePrice(id);
+      const label = bought ? '구매 완료' : singlesLeft <= 0 ? '이번 주 마감' : `₩${price.toLocaleString()}만 구매`;
+      return `<div class="shop-item">${cardHtml(CARD_BY_ID[id], {})}
+        <button class="buy-btn" data-single="${i}" ${bought || singlesLeft <= 0 || run.cash < price ? 'disabled' : ''}>${label}</button></div>`;
+    }).join('')}</div>
+
+    <span class="section-label">▌ 카드 제거 (덱 압축) — 주 ${SHOP_REMOVE_LIMIT}회 · 이번 주 ₩${removeCost.toLocaleString()}만 (주차마다 +₩${SHOP_REMOVE_PER_WEEK}만)</span>
+    <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
+      cardHtml(CARD_BY_ID[id], { attrs: canRemove ? `data-shop-remove="${i}"` : '', cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
+    <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.cash >= removeCost ? '' : 'disabled'}>
+      ${!canRemove ? (sh.removed >= SHOP_REMOVE_LIMIT ? '이번 주 제거 완료' : `덱 ${MIN_DECK_SIZE}장 이하 — 제거 불가`)
+        : shopPickIdx < 0 ? '제거할 카드를 고르세요' : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (₩${removeCost.toLocaleString()}만)`}
+    </button>`;
+}
+
+function showPackResult(d){
+  const pk = SHOP_PACK_BY_ID[d.packId], card = CARD_BY_ID[d.cardId];
+  showOverlay(`
+    <div class="ov-title" style="color:var(--purple)">${pk.icon} ${pk.name} 개봉</div>
+    <div class="flip-stage"><div class="flip-card">
+      <div class="flip-face flip-back">?</div>
+      <div class="flip-face flip-front">${cardHtml(card, {})}</div>
+    </div></div>
+    <div class="ov-sub"><span class="c-rar ${card.rarity}">${RARITY_LABEL[card.rarity]}</span> · ${card.name} — 덱에 추가 (덱 ${d.deckSize}장)</div>
+    <button class="ov-btn" data-act="close">확인</button>`);
+}
+
+$('shopBox').addEventListener('click', e => {
+  if(!run) return;
+  const pk = e.target.closest('[data-pack]');
+  const single = e.target.closest('[data-single]');
+  const rm = e.target.closest('[data-shop-remove]');
+  if(pk) buyPack(pk.dataset.pack);
+  else if(single) buySingle(+single.dataset.single);
+  else if(rm){ const i = +rm.dataset.shopRemove; shopPickIdx = shopPickIdx === i ? -1 : i; }
+  else if(e.target.closest('#shopRemoveBtn')){ if(shopRemoveCard(shopPickIdx)) shopPickIdx = -1; }
+  else if(e.target.closest('#shopLeaveBtn')){ if(leaveShop()){ switchTab('play'); return; } }
+  else return;
+  renderShop();
+  renderTabs();
+});
+
 /* ── 카드 도감 ── */
 function buildCollection(){
   const augments = CARDS.filter(c => c.type !== 'stock' && c.type !== 'status').length;
@@ -2627,6 +2899,7 @@ const tabBtns = document.querySelectorAll('.tabnav button');
 const screens = document.querySelectorAll('.screen');
 
 function switchTab(s){
+  if(s === 'shop' && !shopOpenNow()){ toast(SHOP_REJECT_TEXT.phase, 'warn'); return; }
   currentTab = s;  // 게임 화면이 아니면 시장이 멈춘다
   tabBtns.forEach(x => x.classList.toggle('active', x.dataset.s === s));
   screens.forEach(x => x.classList.toggle('active', x.id === 'screen-' + s));
@@ -2634,6 +2907,8 @@ function switchTab(s){
     if(!run || (run.phase === 'over' && !overlayOpen)) startRun();
     renderAll();
   }
+  if(s === 'shop') renderShop();
+  renderTabs();
   syncOverlay();
 }
 
@@ -2646,7 +2921,12 @@ $('startBtn').addEventListener('click', () => {
 $('collectionBtn').addEventListener('click', () => switchTab('collection'));
 $('collectionBack').addEventListener('click', () => switchTab('title'));
 
-$('openBtn').addEventListener('click', () => { selectedIdx = -1; startMarket(); renderAll(); });
+$('openBtn').addEventListener('click', () => {
+  selectedIdx = -1;
+  if(run && run.phase === 'shop'){ switchTab('shop'); return; }
+  startMarket();
+  renderAll();
+});
 $('deckBtn').addEventListener('click', () => { if(run) showDeck(); });
 $('sellAllBtn').addEventListener('click', () => { sellAllPositions(); renderAll(); });
 
@@ -2718,6 +2998,7 @@ window.addEventListener('resize', () => { if(run) renderMainChart(); });
 window.onload = () => {
   buildQuotes();
   buildCollection();
+  renderTabs();
   ambientBg.init();
   setInterval(() => {   // 장중에만, TR룸 화면에서만 시장이 움직인다
     if(currentTab !== 'play' || !run || run.phase !== 'market') return;

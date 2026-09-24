@@ -28,12 +28,12 @@
 
 - 로직 함수는 DOM(`document`, `innerHTML`, `alert`), Canvas, `setTimeout`/`setInterval`에 직접 의존하지 않는다. 입력을 받아 상태를 바꾸거나 값을 반환하고, 화면 갱신은 호출 측(UI 레이어)이 `renderUI()`/`renderChart()`로 한다.
 - `docs/demo`의 `<script>`는 세 구역으로 나뉜다. 이 경계를 유지한다:
-  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`·`RARITY_WEIGHTS`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
+  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`·`RARITY_WEIGHTS`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
   - **ENGINE** (DOM 접근 금지): 상태 `run`(한 판 전체: 현금·포지션·더미·행동력·대기 매수 효과·오늘의 효과), `assets`(종목별 가격·스파크라인 `history`·캔들 `candles`), `marketPrice`/`marketState`/`candleData`(지수).
     - 포지션 (롱·숏 공용, `dir` = +1/−1): `exposure`, `posEquity`, `posPnl`, `marginRatio`, `openPosition`(같은 종목·방향·레버리지 포지션이 있으면 `addToPosition`으로 통합), `closePosition`, `sellPosition`, `sellAllPositions`, `checkOrders`(예약주문), `checkMarginCalls`
     - 카드: `CARDS`/`CARD_BY_ID`를 `defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play)`로 정의. 사용은 `checkPlay` → `playCard(handIdx, targetId)`, 대상 목록은 `validTargetIds`
     - 더미: `buildWeekPiles`, `drawCards`, `newCard`
-    - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward` → `startNextRound`
+    - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward` → `openShop`(암시장: `buyPack`·`buySingle`·`shopRemoveCard`) → `leaveShop` → `startNextRound`
   - **UI**: `onGameEvent`가 엔진 이벤트를 받아 토스트/연출/오버레이를 띄우고, `renderAll()`이 화면을 그린다. 대상 지정 상태(`selectedIdx`)와 큰 차트에 보이는 대상(`chartTarget`: `'idx'` 또는 종목 id)은 UI에만 있다. 입력 핸들러는 엔진 함수 호출 → `renderAll()` 순서.
 - 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
