@@ -385,7 +385,7 @@ body::after{
 .hand::-webkit-scrollbar-thumb{background:var(--gold2);}
 
 .card{
-  min-width:94px;height:114px;
+  min-width:98px;height:136px;
   background:var(--panel2);
   box-shadow:0 0 0 2px var(--gold2),0 0 0 4px #000,3px 3px 0 #000;
   display:flex;flex-direction:column;
@@ -580,6 +580,103 @@ body::after{
 }
 .px-corner-box::before{top:2px;left:2px;border-width:2px 0 0 2px;}
 .px-corner-box::after{bottom:2px;right:2px;border-width:0 2px 2px 0;}
+
+/* ═══════════════════════════════════════════════════════════
+   RUN STRUCTURE / 종목 시세 / 신용 · 반대매매
+═══════════════════════════════════════════════════════════ */
+.hud{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  font-family:'Press Start 2P';font-size:7px;color:var(--cyan);
+}
+.day-track{flex:1;height:8px;background:#000;box-shadow:0 0 0 2px var(--line);}
+.day-fill{height:100%;width:0;background:var(--cyan);}
+
+.target-line{
+  display:flex;justify-content:space-between;margin-top:9px;
+  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+}
+.target-track{height:6px;background:#000;box-shadow:0 0 0 2px var(--line);margin-top:6px;}
+.target-fill{height:100%;width:0;background:var(--gold2);}
+.target-fill.done{background:var(--green);}
+
+.quotes{display:flex;flex-direction:column;gap:5px;margin-bottom:4px;}
+.quote-row{
+  display:grid;grid-template-columns:1fr 64px 62px 50px;align-items:center;gap:6px;
+  background:var(--panel);box-shadow:0 0 0 2px var(--line);
+  padding:5px 8px;font-family:'Press Start 2P';font-size:7px;
+}
+.q-name{font-size:8px;color:var(--text);}
+.q-name small{display:block;font-size:6px;color:var(--muted);margin-top:3px;}
+.quote-row canvas{width:64px;height:18px;display:block;image-rendering:pixelated;}
+.q-price,.q-chg{text-align:right;}
+
+.lev-bar{display:flex;gap:6px;margin-bottom:10px;}
+.lev-btn{
+  flex:1;padding:7px 4px;border:none;cursor:pointer;line-height:1.7;
+  background:var(--panel);color:var(--muted);
+  font-family:'Press Start 2P';font-size:7px;
+  box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
+}
+.lev-btn.active{color:var(--gold);background:rgba(255,215,0,.07);box-shadow:0 0 0 2px var(--gold2),2px 2px 0 #000;}
+.lev-btn[data-lev="3"].active{color:var(--red);background:var(--red-dim);box-shadow:0 0 0 2px var(--red),2px 2px 0 #000;}
+
+.card .price{font-size:6.5px;color:var(--cyan);}
+.card .size{font-size:6px;color:var(--red);}
+.card.disabled{opacity:.35;cursor:not-allowed;}
+.card.disabled:hover{background:var(--panel2);transform:none;color:var(--text);box-shadow:0 0 0 2px var(--gold2),0 0 0 4px #000,3px 3px 0 #000;}
+
+.lev-badge{font-size:6px;padding:1px 3px;margin-left:5px;background:var(--gold2);color:#000;vertical-align:middle;}
+.lev-badge.lev3{background:var(--red);color:#fff;}
+.ratio{font-size:6.5px;margin-top:4px;}
+.ratio.safe{color:var(--gold);}
+.ratio.danger{color:var(--red);animation:blink .6s step-end infinite;}
+.positions-wrap{max-height:190px;}
+
+.toast-layer{
+  position:fixed;top:48px;left:50%;transform:translateX(-50%);z-index:95;
+  display:flex;flex-direction:column;gap:6px;width:min(480px,92vw);pointer-events:none;
+}
+.toast{
+  background:#000;color:var(--cyan);
+  font-family:'Press Start 2P';font-size:7.5px;line-height:1.7;padding:8px 10px;
+  box-shadow:0 0 0 2px var(--cyan),3px 3px 0 #000;
+  animation:toastIn 2.6s steps(13) forwards;
+}
+.toast.bad{color:var(--red);box-shadow:0 0 0 2px var(--red),3px 3px 0 #000;}
+.toast.good{color:var(--green);box-shadow:0 0 0 2px var(--green2),3px 3px 0 #000;}
+.toast.warn{color:var(--gold);box-shadow:0 0 0 2px var(--gold2),3px 3px 0 #000;}
+@keyframes toastIn{0%{opacity:0;transform:translateY(-6px);}8%{opacity:1;transform:none;}85%{opacity:1;}100%{opacity:0;}}
+
+.overlay{
+  position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.84);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.overlay.show{display:flex;}
+.overlay-box{
+  width:100%;max-width:380px;background:var(--panel);text-align:center;padding:18px;
+  box-shadow:0 0 0 2px var(--gold2),0 0 0 4px #000,6px 6px 0 #000;
+}
+.ov-title{font-family:'Press Start 2P';font-size:13px;line-height:1.6;margin-bottom:8px;}
+.ov-sub{font-family:'VT323';font-size:19px;color:var(--text);margin-bottom:14px;line-height:1.3;}
+.ov-stats{
+  text-align:left;background:#000;box-shadow:0 0 0 2px var(--line);
+  font-family:'Press Start 2P';font-size:7.5px;line-height:2.3;color:var(--muted);
+  padding:8px 10px;margin-bottom:12px;
+}
+.ov-stats b{float:right;color:var(--text);font-weight:normal;}
+.ov-btn{
+  width:100%;padding:12px;margin-top:8px;border:none;cursor:pointer;
+  font-family:'Press Start 2P';font-size:9px;
+  background:var(--green-dim);color:var(--green);
+  box-shadow:0 0 0 2px var(--green2),4px 4px 0 #000;
+}
+.ov-btn:hover{transform:translate(-2px,-2px);}
+.ov-btn.alt{background:var(--panel2);color:var(--muted);box-shadow:0 0 0 2px var(--line),4px 4px 0 #000;}
+
+.cabinet.shake{animation:shake .4s steps(6);}
+@keyframes shake{0%,100%{transform:none;}20%{transform:translate(-4px,2px);}40%{transform:translate(4px,-2px);}60%{transform:translate(-3px,-1px);}80%{transform:translate(3px,1px);}}
+.red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut .5s steps(5) forwards;}
+@keyframes fadeOut{to{opacity:0;}}
 </style>
 </head>
 <body>
@@ -635,6 +732,12 @@ body::after{
       <span class="state-tag" id="marketStateTag">■ NORMAL</span>
     </div>
 
+    <div class="hud">
+      <span id="roundText">WEEK 1/8</span>
+      <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
+      <span id="dayText">DAY 1/5</span>
+    </div>
+
     <div class="news-banner" id="newsBanner">
       <span>
         <span class="news-title">[속보] </span>
@@ -643,42 +746,59 @@ body::after{
     </div>
 
     <div class="balance-main px-corner-box">
-      <div class="label">▌ TOTAL ASSETS</div>
+      <div class="label">▌ NET ASSETS · 순자산</div>
       <div class="total" id="totalAssets">₩ 10,000만</div>
+      <div class="target-line"><span id="targetText">WEEK 1 목표</span><span id="targetPct">0%</span></div>
+      <div class="target-track"><div class="target-fill" id="targetFill"></div></div>
     </div>
 
     <div class="assets-grid">
       <div class="asset-card">
-        <div class="label">■ CASH</div>
+        <div class="label" id="cashLabel">■ CASH</div>
         <div class="val highlight" id="availableCash">₩ 10,000만</div>
+      </div>
+      <div class="asset-card">
+        <div class="label">■ 신용대출</div>
+        <div class="val" id="debtVal">₩ 0만</div>
       </div>
       <div class="asset-card">
         <div class="label">■ REALIZED</div>
         <div class="val" id="realizedPnL">₩ 0만</div>
       </div>
+      <div class="asset-card">
+        <div class="label">■ 누적 이자</div>
+        <div class="val" id="interestVal">₩ 0만</div>
+      </div>
     </div>
 
-    <!-- pixel candlestick chart -->
+    <!-- pixel candlestick chart (시장 지수) -->
     <div class="chart-box px-corner-box" id="chartBox">
       <div class="chart-header">IDX: <span id="marketPriceText">1000</span></div>
       <canvas id="candlestickChart"></canvas>
     </div>
 
     <div class="section-title">
+      <span>▌ 종목 시세</span>
+      <span>오늘 등락</span>
+    </div>
+    <div class="quotes" id="quoteBox"></div>
+
+    <div class="section-title">
       <span>▌ 매수 종목 (손패)</span>
-      <span>클릭 = 현금 차감 후 매수</span>
+      <span>레버리지 고르고 클릭</span>
+    </div>
+    <div class="lev-bar" id="levBar">
+      <button class="lev-btn active" data-lev="1">현금<br>1x</button>
+      <button class="lev-btn" data-lev="2">신용<br>2x</button>
+      <button class="lev-btn" data-lev="3">영끌<br>3x</button>
     </div>
     <div class="hand" id="handBox"></div>
 
     <div class="section-title">
       <span>▌ 보유 포지션</span>
-      <span>실시간 평가손익</span>
+      <span>담보 140% 미만 = 반대매매</span>
     </div>
-    <div class="positions-wrap" id="positionsBox">
-      <div style="text-align:center;padding:14px;color:var(--muted);font-family:'Press Start 2P';font-size:7px;">
-        ── NO POSITION ──
-      </div>
-    </div>
+    <div class="positions-wrap" id="positionsBox"></div>
 
     <button class="sell-all-btn" id="sellAllBtn">◆ 전량 매도 (시장가 청산)</button>
   </section>
@@ -721,26 +841,42 @@ body::after{
 </div>
 
 <div class="confetti-layer" id="confettiLayer"></div>
+<div class="toast-layer" id="toastLayer"></div>
+<div class="overlay" id="overlay"><div class="overlay-box" id="overlayBox"></div></div>
 
 <script>
 /* ══════════════════════════════════════════════════════════
-   GAME STATE (원본 로직 100% 보존)
+   CONFIG — 밸런스 수치는 전부 여기서 조절
 ══════════════════════════════════════════════════════════ */
-let availableCash = 10000;
-let realizedPnL = 0;
+const START_CASH        = 10000;   // 시작 자금 (만원) = 1억
+const TICK_MS           = 800;     // 캔들 1개 = 0.8초
+const TICKS_PER_DAY     = 12;      // 하루 = 캔들 12개 (약 10초)
+const DAYS_PER_ROUND    = 5;       // 1주(라운드) = 5거래일
+const ROUND_TARGETS     = [11000, 12500, 14500, 17000, 20000, 24000, 29000, 35000]; // 주차별 순자산 목표 (만원)
+const MAX_ROUND         = ROUND_TARGETS.length;
+const DAILY_INTEREST    = 0.004;   // 신용이자: 장 마감마다 대출금의 0.4% (게임용 과장)
+const MAINTENANCE_RATIO = 1.40;    // 담보비율 140% 미만 → 반대매매
+const WARN_RATIO        = 1.70;    // 이 아래부터 위험 경고
+const IDX_SENS          = 0.6;     // 지수 움직임이 종목에 전달되는 비율 (× beta)
+const IDIO_SCALE        = 0.25;    // 종목 고유 변동 크기 (× volatility)
+const ASSET_HISTORY     = 30;      // 시세 스파크라인 길이
+const EVENT_DURATION    = 15;      // 시장 이벤트 지속 틱
+const LEVERAGE_OPTIONS  = [1, 2, 3]; // 현금 / 신용 / 영끌
+
+/* 카드 = 종목. 이제 종목마다 자기 가격(basePrice)을 따로 가진다. */
+const CARD_DATABASE = [
+  { id:'semi',   name:'반도체전자', sector:'우량주',   cost:1000, beta:1.0, volatility:0.02, basePrice:72000, desc:'안정형 / 지수 추종' },
+  { id:'coin',   name:'대장코인',   sector:'암호화폐', cost:1500, beta:2.5, volatility:0.08, basePrice:95000, desc:'고위험 / 변동성 극대' },
+  { id:'sc',     name:'초전도체',   sector:'테마주',   cost:800,  beta:3.8, volatility:0.12, basePrice:12000, desc:'하이리스크' },
+  { id:'gukbap', name:'국밥제약',   sector:'방어주',   cost:500,  beta:0.4, volatility:0.01, basePrice:8500,  desc:'하락장에 강함' },
+  { id:'meme',   name:'밈코인',     sector:'동전주',   cost:300,  beta:5.0, volatility:0.20, basePrice:420,   desc:'급등락 심함' }
+];
+const MIN_CARD_COST = Math.min(...CARD_DATABASE.map(c => c.cost));
+
+/* 지수(메인 캔들 차트) — 시장 전체 분위기 */
 let marketPrice = 1000;
 let marketState = 'NORMAL';
 
-let openPositions = [];
-
-const CARD_DATABASE = [
-  { name: '반도체전자', sector: '우량주', cost: 1000, beta: 1.0, volatility: 0.02, desc: '안정형 / 지수 추종' },
-  { name: '대장코인',   sector: '암호화폐', cost: 1500, beta: 2.5, volatility: 0.08, desc: '고위험 / 변동성 극대' },
-  { name: '초전도체',   sector: '테마주',   cost: 800,  beta: 3.8, volatility: 0.12, desc: '하이리스크' },
-  { name: '국밥제약',   sector: '방어주',   cost: 500,  beta: 0.4, volatility: 0.01, desc: '하락장에 강함' },
-  { name: '밈코인',     sector: '동전주',   cost: 300,  beta: 5.0, volatility: 0.20, desc: '급등락 심함' }
-];
-let handCards = [];
 
 /* ══════════════════════════════════════════════════════════
    PIXEL BACKGROUND CANVAS
@@ -1037,9 +1173,9 @@ function pushNewCandle(){
   marketPrice = newCandle.close;
   candleData.push(newCandle);
   if(candleData.length > MAX_CANDLES) candleData.shift();
-  renderChart();
-  renderUI();
+  return Math.log(newCandle.close / lastClose); // 지수 로그수익률 → 개별 종목에 전달
 }
+
 
 const cc = document.getElementById('candlestickChart');
 const cctx = cc.getContext('2d', {antialias: false});
@@ -1115,62 +1251,8 @@ function renderChart(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   BUY / SELL LOGIC (원본 보존)
-══════════════════════════════════════════════════════════ */
-function buyPosition(cardIndex){
-  const card = handCards[cardIndex];
-  if(!card) return;
-  if(availableCash < card.cost){ alert('가용 현금이 부족합니다!'); return; }
-  availableCash -= card.cost;
-  const shares = card.cost / marketPrice;
-  openPositions.push({
-    id: Date.now()+Math.random(),
-    name: card.name, sector: card.sector,
-    costBasis: card.cost, buyPrice: marketPrice,
-    shares, beta: card.beta, volatility: card.volatility
-  });
-  handCards[cardIndex] = CARD_DATABASE[Math.floor(Math.random()*CARD_DATABASE.length)];
-  renderUI();
-}
-
-function sellPosition(positionId){
-  const idx = openPositions.findIndex(p=>p.id===positionId);
-  if(idx===-1) return;
-  const pos = openPositions[idx];
-  const curVal = calculatePositionValue(pos);
-  const pnl = curVal - pos.costBasis;
-  availableCash += curVal;
-  realizedPnL += pnl;
-  openPositions.splice(idx,1);
-  showPopNum((pnl>=0?'+':'')+Math.round(pnl)+'만', pnl>=0);
-  if(pnl>500) cashRain();
-  renderUI();
-}
-
-function sellAllPositions(){
-  if(openPositions.length===0) return;
-  let totalPnl = 0;
-  openPositions.forEach(pos=>{
-    const curVal = calculatePositionValue(pos);
-    const pnl = curVal - pos.costBasis;
-    availableCash += curVal;
-    realizedPnL += pnl;
-    totalPnl += pnl;
-  });
-  openPositions = [];
-  showPopNum('청산: '+(totalPnl>=0?'+':'')+Math.round(totalPnl)+'만', totalPnl>=0);
-  if(totalPnl>1000) cashRain();
-  renderUI();
-}
-
-function calculatePositionValue(pos){
-  const mktReturn = (marketPrice - pos.buyPrice) / pos.buyPrice;
-  const posReturn  = mktReturn * pos.beta;
-  return Math.max(0, pos.costBasis*(1+posReturn));
-}
-
-/* ══════════════════════════════════════════════════════════
-   MARKET EVENTS (원본 보존)
+   ENGINE — 게임 규칙 (DOM 접근 없음 → 나중에 C#으로 그대로 번역 가능)
+   UI에는 emit()으로 이벤트만 알린다.
 ══════════════════════════════════════════════════════════ */
 const MARKET_EVENTS = [
   { text:'FED, 기준 금리 전격 인하! 폭등장 시작!', state:'BULL' },
@@ -1180,76 +1262,439 @@ const MARKET_EVENTS = [
   { text:'글로벌 공급망 차질 우려, 시장 혼조세', state:'VOLATILE' }
 ];
 
-function triggerMarketEvent(){
-  const ev = MARKET_EVENTS[Math.floor(Math.random()*MARKET_EVENTS.length)];
-  marketState = ev.state;
-  document.getElementById('newsText').textContent = ev.text;
-  document.getElementById('marketStateTag').textContent = '■ '+ev.state;
-  setTimeout(()=>{
-    marketState = 'NORMAL';
-    document.getElementById('marketStateTag').textContent = '■ NORMAL';
-    document.getElementById('newsText').textContent = '시장이 평온한 흐름을 유지 중입니다.';
-  }, 12000);
+let run = null;     // 한 판의 모든 상태
+let assets = {};    // 종목별 가격 상태 { price, dayOpen, history[] }
+
+function emit(type, data){ onGameEvent(type, data || {}); }
+
+function gauss(){ // 표준정규분포 난수 (Box-Muller)
+  let u = 0, v = 0;
+  while(u === 0) u = Math.random();
+  while(v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-/* ══════════════════════════════════════════════════════════
-   UI RENDER
-══════════════════════════════════════════════════════════ */
-function renderUI(){
-  let totalPosVal = 0;
-  openPositions.forEach(pos=>{ totalPosVal += calculatePositionValue(pos); });
-  const totalAssets = availableCash + totalPosVal;
-
-  document.getElementById('totalAssets').textContent  = '₩ '+Math.round(totalAssets).toLocaleString()+'만';
-  document.getElementById('availableCash').textContent = '₩ '+Math.round(availableCash).toLocaleString()+'만';
-
-  const pnlEl = document.getElementById('realizedPnL');
-  pnlEl.textContent = '₩ '+(realizedPnL>=0?'+':'')+Math.round(realizedPnL).toLocaleString()+'만';
-  pnlEl.style.color = realizedPnL>=0 ? 'var(--green)' : 'var(--red)';
-
-  document.getElementById('marketPriceText').textContent = Math.round(marketPrice).toLocaleString();
-
-  const handBox = document.getElementById('handBox');
-  handBox.innerHTML = '';
-  handCards.forEach((card,idx)=>{
-    const el = document.createElement('div');
-    el.className = 'card';
-    el.onclick = ()=>buyPosition(idx);
-    el.innerHTML = `
-      <div class="sym">${card.name}</div>
-      <div class="sector">${card.sector}</div>
-      <div class="cost">₩${card.cost}만</div>
-      <div class="beta">β ${card.beta}</div>`;
-    handBox.appendChild(el);
+function initAssets(){
+  assets = {};
+  CARD_DATABASE.forEach(c => {
+    assets[c.id] = { price: c.basePrice, dayOpen: c.basePrice, history: Array(ASSET_HISTORY).fill(c.basePrice) };
   });
+  // 시작 시 차트가 비어 보이지 않도록 과거 시세를 미리 만들어 둔다
+  for(let i = 0; i < ASSET_HISTORY; i++) updateAssetPrices(gauss() * 0.01);
+  CARD_DATABASE.forEach(c => { assets[c.id].dayOpen = assets[c.id].price; });
+}
 
-  const posBox = document.getElementById('positionsBox');
-  if(openPositions.length===0){
-    posBox.innerHTML = `<div style="text-align:center;padding:14px;color:var(--muted);font-family:'Press Start 2P';font-size:7px;">── NO POSITION ──</div>`;
-  } else {
-    posBox.innerHTML = '';
-    openPositions.forEach(pos=>{
-      const curVal = calculatePositionValue(pos);
-      const pnl = curVal - pos.costBasis;
-      const pnlPct = ((pnl/pos.costBasis)*100).toFixed(1);
-      const item = document.createElement('div');
-      item.className = 'pos-item';
-      item.innerHTML = `
-        <div class="pos-info">
-          <div class="name">${pos.name}</div>
-          <div class="detail">BUY:${Math.round(pos.buyPrice)} | ₩${pos.costBasis}만</div>
-        </div>
-        <div class="pos-pnl">
-          <div class="val ${pnl>=0?'pnl-up':'pnl-down'}">
-            ${pnl>=0?'+':''}${Math.round(pnl)}만 (${pnlPct}%)
-          </div>
-          <button class="sell-btn" onclick="sellPosition(${pos.id})">매도</button>
-        </div>`;
-      posBox.appendChild(item);
-    });
+/* 종목 수익률 = 지수 수익률 × beta × 전달비율 + 종목 고유 랜덤 변동(volatility) */
+function updateAssetPrices(idxLogRet){
+  CARD_DATABASE.forEach(c => {
+    const a = assets[c.id];
+    const r = c.beta * idxLogRet * IDX_SENS + c.volatility * IDIO_SCALE * gauss();
+    a.price *= Math.exp(r);
+    a.history.push(a.price);
+    if(a.history.length > ASSET_HISTORY) a.history.shift();
+  });
+}
+
+function drawCard(){ return CARD_DATABASE[Math.floor(Math.random() * CARD_DATABASE.length)]; }
+
+function newRun(){
+  return {
+    phase: 'trading',            // trading | roundResult | over
+    round: 1, day: 1, tickInDay: 0,
+    cash: START_CASH, realized: 0, interestPaid: 0, lastInterest: 0,
+    liquidations: 0, peakEquity: START_CASH,
+    positions: [], hand: Array.from({length: 5}, drawCard),
+    leverage: 1, eventTicksLeft: 0, ticksSinceEvent: 0,
+    nextPosId: 1, endReason: null, endEquity: 0
+  };
+}
+
+const positionValue      = p => p.shares * assets[p.assetId].price;
+const collateralRatio    = p => p.loan > 0 ? positionValue(p) / p.loan : Infinity;
+const totalDebt          = () => run.positions.reduce((s, p) => s + p.loan, 0);
+const totalPositionValue = () => run.positions.reduce((s, p) => s + positionValue(p), 0);
+const netEquity          = () => run.cash + totalPositionValue() - totalDebt(); // 순자산
+const currentTarget      = () => ROUND_TARGETS[run.round - 1];
+
+/* 매수: 카드 비용 = 내 돈. 레버리지만큼 대출을 더해 포지션 크기를 키운다. */
+function buyPosition(handIdx){
+  if(!run || run.phase !== 'trading') return false;
+  const card = run.hand[handIdx];
+  if(!card) return false;
+  if(run.cash < card.cost){ emit('insufficient', {card}); return false; }
+  const lev = run.leverage;
+  const price = assets[card.id].price;
+  run.cash -= card.cost;
+  run.positions.push({
+    id: run.nextPosId++, assetId: card.id, name: card.name, lev,
+    ownCost: card.cost,                // 내 원금
+    loan: card.cost * (lev - 1),       // 신용 대출금
+    shares: card.cost * lev / price,
+    buyPrice: price
+  });
+  run.hand[handIdx] = drawCard();
+  return true;
+}
+
+/* 청산: 평가액으로 대출을 먼저 갚고 남은 돈이 현금으로 (모자라면 미수 = 음수 현금) */
+function closePosition(pos){
+  const proceeds = positionValue(pos) - pos.loan;
+  const pnl = proceeds - pos.ownCost;
+  run.cash += proceeds;
+  run.realized += pnl;
+  run.positions = run.positions.filter(p => p !== pos);
+  return pnl;
+}
+
+function sellPosition(id){
+  if(!run || run.phase !== 'trading') return;
+  const pos = run.positions.find(p => p.id === id);
+  if(!pos) return;
+  emit('sold', {pnl: closePosition(pos)});
+}
+
+function sellAllPositions(){
+  if(!run || run.phase !== 'trading' || run.positions.length === 0) return;
+  let total = 0;
+  [...run.positions].forEach(p => { total += closePosition(p); });
+  emit('soldAll', {pnl: total});
+}
+
+/* 반대매매: 담보비율(평가액 ÷ 대출금)이 140% 아래로 떨어지면 강제 청산 */
+function checkMarginCalls(){
+  run.positions.filter(p => collateralRatio(p) < MAINTENANCE_RATIO).forEach(p => {
+    const pnl = closePosition(p);
+    run.liquidations++;
+    emit('marginCall', {pos: p, pnl});
+  });
+}
+
+function endRun(reason){
+  run.phase = 'over';
+  run.endReason = reason;
+  run.endEquity = netEquity();
+  emit('runOver', {reason});
+  return true;
+}
+
+function checkBankruptcy(){
+  if(netEquity() <= 0) return endRun('BANKRUPT');
+  if(run.positions.length === 0 && run.cash < MIN_CARD_COST) return endRun('BROKE');
+  return false;
+}
+
+function updateMarketEvent(){
+  if(run.eventTicksLeft > 0){
+    run.eventTicksLeft--;
+    if(run.eventTicksLeft === 0){ marketState = 'NORMAL'; emit('eventEnd'); }
+    return;
+  }
+  run.ticksSinceEvent++;
+  if(run.ticksSinceEvent >= 12 && Math.random() < 0.08){
+    const ev = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
+    marketState = ev.state;
+    run.eventTicksLeft = EVENT_DURATION;
+    run.ticksSinceEvent = 0;
+    emit('event', ev);
   }
 }
 
+function endOfDay(){
+  const interest = totalDebt() * DAILY_INTEREST;
+  run.cash -= interest;
+  run.interestPaid += interest;
+  run.lastInterest = interest;
+  CARD_DATABASE.forEach(c => { assets[c.id].dayOpen = assets[c.id].price; });
+  if(checkBankruptcy()) return;
+  if(run.day >= DAYS_PER_ROUND){ endOfRound(); return; }
+  run.day++;
+  emit('dayStart', {day: run.day, interest});
+}
+
+/* 주말 결산: 순자산이 목표 이상이면 다음 주로, 아니면 게임 오버. 포지션은 이월(존버 가능). */
+function endOfRound(){
+  const eq = netEquity(), target = currentTarget();
+  if(eq < target) return endRun('MISSED');
+  if(run.round >= MAX_ROUND) return endRun('VICTORY');
+  run.phase = 'roundResult';
+  emit('roundClear', {eq, target});
+}
+
+function startNextRound(){
+  if(!run || run.phase !== 'roundResult') return;
+  run.round++;
+  run.day = 1;
+  run.tickInDay = 0;
+  run.phase = 'trading';
+  emit('roundStart', {round: run.round, target: currentTarget()});
+}
+
+function tick(){
+  if(!run || run.phase !== 'trading') return;
+  updateAssetPrices(pushNewCandle());
+  updateMarketEvent();
+  checkMarginCalls();
+  run.peakEquity = Math.max(run.peakEquity, netEquity());
+  if(checkBankruptcy()) return;
+  run.tickInDay++;
+  if(run.tickInDay >= TICKS_PER_DAY){ run.tickInDay = 0; endOfDay(); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   UI — 화면 그리기 + 입력 처리
+══════════════════════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+let currentTab = 'title';
+let overlayOpen = false;
+let handSig = '', posSig = '';
+
+const fmtMoney  = v => '₩ ' + Math.round(v).toLocaleString() + '만';
+const fmtSigned = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString() + '만';
+const fmtPct    = r => (r >= 0 ? '+' : '') + (r * 100).toFixed(1) + '%';
+function fmtPrice(p){
+  if(p >= 100) return Math.round(p).toLocaleString();
+  if(p >= 1)   return p.toFixed(1);
+  return p.toFixed(3);
+}
+
+function toast(text, kind = 'info'){
+  const t = document.createElement('div');
+  t.className = 'toast ' + kind;
+  t.textContent = text;
+  $('toastLayer').appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function flashLiquidation(){
+  const cab = document.querySelector('.cabinet');
+  cab.classList.remove('shake'); void cab.offsetWidth; cab.classList.add('shake');
+  const f = document.createElement('div');
+  f.className = 'red-flash';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 600);
+}
+
+function resetNews(){
+  $('newsText').textContent = '시장이 평온한 흐름을 유지 중입니다.';
+  $('marketStateTag').textContent = '■ NORMAL';
+}
+
+function onGameEvent(type, d){
+  switch(type){
+    case 'insufficient':
+      toast(`현금 부족! ${d.card.name} 매수에 ₩${d.card.cost}만 필요`, 'bad'); break;
+    case 'sold':
+      showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
+      if(d.pnl > 500) cashRain();
+      break;
+    case 'soldAll':
+      showPopNum('청산: ' + fmtSigned(d.pnl), d.pnl >= 0);
+      if(d.pnl > 1000) cashRain();
+      break;
+    case 'marginCall':
+      toast(`⚠ 반대매매! ${d.pos.name} ${d.pos.lev}x 강제청산 ${fmtSigned(d.pnl)}`, 'bad');
+      flashLiquidation();
+      break;
+    case 'event':
+      $('newsText').textContent = d.text;
+      $('marketStateTag').textContent = '■ ' + d.state;
+      break;
+    case 'eventEnd': resetNews(); break;
+    case 'dayStart':
+      toast(`DAY ${d.day} 개장` + (d.interest > 0.5 ? ` · 신용이자 −${Math.round(d.interest).toLocaleString()}만` : ''), d.interest > 0.5 ? 'warn' : 'info');
+      break;
+    case 'roundClear': showRoundClear(d); break;
+    case 'roundStart': toast(`WEEK ${d.round} 개장 — 목표 ${fmtMoney(d.target)}`, 'good'); break;
+    case 'runOver': showRunOver(d.reason); break;
+  }
+}
+
+/* ── HUD / 자산 ── */
+function renderHud(){
+  const eq = netEquity(), target = currentTarget(), debt = totalDebt();
+  $('roundText').textContent = `WEEK ${run.round}/${MAX_ROUND}`;
+  $('dayText').textContent = `DAY ${run.day}/${DAYS_PER_ROUND}`;
+  $('dayFill').style.width = (run.tickInDay / TICKS_PER_DAY * 100) + '%';
+
+  $('totalAssets').textContent = fmtMoney(eq);
+  $('totalAssets').style.color = eq >= START_CASH ? 'var(--green)' : 'var(--red)';
+  $('targetText').textContent = `WEEK ${run.round} 목표 ${fmtMoney(target)}`;
+  const done = eq >= target;
+  $('targetPct').textContent = done ? '달성 ✓' : Math.max(0, eq / target * 100).toFixed(0) + '%';
+  $('targetPct').style.color = done ? 'var(--green)' : 'var(--muted)';
+  $('targetFill').style.width = Math.min(100, Math.max(0, eq / target * 100)) + '%';
+  $('targetFill').classList.toggle('done', done);
+
+  $('cashLabel').textContent = run.cash < 0 ? '■ 미수금' : '■ CASH';
+  $('availableCash').textContent = fmtMoney(run.cash);
+  $('availableCash').style.color = run.cash < 0 ? 'var(--red)' : '';
+  $('debtVal').textContent = fmtMoney(debt);
+  $('debtVal').style.color = debt > 0 ? 'var(--red)' : '';
+  $('realizedPnL').textContent = '₩ ' + fmtSigned(run.realized);
+  $('realizedPnL').style.color = run.realized >= 0 ? 'var(--green)' : 'var(--red)';
+  $('interestVal').textContent = fmtMoney(run.interestPaid);
+  $('marketPriceText').textContent = Math.round(marketPrice).toLocaleString();
+}
+
+/* ── 종목 시세판 ── */
+function buildQuotes(){
+  $('quoteBox').innerHTML = CARD_DATABASE.map(c => `
+    <div class="quote-row" data-q="${c.id}">
+      <div class="q-name">${c.name}<small>${c.sector} · β${c.beta}</small></div>
+      <canvas width="64" height="18"></canvas>
+      <div class="q-price"></div>
+      <div class="q-chg"></div>
+    </div>`).join('');
+}
+
+function drawSpark(cv, hist, up){
+  const ctx = cv.getContext('2d');
+  const w = cv.width, h = cv.height;
+  ctx.clearRect(0, 0, w, h);
+  const mx = Math.max(...hist), mn = Math.min(...hist), rg = (mx - mn) || 1;
+  ctx.fillStyle = up ? '#00ff41' : '#ff1a3c';
+  hist.forEach((v, i) => {
+    const x = Math.round(i * (w - 2) / (hist.length - 1));
+    const y = Math.round(h - 3 - (v - mn) / rg * (h - 4));
+    ctx.fillRect(x, y, 2, 2);
+  });
+}
+
+function renderQuotes(){
+  CARD_DATABASE.forEach(c => {
+    const row = document.querySelector(`[data-q="${c.id}"]`);
+    if(!row) return;
+    const a = assets[c.id];
+    const chg = a.price / a.dayOpen - 1;
+    row.querySelector('.q-price').textContent = fmtPrice(a.price);
+    const ch = row.querySelector('.q-chg');
+    ch.textContent = fmtPct(chg);
+    ch.className = 'q-chg ' + (chg >= 0 ? 'pnl-up' : 'pnl-down');
+    drawSpark(row.querySelector('canvas'), a.history, chg >= 0);
+  });
+}
+
+/* ── 레버리지 선택 + 손패 ── */
+function renderLeverage(){
+  document.querySelectorAll('.lev-btn').forEach(b => {
+    b.classList.toggle('active', run && +b.dataset.lev === run.leverage);
+  });
+}
+
+function renderHand(){
+  const box = $('handBox');
+  const sig = run.hand.map(c => c.id).join() + '|' + run.leverage + '|' + run.hand.map(c => run.cash >= c.cost ? 1 : 0).join('');
+  if(sig !== handSig){
+    handSig = sig;
+    box.innerHTML = run.hand.map((c, i) => `
+      <div class="card ${run.cash < c.cost ? 'disabled' : ''}" data-idx="${i}">
+        <div class="sym">${c.name}</div>
+        <div class="sector">${c.sector}</div>
+        <div class="price" data-p="${c.id}"></div>
+        <div class="cost">₩${c.cost}만</div>
+        <div class="beta">β ${c.beta}</div>
+        ${run.leverage > 1 ? `<div class="size">×${run.leverage} → ₩${(c.cost * run.leverage).toLocaleString()}만</div>` : ''}
+      </div>`).join('');
+  }
+  box.querySelectorAll('[data-p]').forEach(el => { el.textContent = '@' + fmtPrice(assets[el.dataset.p].price); });
+}
+
+/* ── 보유 포지션 ── */
+function renderPositions(){
+  const box = $('positionsBox');
+  const sig = run.positions.map(p => p.id).join();
+  if(sig !== posSig){
+    posSig = sig;
+    box.innerHTML = run.positions.length === 0
+      ? `<div style="text-align:center;padding:14px;color:var(--muted);font-family:'Press Start 2P';font-size:7px;">── NO POSITION ──</div>`
+      : run.positions.map(p => `
+        <div class="pos-item" data-id="${p.id}">
+          <div class="pos-info">
+            <div class="name">${p.name}${p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : ''}</div>
+            <div class="detail" data-f="price"></div>
+            <div class="detail" data-f="basis">원금 ₩${p.ownCost}만${p.loan > 0 ? ` · 대출 ₩${p.loan}만` : ''}</div>
+            ${p.loan > 0 ? '<div class="ratio" data-f="ratio"></div>' : ''}
+          </div>
+          <div class="pos-pnl">
+            <div class="val" data-f="pnl"></div>
+            <button class="sell-btn" data-sell="${p.id}">매도</button>
+          </div>
+        </div>`).join('');
+  }
+  run.positions.forEach(p => {
+    const el = box.querySelector(`[data-id="${p.id}"]`);
+    if(!el) return;
+    const cur = assets[p.assetId].price;
+    const pnl = positionValue(p) - p.loan - p.ownCost;
+    el.querySelector('[data-f=price]').textContent = `${fmtPrice(p.buyPrice)} → ${fmtPrice(cur)}`;
+    const pv = el.querySelector('[data-f=pnl]');
+    pv.textContent = `${fmtSigned(pnl)} (${fmtPct(pnl / p.ownCost)})`;
+    pv.className = 'val ' + (pnl >= 0 ? 'pnl-up' : 'pnl-down');
+    const rEl = el.querySelector('[data-f=ratio]');
+    if(rEl){
+      const r = collateralRatio(p);
+      rEl.textContent = `담보비율 ${Math.round(r * 100)}% / 반대매매 ${Math.round(MAINTENANCE_RATIO * 100)}%`;
+      rEl.className = 'ratio ' + (r < WARN_RATIO ? 'danger' : 'safe');
+    }
+  });
+}
+
+function renderAll(){
+  if(!run) return;
+  renderChart();
+  renderHud();
+  renderQuotes();
+  renderLeverage();
+  renderHand();
+  renderPositions();
+}
+
+/* ── 결산 / 게임오버 오버레이 ── */
+function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && currentTab === 'play'); }
+function showOverlay(html){ $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); }
+function hideOverlay(){ overlayOpen = false; syncOverlay(); }
+
+function statRow(label, value){ return `<div>${label}<b>${value}</b></div>`; }
+
+function showRoundClear(d){
+  showOverlay(`
+    <div class="ov-title" style="color:var(--green)">WEEK ${run.round} 결산 ✓</div>
+    <div class="ov-sub">목표 달성! 다음 주 목표는 <span style="color:var(--gold)">${fmtMoney(ROUND_TARGETS[run.round])}</span></div>
+    <div class="ov-stats">
+      ${statRow('이번 주 순자산', fmtMoney(d.eq))}
+      ${statRow('이번 주 목표', fmtMoney(d.target))}
+      ${statRow('보유 포지션', run.positions.length + '개 (이월)')}
+      ${statRow('신용대출', fmtMoney(totalDebt()))}
+      ${statRow('반대매매', run.liquidations + '회')}
+    </div>
+    <button class="ov-btn" data-act="next">▶ 다음 주 개장</button>`);
+}
+
+function showRunOver(reason){
+  const endings = {
+    BANKRUPT: { title:'반대매매 당했습니다', color:'var(--red)',   sub:'순자산이 0원 아래로 떨어졌습니다. 계좌가 녹았습니다.' },
+    BROKE:    { title:'깡통 계좌',           color:'var(--red)',   sub:'남은 현금으로 살 수 있는 종목이 없습니다. 이번 생은 개미.' },
+    MISSED:   { title:'목표 미달 · 강제 은퇴', color:'var(--gold)', sub:`순자산 ${fmtMoney(run.endEquity)} / 목표 ${fmtMoney(currentTarget())}` },
+    VICTORY:  { title:'개미 졸업!',          color:'var(--green)', sub:`${MAX_ROUND}주 연속 목표 달성. 이제 당신이 세력입니다.` }
+  };
+  const e = endings[reason];
+  showOverlay(`
+    <div class="ov-title" style="color:${e.color}">${e.title}</div>
+    <div class="ov-sub">${e.sub}</div>
+    <div class="ov-stats">
+      ${statRow('도달 주차', `WEEK ${run.round}/${MAX_ROUND} · DAY ${run.day}`)}
+      ${statRow('최종 순자산', fmtMoney(run.endEquity))}
+      ${statRow('최고 순자산', fmtMoney(run.peakEquity))}
+      ${statRow('확정손익', '₩ ' + fmtSigned(run.realized))}
+      ${statRow('반대매매', run.liquidations + '회')}
+      ${statRow('누적 신용이자', fmtMoney(run.interestPaid))}
+    </div>
+    <button class="ov-btn" data-act="restart">▶ 다시 영끌</button>
+    <button class="ov-btn alt" data-act="title">◀ 타이틀로</button>`);
+  if(reason === 'VICTORY') cashRain();
+}
+
+/* ── 연출 (원본 유지) ── */
 function showPopNum(text, isUp){
   const pop = document.createElement('div');
   pop.className = 'popnum';
@@ -1277,47 +1722,87 @@ function cashRain(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   TABS + INIT
+   흐름 제어 — 탭 전환, 새 판 시작, 게임 루프
 ══════════════════════════════════════════════════════════ */
+function startRun(){
+  marketState = 'NORMAL';
+  marketPrice = 1000;
+  initChartData();
+  initAssets();
+  run = newRun();
+  handSig = ''; posSig = '';
+  hideOverlay();
+  resetNews();
+  renderAll();
+  toast(`WEEK 1 개장 — 목표 ${fmtMoney(currentTarget())}`, 'good');
+}
+
 const tabBtns = document.querySelectorAll('.tabnav button');
 const screens = document.querySelectorAll('.screen');
-tabBtns.forEach(b=>{
-  b.addEventListener('click',()=>{
-    tabBtns.forEach(x=>x.classList.remove('active'));
-    screens.forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    document.getElementById('screen-'+b.dataset.s).classList.add('active');
-    if(b.dataset.s==='play') renderChart();
-  });
+
+function switchTab(s){
+  currentTab = s;  // 게임 화면이 아니면 시장이 멈춘다
+  tabBtns.forEach(x => x.classList.toggle('active', x.dataset.s === s));
+  screens.forEach(x => x.classList.toggle('active', x.id === 'screen-' + s));
+  if(s === 'play'){
+    if(!run || (run.phase === 'over' && !overlayOpen)) startRun();
+    renderAll();
+  }
+  syncOverlay();
+}
+
+tabBtns.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.s)));
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  startRun();
+  switchTab('play');
 });
 
-document.getElementById('startBtn').addEventListener('click',()=>tabBtns[1].click());
-document.getElementById('sellAllBtn').addEventListener('click',sellAllPositions);
+$('sellAllBtn').addEventListener('click', () => { sellAllPositions(); renderAll(); });
+
+$('handBox').addEventListener('click', e => {
+  const c = e.target.closest('[data-idx]');
+  if(!c) return;
+  buyPosition(+c.dataset.idx);
+  renderAll();
+});
+
+$('positionsBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-sell]');
+  if(!b) return;
+  sellPosition(+b.dataset.sell);
+  renderAll();
+});
+
+$('levBar').addEventListener('click', e => {
+  const b = e.target.closest('[data-lev]');
+  if(!b || !run) return;
+  run.leverage = +b.dataset.lev;
+  renderAll();
+});
+
+$('overlay').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if(!b) return;
+  const act = b.dataset.act;
+  if(act === 'next'){ hideOverlay(); startNextRound(); renderAll(); }
+  else if(act === 'restart'){ startRun(); }
+  else if(act === 'title'){ hideOverlay(); switchTab('title'); }
+});
 
 const tickerContent = '▶ 삼성전자 10만 전자 가즈아! &nbsp;·&nbsp; DOGE TO THE MOON 🚀 &nbsp;·&nbsp; 존버는 승리한다 &nbsp;·&nbsp; 풀매수 기원단 &nbsp;·&nbsp; 영끌 아니면 영원히 무주택 &nbsp;·&nbsp; HODL OR DIE &nbsp;·&nbsp; ';
 document.getElementById('tickerText').innerHTML = tickerContent.repeat(3);
 
-function initGame(){
-  availableCash = 10000;
-  realizedPnL   = 0;
-  openPositions = [];
-  handCards = [];
-  for(let i=0;i<5;i++){
-    handCards.push(CARD_DATABASE[Math.floor(Math.random()*CARD_DATABASE.length)]);
-  }
-  initChartData();
-  renderChart();
-  renderUI();
-
-  // 고밀도 배경 차트 매니저 실행
+window.addEventListener('resize', () => { if(run) renderChart(); });
+window.onload = () => {
+  buildQuotes();
   ambientBg.init();
-
-  setInterval(pushNewCandle, 800);
-  setInterval(()=>{ if(Math.random()>0.4) triggerMarketEvent(); }, 15000);
-}
-
-window.addEventListener('resize', renderChart);
-window.onload = initGame;
+  setInterval(() => {
+    if(currentTab !== 'play' || !run) return;
+    tick();
+    renderAll();
+  }, TICK_MS);
+};
 </script>
 </body>
 </html>
