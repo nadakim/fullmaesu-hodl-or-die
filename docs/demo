@@ -535,9 +535,10 @@ body::after{
 ═══════════════════════════════════════════════════════════ */
 #screen-event{
   min-height:calc(100vh - 40px);
-  display:flex;align-items:center;justify-content:center;
+  align-items:center;justify-content:center;
   padding:20px;
 }
+#screen-event.active{display:flex;}
 .phone-noti{
   width:100%;max-width:360px;
   background:var(--panel);
