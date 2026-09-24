@@ -2525,9 +2525,11 @@ const SHOP_PACK_BY_ID = {};
 SHOP_PACKS.forEach(pk => { SHOP_PACK_BY_ID[pk.id] = pk; });
 const RARITIES = ['common', 'uncommon', 'legendary'];
 
+/* 팩에서 나올 수 있는 카드: 팩 구성 중 지금 덱에 없는 것만 (종목 카드 포함) */
+const inDeck = id => !!run && run.masterDeck.indexOf(id) >= 0;
 function packPool(pk){
   const ids = pk.pool.length ? pk.pool : CARDS.filter(c => c.type !== 'status').map(c => c.id);
-  return ids.filter(id => CARD_BY_ID[id]);
+  return ids.filter(id => CARD_BY_ID[id] && !inDeck(id));
 }
 
 /* 희귀도별 실제 확률 (풀에 없는 희귀도는 빼고 다시 나눈다) */
@@ -2535,7 +2537,7 @@ function packRarityOdds(pk){
   const pool = packPool(pk);
   const present = RARITIES.filter(r => pool.some(id => CARD_BY_ID[id].rarity === r));
   const total = present.reduce((sum, r) => sum + pk.weights[r], 0);
-  return present.map(r => ({ rarity: r, chance: pk.weights[r] / total }));
+  return present.map(r => ({ rarity: r, chance: pk.weights[r] / total }));   // 풀이 비면 빈 배열
 }
 
 /* 카드별 실제 확률 */
@@ -2567,7 +2569,7 @@ const shopOpenNow    = () => !!run && run.phase === 'shop';
 function openShop(){
   run.phase = 'shop';
   const count = SHOP_SINGLE_MIN + randInt(SHOP_SINGLE_MAX - SHOP_SINGLE_MIN + 1);
-  run.shop = { singles: rollRewards(count), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT) };
+  run.shop = { singles: rollRewards(count, run.masterDeck), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT) };   // 덱에 없는 카드만 진열
   emit('shopOpen', {round: run.round});
 }
 
@@ -2576,6 +2578,7 @@ function shopReject(reason){ emit('shopRejected', {reason}); return false; }
 function buyPack(packId){
   const pk = SHOP_PACK_BY_ID[packId];
   if(!shopOpenNow() || !pk) return shopReject('phase');
+  if(packPool(pk).length === 0) return shopReject('empty');
   if(run.cash < pk.price) return shopReject('cash');
   run.cash -= pk.price;
   const cardId = rollPack(pk);
@@ -2588,6 +2591,7 @@ function buySingle(idx){
   if(!shopOpenNow()) return shopReject('phase');
   const cardId = run.shop.singles[idx];
   if(!cardId || run.shop.singlesBought.indexOf(idx) >= 0) return shopReject('sold');
+  if(inDeck(cardId)) return shopReject('owned');   // 팩 등으로 이미 덱에 들어온 카드
   if(run.shop.singlesBought.length >= SHOP_SINGLE_LIMIT) return shopReject('limit');
   const price = singlePrice(cardId);
   if(run.cash < price) return shopReject('cash');
@@ -2675,7 +2679,8 @@ const FORCED_NEWS  = { BULL:'연준 비둘기 발언! 강세장 진입', BEAR:'�
 const SHOP_REJECT_TEXT = {
   phase:'암시장은 라운드 종료 후 이용 가능', cash:'현금이 부족합니다',
   limit:'이번 주에는 더 이상 할 수 없습니다', sold:'이미 산 카드입니다',
-  deckMin:`덱은 ${MIN_DECK_SIZE}장 아래로 줄일 수 없습니다`, none:'카드를 고르세요'
+  deckMin:`덱은 ${MIN_DECK_SIZE}장 아래로 줄일 수 없습니다`, none:'카드를 고르세요',
+  empty:'이 팩에서 나올 새 카드가 없습니다 (전부 덱에 있음)', owned:'이미 덱에 있는 카드입니다'
 };
 const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
@@ -3242,7 +3247,8 @@ function renderTabs(){
 const fmtChance = c => (Math.round(c * 1000) / 10) + '%';
 
 function packHtml(pk){
-  const afford = run.cash >= pk.price;
+  const empty = packPool(pk).length === 0;
+  const afford = run.cash >= pk.price && !empty;
   const odds = packRarityOdds(pk).map(o => `<span class="c-rar ${o.rarity}">${RARITY_LABEL[o.rarity]} ${fmtChance(o.chance)}</span>`).join('');
   const cards = packCardOdds(pk).sort((a, b) => b.chance - a.chance || CARD_ORDER[a.cardId] - CARD_ORDER[b.cardId]);
   return `
@@ -3251,11 +3257,11 @@ function packHtml(pk){
         <div class="pk-icon">${pk.icon}</div>
         <div>${pk.name}</div>
         <div class="pk-price">₩${pk.price.toLocaleString()}만</div>
-        <div class="pk-odds">${odds}</div>
+        <div class="pk-odds">${empty ? '덱에 없는 카드가 남지 않음' : odds}</div>
         <div class="pk-desc">${pk.desc}</div>
       </button>
       <details class="pk-detail">
-        <summary>카드별 확률 (${cards.length}종)</summary>
+        <summary>카드별 확률 (덱에 없는 ${cards.length}종)</summary>
         <ol>${cards.map(o => `<li><span class="c-rar ${CARD_BY_ID[o.cardId].rarity}">${CARD_BY_ID[o.cardId].name}</span><span>${fmtChance(o.chance)}</span></li>`).join('')}</ol>
       </details>
     </div>`;
@@ -3280,15 +3286,15 @@ function renderShop(){
     </div>
     <div class="shop-note">여기서 쓰는 돈은 현금(=순자산)에서 빠집니다. 다음 주 목표와 저울질하세요.</div>
 
-    <span class="section-label">▌ 카드 팩 — 1장 무작위 · 희귀도 확률 공개</span>
+    <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
     <div class="pack-row">${SHOP_PACKS.map(packHtml).join('')}</div>
 
-    <span class="section-label">▌ 낱장 구매 — 원하는 카드 확정 구매 · 주 ${SHOP_SINGLE_LIMIT}장 (남은 ${singlesLeft})</span>
+    <span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 주 ${SHOP_SINGLE_LIMIT}장 (남은 ${singlesLeft})</span>
     <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
-      const bought = sh.singlesBought.indexOf(i) >= 0, price = singlePrice(id);
-      const label = bought ? '구매 완료' : singlesLeft <= 0 ? '이번 주 마감' : `₩${price.toLocaleString()}만 구매`;
+      const bought = sh.singlesBought.indexOf(i) >= 0, owned = !bought && inDeck(id), price = singlePrice(id);
+      const label = bought ? '구매 완료' : owned ? '덱에 있음' : singlesLeft <= 0 ? '이번 주 마감' : `₩${price.toLocaleString()}만 구매`;
       return `<div class="shop-item">${cardHtml(CARD_BY_ID[id], {})}
-        <button class="buy-btn" data-single="${i}" ${bought || singlesLeft <= 0 || run.cash < price ? 'disabled' : ''}>${label}</button></div>`;
+        <button class="buy-btn" data-single="${i}" ${bought || owned || singlesLeft <= 0 || run.cash < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
     <span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>

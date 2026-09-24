@@ -35,7 +35,7 @@
     - 더미: `buildWeekPiles`, `drawCards`, `newCard`
     - 유물(패시브, `run.relics`): `hasRelic`, `gainRelic`, `rollRelics`. 효과는 계산 지점에 직접 개입한다 — 손익 `relicAdjustedPnl`(국밥 정신·존버의 인장, `posEquity`를 거쳐 청산·증거금률·순자산까지), `pumpUpChance`(리딩방 VIP), `checkMarginCalls` 패널티(한강 수온 알림), `interestRate`(캐피탈 VVIP), `maxAp`(떡상 기원 부적), `endOfRound`(부모님 카드). 새 유물도 이렇게 계산 함수 안에서 `hasRelic()`으로 분기한다.
     - 찌라시(장중 선택 이벤트): `tick` 끝에서 `maybeTriggerTip` → `openTip`(→ `run.pendingTip`, 이 동안 `tick`은 멈춤) → `resolveTip(choiceIdx)`가 확률 판정 후 `applyTipEffect`로 효과(cash·buy·shock·pump·market·sellStock·protect)를 적용하고 `run.tipLog`에 순자산 변화를 남긴다. 이벤트는 CONFIG `TIP_EVENTS`에 데이터로만 추가한다.
-    - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward`(카드 보상: 덱에 없는 카드만) → `chooseRelicReward`(유물 보상: 없는 것 2개 중 1개, 다 모았으면 생략) → `openShop`(암시장: `buyPack`·`buySingle`·`shopRemoveCard`) → `leaveShop` → `startNextRound`
+    - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward`(카드 보상: 덱에 없는 카드만) → `chooseRelicReward`(유물 보상: 없는 것 2개 중 1개, 다 모았으면 생략) → `openShop`(암시장: `buyPack`·`buySingle`·`shopRemoveCard` — 팩 풀 `packPool`과 낱장 진열도 덱에 없는 카드만, `inDeck`) → `leaveShop` → `startNextRound`
   - **UI**: `onGameEvent`가 엔진 이벤트를 받아 토스트/연출/오버레이를 띄우고, `renderAll()`이 화면을 그린다. 대상 지정 상태(`selectedIdx`), 설명을 펼친 유물(`relicTipId`), 큰 차트에 보이는 대상(`chartTarget`: `'idx'` 또는 종목 id)은 UI에만 있다. 입력 핸들러는 엔진 함수 호출 → `renderAll()` 순서.
 - 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
