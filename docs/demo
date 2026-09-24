@@ -760,6 +760,104 @@ body::after{
 @keyframes shake{0%,100%{transform:none;}20%{transform:translate(-4px,2px);}40%{transform:translate(4px,-2px);}60%{transform:translate(-3px,-1px);}80%{transform:translate(3px,1px);}}
 .red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut .5s steps(5) forwards;}
 @keyframes fadeOut{to{opacity:0;}}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP (가로) 레이아웃 — 901px 이상
+   게임 영역은 16:10 고정, 뷰포트 안에 letterbox로 맞춘다.
+   화면이 16:10보다 넓으면 좌우에, 좁으면 위아래에 배경이 보인다.
+   900px 이하는 위의 기존 세로 스택 그대로.
+═══════════════════════════════════════════════════════════ */
+:root{
+  --cab-ratio-w:16;
+  --cab-ratio-h:10;
+  --cab-max-w:90vw;   /* 폭 상한: 16:9 모니터에서 높이 100vh를 채우면 ≈90% */
+  --cab-max-h:100vh;  /* 높이 상한 */
+  --cab-w:min(var(--cab-max-w), calc(var(--cab-max-h) * var(--cab-ratio-w) / var(--cab-ratio-h)));
+  --cab-h:calc(var(--cab-w) * var(--cab-ratio-h) / var(--cab-ratio-w));
+}
+
+@media (min-width: 901px){
+  html,body{height:100%;overflow:hidden;}
+  body{display:flex;align-items:center;justify-content:center;}
+
+  .cabinet{
+    display:flex;flex-direction:column;
+    width:var(--cab-w);
+    aspect-ratio:var(--cab-ratio-w) / var(--cab-ratio-h);
+    max-width:var(--cab-max-w);max-height:var(--cab-max-h);
+    min-height:0;margin:0;
+    border:3px solid var(--line);
+  }
+  .tabnav{flex:none;}
+  .tabnav button{font-size:8px;padding:11px 4px;}
+  .footnote{display:none;}
+
+  /* 화면마다 게임 영역 안에서만 스크롤 */
+  .screen{min-height:0;}
+  .screen.active{flex:1;min-height:0;overflow-y:auto;}
+  #screen-event.active{display:flex;}
+  #screen-title{max-width:620px;margin:0 auto;width:100%;}
+  #screen-shop,#screen-collection{padding:22px 28px 28px;}
+
+  /* ── TR룸: 상단 HUD 바 + 좌(시장) / 우(손패·포지션) ── */
+  #screen-play.active{
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-rows:auto minmax(0, 1fr);
+    grid-template-areas:"top top" "left right";
+    gap:12px 16px;
+    padding:12px 16px 14px;
+    min-height:600px;           /* 너무 낮은 화면이면 안에서 스크롤 */
+    overflow:hidden;
+  }
+  .play-top{
+    grid-area:top;
+    display:flex;flex-wrap:wrap;align-items:stretch;gap:10px 14px;
+  }
+  .play-left,.play-right{display:flex;flex-direction:column;min-height:0;min-width:0;}
+  .play-left{grid-area:left;}
+  .play-right{grid-area:right;}
+
+  /* 상단 바 구성: 타이틀·장세 | 주차·일자 | 순자산·목표 | 현금·대출·확정·이자 */
+  .play-top .hdr{flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;margin:0;}
+  .play-top .hud{flex:1 1 240px;min-width:220px;margin:0;align-self:center;white-space:nowrap;}
+  .play-top .balance-main{flex:0 1 270px;min-width:230px;margin:0;padding:8px 12px;}
+  .play-top .balance-main .total{font-size:16px;margin-top:4px;}
+  .play-top .target-line{margin-top:6px;}
+  .play-top .assets-grid{
+    flex:0 1 560px;min-width:420px;margin:0;
+    grid-template-columns:repeat(4, minmax(0, 1fr));gap:8px;
+  }
+  .play-top .asset-card{display:flex;flex-direction:column;justify-content:center;padding:6px;}
+  .play-top .asset-card .val{font-size:10px;}
+
+  /* 왼쪽: 뉴스 → 지수 차트(남는 높이 전부) → 종목 시세판 */
+  .play-left .news-banner{flex:none;}
+  .play-left .chart-box{flex:1 1 auto;height:auto;min-height:140px;margin-bottom:4px;}
+  .play-left .section-title{flex:none;margin-top:10px;}
+  .play-left .quotes{flex:none;}
+  .play-left .quote-row{grid-template-columns:1fr 96px 70px 56px;padding:4px 8px;}
+  .play-left .quote-row canvas{width:96px;}
+
+  /* 오른쪽: 행동력·더미 → 손패 → 장 시작 → 포지션(남는 높이 전부) → 전량 매도 */
+  .play-right .turn-bar{margin:0 0 6px;flex:none;}
+  .play-right .chips{flex:none;}
+  .play-right .section-title{flex:none;margin:8px 0 6px;}
+  .play-right .hand{flex:none;padding:6px 6px 12px;}
+  .play-right .open-btn{flex:none;margin:2px 0 4px;padding:11px;}
+  .play-right .positions-wrap{flex:1 1 0;min-height:70px;max-height:none;margin-bottom:10px;padding:2px;}
+  .play-right .sell-all-btn{flex:none;padding:11px;}
+
+  /* 알림은 상단 HUD를 가리지 않도록 왼쪽 차트 위에 */
+  .toast-layer{
+    top:calc((100vh - var(--cab-h)) / 2 + var(--cab-h) * 0.28);
+    left:calc((100vw - var(--cab-w)) / 2 + 30px);
+    transform:none;
+    width:calc(var(--cab-w) * 0.4);
+  }
+  .hand{scroll-snap-type:x proximity;scroll-padding:0 6px;}
+  .hand .card{scroll-snap-align:start;}
+}
 </style>
 </head>
 <body>
@@ -810,86 +908,95 @@ body::after{
 
   <!-- ====== 02 GAMEPLAY ====== -->
   <section id="screen-play" class="screen">
-    <div class="hdr">
-      <h2>▌ 도파민 TR룸</h2>
-      <span class="state-tag" id="marketStateTag">■ NORMAL</span>
-    </div>
-
-    <div class="hud">
-      <span id="roundText">WEEK 1/8</span>
-      <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
-      <span id="dayText">DAY 1/5 · 장전</span>
-    </div>
-
-    <div class="news-banner" id="newsBanner">
-      <span>
-        <span class="news-title">[속보] </span>
-        <span id="newsText">시장이 평온한 흐름을 유지 중입니다.</span>
-      </span>
-    </div>
-
-    <div class="balance-main px-corner-box">
-      <div class="label">▌ NET ASSETS · 순자산</div>
-      <div class="total" id="totalAssets">₩ 10,000만</div>
-      <div class="target-line"><span id="targetText">WEEK 1 목표</span><span id="targetPct">0%</span></div>
-      <div class="target-track"><div class="target-fill" id="targetFill"></div></div>
-    </div>
-
-    <div class="assets-grid">
-      <div class="asset-card">
-        <div class="label" id="cashLabel">■ CASH</div>
-        <div class="val highlight" id="availableCash">₩ 10,000만</div>
+    <!-- 가로 화면: 상단 HUD 바 / 왼쪽 시장 / 오른쪽 손패·포지션 (900px 이하는 세로 스택) -->
+    <div class="play-top">
+      <div class="hdr">
+        <h2>▌ 도파민 TR룸</h2>
+        <span class="state-tag" id="marketStateTag">■ NORMAL</span>
       </div>
-      <div class="asset-card">
-        <div class="label">■ 대출·대차</div>
-        <div class="val" id="debtVal">₩ 0만</div>
+
+      <div class="hud">
+        <span id="roundText">WEEK 1/8</span>
+        <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
+        <span id="dayText">DAY 1/5 · 장전</span>
       </div>
-      <div class="asset-card">
-        <div class="label">■ REALIZED</div>
-        <div class="val" id="realizedPnL">₩ 0만</div>
+
+      <div class="balance-main px-corner-box">
+        <div class="label">▌ NET ASSETS · 순자산</div>
+        <div class="total" id="totalAssets">₩ 10,000만</div>
+        <div class="target-line"><span id="targetText">WEEK 1 목표</span><span id="targetPct">0%</span></div>
+        <div class="target-track"><div class="target-fill" id="targetFill"></div></div>
       </div>
-      <div class="asset-card">
-        <div class="label">■ 누적 이자</div>
-        <div class="val" id="interestVal">₩ 0만</div>
+
+      <div class="assets-grid">
+        <div class="asset-card">
+          <div class="label" id="cashLabel">■ CASH</div>
+          <div class="val highlight" id="availableCash">₩ 10,000만</div>
+        </div>
+        <div class="asset-card">
+          <div class="label">■ 대출·대차</div>
+          <div class="val" id="debtVal">₩ 0만</div>
+        </div>
+        <div class="asset-card">
+          <div class="label">■ REALIZED</div>
+          <div class="val" id="realizedPnL">₩ 0만</div>
+        </div>
+        <div class="asset-card">
+          <div class="label">■ 누적 이자</div>
+          <div class="val" id="interestVal">₩ 0만</div>
+        </div>
       </div>
+
     </div>
 
-    <!-- pixel candlestick chart (시장 지수) -->
-    <div class="chart-box px-corner-box" id="chartBox">
-      <div class="chart-header">IDX: <span id="marketPriceText">1000</span></div>
-      <canvas id="candlestickChart"></canvas>
+    <div class="play-left">
+      <div class="news-banner" id="newsBanner">
+        <span>
+          <span class="news-title">[속보] </span>
+          <span id="newsText">시장이 평온한 흐름을 유지 중입니다.</span>
+        </span>
+      </div>
+
+      <!-- pixel candlestick chart (시장 지수) -->
+      <div class="chart-box px-corner-box" id="chartBox">
+        <div class="chart-header">IDX: <span id="marketPriceText">1000</span></div>
+        <canvas id="candlestickChart"></canvas>
+      </div>
+
+      <div class="section-title">
+        <span>▌ 종목 시세</span>
+        <span>오늘 등락</span>
+      </div>
+      <div class="quotes" id="quoteBox"></div>
+
     </div>
 
-    <div class="section-title">
-      <span>▌ 종목 시세</span>
-      <span>오늘 등락</span>
+    <div class="play-right">
+      <div class="turn-bar">
+        <span>행동력</span>
+        <span class="ap-pips" id="apPips"></span>
+        <span class="ap-text" id="apText">3/3</span>
+        <span class="pile-text" id="pileText">덱 0 · 버림 0 · 소멸 0</span>
+        <button class="deck-btn" id="deckBtn">덱 확인</button>
+      </div>
+      <div class="chips" id="chipBox"></div>
+
+      <div class="section-title">
+        <span>▌ 손패</span>
+        <span id="handHint">카드를 눌러 사용</span>
+      </div>
+      <div class="hand" id="handBox"></div>
+
+      <button class="open-btn" id="openBtn">▶ 장 시작</button>
+
+      <div class="section-title">
+        <span>▌ 보유 포지션</span>
+        <span>증거금률 25% 미만 = 반대매매</span>
+      </div>
+      <div class="positions-wrap" id="positionsBox"></div>
+
+      <button class="sell-all-btn" id="sellAllBtn">◆ 전량 매도 (시장가 청산)</button>
     </div>
-    <div class="quotes" id="quoteBox"></div>
-
-    <div class="turn-bar">
-      <span>행동력</span>
-      <span class="ap-pips" id="apPips"></span>
-      <span class="ap-text" id="apText">3/3</span>
-      <span class="pile-text" id="pileText">덱 0 · 버림 0 · 소멸 0</span>
-      <button class="deck-btn" id="deckBtn">덱 확인</button>
-    </div>
-    <div class="chips" id="chipBox"></div>
-
-    <div class="section-title">
-      <span>▌ 손패</span>
-      <span id="handHint">카드를 눌러 사용</span>
-    </div>
-    <div class="hand" id="handBox"></div>
-
-    <button class="open-btn" id="openBtn">▶ 장 시작</button>
-
-    <div class="section-title">
-      <span>▌ 보유 포지션</span>
-      <span>증거금률 25% 미만 = 반대매매</span>
-    </div>
-    <div class="positions-wrap" id="positionsBox"></div>
-
-    <button class="sell-all-btn" id="sellAllBtn">◆ 전량 매도 (시장가 청산)</button>
   </section>
 
   <!-- ====== 03 SHOP ====== -->
@@ -1123,9 +1230,10 @@ class HighDensityBgManager {
 
     this.container.appendChild(card);
 
-    // 좌표 계산 (중앙 520px 메인 UI 영역 완벽 보호)
+    // 좌표 계산 (가운데 게임 영역을 피해서 좌우 여백에만)
     const winWidth = window.innerWidth;
-    const cabinetWidth = 540;
+    const cabinet = document.querySelector('.cabinet');
+    const cabinetWidth = cabinet ? cabinet.getBoundingClientRect().width + 20 : 540;
     const sideMargin = Math.max(10, (winWidth - cabinetWidth) / 2);
 
     let startX, startY, speedX, speedY;
