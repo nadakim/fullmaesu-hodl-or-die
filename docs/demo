@@ -627,6 +627,8 @@ body::after{
 
 .lev-badge{font-size:6px;padding:1px 3px;margin-left:5px;background:var(--gold2);color:#000;vertical-align:middle;}
 .lev-badge.lev3{background:var(--red);color:#fff;}
+.lev-btn[data-side="inverse"].active{color:var(--purple);background:var(--panel2);box-shadow:0 0 0 2px var(--purple),2px 2px 0 #000;}
+.lev-badge.inv{background:var(--purple);color:#000;}
 .ratio{font-size:6.5px;margin-top:4px;}
 .ratio.safe{color:var(--gold);}
 .ratio.danger{color:var(--red);animation:blink .6s step-end infinite;}
@@ -785,7 +787,11 @@ body::after{
 
     <div class="section-title">
       <span>▌ 매수 종목 (손패)</span>
-      <span>레버리지 고르고 클릭</span>
+      <span>방향 · 배수 고르고 클릭</span>
+    </div>
+    <div class="lev-bar" id="sideBar">
+      <button class="lev-btn active" data-side="long">▲ 롱<br>상승 베팅</button>
+      <button class="lev-btn" data-side="inverse">▼ 인버스<br>하락 베팅</button>
     </div>
     <div class="lev-bar" id="levBar">
       <button class="lev-btn active" data-lev="1">현금<br>1x</button>
@@ -1304,12 +1310,17 @@ function newRun(){
     cash: START_CASH, realized: 0, interestPaid: 0, lastInterest: 0,
     liquidations: 0, peakEquity: START_CASH,
     positions: [], hand: Array.from({length: 5}, drawCard),
-    leverage: 1, eventTicksLeft: 0, ticksSinceEvent: 0,
+    leverage: 1, side: 'long', eventTicksLeft: 0, ticksSinceEvent: 0,
     nextPosId: 1, endReason: null, endEquity: 0
   };
 }
 
-const positionValue      = p => p.shares * assets[p.assetId].price;
+/* 롱: 가격에 비례. 인버스: 매수가 대비 하락한 만큼 이익 (배수는 대출로 키운 크기에 반영) */
+function positionValue(p){
+  const longValue = p.shares * assets[p.assetId].price;
+  if(p.side === 'long') return longValue;
+  return Math.max(0, 2 * p.shares * p.buyPrice - longValue);
+}
 const collateralRatio    = p => p.loan > 0 ? positionValue(p) / p.loan : Infinity;
 const totalDebt          = () => run.positions.reduce((s, p) => s + p.loan, 0);
 const totalPositionValue = () => run.positions.reduce((s, p) => s + positionValue(p), 0);
@@ -1326,7 +1337,7 @@ function buyPosition(handIdx){
   const price = assets[card.id].price;
   run.cash -= card.cost;
   run.positions.push({
-    id: run.nextPosId++, assetId: card.id, name: card.name, lev,
+    id: run.nextPosId++, assetId: card.id, name: card.name, lev, side: run.side,
     ownCost: card.cost,                // 내 원금
     loan: card.cost * (lev - 1),       // 신용 대출금
     shares: card.cost * lev / price,
@@ -1450,6 +1461,7 @@ let handSig = '', posSig = '';
 
 const fmtMoney  = v => '₩ ' + Math.round(v).toLocaleString() + '만';
 const fmtSigned = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString() + '만';
+const posLabel  = (side, lev) => (side === 'inverse' ? '인버스 ' : '') + lev + 'x';
 const fmtPct    = r => (r >= 0 ? '+' : '') + (r * 100).toFixed(1) + '%';
 function fmtPrice(p){
   if(p >= 100) return Math.round(p).toLocaleString();
@@ -1492,7 +1504,7 @@ function onGameEvent(type, d){
       if(d.pnl > 1000) cashRain();
       break;
     case 'marginCall':
-      toast(`⚠ 반대매매! ${d.pos.name} ${d.pos.lev}x 강제청산 ${fmtSigned(d.pnl)}`, 'bad');
+      toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos.side, d.pos.lev)} 강제청산 ${fmtSigned(d.pnl)}`, 'bad');
       flashLiquidation();
       break;
     case 'event':
@@ -1576,14 +1588,17 @@ function renderQuotes(){
 
 /* ── 레버리지 선택 + 손패 ── */
 function renderLeverage(){
-  document.querySelectorAll('.lev-btn').forEach(b => {
+  document.querySelectorAll('[data-lev]').forEach(b => {
     b.classList.toggle('active', run && +b.dataset.lev === run.leverage);
+  });
+  document.querySelectorAll('[data-side]').forEach(b => {
+    b.classList.toggle('active', run && b.dataset.side === run.side);
   });
 }
 
 function renderHand(){
   const box = $('handBox');
-  const sig = run.hand.map(c => c.id).join() + '|' + run.leverage + '|' + run.hand.map(c => run.cash >= c.cost ? 1 : 0).join('');
+  const sig = run.hand.map(c => c.id).join() + '|' + run.leverage + run.side + '|' + run.hand.map(c => run.cash >= c.cost ? 1 : 0).join('');
   if(sig !== handSig){
     handSig = sig;
     box.innerHTML = run.hand.map((c, i) => `
@@ -1593,7 +1608,7 @@ function renderHand(){
         <div class="price" data-p="${c.id}"></div>
         <div class="cost">₩${c.cost}만</div>
         <div class="beta">β ${c.beta}</div>
-        ${run.leverage > 1 ? `<div class="size">×${run.leverage} → ₩${(c.cost * run.leverage).toLocaleString()}만</div>` : ''}
+        ${run.leverage > 1 || run.side === 'inverse' ? `<div class="size">${posLabel(run.side, run.leverage)} → ₩${(c.cost * run.leverage).toLocaleString()}만</div>` : ''}
       </div>`).join('');
   }
   box.querySelectorAll('[data-p]').forEach(el => { el.textContent = '@' + fmtPrice(assets[el.dataset.p].price); });
@@ -1610,7 +1625,7 @@ function renderPositions(){
       : run.positions.map(p => `
         <div class="pos-item" data-id="${p.id}">
           <div class="pos-info">
-            <div class="name">${p.name}${p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : ''}</div>
+            <div class="name">${p.name}${p.side === 'inverse' ? `<span class="lev-badge inv">${posLabel(p.side, p.lev)}</span>` : p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : ''}</div>
             <div class="detail" data-f="price"></div>
             <div class="detail" data-f="basis">원금 ₩${p.ownCost}만${p.loan > 0 ? ` · 대출 ₩${p.loan}만` : ''}</div>
             ${p.loan > 0 ? '<div class="ratio" data-f="ratio"></div>' : ''}
@@ -1771,6 +1786,13 @@ $('positionsBox').addEventListener('click', e => {
   const b = e.target.closest('[data-sell]');
   if(!b) return;
   sellPosition(+b.dataset.sell);
+  renderAll();
+});
+
+$('sideBar').addEventListener('click', e => {
+  const b = e.target.closest('[data-side]');
+  if(!b || !run) return;
+  run.side = b.dataset.side;
   renderAll();
 });
 
