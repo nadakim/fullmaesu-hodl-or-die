@@ -369,6 +369,19 @@ body::after{
   text-shadow:1px 1px 0 #000;
 }
 .chart-header span{color:var(--cyan);text-shadow:0 0 6px var(--cyan);}
+.chart-header .ch-name{color:var(--gold);text-shadow:1px 1px 0 #000;}
+.chart-header .ch-chg.pnl-up{color:var(--green);text-shadow:none;}
+.chart-header .ch-chg.pnl-down{color:var(--red);text-shadow:none;}
+.chart-back{
+  position:absolute;top:5px;right:8px;z-index:10;border:none;cursor:pointer;
+  background:#000;color:var(--cyan);font-family:'Press Start 2P';font-size:7px;padding:4px 6px;
+  box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;
+}
+.chart-back:hover{background:var(--panel2);}
+.chart-back[hidden]{display:none;}
+.quote-row{cursor:pointer;}
+.quote-row:hover{box-shadow:0 0 0 2px var(--muted);}
+.quote-row.charted{background:var(--panel2);box-shadow:0 0 0 2px var(--cyan),3px 3px 0 #000;}
 
 .section-title{
   font-family:'Press Start 2P';font-size:8px;
@@ -959,13 +972,14 @@ body::after{
 
       <!-- pixel candlestick chart (시장 지수) -->
       <div class="chart-box px-corner-box" id="chartBox">
-        <div class="chart-header">IDX: <span id="marketPriceText">1000</span></div>
+        <div class="chart-header"><span class="ch-name" id="chartLabel">IDX</span>: <span id="marketPriceText">1000</span> <span class="ch-chg" id="chartChg"></span></div>
+        <button class="chart-back" id="chartBackBtn" hidden>◀ 지수</button>
         <canvas id="candlestickChart"></canvas>
       </div>
 
       <div class="section-title">
         <span>▌ 종목 시세</span>
-        <span>오늘 등락</span>
+        <span>클릭 = 큰 차트로 보기</span>
       </div>
       <div class="quotes" id="quoteBox"></div>
 
@@ -1069,6 +1083,7 @@ const IDX_SENS          = 0.6;     // 지수 움직임이 종목에 전달되는
 const IDIO_SCALE        = 0.25;    // 종목 고유 변동 크기 (× volatility)
 const ASSET_HISTORY     = 30;      // 시세 스파크라인 길이
 const EVENT_DURATION    = 15;      // 랜덤 시장 이벤트 지속 틱
+const CANDLE_WICK_SCALE = 0.5;     // 종목 캔들 꼬리 길이 (× 종목 고유 변동 크기)
 
 // 포지션 · 이자 · 반대매매
 const DAILY_INTEREST      = 0.004; // 신용이자·대차이자·마통이자: 장 마감마다 0.4% (게임용 과장)
@@ -1437,7 +1452,7 @@ function pushNewCandle(){
 const cc = document.getElementById('candlestickChart');
 const cctx = cc.getContext('2d', {antialias: false});
 
-function renderChart(){
+function renderChart(data = candleData){
   if(!cc.clientWidth) return;
   cc.width  = Math.floor(cc.clientWidth);
   cc.height = Math.floor(cc.clientHeight);
@@ -1459,10 +1474,10 @@ function renderChart(){
     cctx.fillRect(0,y,cc.width,1);
   }
 
-  if(candleData.length===0) return;
+  if(data.length===0) return;
 
-  const allH = candleData.map(c=>c.high);
-  const allL = candleData.map(c=>c.low);
+  const allH = data.map(c=>c.high);
+  const allL = data.map(c=>c.low);
   let maxP = Math.max(...allH)*1.02;
   let minP = Math.min(...allL)*0.98;
   let range = maxP-minP||1;
@@ -1470,7 +1485,7 @@ function renderChart(){
   const stepX  = cc.width/MAX_CANDLES;
   const candleW = Math.max(2, Math.floor(stepX*0.55));
 
-  candleData.forEach((c,i) => {
+  data.forEach((c,i) => {
     const cx = Math.round(i*stepX + stepX/2 - candleW/2);
 
     const scaleY = v => Math.round(cc.height - ((v-minP)/range)*(cc.height-16) - 8);
@@ -1498,8 +1513,8 @@ function renderChart(){
     cctx.fillRect(cx, bodyTop, candleW, 1);
   });
 
-  if(candleData.length>0){
-    const lastClose = candleData[candleData.length-1].close;
+  if(data.length>0){
+    const lastClose = data[data.length-1].close;
     const scaleY = v => Math.round(cc.height - ((v-minP)/range)*(cc.height-16) - 8);
     const py = scaleY(lastClose);
     cctx.fillStyle = '#00e5ff';
@@ -1543,20 +1558,29 @@ function shuffle(arr){
 function initAssets(){
   assets = {};
   STOCKS.forEach(s => {
-    assets[s.id] = { price: s.basePrice, dayOpen: s.basePrice, history: Array(ASSET_HISTORY).fill(s.basePrice) };
+    assets[s.id] = { price: s.basePrice, dayOpen: s.basePrice, history: Array(ASSET_HISTORY).fill(s.basePrice), candles: [] };
   });
   // 시작 시 차트가 비어 보이지 않도록 과거 시세를 미리 만들어 둔다
   for(let i = 0; i < ASSET_HISTORY; i++) updateAssetPrices(gauss() * 0.01, {});
   STOCKS.forEach(s => { assets[s.id].dayOpen = assets[s.id].price; });
 }
 
-/* 종목 수익률 = 지수 수익률 × beta × 전달비율 + 고유 변동 + 작전 드리프트(찌라시) */
+/* 종목 수익률 = 지수 수익률 × beta × 전달비율 + 고유 변동 + 작전 드리프트(찌라시)
+   틱 하나 = 종목 캔들 하나 (시가 = 직전가, 종가 = 새 가격, 꼬리는 고유 변동 크기에 비례) */
 function updateAssetPrices(idxLogRet, pumps){
   STOCKS.forEach(s => {
     const a = assets[s.id];
     let r = s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss();
     if(pumps[s.id]) r += pumps[s.id] * PUMP_DRIFT;
+    const open = a.price;
     a.price *= Math.exp(r);
+    const wick = s.volatility * IDIO_SCALE * CANDLE_WICK_SCALE;
+    a.candles.push({
+      open, close: a.price,
+      high: Math.max(open, a.price) * (1 + Math.abs(gauss()) * wick),
+      low:  Math.min(open, a.price) * (1 - Math.abs(gauss()) * wick)
+    });
+    if(a.candles.length > MAX_CANDLES) a.candles.shift();
     a.history.push(a.price);
     if(a.history.length > ASSET_HISTORY) a.history.shift();
   });
@@ -2131,6 +2155,7 @@ function checkBankruptcy(){
 ══════════════════════════════════════════════════════════ */
 const $ = id => document.getElementById(id);
 let currentTab = 'title';
+let chartTarget = 'idx';   // 큰 차트에 보이는 것: 'idx'(지수) 또는 종목 id
 let overlayOpen = false;
 let selectedIdx = -1;      // 대상 지정 중인 손패 카드 (-1 = 없음)
 let lastRoundClear = null; // 카드 제거 화면에서 보상 화면으로 돌아갈 때 사용
@@ -2276,10 +2301,27 @@ function renderHud(){
   $('realizedPnL').textContent = '₩ ' + fmtSigned(run.realized);
   $('realizedPnL').style.color = run.realized >= 0 ? 'var(--green)' : 'var(--red)';
   $('interestVal').textContent = fmtMoney(run.interestPaid);
-  $('marketPriceText').textContent = Math.round(marketPrice).toLocaleString();
 }
 
-/* ── 종목 시세판 (찌라시 대상) ── */
+/* ── 큰 차트: 지수 또는 선택한 종목 ── */
+function renderMainChart(){
+  const isIdx = chartTarget === 'idx';
+  const a = isIdx ? null : assets[chartTarget];
+  renderChart(isIdx ? candleData : a.candles);
+  $('chartLabel').textContent = isIdx ? 'IDX' : STOCK_BY_ID[chartTarget].name;
+  $('marketPriceText').textContent = isIdx ? Math.round(marketPrice).toLocaleString() : fmtPrice(a.price);
+  const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
+  $('chartChg').textContent = isIdx ? '' : fmtPct(chg);
+  $('chartChg').className = 'ch-chg ' + (chg >= 0 ? 'pnl-up' : 'pnl-down');
+  $('chartBackBtn').hidden = isIdx;
+}
+
+function showChart(target){
+  chartTarget = target;
+  renderAll();
+}
+
+/* ── 종목 시세판 (클릭 = 큰 차트, 찌라시 대상 지정 중이면 대상 선택) ── */
 function buildQuotes(){
   $('quoteBox').innerHTML = STOCKS.map(s => `
     <div class="quote-row" data-q="${s.id}">
@@ -2320,6 +2362,7 @@ function renderQuotes(){
     tag.textContent = !pm ? '' : run.phase !== 'market' ? '찌라시?' : pm > 0 ? '작전▲' : '설거지▼';
     tag.className = 'q-tag ' + (!pm ? '' : run.phase !== 'market' ? 'hidden' : pm > 0 ? 'up' : 'down');
     row.classList.toggle('targetable', targets.indexOf(s.id) >= 0);
+    row.classList.toggle('charted', chartTarget === s.id);
   });
 }
 
@@ -2433,7 +2476,7 @@ function renderPositions(){
 function renderAll(){
   if(!run) return;
   if(run.phase !== 'premarket') selectedIdx = -1;
-  renderChart();
+  renderMainChart();
   renderHud();
   renderQuotes();
   renderTurn();
@@ -2552,6 +2595,7 @@ function cashRain(){
 ══════════════════════════════════════════════════════════ */
 function startRun(){
   selectedIdx = -1;
+  chartTarget = 'idx';
   handSig = ''; posSig = '';
   hideOverlay();
   resetNews();
@@ -2621,9 +2665,12 @@ $('positionsBox').addEventListener('click', e => {
 
 $('quoteBox').addEventListener('click', e => {
   const row = e.target.closest('[data-q]');
-  const card = run && selectedCard();
-  if(row && card && card.target === 'asset') playSelectedOn(row.dataset.q);
+  if(!row || !run) return;
+  const card = selectedCard();
+  if(card && card.target === 'asset') playSelectedOn(row.dataset.q);
+  else showChart(chartTarget === row.dataset.q ? 'idx' : row.dataset.q);   // 같은 종목 다시 누르면 지수로
 });
+$('chartBackBtn').addEventListener('click', () => showChart('idx'));
 
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape' && selectedIdx >= 0){ selectedIdx = -1; renderAll(); }
@@ -2648,7 +2695,7 @@ $('overlay').addEventListener('click', e => {
 const tickerContent = '▶ 삼성전자 10만 전자 가즈아! &nbsp;·&nbsp; DOGE TO THE MOON 🚀 &nbsp;·&nbsp; 존버는 승리한다 &nbsp;·&nbsp; 풀매수 기원단 &nbsp;·&nbsp; 영끌 아니면 영원히 무주택 &nbsp;·&nbsp; HODL OR DIE &nbsp;·&nbsp; ';
 document.getElementById('tickerText').innerHTML = tickerContent.repeat(3);
 
-window.addEventListener('resize', () => { if(run) renderChart(); });
+window.addEventListener('resize', () => { if(run) renderMainChart(); });
 window.onload = () => {
   buildQuotes();
   buildCollection();
