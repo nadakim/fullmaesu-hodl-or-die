@@ -16,7 +16,8 @@
 - 금지 소재: 한강·다리·투신·수온 등 자살을 연상시키는 표현, 실존 기업명·실존 티커(삼성전자, NVDA, TSLA 등). 게임 오버·블랙코미디는 재정적 파산 소재(반대매매, 깡통계좌, 영끌 실패 등)로만 쓴다.
 - UI를 바꾸면 Playwright로 1920×1080, 1366×768 스크린샷을 찍어 확인한다.
 - 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
-  - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper] [--file docs/demo] [--md out.md]`
+  - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards] [--file docs/demo] [--md out.md]`
+  - 카드 한 장의 기대 수익(시장 카드): `node tools/sim/cardev.cjs [--file docs/demo]` — 같은 시드로 카드 사용/미사용을 비교, 순자산 대비 %
   - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
   - 목표치 실험: `--targets 10800,11100,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
 
@@ -25,7 +26,8 @@
 - `docs/demo` — 프로토타입 본체 (단일 HTML 파일, **확장자 없음**). CSS·마크업·JS가 한 파일에 들어 있다.
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
-- `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 5종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
+- `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
+- `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
 
 ## 기술 스택
 
@@ -41,12 +43,14 @@
 
 - 로직 함수는 DOM(`document`, `innerHTML`, `alert`), Canvas, `setTimeout`/`setInterval`에 직접 의존하지 않는다. 입력을 받아 상태를 바꾸거나 값을 반환하고, 화면 갱신은 호출 측(UI 레이어)이 `renderUI()`/`renderChart()`로 한다.
 - `docs/demo`의 `<script>`는 세 구역으로 나뉜다. 이 경계를 유지한다:
-  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`·`RARITY_WEIGHTS`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`, 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
+  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 시장 카드 `MARKET_CARD_ODDS`·`REVERSION_*`·`PUMP_*`, 금감원 게이지 `FSS_*`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`·`RARITY_WEIGHTS`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`, 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
   - **ENGINE** (DOM 접근 금지): 상태 `run`(한 판 전체: 현금·포지션·더미·행동력·대기 매수 효과·오늘의 효과), `assets`(종목별 가격·스파크라인 `history`·캔들 `candles`), `marketPrice`/`marketState`/`candleData`(지수).
     - 포지션 (롱·숏 공용, `dir` = +1/−1): `exposure`, `posEquity`, `posPnl`, `marginRatio`, `openPosition`(같은 종목·방향·레버리지 포지션이 있으면 `addToPosition`으로 통합), `closePosition`, `sellPosition`, `sellAllPositions`, `checkOrders`(예약주문), `checkMarginCalls`
     - 카드: `CARDS`/`CARD_BY_ID`를 `defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play)`로 정의. 사용은 `checkPlay` → `playCard(handIdx, targetId)`, 대상 목록은 `validTargetIds`
     - 더미: `buildWeekPiles`, `drawCards`, `newCard`
     - 유물(패시브, `run.relics`): `hasRelic`, `gainRelic`, `rollRelics`. 효과는 계산 지점에 직접 개입한다 — 손익 `relicAdjustedPnl`(국밥 정신·존버의 인장, `posEquity`를 거쳐 청산·증거금률·순자산까지), `pumpUpChance`(리딩방 VIP), `checkMarginCalls` 패널티(증권사 담당자 핫라인), `interestRate`(캐피탈 VVIP), `maxAp`(떡상 기원 부적), `endOfRound`(부모님 카드). 새 유물도 이렇게 계산 함수 안에서 `hasRelic()`으로 분기한다.
+    - 시장 카드(비둘기·매파·CEO 트윗): 장전엔 `run.marketCard`만 기록 → `startMarket`에서 `rollMarketCard`가 `MARKET_CARD_ODDS`로 장세 판정(`run.forcedState`, NORMAL = 무시됨). 카드로 만든 강세·약세장이면 `endOfDay`가 다음 날 되돌림(`run.revertDir`·`revertTicksLeft`)을 예약하고, `tick`이 `pushNewCandle(extraDrift)`로 반영.
+    - 금감원 감시 게이지(`run.fss`): `playCard`에서 `FSS_CARDS`를 쓰면 `raiseFss` → 가득 차면 `sanctionFss`(과징금 또는 `run.buyBanNext` → 다음 날 `buyBanToday`, `checkPlay`가 `'banned'`). `startNextRound`에서 `FSS_WEEKLY_DECAY`만큼 감소. HUD `#fssBox`.
     - 찌라시(장중 선택 이벤트): `tick` 끝에서 `maybeTriggerTip` → `openTip`(→ `run.pendingTip`, 이 동안 `tick`은 멈춤) → `resolveTip(choiceIdx)`가 확률 판정 후 `applyTipEffect`로 효과(cash·buy·shock·pump·market·sellStock·protect)를 적용하고 `run.tipLog`에 순자산 변화를 남긴다. 이벤트는 CONFIG `TIP_EVENTS`에 데이터로만 추가한다.
     - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward`(카드 보상: 덱에 없는 카드만) → `chooseRelicReward`(유물 보상: 없는 것 2개 중 1개, 다 모았으면 생략) → `openShop`(암시장: `buyPack`·`buySingle`·`shopRemoveCard` — 팩 풀 `packPool`과 낱장 진열도 덱에 없는 카드만, `inDeck`) → `leaveShop` → `startNextRound`
     - 결산·종료: `startNextRound`가 `markWeekStart`로 주 시작 기준값(`run.weekStart`)을 남기고, `endOfRound`가 `weekSummary`로 이번 주 요약 `run.lastWeek`(순자산·목표·달성률·주간 수익·확정손익·반대매매·이자·이월 포지션)를 만든다. 판이 끝나면 `endRun(reason)`이 `classifyEnd`로 원인 `run.endCause`(VICTORY / YOLO_BUST·MARGIN_CALL·SHORT_SQUEEZE·DEBT_SPIRAL = 파산 / NEAR_MISS·HODL_FAIL·LIQ_ADDICT·SLOW_BLEED = 목표 미달)를 정한다. 판정 기준은 CONFIG `END_*`. 최고 순자산 `run.peakEquity`는 틱·결산·종료 시점에 갱신.

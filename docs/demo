@@ -734,6 +734,26 @@ body::after{
   font-family:'Press Start 2P';font-size:7px;color:var(--cyan);
 }
 .day-track{flex:1;height:8px;background:#000;box-shadow:0 0 0 2px var(--line);}
+.hud-col{margin-bottom:10px;}
+.hud-col .hud{margin-bottom:8px;}
+.fss{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+}
+.fss-label{white-space:nowrap;}
+.fss-track{flex:1;height:6px;background:#000;box-shadow:0 0 0 2px var(--line);}
+.fss-fill{height:100%;width:0;background:var(--green2);}
+.fss-state{white-space:nowrap;min-width:9em;text-align:right;}
+.fss.warm .fss-fill{background:var(--gold2);}
+.fss.warm .fss-state{color:var(--gold);}
+.fss.hot .fss-fill{background:var(--red);}
+.fss.hot .fss-label,.fss.hot .fss-state{color:var(--red);animation:blink 1s step-end infinite;}
+.fss-verdict{
+  margin:12px 0;padding:12px;background:#000;box-shadow:0 0 0 2px var(--red2);
+  font-family:'VT323';font-size:22px;color:var(--text);text-align:center;line-height:1.3;
+}
+.fss-verdict b{color:var(--red);}
+.fss-verdict small{font-size:16px;color:var(--muted);}
 .day-fill{height:100%;width:0;background:var(--cyan);}
 
 .target-line{
@@ -965,7 +985,8 @@ body::after{
 
   /* 상단 바 구성: 타이틀·장세 | 주차·일자 | 순자산·목표 | 현금·대출·확정·이자 */
   .play-top .hdr{flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;margin:0;}
-  .play-top .hud{flex:1 1 240px;min-width:220px;margin:0;align-self:center;white-space:nowrap;}
+  .play-top .hud-col{flex:1 1 240px;min-width:220px;margin:0;align-self:center;display:flex;flex-direction:column;gap:8px;}
+  .play-top .hud{margin:0;white-space:nowrap;}
   .play-top .balance-main{flex:0 1 270px;min-width:230px;margin:0;padding:8px 12px;}
   .play-top .balance-main .total{font-size:16px;margin-top:4px;}
   .play-top .target-line{margin-top:6px;}
@@ -1060,10 +1081,17 @@ body::after{
         <span class="state-tag" id="marketStateTag">■ NORMAL</span>
       </div>
 
-      <div class="hud">
-        <span id="roundText">WEEK 1/8</span>
-        <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
-        <span id="dayText">DAY 1/5 · 장전</span>
+      <div class="hud-col">
+        <div class="hud">
+          <span id="roundText">WEEK 1/8</span>
+          <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
+          <span id="dayText">DAY 1/5 · 장전</span>
+        </div>
+        <div class="fss" id="fssBox" title="시장 카드(비둘기·매파·CEO 트윗·리딩방)를 쓸 때마다 쌓인다. 가득 차면 제재.">
+          <span class="fss-label">☎ 금감원 감시</span>
+          <div class="fss-track"><div class="fss-fill" id="fssFill"></div></div>
+          <span class="fss-state" id="fssState">조용함</span>
+        </div>
       </div>
 
       <div class="balance-main px-corner-box">
@@ -1232,8 +1260,11 @@ const DIAMOND_BONUS       = 0.30;  // 다이아몬드 핸드: 주말 평가이�
 const FORCED_DIVIDEND     = 0.06;  // 강제 장기투자: 원금의 6%
 const DIVIDEND_PER_POS    = 80;    // 배당주 마인드: 포지션당 (만원)
 const HODL_RECOVER        = 0.30;  // 존버는 승리한다: 평가손실 30% 회복
-const PUMP_UP_CHANCE      = 0.70;  // 리딩방 찌라시: 급등 확률
-const PUMP_DRIFT          = 0.02;  // 작전주 틱당 추가 수익률 (하루 12틱 ≈ ±27%)
+const PUMP_UP_CHANCE      = 0.55;  // 리딩방 찌라시: 급등 확률
+const PUMP_UP_PCT         = 0.15;  // 급등: 하루(12틱) 동안 +15%
+const PUMP_DOWN_PCT       = 0.11;  // 설거지: 하루 동안 −11%  → 한 번 쓸 때 기대값 약 +3%
+const PUMP_UP_DRIFT       = Math.log(1 + PUMP_UP_PCT) / TICKS_PER_DAY;    // 틱당 작전 추세
+const PUMP_DOWN_DRIFT     = Math.log(1 - PUMP_DOWN_PCT) / TICKS_PER_DAY;  // (음수)
 const INDICATOR_DRAW      = 2;     // 보조지표 42개 드로우
 const COFFEE_AP           = 2;     // 아아 수혈
 const MARGIN_TOPUP        = 500;   // 증거금 보충 (만원)
@@ -1241,6 +1272,25 @@ const HEDGE_RATIO         = 0.30;  // 인버스 헤지: 롱 노출액의 30%
 const HEDGE_STOCK         = 'inv'; // 인버스 헤지로 사는 종목
 const OVERDRAFT_AMOUNT    = 1500;  // 마이너스 통장 (만원)
 const SAVINGS_AMOUNT      = 800;   // 적금 깨기 (만원)
+
+// 시장 카드 — 장세를 확정하지 않고 확률을 기울인다. 결과는 장이 열릴 때 판정 (chance 합 1, NORMAL = 시장이 무시함)
+const MARKET_CARD_ODDS = {
+  dove:     [ { state:'BULL', chance:0.60 }, { state:'NORMAL', chance:0.25 }, { state:'BEAR', chance:0.15 } ],
+  hawk:     [ { state:'BEAR', chance:0.60 }, { state:'NORMAL', chance:0.25 }, { state:'BULL', chance:0.15 } ],
+  ceoTweet: [ { state:'VOLATILE', chance:0.50 }, { state:'BULL', chance:0.30 }, { state:'NORMAL', chance:0.20 } ]
+};
+const REVERSION_TICKS     = 3;     // 카드로 만든 강세·약세장 다음 날, 개장 후 이만큼 틱 동안
+const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세장 12의 절반) — 차익실현 매물
+
+// 금감원 감시 게이지 — 시장 카드를 쓸 때마다 쌓이고, 주가 바뀌면 조금 줄고, 가득 차면 제재
+const FSS_CARDS           = ['dove', 'hawk', 'ceoTweet', 'pump'];
+const FSS_MAX             = 100;
+const FSS_PER_CARD        = 20;    // 시장 카드 1장당 (5장이면 가득)
+const FSS_WEEKLY_DECAY    = 40;    // 새 주가 시작될 때 줄어드는 양 (주 2장은 공짜)
+const FSS_WARN            = 70;    // 이 이상이면 '내사 착수'
+const FSS_FINE_CHANCE     = 0.5;   // 제재 중 과징금이 나올 확률 (나머지는 다음 날 매수 금지)
+const FSS_FINE_PCT        = 0.05;  // 과징금 = 순자산의 5%
+const FSS_BAN_TYPES       = ['stock', 'buy'];   // 매수 금지 날 못 쓰는 카드 종류
 
 // 암시장 (주간 결산 → 보상 선택 후, 다음 주 개장 전까지만 열림). 돈은 현금(=순자산)에서 나간다.
 // 카드 팩: 희귀도를 weights로 먼저 뽑고, 그 희귀도 안에서 풀의 카드를 균등하게 뽑는다 → 화면의 %가 곧 실제 확률.
@@ -1282,7 +1332,7 @@ const RELIC_GUKBAP_SECTORS       = ['방어주', '우량주']; // 국밥 정신 
 const RELIC_GUKBAP_LOSS_CUT      = 0.5;   // 국밥 정신: 평가손실 50% 감소
 const RELIC_SEAL_DAYS            = 3;     // 존버의 인장: 장 마감을 이만큼 넘긴 포지션부터
 const RELIC_SEAL_BONUS           = 0.10;  // 존버의 인장: 평가이익 +10%
-const RELIC_VIP_PUMP_CHANCE      = 0.85;  // 리딩방 VIP: 찌라시 급등 확률
+const RELIC_VIP_PUMP_CHANCE      = 0.65;  // 리딩방 VIP: 찌라시 급등 확률 (기대값 +3% → +6%)
 const RELIC_HOTLINE_PENALTY_CUT = 1.0;    // 증권사 담당자 핫라인: 반대매매 투매 손실 면제 비율
 const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
 const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
@@ -1675,11 +1725,11 @@ function initChartData(){
   marketPrice = base;
 }
 
-function generateNextCandle(openPrice){
-  let drift = 0, volMult = 1.0;
-  if(marketState==='BULL'){drift=12;volMult=1.2;}
-  else if(marketState==='BEAR'){drift=-12;volMult=1.2;}
-  else if(marketState==='VOLATILE'){drift=0;volMult=2.8;}
+function generateNextCandle(openPrice, extraDrift = 0){
+  let drift = extraDrift, volMult = 1.0;
+  if(marketState==='BULL'){drift+=12;volMult=1.2;}
+  else if(marketState==='BEAR'){drift-=12;volMult=1.2;}
+  else if(marketState==='VOLATILE'){volMult=2.8;}
 
   const change = drift + (rand()-INDEX_TICK_CENTER)*40*volMult;
   const closePrice = Math.max(100, Math.round(openPrice+change));
@@ -1690,9 +1740,9 @@ function generateNextCandle(openPrice){
   return {open:Math.round(openPrice), high:Math.max(10,high), low:Math.max(10,low), close:Math.round(closePrice)};
 }
 
-function pushNewCandle(){
+function pushNewCandle(extraDrift = 0){
   const lastClose = candleData.length>0 ? candleData[candleData.length-1].close : marketPrice;
-  const newCandle = generateNextCandle(lastClose);
+  const newCandle = generateNextCandle(lastClose, extraDrift);
   marketPrice = newCandle.close;
   candleData.push(newCandle);
   if(candleData.length > MAX_CANDLES) candleData.shift();
@@ -1839,7 +1889,7 @@ function updateAssetPrices(idxLogRet, pumps){
   STOCKS.forEach(s => {
     const a = assets[s.id];
     let r = STOCK_DRIFT + s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss();
-    if(pumps[s.id]) r += pumps[s.id] * PUMP_DRIFT;
+    if(pumps[s.id]) r += pumps[s.id] > 0 ? PUMP_UP_DRIFT : PUMP_DOWN_DRIFT;
     const open = a.price;
     a.price *= Math.exp(r);
     const wick = s.volatility * IDIO_SCALE * CANDLE_WICK_SCALE;
@@ -2053,6 +2103,8 @@ function defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play)
   return c;
 }
 const pct = r => Math.round(Math.abs(r) * 100) + '%';
+const STATE_LABEL = { BULL:'강세장', BEAR:'약세장', VOLATILE:'변동성 장세', NORMAL:'평상시' };
+const marketOddsText = id => MARKET_CARD_ODDS[id].map(o => `${STATE_LABEL[o.state]} ${pct(o.chance)}`).join(' / ');
 
 /* 종목 카드 (행동력 1 + 현금) */
 STOCKS.forEach(s => {
@@ -2177,21 +2229,21 @@ defCard('hodlWins', '존버는 승리한다', 'hold', 2, 'legendary', null, true
 
 /* 행동 */
 defCard('pump', '리딩방 찌라시', 'action', 1, 'uncommon', 'asset', false,
-  `오늘 이 종목에 작전. ${pct(PUMP_UP_CHANCE)} 급등, ${pct(1 - PUMP_UP_CHANCE)} 설거지. 결과는 장이 열려야 안다.`,
+  `오늘 이 종목에 작전. ${pct(PUMP_UP_CHANCE)} 급등(+${pct(PUMP_UP_PCT)}), ${pct(1 - PUMP_UP_CHANCE)} 설거지(−${pct(PUMP_DOWN_PCT)}). 결과는 장이 열려야 안다. 금감원 감시 +${FSS_PER_CARD}.`,
   s => !run.pumps[s.id],
   s => { run.pumps[s.id] = rand() < pumpUpChance() ? 1 : -1; });
 defCard('dove', '연준 비둘기 발언', 'action', 1, 'common', null, false,
-  '오늘 장을 강세장(BULL)으로.',
-  () => run.forcedState !== 'BULL',
-  () => { run.forcedState = 'BULL'; });
+  `장이 열릴 때 판정: ${marketOddsText('dove')}. 금감원 감시 +${FSS_PER_CARD}.`,
+  () => run.marketCard !== 'dove',
+  () => { run.marketCard = 'dove'; });
 defCard('hawk', '연준 매파 발언', 'action', 1, 'common', null, false,
-  '오늘 장을 약세장(BEAR)으로. 인버스·숏 보유자용.',
-  () => run.forcedState !== 'BEAR',
-  () => { run.forcedState = 'BEAR'; });
+  `장이 열릴 때 판정: ${marketOddsText('hawk')}. 인버스·숏 보유자용. 금감원 감시 +${FSS_PER_CARD}.`,
+  () => run.marketCard !== 'hawk',
+  () => { run.marketCard = 'hawk'; });
 defCard('ceoTweet', 'CEO 밈 트윗', 'action', 0, 'uncommon', null, false,
-  '오늘 장을 변동성 장세(VOLATILE)로. 밈코인이 날뛴다.',
-  () => run.forcedState !== 'VOLATILE',
-  () => { run.forcedState = 'VOLATILE'; });
+  `장이 열릴 때 판정: ${marketOddsText('ceoTweet')}. 밈코인이 날뛴다. 금감원 감시 +${FSS_PER_CARD}.`,
+  () => run.marketCard !== 'ceoTweet',
+  () => { run.marketCard = 'ceoTweet'; });
 defCard('indicators', '보조지표 42개', 'action', 0, 'common', null, false,
   `카드 ${INDICATOR_DRAW}장을 뽑는다. 지표를 볼수록 확신이 사라진다.`,
   () => true,
@@ -2247,6 +2299,7 @@ function checkPlay(handIdx, targetId){
   if(!inst) return 'none';
   const card = CARD_BY_ID[inst.id];
   if(card.type === 'status') return 'unplayable';
+  if(run.buyBanToday && FSS_BAN_TYPES.indexOf(card.type) >= 0) return 'banned';
   if(run.ap < card.ap) return 'ap';
   const t = resolveTarget(card, targetId);
   if(card.target && !t) return 'target';
@@ -2274,6 +2327,7 @@ function playCard(handIdx, targetId){
   if(card.exhaust) run.exhausted.push(inst); else run.discard.push(inst);
   card.play(t);
   emit('cardPlayed', {card});
+  if(FSS_CARDS.indexOf(card.id) >= 0) raiseFss();
   checkBankruptcy();
   return true;
 }
@@ -2320,6 +2374,9 @@ function newRun(){
     pending: { lev: 1, dir: 1, principalMult: 1 },
     // 오늘만 유효한 효과 (startDay에서 초기화)
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
+    marketCard: '', cardMarket: false,       // 오늘 쓴 시장 카드 (장이 열릴 때 판정) / 오늘 장세가 카드로 만들어졌는지
+    revertDir: 0, revertTicksLeft: 0,        // 카드 장세 다음 날 되돌림 (지수 방향 ±1, 남은 틱)
+    fss: 0, fssSanctions: 0, buyBanNext: false, buyBanToday: false,   // 금감원 감시 게이지 · 제재
     pendingTip: null, tipsToday: 0, ticksSinceTip: 0, lastTipId: '', tipLog: [],
     eventTicksLeft: 0, ticksSinceEvent: 0,
     rewardChoices: [], endReason: '', endEquity: 0,
@@ -2343,6 +2400,10 @@ function startDay(){
   run.tickInDay = 0;
   run.ap = maxAp();
   run.forcedState = '';
+  run.marketCard = '';
+  run.cardMarket = false;
+  run.buyBanToday = run.buyBanNext;
+  run.buyBanNext = false;
   run.pumps = {};
   run.noSellToday = false;
   run.allProtectedToday = false;
@@ -2350,20 +2411,55 @@ function startDay(){
   run.tipsToday = 0;
   run.positions.forEach(p => { p.protectedToday = false; });
   drawCards(DRAW_PER_DAY);
-  emit('dayStart', {round: run.round, day: run.day});
+  emit('dayStart', {round: run.round, day: run.day, buyBan: run.buyBanToday});
 }
 
 function startMarket(){
   if(!run || run.phase !== 'premarket') return false;
   run.phase = 'market';
   run.tickInDay = 0;
+  let outcome = '';
+  if(run.marketCard){
+    outcome = rollMarketCard(run.marketCard);   // NORMAL = 시장이 무시 → 평소처럼 (랜덤 이벤트 가능)
+    if(outcome !== 'NORMAL'){ run.forcedState = outcome; run.cardMarket = true; }
+  }
   if(run.forcedState){
     marketState = run.forcedState;
     run.eventTicksLeft = 0;
   }
   const pumps = STOCKS.filter(s => run.pumps[s.id]).map(s => ({ name: s.name, dir: run.pumps[s.id] }));
-  emit('marketOpen', {forcedState: run.forcedState, pumps});
+  emit('marketOpen', {forcedState: run.forcedState, marketCard: run.marketCard, outcome, pumps, reverting: run.revertTicksLeft > 0});
   return true;
+}
+
+function rollMarketCard(cardId){
+  const odds = MARKET_CARD_ODDS[cardId];
+  let roll = rand();
+  for(let i = 0; i < odds.length; i++){
+    roll -= odds[i].chance;
+    if(roll < 0) return odds[i].state;
+  }
+  return odds[odds.length - 1].state;
+}
+
+/* 금감원 감시 게이지 */
+function raiseFss(){
+  const before = run.fss;
+  run.fss = Math.min(FSS_MAX, run.fss + FSS_PER_CARD);
+  emit('fssRaised', {level: run.fss, warn: before < FSS_WARN && run.fss >= FSS_WARN && run.fss < FSS_MAX});
+  if(run.fss >= FSS_MAX) sanctionFss();
+}
+function sanctionFss(){
+  run.fss = 0;
+  run.fssSanctions++;
+  if(rand() < FSS_FINE_CHANCE){
+    const fine = Math.round(Math.max(0, netEquity()) * FSS_FINE_PCT);
+    run.cash -= fine;
+    emit('fssSanction', {kind: 'fine', amount: fine});
+  } else {
+    run.buyBanNext = true;
+    emit('fssSanction', {kind: 'ban'});
+  }
 }
 
 function updateMarketEvent(){
@@ -2461,7 +2557,9 @@ function resolveTip(choiceIdx){
 
 function tick(){
   if(!run || run.phase !== 'market' || run.pendingTip) return;   // 찌라시 대기 중엔 시장 정지
-  updateAssetPrices(pushNewCandle(), run.pumps);
+  let revert = 0;
+  if(run.revertTicksLeft > 0){ revert = run.revertDir * REVERSION_DRIFT; run.revertTicksLeft--; }   // 차익실현 매물
+  updateAssetPrices(pushNewCandle(revert), run.pumps);
   updateMarketEvent();
   checkOrders();
   checkMarginCalls();
@@ -2479,6 +2577,10 @@ function endOfDay(){
   const interest = run.interestFree ? 0 : totalBorrowed() * interestRate();
   run.cash -= interest;
   run.interestPaid += interest;
+  if(run.cardMarket && (run.forcedState === 'BULL' || run.forcedState === 'BEAR')){   // 카드로 만든 방향 장세 → 내일 개장 초반 되돌림
+    run.revertDir = run.forcedState === 'BULL' ? -1 : 1;
+    run.revertTicksLeft = REVERSION_TICKS;
+  }
   if(run.forcedState){ marketState = 'NORMAL'; emit('eventEnd'); }
   STOCKS.forEach(s => { assets[s.id].dayOpen = assets[s.id].price; });
   emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital')});
@@ -2725,6 +2827,7 @@ function leaveShop(){
 
 function startNextRound(){
   run.round++;
+  run.fss = Math.max(0, run.fss - FSS_WEEKLY_DECAY);
   run.day = 1;
   run.rewardChoices = [];
   markWeekStart();
@@ -2767,7 +2870,16 @@ const TYPE_ORDER   = ['stock', 'buy', 'sell', 'hold', 'action', 'defense', 'stat
 const RARITY_LABEL = { common:'일반', uncommon:'고급', legendary:'전설' };
 const TARGET_LABEL = { position:'▶포지션', asset:'▶종목' };
 const ORDER_LABEL  = { stop:'손절 예약', take:'익절 예약', trail:'트레일링 스탑' };
-const FORCED_NEWS  = { BULL:'연준 비둘기 발언! 강세장 진입', BEAR:'연준 매파 발언! 약세장 진입', VOLATILE:'CEO 밈 트윗으로 변동성 폭발!' };
+// 시장 카드 판정 결과 뉴스 [카드][장세] → [문구, 토스트 종류]
+const MARKET_CARD_NEWS = {
+  dove:     { BULL:['연준 비둘기 발언! 강세장 진입', 'good'], NORMAL:['연준 발언에 시장 무반응… 평상시', 'info'],
+              BEAR:['"비둘기인 줄 알았는데 매였다" 역풍, 약세장', 'bad'] },
+  hawk:     { BEAR:['연준 매파 발언! 약세장 진입', 'good'], NORMAL:['매파 발언, 이미 가격에 반영… 평상시', 'info'],
+              BULL:['"오히려 좋아" 매파 발언에 역으로 강세장', 'bad'] },
+  ceoTweet: { VOLATILE:['CEO 밈 트윗으로 변동성 폭발!', 'good'], BULL:['CEO 트윗에 개미 환호, 강세장!', 'good'],
+              NORMAL:['CEO 트윗, 알고 보니 반려견 사진… 평상시', 'info'] }
+};
+const FSS_TEXT = level => level >= FSS_WARN ? '내사 착수' : level >= FSS_WARN / 2 ? '주시 중' : '조용함';
 const SHOP_REJECT_TEXT = {
   phase:'암시장은 라운드 종료 후 이용 가능', cash:'현금이 부족합니다',
   limit:'이번 주에는 더 이상 할 수 없습니다', sold:'이미 산 카드입니다',
@@ -2778,7 +2890,8 @@ const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
   invalid:'지금은 쓸 수 없는 카드입니다', target:'대상을 고르세요',
   unplayable:'사용할 수 없는 카드입니다', none:'카드가 없습니다',
-  locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번)'
+  locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번)',
+  banned:'☎ 금감원 제재 중 — 오늘은 신규 매수 금지'
 };
 const CARD_ORDER = {};
 CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; });
@@ -2846,12 +2959,21 @@ function onGameEvent(type, d){
       flashLiquidation();
       break;
     case 'reshuffle': toast('버린 카드를 섞어 새 덱으로', 'info'); break;
-    case 'dayStart':  if(d.day > 1) toast(`WEEK ${d.round} · DAY ${d.day} 장전 — 카드를 쓰고 장을 여세요`, 'info'); break;
+    case 'dayStart':
+      if(d.day > 1) toast(`WEEK ${d.round} · DAY ${d.day} 장전 — 카드를 쓰고 장을 여세요`, 'info');
+      if(d.buyBan) toast('☎ 오늘은 "투자주의 계좌" — 신규 매수 금지', 'bad');
+      break;
     case 'marketOpen':
       toast('▶ 장 시작!', 'good');
-      if(d.forcedState){
-        $('newsText').textContent = FORCED_NEWS[d.forcedState];
-        $('marketStateTag').textContent = '■ ' + d.forcedState;
+      if(d.marketCard){
+        const [news, kind] = MARKET_CARD_NEWS[d.marketCard][d.outcome];
+        $('newsText').textContent = news;
+        toast(`${CARD_BY_ID[d.marketCard].name} → ${STATE_LABEL[d.outcome]}`, kind);
+      }
+      if(d.forcedState) $('marketStateTag').textContent = '■ ' + d.forcedState;
+      if(d.reverting){
+        if(!d.marketCard) $('newsText').textContent = '어제 급등락에 차익실현 매물 출회… 개장 초반 되돌림';
+        toast('📉 차익실현 매물 — 개장 초반 되돌림', 'warn');
       }
       d.pumps.forEach(pm => toast(pm.dir > 0 ? `📈 ${pm.name} 작전 성공! 급등 중` : `📉 ${pm.name} 설거지 당함! 급락 중`, pm.dir > 0 ? 'good' : 'bad'));
       break;
@@ -2864,6 +2986,19 @@ function onGameEvent(type, d){
       $('marketStateTag').textContent = '■ ' + d.state;
       break;
     case 'eventEnd': resetNews(); break;
+    case 'fssRaised':
+      if(d.warn) toast('☎ 금감원: "최근 거래 패턴을 살펴보고 있습니다"', 'warn');
+      break;
+    case 'fssSanction':
+      showOverlay(`
+        <div class="ov-title" style="color:var(--red)">☎ 금감원에서 전화가 왔습니다</div>
+        <div class="ov-sub">"고객님 계좌에서 시세조종이 의심되는 거래가 반복적으로 확인되어 연락드렸습니다."</div>
+        <div class="fss-verdict">${d.kind === 'fine'
+          ? `과징금 <b>−${fmtMoney(d.amount)}</b><br><small>순자산의 ${pct(FSS_FINE_PCT)}. 리딩방 회비보다는 쌉니다.</small>`
+          : `내일 하루 <b>신규 매수 금지</b><br><small>"투자주의 계좌" 지정. 보유 종목은 팔 수 있습니다.</small>`}</div>
+        <div class="ov-sub">감시 게이지는 0으로 돌아갑니다. 당분간 조용히 지내세요.</div>
+        <button class="ov-btn" data-act="close">…네, 알겠습니다</button>`);
+      break;
     case 'roundClear': lastRoundClear = d; showRoundResult(d); break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
@@ -2947,6 +3082,11 @@ function renderHud(){
   $('realizedPnL').textContent = '₩ ' + fmtSigned(run.realized);
   $('realizedPnL').style.color = run.realized >= 0 ? 'var(--green)' : 'var(--red)';
   $('interestVal').textContent = fmtMoney(run.interestPaid);
+
+  const fss = run.fss / FSS_MAX;
+  $('fssFill').style.width = Math.min(100, fss * 100) + '%';
+  $('fssBox').className = 'fss' + (run.fss >= FSS_WARN ? ' hot' : run.fss >= FSS_WARN / 2 ? ' warm' : '');
+  $('fssState').textContent = run.buyBanToday ? '매수 금지 중' : `${FSS_TEXT(run.fss)} ${Math.round(run.fss)}/${FSS_MAX}`;
 }
 
 /* ── 큰 차트: 지수 또는 선택한 종목 ── */
@@ -3027,7 +3167,10 @@ function renderTurn(){
   if(pd.lev > 1) parts.push(pd.lev === CREDIT_LEV ? `신용 ${pd.lev}x` : `영끌 ${pd.lev}x`);
   if(pd.dir < 0) parts.push('숏');
   if(parts.length) chips.push(`<span class="chip ${pd.dir < 0 ? 'short' : 'buy'}">다음 매수: ${parts.join(' · ')}</span>`);
-  if(run.forcedState) chips.push(`<span class="chip mod">오늘 장: ${run.forcedState}</span>`);
+  if(run.marketCard && run.phase === 'premarket') chips.push(`<span class="chip mod">${CARD_BY_ID[run.marketCard].name} 대기 — ${marketOddsText(run.marketCard)}</span>`);
+  if(run.forcedState) chips.push(`<span class="chip mod">오늘 장: ${STATE_LABEL[run.forcedState]}</span>`);
+  if(run.revertTicksLeft > 0) chips.push(`<span class="chip">차익실현 매물 대기 (개장 후 ${run.revertTicksLeft}틱)</span>`);
+  if(run.buyBanToday) chips.push('<span class="chip short">☎ 금감원 제재: 오늘 신규 매수 금지</span>');
   if(run.interestFree) chips.push('<span class="chip">오늘 이자 면제</span>');
   if(run.noSellToday) chips.push('<span class="chip mod">계좌 잠금: 매도 불가 · 반대매매 면제</span>');
   $('chipBox').innerHTML = chips.join('');

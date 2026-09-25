@@ -18,7 +18,7 @@ function loadPlaywright(){
   return require(path.join(globalRoot, 'playwright'));
 }
 
-const STRATEGIES = ['nothing', 'stocksOnly', 'allCards', 'yolo', 'shopper'];
+const STRATEGIES = ['nothing', 'stocksOnly', 'allCards', 'yolo', 'shopper', 'marketCards'];
 const TIP_MODES = ['A', 'B', 'random'];
 
 function parseArgs(argv){
@@ -48,7 +48,8 @@ function installBots(){
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 
-  let played = 0;
+  let played = 0, marketPlayed = 0;
+  const countPlay = id => { played++; if(['dove', 'hawk', 'ceoTweet', 'pump'].indexOf(id) >= 0) marketPlayed++; };
   // 조건에 맞는 손패 카드 중 지금 쓸 수 있는 첫 장을 쓴다 (대상 카드는 첫 번째 유효 대상)
   function playFirst(match){
     for(let i = 0; i < run.hand.length; i++){
@@ -56,26 +57,82 @@ function installBots(){
       if(card.type === 'status' || !match(card)) continue;
       if(card.target){
         const ids = validTargetIds(i);
-        if(ids.length && playCard(i, ids[0])){ played++; return true; }
-      } else if(checkPlay(i) === null && playCard(i)){ played++; return true; }
+        if(ids.length && playCard(i, ids[0])){ countPlay(card.id); return true; }
+      } else if(checkPlay(i) === null && playCard(i)){ countPlay(card.id); return true; }
     }
     return false;
   }
   const isStock = c => c.type === 'stock';
+  // 조건에 맞는 손패 카드 중 score가 가장 큰 것부터 쓴다. 쓴 카드 id를 돌려준다 ('' = 못 씀)
+  function playBest(match, score, target){
+    const order = run.hand.map((inst, i) => i).filter(i => match(CARD_BY_ID[run.hand[i].id]))
+      .sort((a, b) => score(CARD_BY_ID[run.hand[b].id]) - score(CARD_BY_ID[run.hand[a].id]));
+    for(const i of order){
+      const card = CARD_BY_ID[run.hand[i].id];
+      if(card.target){
+        const ids = validTargetIds(i);
+        if(ids.length && playCard(i, target ? target(ids) : ids[0])){ countPlay(card.id); return card.id; }
+      } else if(checkPlay(i) === null && playCard(i)){ countPlay(card.id); return card.id; }
+    }
+    return '';
+  }
+
+  // marketCards: 시장 카드(비둘기·매파·CEO 트윗·리딩방)를 먼저 쓰고, 그 방향에 맞춰 레버리지 → 종목 매수.
+  // 나머지 카드는 allCards처럼 전부 쓴다 → allCards와의 차이 = 시장 카드를 잘 쓴 효과
+  const MARKET_IDS = ['dove', 'pump', 'ceoTweet', 'hawk'];
+  const MARKET_DIR = { dove: 1, pump: 1, ceoTweet: 1, hawk: -1 };
+  const beta = c => STOCK_BY_ID[c.stock].beta;
+  const punch = c => STOCK_BY_ID[c.stock].cost * Math.abs(beta(c));   // 방향이 맞을 때 효과 크기
+  let mDay = '', mDir = 0, mPumped = '';
+  function marketDay(){
+    const key = run.round + '/' + run.day;
+    if(mDay !== key){ mDay = key; mDir = 0; mPumped = ''; }
+    // 1) 시장 카드 (방향이 정해지면 같은 방향만). 리딩방은 손패의 가장 센 롱 종목에
+    const pumpTarget = ids => {
+      const best = run.hand.map(i => CARD_BY_ID[i.id]).filter(c => isStock(c) && beta(c) > 0 && ids.indexOf(c.stock) >= 0)
+        .sort((a, b) => punch(b) - punch(a))[0];
+      mPumped = best ? best.stock : ids[0];
+      return mPumped;
+    };
+    const used = playBest(c => MARKET_DIR[c.id] !== undefined && (mDir === 0 || MARKET_DIR[c.id] === mDir),
+                          c => -MARKET_IDS.indexOf(c.id), pumpTarget);
+    if(used){ mDir = MARKET_DIR[used]; return true; }
+    if(mDir !== 0){
+      const aligned = c => isStock(c) && Math.sign(beta(c)) === mDir && run.cash >= stockCost(STOCK_BY_ID[c.stock]);
+      // 2) 레버리지 (방향 맞는 종목을 살 수 있을 때만)
+      if(run.pending.lev === 1 && run.hand.some(i => aligned(CARD_BY_ID[i.id]))
+         && playBest(c => c.id === 'yolo' || c.id === 'credit', c => c.id === 'yolo' ? 1 : 0)) return true;
+      // 3) 방향 맞는 종목 (작전 건 종목 → 센 종목 순)
+      if(playBest(aligned, c => (c.stock === mPumped ? 1e6 : 0) + punch(c))) return true;
+    }
+    // 4) 나머지는 allCards와 같다
+    return playFirst(() => true);
+  }
   const DAY_PLAY = {
     nothing:    () => false,
     stocksOnly: () => playFirst(isStock),                      // 대기 매수 효과를 안 쓰므로 항상 1x 롱
     allCards:   () => playFirst(() => true),
     yolo:       () => playFirst(c => c.id === 'yolo') || playFirst(c => c.id === 'credit') || playFirst(isStock),
-    shopper:    () => playFirst(() => true)
+    shopper:    () => playFirst(() => true),
+    marketCards: marketDay
   };
   const YOLO_PICKS = ['yolo', 'credit', 'fullBuy'];
 
   function pickCardReward(strategy){
     const ch = run.rewardChoices;
     if(!ch.length) return chooseReward('skip');
-    const pref = strategy === 'yolo' ? ch.find(id => YOLO_PICKS.indexOf(id) >= 0) : '';
+    const pref = strategy === 'yolo' ? ch.find(id => YOLO_PICKS.indexOf(id) >= 0)
+      : strategy === 'marketCards' ? (ch.find(id => MARKET_IDS.indexOf(id) >= 0) || ch.find(id => YOLO_PICKS.indexOf(id) >= 0)) : '';
     return chooseReward('take', pref || ch[0]);
+  }
+
+  // marketCards 암시장: 진열된 시장 카드가 있으면 하나 산다
+  function shopMarketCard(){
+    for(let i = 0; i < run.shop.singles.length; i++){
+      const id = run.shop.singles[i];
+      if(MARKET_IDS.indexOf(id) >= 0 && run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && run.cash >= singlePrice(id)) return buySingle(i);
+    }
+    return false;
   }
 
   // 암시장: 살 수 있는 것 하나 (낱장 → 유물 → 팩 순서로 처음 되는 것)
@@ -98,7 +155,7 @@ function installBots(){
     const botRand = mulberry((seed ^ 0x9E3779B9) >>> 0);   // 봇 선택용 난수는 엔진 난수와 분리
     startNewRun();
     let tips = 0, shopBuys = 0, guard = 0;
-    played = 0;
+    played = 0; marketPlayed = 0;
     const weekEq = [];   // 주간 결산 순자산 (통과·탈락 모두)
     const noteWeek = () => { if(run.lastWeek && weekEq.length < run.lastWeek.round) weekEq.push(Math.round(run.lastWeek.eq)); };
     while(run.phase !== 'over'){
@@ -119,6 +176,7 @@ function installBots(){
         else chooseRelicReward(run.relicChoices[0] || '');
       } else if(run.phase === 'shop'){
         if(strategy === 'shopper' && shopOnce()) shopBuys++;
+        if(strategy === 'marketCards' && shopMarketCard()) shopBuys++;
         leaveShop();
       }
     }
@@ -126,7 +184,7 @@ function installBots(){
     setSeed(null);
     return { seed, weeksCleared: run.weeksCleared, endReason: run.endReason, endCause: run.endCause,
              liquidations: run.liquidations, endEquity: Math.round(run.endEquity), peakEquity: Math.round(run.peakEquity),
-             round: run.round, day: run.day, cardsPlayed: played, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
+             round: run.round, day: run.day, cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
   };
   window.__simTargets = t => { if(t){ if(t.length !== MAX_ROUND) throw new Error('--targets 는 ' + MAX_ROUND + '개'); t.forEach((v, i) => { ROUND_TARGETS[i] = v; }); } return ROUND_TARGETS.slice(); };
   window.__simBatch = (strategy, tipMode, seeds) => seeds.map(s => window.__simGame(strategy, tipMode, s));
@@ -151,6 +209,7 @@ function summarize(games, maxRound){
     weeks: avg(games, g => g.weeksCleared),
     endEquity: avg(games, g => g.endEquity),
     cards: avg(games, g => g.cardsPlayed),
+    market: avg(games, g => g.marketPlayed),
     causes
   };
 }
@@ -161,9 +220,9 @@ function toMarkdown(meta, rows, causes){
   L.push(`- 대상: \`${meta.file}\` (sha1 ${meta.sha})`);
   L.push(`- 주간 목표${meta.overridden ? ' (--targets 로 덮어씀)' : ''}: ${meta.targets.map(v => v.toLocaleString('en-US')).join(' → ')}`);
   L.push('');
-  L.push('| 전략 | 1주 통과 | 4주 통과 | 8주 클리어 | 파산율 | 반대매매/판 | 평균 생존 주 | 평균 최종 순자산 | 카드 사용/판 |');
-  L.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|');
-  rows.forEach(({ name, s }) => L.push(`| ${name} | ${pct(s.pass1, s.n)} | ${pct(s.pass4, s.n)} | ${pct(s.clear, s.n)} | ${pct(s.bankrupt, s.n)} | ${s.liqPerRun.toFixed(2)} | ${s.weeks.toFixed(2)} | ₩ ${Math.round(s.endEquity).toLocaleString('en-US')}만 | ${s.cards.toFixed(1)} |`));
+  L.push('| 전략 | 1주 통과 | 4주 통과 | 8주 클리어 | 파산율 | 반대매매/판 | 평균 생존 주 | 평균 최종 순자산 | 카드 사용/판 | 시장 카드/판 |');
+  L.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
+  rows.forEach(({ name, s }) => L.push(`| ${name} | ${pct(s.pass1, s.n)} | ${pct(s.pass4, s.n)} | ${pct(s.clear, s.n)} | ${pct(s.bankrupt, s.n)} | ${s.liqPerRun.toFixed(2)} | ${s.weeks.toFixed(2)} | ₩ ${Math.round(s.endEquity).toLocaleString('en-US')}만 | ${s.cards.toFixed(1)} | ${s.market.toFixed(1)} |`));
   L.push('');
   L.push('엔딩 분포');
   L.push('');
