@@ -1187,14 +1187,19 @@ const START_CASH        = 10000;   // 시작 자금 (만원) = 1억
 const TICK_MS           = 800;     // 캔들 1개 = 0.8초
 const TICKS_PER_DAY     = 12;      // 장중 = 캔들 12개 (약 10초)
 const DAYS_PER_ROUND    = 5;       // 1주(라운드) = 5거래일
-const ROUND_TARGETS     = [11000, 12500, 14500, 17000, 20000, 24000, 29000, 35000]; // 주차별 순자산 목표 (만원)
+const ROUND_TARGETS     = [10800, 11100, 12000, 13700, 17000, 23100, 34200, 54700]; // 주차별 순자산 목표 (만원). 주간 상승폭 +3% → +60%로 점점 가파르게
 const MAX_ROUND         = ROUND_TARGETS.length;
 
 // 시장
 const IDX_SENS          = 0.6;     // 지수 움직임이 종목에 전달되는 비율 (× beta)
 const IDIO_SCALE        = 0.25;    // 종목 고유 변동 크기 (× volatility)
+const STOCK_DRIFT       = 0.001;   // 종목 틱당 기대 로그수익률 — 사면 이길 확률이 조금 더 높도록 (공매도는 그만큼 불리).
+                                   // 0.001 = 지수 인버스도 1주 보유 시 반반(52%)이 되는 최소값. 우량주는 65% → 79%
 const ASSET_HISTORY     = 30;      // 시세 스파크라인 길이
 const EVENT_DURATION    = 15;      // 랜덤 시장 이벤트 지속 틱
+const EVENT_MIN_GAP     = 12;      // 랜덤 시장 이벤트 사이 최소 틱
+const EVENT_CHANCE      = 0.08;    // 최소 간격이 지난 뒤 틱마다 시장 이벤트 확률
+const INDEX_TICK_CENTER = 0.49;    // 지수 캔들 변화 = (난수 − 이 값) × 40 → 0.5보다 작으면 지수가 조금씩 오른다 (틱당 약 +0.04%)
 const CANDLE_WICK_SCALE = 0.5;     // 종목 캔들 꼬리 길이 (× 종목 고유 변동 크기)
 
 // 포지션 · 이자 · 반대매매
@@ -1324,59 +1329,59 @@ const TIP_EVENTS = [
   { id:'fed', headline:'★ 속보: FED 연준 의장 기침!', body:'시장이 과민반응을 보이고 있습니다. 포지션을 유지하시겠습니까?', pick:false,
     choices:[
       { label:'숏 스퀴즈에 사활 걸기', outcomes:[
-        { chance:0.5, tag:'대박', text:'숏 스퀴즈 성공! 공매도 세력이 털렸다', effects:[{ kind:'cash', amount:450 }, { kind:'market', state:'BULL' }] },
-        { chance:0.5, tag:'쪽박', text:'역으로 털렸습니다… 세력은 늘 한 수 위', effects:[{ kind:'cash', amount:-250 }, { kind:'market', state:'BEAR' }] } ] },
+        { chance:0.5, tag:'대박', text:'숏 스퀴즈 성공! 공매도 세력이 털렸다', effects:[{ kind:'cash', amount:300 }, { kind:'market', state:'BULL' }] },
+        { chance:0.5, tag:'쪽박', text:'역으로 털렸습니다… 세력은 늘 한 수 위', effects:[{ kind:'cash', amount:-300 }, { kind:'market', state:'BEAR' }] } ] },
       { label:'관망하며 현금 기원', outcomes:[
-        { chance:1, tag:'확정', text:'관망 성공. 커피값은 벌었다', effects:[{ kind:'cash', amount:60 }] } ] } ] },
+        { chance:1, tag:'확정', text:'관망 성공. 커피값은 벌었다', effects:[{ kind:'cash', amount:20 }] } ] } ] },
   { id:'semi10', headline:'[찌라시] 반도체전자 "10만 전자" 간다', body:'단톡방 17곳에서 동시에 같은 캡처가 돌고 있다. 출처는 "아는 형".', pick:false,
     choices:[
       { label:'소문에 올라탄다', outcomes:[
-        { chance:0.6, tag:'대박', text:'10만 전자 가즈아! 반도체전자 급등', effects:[{ kind:'buy', stock:'semi', amount:1500 }, { kind:'shock', stock:'semi', pct:0.15 }] },
-        { chance:0.4, tag:'쪽박', text:'고점에 물렸다. 반도체전자 급락', effects:[{ kind:'buy', stock:'semi', amount:1500 }, { kind:'shock', stock:'semi', pct:-0.12 }] } ] },
+        { chance:0.5, tag:'대박', text:'10만 전자 가즈아! 반도체전자 급등', effects:[{ kind:'buy', stock:'semi', amount:1500 }, { kind:'shock', stock:'semi', pct:0.1 }] },
+        { chance:0.5, tag:'쪽박', text:'고점에 물렸다. 반도체전자 급락', effects:[{ kind:'buy', stock:'semi', amount:1500 }, { kind:'shock', stock:'semi', pct:-0.1 }] } ] },
       { label:'찌라시를 되판다', outcomes:[
-        { chance:1, tag:'확정', text:'리딩방에 캡처를 팔았다', effects:[{ kind:'cash', amount:50 }] } ] } ] },
+        { chance:1, tag:'확정', text:'리딩방에 캡처를 팔았다', effects:[{ kind:'cash', amount:20 }] } ] } ] },
   { id:'memeList', headline:'[속보] 밈코인 해외 거래소 상장설', body:'"오늘 밤 12시 상장" 트윗. 계정 생성일은 사흘 전이다.', pick:false,
     choices:[
       { label:'밈코인 몰빵', outcomes:[
-        { chance:0.4, tag:'대박', text:'상장 확정! 밈코인 폭등', effects:[{ kind:'buy', stock:'meme', amount:600 }, { kind:'shock', stock:'meme', pct:0.6 }] },
+        { chance:0.4, tag:'대박', text:'상장 확정! 밈코인 폭등', effects:[{ kind:'buy', stock:'meme', amount:600 }, { kind:'shock', stock:'meme', pct:0.45 }] },
         { chance:0.6, tag:'쪽박', text:'가짜 뉴스였다. 밈코인 폭락', effects:[{ kind:'buy', stock:'meme', amount:600 }, { kind:'shock', stock:'meme', pct:-0.3 }] } ] },
       { label:'구경하며 방송 켠다', outcomes:[
-        { chance:1, tag:'확정', text:'"떡락 중계" 방송 후원이 들어왔다', effects:[{ kind:'cash', amount:30 }] } ] } ] },
+        { chance:1, tag:'확정', text:'"떡락 중계" 방송 후원이 들어왔다', effects:[{ kind:'cash', amount:10 }] } ] } ] },
   { id:'hack', headline:'[속보] 대장 거래소 해킹 의혹', body:'출금이 막혔다는 글이 올라온다. 거래소 공지는 "점검 중" 한 줄뿐.', pick:false,
     choices:[
       { label:'공포에 산다', outcomes:[
-        { chance:0.55, tag:'대박', text:'루머였다! 대장코인 반등', effects:[{ kind:'buy', stock:'coin', amount:1000 }, { kind:'shock', stock:'coin', pct:0.25 }] },
-        { chance:0.45, tag:'쪽박', text:'진짜였다… 대장코인 급락', effects:[{ kind:'buy', stock:'coin', amount:1000 }, { kind:'shock', stock:'coin', pct:-0.2 }, { kind:'market', state:'BEAR' }] } ] },
+        { chance:0.5, tag:'대박', text:'루머였다! 대장코인 반등', effects:[{ kind:'buy', stock:'coin', amount:1000 }, { kind:'shock', stock:'coin', pct:0.2 }] },
+        { chance:0.5, tag:'쪽박', text:'진짜였다… 대장코인 급락', effects:[{ kind:'buy', stock:'coin', amount:1000 }, { kind:'shock', stock:'coin', pct:-0.2 }, { kind:'market', state:'BEAR' }] } ] },
       { label:'대장코인 전부 손절', outcomes:[
         { chance:1, tag:'회피', text:'보유 대장코인을 전부 정리했다. 오늘 밤은 잔다', effects:[{ kind:'sellStock', stock:'coin' }] } ] } ] },
   { id:'sc', headline:'[찌라시] 초전도체 상온 재현 성공?!', body:'흐릿한 논문 사진 한 장. 전공자는 아무도 없는데 확신은 넘친다.', pick:false,
     choices:[
       { label:'테마 추격 매수', outcomes:[
-        { chance:0.55, tag:'대박', text:'재현 성공 소식! 오늘 종일 상한가 행진', effects:[{ kind:'buy', stock:'sc', amount:800 }, { kind:'shock', stock:'sc', pct:0.1 }, { kind:'pump', stock:'sc', dir:1 }] },
-        { chance:0.45, tag:'쪽박', text:'재현 실패. 오늘 종일 설거지', effects:[{ kind:'buy', stock:'sc', amount:800 }, { kind:'shock', stock:'sc', pct:-0.08 }, { kind:'pump', stock:'sc', dir:-1 }] } ] },
+        { chance:0.5, tag:'대박', text:'재현 성공 소식! 오늘 종일 상한가 행진', effects:[{ kind:'buy', stock:'sc', amount:800 }, { kind:'shock', stock:'sc', pct:0.1 }, { kind:'pump', stock:'sc', dir:1 }] },
+        { chance:0.5, tag:'쪽박', text:'재현 실패. 오늘 종일 설거지', effects:[{ kind:'buy', stock:'sc', amount:800 }, { kind:'shock', stock:'sc', pct:-0.1 }, { kind:'pump', stock:'sc', dir:-1 }] } ] },
       { label:'논문부터 읽어본다', outcomes:[
-        { chance:1, tag:'확정', text:'논문 요약 블로그 광고 수익', effects:[{ kind:'cash', amount:15 }] } ] } ] },
+        { chance:1, tag:'확정', text:'논문 요약 블로그 광고 수익', effects:[{ kind:'cash', amount:10 }] } ] } ] },
   { id:'bigstep', headline:'[속보] 한은 총재 "빅스텝도 배제 안 해"', body:'금리가 오르면 누가 웃고 누가 우는가.', pick:false,
     choices:[
       { label:'곱버스 풀매수', outcomes:[
-        { chance:0.55, tag:'대박', text:'폭락장 개막! 곱버스 파티', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:0.08 }, { kind:'market', state:'BEAR' }] },
-        { chance:0.45, tag:'쪽박', text:'"배제 안 한다"는 "안 한다"였다. 반등장', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:-0.08 }, { kind:'market', state:'BULL' }] } ] },
+        { chance:0.5, tag:'대박', text:'폭락장 개막! 곱버스 파티', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:0.08 }, { kind:'market', state:'BEAR' }] },
+        { chance:0.5, tag:'쪽박', text:'"배제 안 한다"는 "안 한다"였다. 반등장', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:-0.08 }, { kind:'market', state:'BULL' }] } ] },
       { label:'레버리지 포지션 방어', outcomes:[
         { chance:1, tag:'회피', text:'오늘 모든 포지션 반대매매 면제. 담보부터 챙겼다', effects:[{ kind:'protect' }] } ] } ] },
   { id:'youtuber', headline:'[찌라시] 구독자 300만 유튜버 "인생 종목" 공개', body:'썸네일: 빨간 화살표 3개, 놀란 얼굴, "{stock} 이거 모르면 손해".', pick:true,
     choices:[
       { label:'구독, 좋아요, 풀매수', outcomes:[
         { chance:0.35, tag:'대박', text:'진짜 인생 종목! {stock} 급등', effects:[{ kind:'buy', stock:'$pick', amount:700 }, { kind:'shock', stock:'$pick', pct:0.4 }] },
-        { chance:0.65, tag:'쪽박', text:'영상 올리기 전에 본인이 팔았다. {stock} 급락', effects:[{ kind:'buy', stock:'$pick', amount:700 }, { kind:'shock', stock:'$pick', pct:-0.15 }] } ] },
+        { chance:0.65, tag:'쪽박', text:'영상 올리기 전에 본인이 팔았다. {stock} 급락', effects:[{ kind:'buy', stock:'$pick', amount:700 }, { kind:'shock', stock:'$pick', pct:-0.22 }] } ] },
       { label:'댓글로 "잘 봤습니다"만', outcomes:[
-        { chance:1, tag:'확정', text:'베스트 댓글 등극. 광고 수익 셰어', effects:[{ kind:'cash', amount:20 }] } ] } ] },
+        { chance:1, tag:'확정', text:'베스트 댓글 등극. 광고 수익 셰어', effects:[{ kind:'cash', amount:10 }] } ] } ] },
   { id:'mom', headline:'[문자] 엄마: "너 요즘 주식하니?"', body:'읽음 표시가 떴다. 답장을 기다리고 계신다.', pick:false,
     choices:[
       { label:'코인 한다고 고백', outcomes:[
-        { chance:0.45, tag:'대박', text:'"우리 아들 대단하네" 용돈 입금', effects:[{ kind:'cash', amount:700 }] },
-        { chance:0.55, tag:'쪽박', text:'등짝 스매싱. 이번 달 용돈 끊김', effects:[{ kind:'cash', amount:-250 }] } ] },
+        { chance:0.45, tag:'대박', text:'"우리 아들 대단하네" 용돈 입금', effects:[{ kind:'cash', amount:500 }] },
+        { chance:0.55, tag:'쪽박', text:'등짝 스매싱. 이번 달 용돈 끊김', effects:[{ kind:'cash', amount:-400 }] } ] },
       { label:'"적금 들고 있어요"', outcomes:[
-        { chance:1, tag:'확정', text:'"기특하네" 적금에 보태라며 입금', effects:[{ kind:'cash', amount:120 }] } ] } ] }
+        { chance:1, tag:'확정', text:'"기특하네" 적금에 보태라며 입금', effects:[{ kind:'cash', amount:30 }] } ] } ] }
 ];
 
 /* 게임오버 원인 판정 기준 (문구는 UI의 ENDINGS) */
@@ -1676,7 +1681,7 @@ function generateNextCandle(openPrice){
   else if(marketState==='BEAR'){drift=-12;volMult=1.2;}
   else if(marketState==='VOLATILE'){drift=0;volMult=2.8;}
 
-  const change = drift + (rand()-0.49)*40*volMult;
+  const change = drift + (rand()-INDEX_TICK_CENTER)*40*volMult;
   const closePrice = Math.max(100, Math.round(openPrice+change));
   const highExtra = rand()*20*volMult;
   const lowExtra  = rand()*20*volMult;
@@ -1833,7 +1838,7 @@ function initAssets(){
 function updateAssetPrices(idxLogRet, pumps){
   STOCKS.forEach(s => {
     const a = assets[s.id];
-    let r = s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss();
+    let r = STOCK_DRIFT + s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss();
     if(pumps[s.id]) r += pumps[s.id] * PUMP_DRIFT;
     const open = a.price;
     a.price *= Math.exp(r);
@@ -2369,7 +2374,7 @@ function updateMarketEvent(){
     return;
   }
   run.ticksSinceEvent++;
-  if(run.ticksSinceEvent >= 12 && rand() < 0.08){
+  if(run.ticksSinceEvent >= EVENT_MIN_GAP && rand() < EVENT_CHANCE){
     const ev = MARKET_EVENTS[randInt(MARKET_EVENTS.length)];
     marketState = ev.state;
     run.eventTicksLeft = EVENT_DURATION;

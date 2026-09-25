@@ -18,7 +18,7 @@
 - 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
   - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper] [--file docs/demo] [--md out.md]`
   - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
-  - 목표치 실험: `--targets 11000,12500,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
+  - 목표치 실험: `--targets 10800,11100,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
 
 ## 파일 구조
 
@@ -41,7 +41,7 @@
 
 - 로직 함수는 DOM(`document`, `innerHTML`, `alert`), Canvas, `setTimeout`/`setInterval`에 직접 의존하지 않는다. 입력을 받아 상태를 바꾸거나 값을 반환하고, 화면 갱신은 호출 측(UI 레이어)이 `renderUI()`/`renderChart()`로 한다.
 - `docs/demo`의 `<script>`는 세 구역으로 나뉜다. 이 경계를 유지한다:
-  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`·`RARITY_WEIGHTS`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`, 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
+  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`·`RARITY_WEIGHTS`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`, 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
   - **ENGINE** (DOM 접근 금지): 상태 `run`(한 판 전체: 현금·포지션·더미·행동력·대기 매수 효과·오늘의 효과), `assets`(종목별 가격·스파크라인 `history`·캔들 `candles`), `marketPrice`/`marketState`/`candleData`(지수).
     - 포지션 (롱·숏 공용, `dir` = +1/−1): `exposure`, `posEquity`, `posPnl`, `marginRatio`, `openPosition`(같은 종목·방향·레버리지 포지션이 있으면 `addToPosition`으로 통합), `closePosition`, `sellPosition`, `sellAllPositions`, `checkOrders`(예약주문), `checkMarginCalls`
     - 카드: `CARDS`/`CARD_BY_ID`를 `defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play)`로 정의. 사용은 `checkPlay` → `playCard(handIdx, targetId)`, 대상 목록은 `validTargetIds`
