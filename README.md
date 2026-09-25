@@ -32,6 +32,10 @@ Retro 2D trading game prototype — HODL or Die
 * JavaScript
 * Canvas
 
+### Balance Simulator
+
+* `node tools/sim/sim.cjs --n 400 --tip random` — 봇 5종으로 N판 자동 진행, 결과 표 출력 (Playwright 필요). 기준점: `docs/balance-baseline.md`
+
 ### Planned
 
 * Unity

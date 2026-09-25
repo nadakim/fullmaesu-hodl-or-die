@@ -1,0 +1,342 @@
+#!/usr/bin/env node
+/* 밸런스 시뮬레이터 — Playwright로 docs/demo를 열고, 페이지 안에서 엔진 함수를 직접 불러 한 판을 끝까지 자동 진행한다.
+   UI는 쓰지 않는다 (onGameEvent를 빈 함수로 덮어씀). 엔진 난수는 setSeed(시드)로 고정 → 같은 시드 = 같은 판.
+
+   node tools/sim/sim.cjs [--n 400] [--seed 1] [--tip A|B|random] [--strategies nothing,stocksOnly,...]
+                          [--file docs/demo] [--md out.md] [--json out.json]
+                          [--targets 10800,12000,...]   (ROUND_TARGETS를 파일 수정 없이 바꿔서 실험)
+
+   변경 전/후 비교: git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before --md before.md */
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+function loadPlaywright(){
+  try { return require('playwright'); } catch(e) {}
+  const globalRoot = execSync('npm root -g').toString().trim();   // 전역 설치본 (저장소에는 npm 의존성을 두지 않는다)
+  return require(path.join(globalRoot, 'playwright'));
+}
+
+const STRATEGIES = ['nothing', 'stocksOnly', 'allCards', 'yolo', 'shopper', 'marketCards', 'bearInverse', 'bearShort'];
+const TIP_MODES = ['A', 'B', 'random'];
+
+function parseArgs(argv){
+  const o = { n: 400, seed: 1, tip: 'random', strategies: STRATEGIES, file: path.join(__dirname, '../../docs/demo'), md: '', json: '', targets: null };
+  for(let i = 0; i < argv.length; i += 2){
+    const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
+    if(k === 'n' || k === 'seed') o[k] = parseInt(v, 10);
+    else if(k === 'strategies') o.strategies = v.split(',');
+    else if(k === 'targets') o.targets = v.split(',').map(Number);
+    else if(k in o) o[k] = v;
+    else throw new Error('알 수 없는 옵션: ' + argv[i]);
+  }
+  o.strategies.forEach(s => { if(STRATEGIES.indexOf(s) < 0) throw new Error('알 수 없는 전략: ' + s); });
+  if(TIP_MODES.indexOf(o.tip) < 0) throw new Error('--tip 은 A | B | random');
+  return o;
+}
+
+/* ── 페이지 안에서 실행되는 봇 (엔진 전역 함수만 호출) ── */
+function installBots(){
+  onGameEvent = () => {};   // 시뮬레이션 중엔 화면 연출 없음
+
+  const mulberry = seed => () => {
+    seed = (seed + 0x6D2B79F5) >>> 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  let played = 0, marketPlayed = 0;
+  const countPlay = id => { played++; if(['dove', 'hawk', 'ceoTweet', 'pump', 'manip'].indexOf(id) >= 0) marketPlayed++; };
+  // 조건에 맞는 손패 카드 중 지금 쓸 수 있는 첫 장을 쓴다 (대상 카드는 첫 번째 유효 대상)
+  function playFirst(match){
+    for(let i = 0; i < run.hand.length; i++){
+      const card = CARD_BY_ID[run.hand[i].id];
+      if(card.type === 'status' || !match(card)) continue;
+      if(card.target){
+        const ids = validTargetIds(i);
+        if(ids.length && playCard(i, ids[0])){ countPlay(card.id); return true; }
+      } else if(checkPlay(i) === null && playCard(i)){ countPlay(card.id); return true; }
+    }
+    return false;
+  }
+  const isStock = c => c.type === 'stock';
+  // 조건에 맞는 손패 카드 중 score가 가장 큰 것부터 쓴다. 쓴 카드 id를 돌려준다 ('' = 못 씀)
+  function playBest(match, score, target){
+    const order = run.hand.map((inst, i) => i).filter(i => match(CARD_BY_ID[run.hand[i].id]))
+      .sort((a, b) => score(CARD_BY_ID[run.hand[b].id]) - score(CARD_BY_ID[run.hand[a].id]));
+    for(const i of order){
+      const card = CARD_BY_ID[run.hand[i].id];
+      if(card.target){
+        const ids = validTargetIds(i);
+        if(ids.length && playCard(i, target ? target(ids) : ids[0])){ countPlay(card.id); return card.id; }
+      } else if(checkPlay(i) === null && playCard(i)){ countPlay(card.id); return card.id; }
+    }
+    return '';
+  }
+
+  // marketCards: 시장 카드(비둘기·매파·CEO 트윗·리딩방)를 먼저 쓰고, 그 방향에 맞춰 레버리지 → 종목 매수.
+  // 나머지 카드는 allCards처럼 전부 쓴다 → allCards와의 차이 = 시장 카드를 잘 쓴 효과
+  const MARKET_IDS = ['manip', 'dove', 'pump', 'ceoTweet', 'hawk'];
+  const MARKET_DIR = { manip: 1, dove: 1, pump: 1, ceoTweet: 1, hawk: -1 };
+  const beta = c => STOCK_BY_ID[c.stock].beta;
+  const punch = c => STOCK_BY_ID[c.stock].cost * Math.abs(beta(c));   // 방향이 맞을 때 효과 크기
+  let mDay = '', mDir = 0, mPumped = '';
+  function marketDay(){
+    const key = run.round + '/' + run.day;
+    if(mDay !== key){ mDay = key; mDir = 0; mPumped = ''; }
+    // 1) 시장 카드 (방향이 정해지면 같은 방향만). 리딩방은 손패의 가장 센 롱 종목에
+    const pumpTarget = ids => {
+      const best = run.hand.map(i => CARD_BY_ID[i.id]).filter(c => isStock(c) && beta(c) > 0 && ids.indexOf(c.stock) >= 0)
+        .sort((a, b) => punch(b) - punch(a))[0];
+      mPumped = best ? best.stock : ids[0];
+      return mPumped;
+    };
+    const used = playBest(c => MARKET_DIR[c.id] !== undefined && (mDir === 0 || MARKET_DIR[c.id] === mDir),
+                          c => -MARKET_IDS.indexOf(c.id), pumpTarget);
+    if(used){ mDir = MARKET_DIR[used]; return true; }
+    if(mDir !== 0){
+      const aligned = c => isStock(c) && Math.sign(beta(c)) === mDir && run.cash >= stockCost(STOCK_BY_ID[c.stock]);
+      // 2) 레버리지 (방향 맞는 종목을 살 수 있을 때만)
+      if(run.pending.lev === 1 && run.hand.some(i => aligned(CARD_BY_ID[i.id]))
+         && playBest(c => c.id === 'yolo' || c.id === 'credit', c => c.id === 'yolo' ? 1 : 0)) return true;
+      // 3) 방향 맞는 종목 (작전 건 종목 → 센 종목 순)
+      if(playBest(aligned, c => (c.stock === mPumped ? 1e6 : 0) + punch(c))) return true;
+    }
+    // 4) 나머지는 allCards와 같다
+    return playFirst(() => true);
+  }
+  // 하락 베팅 봇 2종 — 같은 플레이어가 하락 베팅 '수단'만 다르게 쓴다. 평소엔 allCards처럼 손패를 쓰되:
+  //   bearInverse: 공매도 카드는 안 쓴다. 하락 베팅 = 인버스 ETF(곱버스·지수 인버스·인버스 헤지), 레버리지 없이 → '안전한 하락 베팅'
+  //   bearShort:   인버스 종목은 안 산다. 하락 베팅 = 공매도 + 레버리지(신용·영끌·풀매수) + 손패에서 베타가 가장 큰 종목 → '공격적인 하락 베팅'
+  //   둘 다 매파 발언을 가장 먼저 쓰고, 그날은 롱을 사지 않고 하락 베팅만 한다 (상승 시장 카드도 안 씀)
+  const BULL_MARKET = ['dove', 'pump', 'manip', 'ceoTweet'];
+  const LEVER_IDS = ['credit', 'yolo', 'fullBuy'];
+  const isInverse = c => isStock(c) && beta(c) < 0;
+  let bearKey = '', bearDay = false;
+  function bearToday(){
+    const key = run.round + '/' + run.day;
+    if(bearKey !== key){ bearKey = key; bearDay = false; }
+    if(playBest(c => c.id === 'hawk', () => 0)){ bearDay = true; return true; }
+    return false;
+  }
+  const bearRest = skip => playFirst(c => skip(c) === false && !(bearDay && BULL_MARKET.indexOf(c.id) >= 0));
+  function bearInverseDay(){
+    if(bearToday()) return true;
+    if(playBest(c => isInverse(c) || c.id === 'hedge', c => isStock(c) ? -beta(c) : 0)) return true;   // 곱버스 → 지수 인버스 → 헤지
+    return bearRest(c => c.id === 'short' || (bearDay && (isStock(c) || LEVER_IDS.indexOf(c.id) >= 0)));   // 매파 날엔 롱·레버리지 안 함
+  }
+  function bearShortDay(){
+    if(bearToday()) return true;
+    const longTarget = run.hand.some(i => { const c = CARD_BY_ID[i.id]; return isStock(c) && beta(c) > 0; });
+    if(longTarget && run.pending.dir === 1 && playBest(c => c.id === 'short', () => 0)) return true;
+    if(run.pending.dir === -1){
+      if(run.pending.lev === 1 && playBest(c => LEVER_IDS.indexOf(c.id) >= 0, c => -LEVER_IDS.indexOf(c.id))) return true;
+      if(playBest(c => isStock(c) && beta(c) > 0, c => beta(c))) return true;   // 고베타 종목을 숏
+    }
+    return bearRest(c => isInverse(c) || c.id === 'hedge' || (bearDay && isStock(c)));   // 매파 날엔 롱 안 삼
+  }
+  const BEAR_PICKS = {
+    bearInverse: ['hawk', 'stk_inv2', 'stk_inv', 'hedge'],
+    bearShort:   ['hawk', 'short', 'yolo', 'credit', 'fullBuy', 'stk_meme', 'stk_sc', 'stk_coin']
+  };
+  function shopBearCard(strategy){
+    for(let i = 0; i < run.shop.singles.length; i++){
+      const id = run.shop.singles[i];
+      if(BEAR_PICKS[strategy].indexOf(id) >= 0 && run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && wallet() >= singlePrice(id)) return buySingle(i);
+    }
+    return false;
+  }
+
+  const DAY_PLAY = {
+    nothing:    () => false,
+    stocksOnly: () => playFirst(isStock),                      // 대기 매수 효과를 안 쓰므로 항상 1x 롱
+    allCards:   () => playFirst(() => true),
+    yolo:       () => playFirst(c => c.id === 'yolo') || playFirst(c => c.id === 'credit') || playFirst(isStock),
+    shopper:    () => playFirst(() => true),
+    marketCards: marketDay,
+    bearInverse: bearInverseDay,
+    bearShort:   bearShortDay
+  };
+  const YOLO_PICKS = ['yolo', 'credit', 'fullBuy'];
+
+  function pickCardReward(strategy){
+    const ch = run.rewardChoices;
+    if(!ch.length) return chooseReward('skip');
+    const pref = strategy === 'yolo' ? ch.find(id => YOLO_PICKS.indexOf(id) >= 0)
+      : strategy === 'marketCards' ? (ch.find(id => MARKET_IDS.indexOf(id) >= 0) || ch.find(id => YOLO_PICKS.indexOf(id) >= 0))
+      : BEAR_PICKS[strategy] ? BEAR_PICKS[strategy].map(b => ch.find(id => id === b)).find(Boolean) : '';
+    return chooseReward('take', pref || ch[0]);
+  }
+
+  // marketCards 암시장: 진열된 시장 카드가 있으면 하나 산다
+  function shopMarketCard(){
+    for(let i = 0; i < run.shop.singles.length; i++){
+      const id = run.shop.singles[i];
+      if(MARKET_IDS.indexOf(id) >= 0 && run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && wallet() >= singlePrice(id)) return buySingle(i);
+    }
+    return false;
+  }
+
+  // 암시장 지갑: 비자금이 있으면 비자금, 없는 옛 버전이면 현금 (변경 전/후를 같은 봇으로 비교)
+  const wallet = () => run.slush !== undefined ? run.slush : run.cash;
+  // 이 봇(손패를 전부 쓰는 봇)에게 손해인 카드 — cardev --all 기준 기대 수익이 음수인 카드 + 상태 카드
+  const SHOP_BAD = ['hawk', 'escape', 'cutLoss', 'short', 'takeWin', 'cashOut', 'overdraft'];
+  const SHOP_SKIP_RELICS = ['lawyer', 'fssconnect', 'timemachine'];   // 봇이 활용 못 하는 유물
+  const RARITY_RANK = { common:0, uncommon:1, rare:2, legendary:3, mythic:4 };
+
+  // 암시장 한 번 방문: 덱 압축(상태·손해 카드 제거) → 유물 → 희귀 이상 낱장 → (아무것도 못 샀으면) 팩. 매주 뭔가 하나는 산다
+  function shopOnce(){
+    let bought = 0;
+    if(run.shop.removed < SHOP_REMOVE_LIMIT && wallet() >= shopRemoveCost()){
+      let idx = run.masterDeck.findIndex(id => CARD_BY_ID[id].type === 'status');
+      if(idx < 0) idx = run.masterDeck.findIndex(id => SHOP_BAD.indexOf(id) >= 0);
+      if(idx >= 0 && shopRemoveCard(idx)) bought++;
+    }
+    for(const id of run.shop.relics){
+      if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= RELIC_PRICE[RELIC_BY_ID[id].rarity] && buyRelic(id)) bought++;
+    }
+    const singles = run.shop.singles.map((id, i) => ({ id, i }))
+      .filter(x => run.shop.singlesBought.indexOf(x.i) < 0 && !inDeck(x.id) && SHOP_BAD.indexOf(x.id) < 0 && RARITY_RANK[CARD_BY_ID[x.id].rarity] >= RARITY_RANK.rare)
+      .sort((a, b) => RARITY_RANK[CARD_BY_ID[b.id].rarity] - RARITY_RANK[CARD_BY_ID[a.id].rarity]);
+    for(const x of singles){ if(wallet() >= singlePrice(x.id) && buySingle(x.i)){ bought++; break; } }
+    if(!bought){
+      for(const pk of SHOP_PACKS){
+        if(packPool(pk).length && wallet() >= pk.price && buyPack(pk.id)){ bought++; break; }
+      }
+    }
+    return bought > 0;
+  }
+
+  window.__simGame = function(strategy, tipMode, seed){
+    setSeed(seed);
+    const botRand = mulberry((seed ^ 0x9E3779B9) >>> 0);   // 봇 선택용 난수는 엔진 난수와 분리
+    startNewRun();
+    let tips = 0, shopBuys = 0, guard = 0, mythicOffers = 0, mythicWeek = 0;
+    played = 0; marketPlayed = 0;
+    const weekEq = [];   // 주간 결산 순자산 (통과·탈락 모두)
+    const noteWeek = () => { if(run.lastWeek && weekEq.length < run.lastWeek.round) weekEq.push(Math.round(run.lastWeek.eq)); };
+    while(run.phase !== 'over'){
+      noteWeek();
+      if(!mythicWeek && run.masterDeck.some(id => CARD_BY_ID[id].rarity === 'mythic')) mythicWeek = run.round;   // 신화를 처음 가진 주
+      if(++guard > 200000) throw new Error('무한 루프: seed ' + seed);
+      if(run.phase === 'premarket'){
+        while(run.phase === 'premarket' && DAY_PLAY[strategy]()){}
+        startMarket();
+      } else if(run.phase === 'market'){
+        if(run.pendingTip){
+          const n = TIP_BY_ID[run.pendingTip.eventId].choices.length;
+          const idx = tipMode === 'A' ? 0 : tipMode === 'B' ? Math.min(1, n - 1) : Math.floor(botRand() * n);
+          resolveTip(idx);
+          tips++;
+        } else tick();
+      } else if(run.phase === 'reward'){
+        if(run.rewardStep === 'card'){ mythicOffers += run.rewardChoices.filter(id => CARD_BY_ID[id].rarity === 'mythic').length; pickCardReward(strategy); }
+        else {   // 유물은 첫 번째 것. 단 봇이 활용 못 하는 유물은 건너뛴다
+          const skip = strategy === 'marketCards' ? ['timemachine'] : ['lawyer', 'fssconnect', 'timemachine'];   // 봇이 활용 못 하는 유물
+          chooseRelicReward(run.relicChoices.find(id => skip.indexOf(id) < 0) || '');
+        }
+      } else if(run.phase === 'shop'){
+        if(strategy === 'shopper' && shopOnce()) shopBuys++;
+        if(strategy === 'marketCards' && shopMarketCard()) shopBuys++;
+        if(BEAR_PICKS[strategy] && shopBearCard(strategy)) shopBuys++;
+        leaveShop();
+      }
+    }
+    noteWeek();
+    setSeed(null);
+    return { seed, weeksCleared: run.weeksCleared, endReason: run.endReason, endCause: run.endCause,
+             liquidations: run.liquidations, endEquity: Math.round(run.endEquity), peakEquity: Math.round(run.peakEquity),
+             round: run.round, day: run.day, interest: Math.round(run.interestPaid), cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, fssFines: run.fssFines || 0, fssPeak: run.fssPeak || 0, mythicOffers, hadMythic: run.masterDeck.some(id => CARD_BY_ID[id].rarity === 'mythic'), mythicWeek, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
+  };
+  window.__simTargets = t => { if(t){ if(t.length !== MAX_ROUND) throw new Error('--targets 는 ' + MAX_ROUND + '개'); t.forEach((v, i) => { ROUND_TARGETS[i] = v; }); } return ROUND_TARGETS.slice(); };
+  window.__simBatch = (strategy, tipMode, seeds) => seeds.map(s => window.__simGame(strategy, tipMode, s));
+  return { maxRound: MAX_ROUND, causes: Object.keys(ENDINGS) };
+}
+
+/* ── 집계 ── */
+const pct = (a, b) => b ? (100 * a / b).toFixed(1) + '%' : '-';
+const avg = (xs, f) => xs.length ? xs.reduce((s, x) => s + f(x), 0) / xs.length : 0;
+
+function summarize(games, maxRound){
+  const n = games.length;
+  const causes = {};
+  games.forEach(g => { causes[g.endCause] = (causes[g.endCause] || 0) + 1; });
+  return {
+    n,
+    pass1: games.filter(g => g.weeksCleared >= 1).length,
+    pass4: games.filter(g => g.weeksCleared >= 4).length,
+    clear: games.filter(g => g.weeksCleared >= maxRound).length,
+    bankrupt: games.filter(g => g.endReason === 'BANKRUPT').length,
+    liqPerRun: avg(games, g => g.liquidations),
+    weeks: avg(games, g => g.weeksCleared),
+    endEquity: avg(games, g => g.endEquity),
+    cards: avg(games, g => g.cardsPlayed),
+    market: avg(games, g => g.marketPlayed),
+    causes
+  };
+}
+
+function toMarkdown(meta, rows, causes){
+  const L = [];
+  L.push(`- 판 수: 전략당 ${meta.n}판 · 시드 ${meta.seed}~${meta.seed + meta.n - 1} · 찌라시 선택: ${meta.tip}`);
+  L.push(`- 대상: \`${meta.file}\` (sha1 ${meta.sha})`);
+  L.push(`- 주간 목표${meta.overridden ? ' (--targets 로 덮어씀)' : ''}: ${meta.targets.map(v => v.toLocaleString('en-US')).join(' → ')}`);
+  L.push('');
+  L.push('| 전략 | 1주 통과 | 4주 통과 | 8주 클리어 | 파산율 | 반대매매/판 | 평균 생존 주 | 평균 최종 순자산 | 카드 사용/판 | 시장 카드/판 |');
+  L.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
+  rows.forEach(({ name, s }) => L.push(`| ${name} | ${pct(s.pass1, s.n)} | ${pct(s.pass4, s.n)} | ${pct(s.clear, s.n)} | ${pct(s.bankrupt, s.n)} | ${s.liqPerRun.toFixed(2)} | ${s.weeks.toFixed(2)} | ₩ ${Math.round(s.endEquity).toLocaleString('en-US')}만 | ${s.cards.toFixed(1)} | ${s.market.toFixed(1)} |`));
+  L.push('');
+  L.push('엔딩 분포');
+  L.push('');
+  L.push('| 전략 | ' + causes.join(' | ') + ' |');
+  L.push('|---|' + causes.map(() => '---:').join('|') + '|');
+  rows.forEach(({ name, s }) => L.push(`| ${name} | ` + causes.map(c => pct(s.causes[c] || 0, s.n)).join(' | ') + ' |'));
+  return L.join('\n');
+}
+
+async function main(){
+  const opt = parseArgs(process.argv.slice(2));
+  const html = fs.readFileSync(opt.file, 'utf8');
+  const { chromium } = loadPlaywright();
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  // 로컬 서버 없이 파일 내용을 그대로 서빙, 외부 요청(폰트)은 차단
+  await page.route('**/*', r => r.request().url() === 'http://sim.local/demo.html'
+    ? r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html })
+    : r.abort());
+  await page.goto('http://sim.local/demo.html');
+  const info = await page.evaluate(installBots);
+  const targets = await page.evaluate(t => window.__simTargets(t), opt.targets);
+
+  const seeds = Array.from({ length: opt.n }, (_, i) => opt.seed + i);
+  const CHUNK = 50;
+  const rows = [], raw = {};
+  for(const name of opt.strategies){
+    const games = [];
+    for(let i = 0; i < seeds.length; i += CHUNK)
+      games.push(...await page.evaluate(([st, tip, sd]) => window.__simBatch(st, tip, sd), [name, opt.tip, seeds.slice(i, i + CHUNK)]));
+    raw[name] = games;
+    rows.push({ name, s: summarize(games, info.maxRound) });
+    process.stderr.write(`  ${name}: ${games.length}판 완료\n`);
+  }
+  // 재현성 확인: 첫 전략의 앞 10판을 다시 돌려 똑같은지
+  const again = await page.evaluate(([st, tip, sd]) => window.__simBatch(st, tip, sd), [opt.strategies[0], opt.tip, seeds.slice(0, 10)]);
+  const reproducible = JSON.stringify(again) === JSON.stringify(raw[opt.strategies[0]].slice(0, 10));
+  await browser.close();
+  if(errors.length) throw new Error('페이지 에러: ' + errors.join(' | '));
+  if(!reproducible) throw new Error('같은 시드인데 결과가 다름 — 엔진에 rand()를 거치지 않는 난수가 있다');
+
+  const sha = crypto.createHash('sha1').update(html).digest('hex').slice(0, 10);
+  const meta = { targets, overridden: !!opt.targets, n: opt.n, seed: opt.seed, tip: opt.tip, file: path.relative(process.cwd(), opt.file) || opt.file, sha };
+  const md = toMarkdown(meta, rows, info.causes);
+  console.log(md);
+  if(opt.md) fs.writeFileSync(opt.md, md + '\n');
+  if(opt.json) fs.writeFileSync(opt.json, JSON.stringify({ meta, summary: rows, games: raw }, null, 1));
+}
+
+main().catch(e => { console.error(e.message || e); process.exit(1); });

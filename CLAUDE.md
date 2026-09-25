@@ -1,0 +1,112 @@
+# CLAUDE.md
+
+## 프로젝트 개요
+
+**풀매수 기원단: HODL or Die** — 주식 시장의 급등락을 카드 게임으로 재해석한 레트로 픽셀 2D 트레이딩 게임.
+
+- 현재 단계: **웹 프로토타입** (핵심 게임 시스템 검증용)
+- 다음 단계: **Unity + C#으로 이식** 예정 → 지금 작성하는 게임 로직은 그대로 C#으로 옮길 수 있어야 한다.
+- 개발 기록: `DEVELOPMENT_LOG.md` / 기능 현황: `README.md`
+
+## 공통 규칙 (모든 작업에 적용)
+
+- 게임 로직(ENGINE)은 DOM을 건드리지 않는다. UI에는 `emit()`으로 이벤트만 알린다. 나중에 다른 엔진으로 옮기기 위한 원칙이다.
+- 밸런스 수치는 전부 파일 상단 CONFIG 상수로 둔다. 코드 중간에 숫자를 박지 않는다.
+- 엔진의 무작위는 전부 `rand()`를 쓴다 (`Math.random` 직접 호출 금지 — UI 연출은 예외). `setSeed(n)`이면 같은 시드 = 같은 판.
+- 금지 소재: 한강·다리·투신·수온 등 자살을 연상시키는 표현, 실존 기업명·실존 티커(삼성전자, NVDA, TSLA 등). 게임 오버·블랙코미디는 재정적 파산 소재(반대매매, 깡통계좌, 영끌 실패 등)로만 쓴다.
+- UI를 바꾸면 Playwright로 1920×1080, 1366×768 스크린샷을 찍어 확인한다.
+- 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
+  - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards,bearInverse,bearShort] [--file docs/demo] [--md out.md]`
+  - 카드 한 장의 기대 수익: `node tools/sim/cardev.cjs [--file docs/demo]` (시장 카드, 원래 쓰는 상황) · `--all` (신화·상태 제외 전 카드, 공통 상황) — 같은 시드로 카드 사용/미사용 비교, 순자산 대비 %
+  - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
+  - 목표치 실험: `--targets 11020,11320,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
+
+## 파일 구조
+
+- `docs/demo` — 프로토타입 본체 (단일 HTML 파일, **확장자 없음**). CSS·마크업·JS가 한 파일에 들어 있다.
+- `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
+- `.mcp.json` — Playwright MCP (headless chromium)
+- `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
+- `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
+- `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
+
+## 기술 스택
+
+- 순수 **HTML / CSS / JavaScript + Canvas** (캔들 차트, 배경 그리드)
+- **빌드 도구·번들러·프레임워크·npm 의존성 추가 금지** (React, Vite, TypeScript, Tailwind 등 X). 브라우저에서 파일 하나로 바로 열려야 한다.
+- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/assets/`를 함께 배포해야 한다.
+
+## 코드 규칙
+
+### 게임 로직과 UI 분리 (C# 이식 대비)
+
+게임 로직 — **상태, 매매, 가치 계산, 이벤트** — 은 DOM/Canvas 코드와 분리해 유지한다.
+
+- 로직 함수는 DOM(`document`, `innerHTML`, `alert`), Canvas, `setTimeout`/`setInterval`에 직접 의존하지 않는다. 입력을 받아 상태를 바꾸거나 값을 반환하고, 화면 갱신은 호출 측(UI 레이어)이 `renderUI()`/`renderChart()`로 한다.
+- `docs/demo`의 `<script>`는 세 구역으로 나뉜다. 이 경계를 유지한다:
+  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INVERSE_DECAY`·`STOCK_MOVE_MULT`(장세별 종목 움직임 배수)·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 시장 카드 `MARKET_CARD_ODDS`·`REVERSION_*`·`PUMP_*`, 금감원 게이지 `FSS_*`, 이자 `DAILY_INTEREST`(신용·마통)·`SHORT_BORROW_RATE`(대차), 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`·`MISU_CASH_FLOOR`, 갭 `GAP_*`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`, 등급 `RARITIES`·`REWARD_RARITY_BY_WEEK`·`MYTHIC_DECK_LIMIT`, 비자금 `SLUSH_*`·`TIP_SLUSH_SAFE`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`(`RELIC_RARITY_WEIGHTS`·`RELIC_PRICE`), 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
+  - **ENGINE** (DOM 접근 금지): 상태 `run`(한 판 전체: 현금·포지션·더미·행동력·대기 매수 효과·오늘의 효과), `assets`(종목별 가격·스파크라인 `history`·캔들 `candles`), `marketPrice`/`marketState`/`candleData`(지수).
+    - 포지션 (롱·숏 공용, `dir` = +1/−1): `exposure`, `posEquity`, `posPnl`, `marginRatio`, `openPosition`(같은 종목·방향·레버리지 포지션이 있으면 `addToPosition`으로 통합), `closePosition`, `sellPosition`, `sellAllPositions`, `checkOrders`(예약주문), `checkMarginCalls`
+    - 카드: `CARDS`/`CARD_BY_ID`를 `defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play)`로 정의. 사용은 `checkPlay` → `playCard(handIdx, targetId)`, 대상 목록은 `validTargetIds`. 행동력은 항상 `cardCost(card)`로 (주간 효과·유물 반영, 손패 표시도 같은 값)
+    - 등급 5단계 common·uncommon·rare·legendary·mythic: 보상·낱장·유물은 `rollRarity`(등급 먼저) → 등급 안 균등. 후보 제한은 `cardAllowed`(덱에 없는 카드 + 신화는 덱 전체 `MYTHIC_DECK_LIMIT`장). 팩은 `packPool`(확률 0% 등급 제외)·`packRarityOdds`
+    - 주간 효과 `run.week`(개미 군단·상투 감별사·가치투자의 신, `startNextRound`에서 초기화), 오늘 효과 `lossGuardToday`·`circuitToday`·`sellDiscountUsed`(`startDay`에서 초기화). 작전 세력 갭은 `gapToday` → 장 마감 `gapNext` → 다음 개장 `shockStock`
+    - 더미: `buildWeekPiles`, `drawCards`, `newCard`
+    - 유물(패시브, `run.relics`): `hasRelic`, `gainRelic`, `rollRelics`. 효과는 계산 지점에 직접 개입한다 — 손익 `relicAdjustedPnl`(국밥 정신·존버의 인장, `posEquity`를 거쳐 청산·증거금률·순자산까지), `pumpUpChance`(리딩방 VIP), `checkMarginCalls` 패널티(증권사 담당자 핫라인), `interestRate`(캐피탈 VVIP), `maxAp`(떡상 기원 부적), `endOfRound`(부모님 카드), `decayFss`(전관 변호사), `relicAdjustedPnl`(테마주 헌터), `marginCallRatio`(콜드월렛), `dailyInterest`(공매도 전문가 — 신용 `interestRate` + 대차 `shortBorrowRate`, 캐피탈 VVIP는 둘 다 할인), `inverseMasterDraw`(인버스 장인), `tipChances`(개미 커뮤니티), `cardCost`(단타의 신), `raiseFss`(금감원 인맥), `startDay`(월급날), `run.dayRoll`+`rollMarketCard`(타임머신 — 판정 난수를 장전에 굴려 둔다). 새 유물도 이렇게 계산 함수 안에서 `hasRelic()`으로 분기한다.
+    - 갭(`rollGaps`, `tick`에서 종목 가격 갱신 직후 → 예약주문·반대매매보다 먼저): 종목마다 틱당 확률 `gapChance` = `gapRisk`(volatility + |beta|×`GAP_BETA_WEIGHT`) × `GAP_CHANCE_PER_RISK` × `GAP_STATE_MULT[marketState]`로 ±크기만큼 한 번에 튄다. 이번 틱 캔들에 합쳐 `candle.gap = ±1`로 기록하고 `emit('gap')`. 반대매매는 갭 이후 가격으로 체결되므로 포지션 순자산이 음수(미수)일 수 있고, 그 뒤 현금이 `MISU_CASH_FLOOR` 미만이면 `run.misuDefault` → `checkBankruptcy`가 파산 처리(엔딩 원인은 기존 `classifyEnd` 그대로).
+    - 시장 카드(비둘기·매파·CEO 트윗): 장전엔 `run.marketCard`만 기록 → `startMarket`에서 `rollMarketCard`가 `MARKET_CARD_ODDS`로 장세 판정(`run.forcedState`, NORMAL = 무시됨). 카드로 만든 강세·약세장이면 `endOfDay`가 다음 날 되돌림(`run.revertDir`·`revertTicksLeft`)을 예약하고, `tick`이 `pushNewCandle(extraDrift)`로 반영.
+    - 금감원 감시 게이지(`run.fss`): `playCard`에서 `FSS_CARDS`를 쓰면 `raiseFss` → 가득 차면 `sanctionFss`(과징금 또는 `run.buyBanNext` → 다음 날 `buyBanToday`, `checkPlay`가 `'banned'`). 줄이는 법: `decayFss` — 장 마감 `FSS_DAILY_DECAY`, 새 주 `FSS_WEEKLY_DECAY` (전관 변호사 유물이면 `RELIC_LAWYER_DECAY_MULT`배), 카드 '자진 신고' `FSS_CONFESS_CUT`. HUD `#fssBox`.
+    - 찌라시(장중 선택 이벤트): `tick` 끝에서 `maybeTriggerTip` → `openTip`(→ `run.pendingTip`, 이 동안 `tick`은 멈춤) → `resolveTip(choiceIdx)`가 확률 판정 후 `applyTipEffect`로 효과(cash·buy·shock·pump·market·sellStock·protect)를 적용하고 `run.tipLog`에 순자산 변화를 남긴다. 이벤트는 CONFIG `TIP_EVENTS`에 데이터로만 추가한다.
+    - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward`(카드 보상: 덱에 없는 카드만) → `chooseRelicReward`(유물 보상: 없는 것 2개 중 1개, 다 모았으면 생략) → `openShop`(암시장: `buyPack`·`buySingle`·`shopRemoveCard`·`buyRelic` — 값은 전부 비자금 `run.slush`로 낸다(순자산 제외, 계좌 현금과 별개). 적립은 `endOfRound` 통과 시 `slushEarned` = `SLUSH_WEEKLY_BASE` + 목표 초과분 × `SLUSH_EXCESS_RATE`, 찌라시 효과 `slush`(안전한 B 선택 보상). 팩 풀 `packPool`과 낱장 진열도 덱에 없는 카드만, `inDeck`) → `leaveShop` → `startNextRound`
+    - 결산·종료: `startNextRound`가 `markWeekStart`로 주 시작 기준값(`run.weekStart`)을 남기고, `endOfRound`가 `weekSummary`로 이번 주 요약 `run.lastWeek`(순자산·목표·달성률·주간 수익·확정손익·반대매매·이자·이월 포지션)를 만든다. 판이 끝나면 `endRun(reason)`이 `classifyEnd`로 원인 `run.endCause`를 정한다: VICTORY / 파산 = YOLO_BUST·MARGIN_CALL·SHORT_SQUEEZE·DEBT_SPIRAL / 목표 미달 = SIDELINED(매수 0회 + 현금 위주)·ROUND_TRIP(주중 목표 돌파 후 미달)·NEAR_MISS(주간 수익 플러스 + 목표 90%·필요 상승분 50% 이상)·LIQ_ADDICT·FSS_FINED·TIP_VICTIM·INTEREST_DRAIN·HODL_FAIL·PANIC_SELL(손실 원인이 부족분의 `END_CAUSE_SHARE` 이상)·TOO_SLOW(수익 플러스)·SLOW_BLEED. 판정 기준은 CONFIG `END_*`, 순서는 `classifyEnd` 위 주석. 주간 값은 누적 카운터(`run.buys`·`finesPaid`·`tipNet`, `interestPaid`·`realized`)를 `run.weekStart`와 빼서 구한다 — 매수 카드는 `noteBuy(p)`로 세고(찌라시 매수는 `p.viaTip`), 최고 순자산은 `notePeak`가 `run.peakEquity`·`run.weekPeak`를 함께 갱신.
+  - **UI**: `onGameEvent`가 엔진 이벤트를 받아 토스트/연출/오버레이를 띄우고, `renderAll()`이 화면을 그린다. 대상 지정 상태(`selectedIdx`), 설명을 펼친 유물(`relicTipId`), 도감 등급 필터(`collectionRarity`), 큰 차트에 보이는 대상(`chartTarget`: `'idx'` 또는 종목 id)은 UI에만 있다. 입력 핸들러는 엔진 함수 호출 → `renderAll()` 순서.
+  - 결산 결과 화면 `showRoundResult`(`roundClear` → `data-act="toReward"`로 보상 단계) / 게임오버 화면 `showRunOver`(`runOver`). 게임오버 문구는 UI의 `ENDINGS[endCause]` 테이블에만 둔다 (`group`: bust·miss·win, `hint`: 파산 기록의 미해금 조건). 파산 기록(타이틀 > `#recordsBtn` → `#screen-records`, `buildRecords`): `showRunOver`가 `recordRun`으로 localStorage `hodl.records`(엔딩별 횟수 `counts` + 최근 `RECORDS_HISTORY`판 `history`)에 저장하고, 처음 본 엔딩이면 '새 엔딩 해금' 배지. 저장이 막히면 세션 메모리로 대신한다. 기록에는 판마다 날짜·생존 주·엔딩·최종/최고 순자산·반대매매·유물 수·덱 크기, 전체 누적 `totals`(판 수 = '개미 N회차' `hodl.antRuns`·최고 생존·최고 순자산·총 반대매매)를 둔다.
+  - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 사운드 `sound`는 자리만). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
+- 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
+- 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
+- 엔진 안의 시간 흐름은 틱 카운트(`tickInDay`, `eventTicksLeft`)로 처리한다. `setTimeout`/`setInterval`은 UI 쪽 게임 루프(`window.onload`)에만 둔다.
+- C#으로 옮기기 쉬운 형태를 선호: 명확한 필드를 가진 평범한 객체, 순수 함수, 숫자 상수는 이름 있는 상수로. JS 전용 트릭(동적 프로퍼티 추가, 암묵적 형변환, 프로토타입 조작)은 피한다.
+- 금액 단위는 "만 원" 정수 기준(`₩ 10,000만`)을 유지한다.
+
+### 픽셀 디자인 시스템 재사용
+
+- 색상은 반드시 `:root`의 CSS 변수를 쓴다: `--bg`, `--panel`, `--panel2`, `--green`, `--green2`, `--green-dim`, `--red`, `--red2`, `--red-dim`, `--gold`, `--gold2`, `--purple`, `--cyan`, `--text`, `--muted`, `--line`, `--line2`. 새 hex 값을 하드코딩하지 않는다 (Canvas에서 부득이하면 같은 값을 사용).
+- 카드 테두리: 안쪽 `--cc` = 종류 색, 바깥 `--rc` = 등급 색(일반 `--muted`·고급 `--green2`·희귀 `--blue`·전설 `--purple`·신화 `--gold`). 라벨 `.c-rar.<등급>`.
+- 테두리는 기존 픽셀 유틸리티 재사용: `.px-border`, `.px-border-gold`, `.px-border-green`, `.px-border-red`, `.px-corner-box`. `border-radius`·부드러운 그림자·그라데이션 대신 `box-shadow` 픽셀 테두리와 오프셋 그림자(`6px 6px 0 #000`).
+- 폰트: 제목/라벨은 `Press Start 2P`, 본문/숫자는 `VT323`. 한글은 뒤에 붙은 Galmuri로 떨어진다 — `font-family:'Press Start 2P','Galmuri-9px',monospace`처럼 **font-family를 쓰는 곳마다 그 글자 크기에 맞는 Galmuri 얼굴을 붙인다.**
+  - Galmuri는 픽셀 폰트라 원래 크기(Galmuri7 8px · 9 10px · 11 12px · 14 15px)나 그 2배에서만 획이 빠지지 않는다. 그래서 `<style>` 맨 위에 CSS 글자 크기별 `@font-face`를 `size-adjust`로 따로 둔다: Press Start 2P 옆은 `Galmuri-<크기>px`(글자 크기 근처 원래 크기), VT323 옆은 `GalmuriV-<크기>px`(VT323 글자가 작아서 약 75%), 카드 설명은 `Galmuri-desc`.
+  - 새 글자 크기를 쓰면 그 크기의 얼굴도 추가한다. font-size만 바꾸는 규칙(미디어 쿼리 등)에도 같은 크기의 font-family를 함께 쓴다. Canvas `ctx.font`도 같다.
+  - `overflow:hidden` + 좁은 line-height 안의 한글은 윗줄이 잘린다 (Galmuri가 VT323보다 키가 크다). 이런 곳은 line-height 1.1 이상·padding-top을 준다.
+- `image-rendering: pixelated`, Canvas는 `imageSmoothingEnabled = false` 유지.
+- 상승 = `--green`, 하락 = `--red` (한국식 반대 색 쓰지 않음 — 기존 컨벤션 유지).
+
+### 레이아웃 (가로 데스크톱 / 세로 모바일)
+
+- **901px 이상**: `.cabinet`은 16:10 고정(`--cab-ratio-w/h`), 폭 = `min(--cab-max-w, --cab-max-h × 16/10)`. 화면이 16:10보다 넓으면 좌우, 좁으면 위아래로 배경이 보인다(letterbox). 페이지는 스크롤되지 않고 화면별로 게임 영역 안에서만 스크롤.
+- TR룸은 그리드 3구역: `.play-top`(HUD 바) / `.play-left`(뉴스·지수 차트·종목 시세) / `.play-right`(행동력·손패·장 시작·포지션·전량 매도). 새 UI는 이 셋 중 하나에 넣는다.
+- **900px 이하**: 데스크톱 CSS(`@media (min-width: 901px)`)가 꺼지고 기존 세로 스택(최대 520px).
+- 레이아웃을 건드렸으면 1920×1080, 1366×768, 모바일 폭(예: 390×844)에서 스크린샷으로 카드 잘림·겹침을 확인한다.
+
+## 수정 후 검증 (필수)
+
+코드를 수정했으면 **Playwright로 실제 동작을 확인**한다. 문법이 맞는지만 보고 끝내지 않는다.
+
+1. `docs/demo`는 확장자가 없어 그대로 서빙하면 HTML로 인식되지 않는다. 임시 폴더에 `demo.html`로 복사해 로컬 서버로 띄운다:
+   ```sh
+   mkdir -p /tmp/site && cp docs/demo /tmp/site/demo.html && cp -r docs/assets /tmp/site/
+   python3 -m http.server 8765 --bind 127.0.0.1 -d /tmp/site
+   ```
+2. Playwright MCP(`.mcp.json`) 또는 Playwright 스크립트로 `http://127.0.0.1:8765/demo.html`을 연다.
+3. 최소 스모크 시나리오:
+   - `▶ 영끌 출격` 클릭 → `#screen-play`가 활성화되고 장전(`run.phase === 'premarket'`)인지
+   - 손패의 종목 카드(대기 매수 효과 없음) 클릭 → 현금이 카드 비용만큼 줄고 `#positionsBox`에 포지션이 생기는지
+   - `▶ 장 시작`(`#openBtn`) 클릭 → 장중으로 넘어가 캔들이 진행되는지
+   - `◆ 전량 매도` 클릭 → 포지션이 0개(`NO POSITION`)가 되고 현금/확정손익이 갱신되는지
+   - 페이지 에러(`pageerror`)가 없는지
+4. 변경한 기능 자체도 직접 조작해 확인하고, 필요하면 스크린샷으로 레이아웃을 본다.
+
+참고:
+- 게임 루프가 800ms마다 돌며 손패·포지션을 다시 그릴 수 있으므로, 요소 핸들을 오래 들고 있지 말고 locator로 매번 새로 찾는다.
+- 손패는 무작위이므로 `run.hand = ['stk_semi', 'credit'].map(newCard); handSig = ''; renderAll();`처럼 고정해서 시나리오를 재현한다.
+- 반대매매·장 마감·주간 결산처럼 기다리기 어려운 상황은 `page.evaluate`로 상태를 만들어 확인한다 (예: `assets.meme.price *= 0.7; checkMarginCalls();`, `run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll();`).
+- 시장은 TR룸 탭에서, 장중(`run.phase === 'market'`)이고 찌라시·오버레이가 없을 때만 움직인다.
+- 찌라시가 오면 선택 전까지 `tick()`이 멈추므로, 장을 끝까지 돌리는 반복문은 위 예시처럼 `resolveTip`으로 처리한다. 실시간으로 장을 돌려 보는 테스트에서 찌라시가 끼면 안 되면 `window.tipChance = () => 0;`으로 끈다.
