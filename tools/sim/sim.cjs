@@ -49,7 +49,7 @@ function installBots(){
   };
 
   let played = 0, marketPlayed = 0;
-  const countPlay = id => { played++; if(['dove', 'hawk', 'ceoTweet', 'pump'].indexOf(id) >= 0) marketPlayed++; };
+  const countPlay = id => { played++; if(['dove', 'hawk', 'ceoTweet', 'pump', 'manip'].indexOf(id) >= 0) marketPlayed++; };
   // 조건에 맞는 손패 카드 중 지금 쓸 수 있는 첫 장을 쓴다 (대상 카드는 첫 번째 유효 대상)
   function playFirst(match){
     for(let i = 0; i < run.hand.length; i++){
@@ -79,8 +79,8 @@ function installBots(){
 
   // marketCards: 시장 카드(비둘기·매파·CEO 트윗·리딩방)를 먼저 쓰고, 그 방향에 맞춰 레버리지 → 종목 매수.
   // 나머지 카드는 allCards처럼 전부 쓴다 → allCards와의 차이 = 시장 카드를 잘 쓴 효과
-  const MARKET_IDS = ['dove', 'pump', 'ceoTweet', 'hawk'];
-  const MARKET_DIR = { dove: 1, pump: 1, ceoTweet: 1, hawk: -1 };
+  const MARKET_IDS = ['manip', 'dove', 'pump', 'ceoTweet', 'hawk'];
+  const MARKET_DIR = { manip: 1, dove: 1, pump: 1, ceoTweet: 1, hawk: -1 };
   const beta = c => STOCK_BY_ID[c.stock].beta;
   const punch = c => STOCK_BY_ID[c.stock].cost * Math.abs(beta(c));   // 방향이 맞을 때 효과 크기
   let mDay = '', mDir = 0, mPumped = '';
