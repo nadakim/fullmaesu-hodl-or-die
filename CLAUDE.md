@@ -18,12 +18,15 @@
 - 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
   - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards,bearInverse,bearShort] [--file docs/demo] [--md out.md]`
   - 카드 한 장의 기대 수익: `node tools/sim/cardev.cjs [--file docs/demo]` (시장 카드, 원래 쓰는 상황) · `--all` (신화·상태 제외 전 카드, 공통 상황) — 같은 시드로 카드 사용/미사용 비교, 순자산 대비 %
-  - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
+  - 변경 전: `mkdir -p /tmp/before && git show HEAD:docs/demo > /tmp/before/demo && git show HEAD:docs/engine.js > /tmp/before/engine.js && node tools/sim/sim.cjs --file /tmp/before/demo`
+  - 헤드리스 전략 시뮬레이터 (브라우저 없이 Node에서 엔진 직접 실행, 전략 6종 × 500판): `node sim/runner.js [--n 500] [--strategies allIn3x,...]` → `sim/results/*.json`. 자세한 건 `sim/README.md`
   - 목표치 실험: `--targets 11020,11320,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
 
 ## 파일 구조
 
-- `docs/demo` — 프로토타입 본체 (단일 HTML 파일, **확장자 없음**). CSS·마크업·JS가 한 파일에 들어 있다.
+- `docs/demo` — 프로토타입 본체 (HTML, **확장자 없음**). CSS·마크업·UI JS. 엔진은 `<script src="engine.js">`로 불러온다.
+- `docs/engine.js` — CONFIG + ENGINE (DOM 없음). 브라우저와 Node(`sim/load-engine.js`, vm) 양쪽에서 같은 파일을 쓴다.
+- `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
@@ -34,7 +37,7 @@
 
 - 순수 **HTML / CSS / JavaScript + Canvas** (캔들 차트, 배경 그리드)
 - **빌드 도구·번들러·프레임워크·npm 의존성 추가 금지** (React, Vite, TypeScript, Tailwind 등 X). 브라우저에서 파일 하나로 바로 열려야 한다.
-- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/assets/`를 함께 배포해야 한다.
+- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/engine.js` + `docs/assets/`를 함께 배포해야 한다.
 
 ## 코드 규칙
 
@@ -43,7 +46,7 @@
 게임 로직 — **상태, 매매, 가치 계산, 이벤트** — 은 DOM/Canvas 코드와 분리해 유지한다.
 
 - 로직 함수는 DOM(`document`, `innerHTML`, `alert`), Canvas, `setTimeout`/`setInterval`에 직접 의존하지 않는다. 입력을 받아 상태를 바꾸거나 값을 반환하고, 화면 갱신은 호출 측(UI 레이어)이 `renderUI()`/`renderChart()`로 한다.
-- `docs/demo`의 `<script>`는 세 구역으로 나뉜다. 이 경계를 유지한다:
+- 스크립트는 세 구역으로 나뉜다 — CONFIG·ENGINE은 `docs/engine.js`, UI는 `docs/demo`의 `<script>`. 이 경계를 유지한다 (엔진에 DOM 코드를 넣으면 Node 시뮬레이터가 깨진다):
   - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INVERSE_DECAY`·`STOCK_MOVE_MULT`(장세별 종목 움직임 배수)·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 시장 카드 `MARKET_CARD_ODDS`·`REVERSION_*`·`PUMP_*`, 금감원 게이지 `FSS_*`, 이자 `DAILY_INTEREST`(신용·마통)·`SHORT_BORROW_RATE`(대차), 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`·`MISU_CASH_FLOOR`, 갭 `GAP_*`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`, 등급 `RARITIES`·`REWARD_RARITY_BY_WEEK`·`MYTHIC_DECK_LIMIT`, 비자금 `SLUSH_*`·`TIP_SLUSH_SAFE`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`(`RELIC_RARITY_WEIGHTS`·`RELIC_PRICE`), 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
   - **ENGINE** (DOM 접근 금지): 상태 `run`(한 판 전체: 현금·포지션·더미·행동력·대기 매수 효과·오늘의 효과), `assets`(종목별 가격·스파크라인 `history`·캔들 `candles`), `marketPrice`/`marketState`/`candleData`(지수).
     - 포지션 (롱·숏 공용, `dir` = +1/−1): `exposure`, `posEquity`, `posPnl`, `marginRatio`, `openPosition`(같은 종목·방향·레버리지 포지션이 있으면 `addToPosition`으로 통합), `closePosition`, `sellPosition`, `sellAllPositions`, `checkOrders`(예약주문), `checkMarginCalls`
@@ -58,6 +61,7 @@
     - 찌라시(장중 선택 이벤트): `tick` 끝에서 `maybeTriggerTip` → `openTip`(→ `run.pendingTip`, 이 동안 `tick`은 멈춤) → `resolveTip(choiceIdx)`가 확률 판정 후 `applyTipEffect`로 효과(cash·buy·shock·pump·market·sellStock·protect)를 적용하고 `run.tipLog`에 순자산 변화를 남긴다. 이벤트는 CONFIG `TIP_EVENTS`에 데이터로만 추가한다.
     - 흐름: `startNewRun` → `startDay`(장전) → `startMarket`(장중) → `tick` × N → `endOfDay` → … → `endOfRound` → `chooseReward`(카드 보상: 덱에 없는 카드만) → `chooseRelicReward`(유물 보상: 없는 것 2개 중 1개, 다 모았으면 생략) → `openShop`(암시장: `buyPack`·`buySingle`·`shopRemoveCard`·`buyRelic` — 값은 전부 비자금 `run.slush`로 낸다(순자산 제외, 계좌 현금과 별개). 적립은 `endOfRound` 통과 시 `slushEarned` = `SLUSH_WEEKLY_BASE` + 목표 초과분 × `SLUSH_EXCESS_RATE`, 찌라시 효과 `slush`(안전한 B 선택 보상). 팩 풀 `packPool`과 낱장 진열도 덱에 없는 카드만, `inDeck`) → `leaveShop` → `startNextRound`
     - 결산·종료: `startNextRound`가 `markWeekStart`로 주 시작 기준값(`run.weekStart`)을 남기고, `endOfRound`가 `weekSummary`로 이번 주 요약 `run.lastWeek`(순자산·목표·달성률·주간 수익·확정손익·반대매매·이자·이월 포지션)를 만든다. 판이 끝나면 `endRun(reason)`이 `classifyEnd`로 원인 `run.endCause`를 정한다: VICTORY / 파산 = YOLO_BUST·MARGIN_CALL·SHORT_SQUEEZE·DEBT_SPIRAL / 목표 미달 = SIDELINED(매수 0회 + 현금 위주)·ROUND_TRIP(주중 목표 돌파 후 미달)·NEAR_MISS(주간 수익 플러스 + 목표 90%·필요 상승분 50% 이상)·LIQ_ADDICT·FSS_FINED·TIP_VICTIM·INTEREST_DRAIN·HODL_FAIL·PANIC_SELL(손실 원인이 부족분의 `END_CAUSE_SHARE` 이상)·TOO_SLOW(수익 플러스)·SLOW_BLEED. 판정 기준은 CONFIG `END_*`, 순서는 `classifyEnd` 위 주석. 주간 값은 누적 카운터(`run.buys`·`finesPaid`·`tipNet`, `interestPaid`·`realized`)를 `run.weekStart`와 빼서 구한다 — 매수 카드는 `noteBuy(p)`로 세고(찌라시 매수는 `p.viaTip`), 최고 순자산은 `notePeak`가 `run.peakEquity`·`run.weekPeak`를 함께 갱신.
+  - 이벤트: `emit(type, data)`는 이번 판 로그 `eventLog`(`startNewRun`에서 비움)에 쌓고 리스너(`setEventListener`)에 알린다. UI는 `setEventListener((t, d) => onGameEvent(t, d))`.
   - **UI**: `onGameEvent`가 엔진 이벤트를 받아 토스트/연출/오버레이를 띄우고, `renderAll()`이 화면을 그린다. 대상 지정 상태(`selectedIdx`), 설명을 펼친 유물(`relicTipId`), 도감 등급 필터(`collectionRarity`), 큰 차트에 보이는 대상(`chartTarget`: `'idx'` 또는 종목 id)은 UI에만 있다. 입력 핸들러는 엔진 함수 호출 → `renderAll()` 순서.
   - 결산 결과 화면 `showRoundResult`(`roundClear` → `data-act="toReward"`로 보상 단계) / 게임오버 화면 `showRunOver`(`runOver`). 게임오버 문구는 UI의 `ENDINGS[endCause]` 테이블에만 둔다 (`group`: bust·miss·win, `hint`: 파산 기록의 미해금 조건). 파산 기록(타이틀 > `#recordsBtn` → `#screen-records`, `buildRecords`): `showRunOver`가 `recordRun`으로 localStorage `hodl.records`(엔딩별 횟수 `counts` + 최근 `RECORDS_HISTORY`판 `history`)에 저장하고, 처음 본 엔딩이면 '새 엔딩 해금' 배지. 저장이 막히면 세션 메모리로 대신한다. 기록에는 판마다 날짜·생존 주·엔딩·최종/최고 순자산·반대매매·유물 수·덱 크기, 전체 누적 `totals`(판 수 = '개미 N회차' `hodl.antRuns`·최고 생존·최고 순자산·총 반대매매)를 둔다.
   - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 사운드 `sound`는 자리만). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
@@ -92,7 +96,7 @@
 
 1. `docs/demo`는 확장자가 없어 그대로 서빙하면 HTML로 인식되지 않는다. 임시 폴더에 `demo.html`로 복사해 로컬 서버로 띄운다:
    ```sh
-   mkdir -p /tmp/site && cp docs/demo /tmp/site/demo.html && cp -r docs/assets /tmp/site/
+   mkdir -p /tmp/site && cp docs/demo /tmp/site/demo.html && cp docs/engine.js /tmp/site/ && cp -r docs/assets /tmp/site/
    python3 -m http.server 8765 --bind 127.0.0.1 -d /tmp/site
    ```
 2. Playwright MCP(`.mcp.json`) 또는 Playwright 스크립트로 `http://127.0.0.1:8765/demo.html`을 연다.

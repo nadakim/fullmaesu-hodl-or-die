@@ -36,7 +36,7 @@ async function main(){
     else throw new Error('알 수 없는 옵션: ' + args[i]);
   }
   if(!opt.n) opt.n = opt.all ? 1500 : 4000;
-  const html = fs.readFileSync(opt.file, 'utf8');
+  const html = require('./demo-html.cjs')(opt.file);
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch();
   const page = await browser.newPage();

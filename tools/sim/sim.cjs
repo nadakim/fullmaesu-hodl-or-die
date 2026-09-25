@@ -299,7 +299,7 @@ function toMarkdown(meta, rows, causes){
 
 async function main(){
   const opt = parseArgs(process.argv.slice(2));
-  const html = fs.readFileSync(opt.file, 'utf8');
+  const html = require('./demo-html.cjs')(opt.file);
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch();
   const page = await browser.newPage();
