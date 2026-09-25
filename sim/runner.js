@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /* 헤드리스 밸런스 시뮬레이터 — docs/engine.js를 Node에서 그대로 돌린다 (브라우저·Playwright 없음).
    node sim/runner.js [--n 500] [--seed 1] [--strategies allIn3x,random] [--out sim/results/xxx.json]
+                      [--targets 10500,11000,...]   (ROUND_TARGETS를 파일 수정 없이 바꿔서 실험, 길이 = MAX_ROUND)
+                      [--set DAILY_INTEREST=0.003;SEAL=...]   (CONFIG 상수 한 줄을 바꿔서 실험, ';'로 여러 개)
+                      [--engine /tmp/before/engine.js]   (다른 엔진 파일 — 변경 전/후 비교: git show HEAD:docs/engine.js > /tmp/before/engine.js)
 
    한 판: setSeed(시드) → startNewRun() → [장전: 전략이 카드 사용 → startMarket() → tick() 반복(찌라시는 전략이 resolveTip)
           → 결산 보상(chooseReward·chooseRelicReward) → 암시장(buy*·leaveShop)] × 주 → phase 'over'
@@ -26,12 +29,15 @@ const ALL_CAUSES = [].concat(END_CAUSES.win, END_CAUSES.bust, END_CAUSES.miss);
 const MAX_STEPS = 200000;   // 무한 루프 방지 (한 판은 보통 수백 걸음)
 
 function parseArgs(argv){
-  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES), out: '' };
+  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES), out: '', targets: null, set: {}, engine: undefined };
   for(let i = 0; i < argv.length; i += 2){
     const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
     if(k === 'n' || k === 'seed') o[k] = parseInt(v, 10);
     else if(k === 'strategies') o.strategies = v.split(',');
     else if(k === 'out') o.out = v;
+    else if(k === 'engine') o.engine = v;
+    else if(k === 'set') v.split(';').forEach(kv => { const i = kv.indexOf('='); o.set[kv.slice(0, i).trim()] = kv.slice(i + 1); });
+    else if(k === 'targets') o.targets = v.split(',').map(Number);
     else throw new Error('알 수 없는 옵션: ' + argv[i]);
   }
   o.strategies.forEach(s => { if(!STRATEGIES[s]) throw new Error('알 수 없는 전략: ' + s); });
@@ -52,6 +58,12 @@ function pickReward(strat, choices, priority, rng, fallbackFirst){
   if(strat.randomPicks) return rng() < 0.8 && choices.length ? choices[Math.floor(rng() * choices.length)] : '';
   const hit = priority.find(id => choices.indexOf(id) >= 0);
   return hit || (fallbackFirst && choices.length ? choices[0] : '');
+}
+
+function weekEquities(E, r){
+  const eq = E.eventLog.filter(e => e.type === 'roundClear').map(e => Math.round(e.data.eq));
+  if(r.lastWeek && r.lastWeek.round > eq.length) eq.push(Math.round(r.lastWeek.eq));   // 미달·승리한 마지막 결산
+  return eq;
 }
 
 function playGame(E, strat, seed){
@@ -85,7 +97,8 @@ function playGame(E, strat, seed){
   return {
     seed, round: r.round, day: r.day, endReason: r.endReason, endCause: r.endCause,
     endEquity: Math.round(r.endEquity), peakEquity: Math.round(r.peakEquity), liquidations: r.liquidations,
-    weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length
+    weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
+    weekEq: weekEquities(E, r)   // 주마다 결산 순자산 (그 주 중간에 파산했으면 그 주는 없음)
   };
 }
 
@@ -96,6 +109,8 @@ function summarize(games, maxRound){
   const causes = {};
   ALL_CAUSES.forEach(c => { causes[c] = 0; });
   games.forEach(g => { causes[g.endCause] = (causes[g.endCause] || 0) + 1; });
+  const passByWeek = {};   // w주 결산을 통과한 비율
+  for(let w = 1; w <= maxRound; w++) passByWeek[w] = count(g => g.weeksCleared >= w) / n;
   const deathsByWeek = {};   // 몇 주차 결산·장중에 끝났는지 (승리 제외)
   for(let w = 1; w <= maxRound; w++) deathsByWeek[w] = 0;
   games.filter(g => g.endReason !== 'VICTORY').forEach(g => { deathsByWeek[g.round]++; });
@@ -110,7 +125,7 @@ function summarize(games, maxRound){
     avgPeakEquity: avg(g => g.peakEquity),
     avgRelics: avg(g => g.relics.length),
     avgDeckSize: avg(g => g.deckSize),
-    causes, deathsByWeek
+    causes, deathsByWeek, passByWeek
   };
 }
 
@@ -118,7 +133,11 @@ const pct = x => (100 * x).toFixed(1) + '%';
 
 function main(){
   const opt = parseArgs(process.argv.slice(2));
-  const E = loadEngine();
+  const E = loadEngine(opt.engine, opt.set);
+  if(opt.targets){
+    if(opt.targets.length !== E.ROUND_TARGETS.length) throw new Error(`--targets는 ${E.ROUND_TARGETS.length}개`);
+    opt.targets.forEach((t, i) => { E.ROUND_TARGETS[i] = t; });   // const 배열이라 내용만 바꾼다
+  }
   const maxRound = E.MAX_ROUND;
   const seeds = Array.from({ length: opt.n }, (_, i) => opt.seed + i);
   const results = {}, games = {};
@@ -139,6 +158,10 @@ function main(){
   console.log('== 엔딩(endCause)별 발생 수 ==');
   console.table(Object.fromEntries(ALL_CAUSES.map(c => [c, Object.fromEntries(opt.strategies.map(s => [s, results[s].causes[c]]))])));
 
+  console.log('== 주차별 결산 통과율 (w주까지 살아남은 비율) ==');
+  console.table(Object.fromEntries(Object.keys(results[opt.strategies[0]].passByWeek).map(w =>
+    [w + '주', Object.fromEntries(opt.strategies.map(s => [s, pct(results[s].passByWeek[w])]))])));
+
   console.log('== 주차별 탈락 수 (그 주에 파산하거나 결산 미달) ==');
   console.table(Object.fromEntries(Object.keys(results[opt.strategies[0]].deathsByWeek).map(w =>
     [w + '주', Object.fromEntries(opt.strategies.map(s => [s, results[s].deathsByWeek[w]]))])));
@@ -157,7 +180,7 @@ function main(){
   const out = opt.out || path.join(__dirname, 'results', `run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify({
-    meta: { n: opt.n, seed: opt.seed, strategies: opt.strategies, maxRound, targets: E.ROUND_TARGETS, date: new Date().toISOString(),
+    meta: { n: opt.n, seed: opt.seed, engine: opt.engine || 'docs/engine.js', overrides: opt.set, strategies: opt.strategies, maxRound, targets: E.ROUND_TARGETS, date: new Date().toISOString(),
             note: '클리어율이 다른 전략보다 비정상적으로 높은 전략 = 그 전략이 쓴 카드/유물이 과하게 강하다는 신호' },
     summary: results, games
   }, null, 1));

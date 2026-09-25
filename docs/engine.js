@@ -10,7 +10,7 @@ const START_CASH        = 10000;   // 시작 자금 (만원) = 1억
 const TICK_MS           = 800;     // 캔들 1개 = 0.8초
 const TICKS_PER_DAY     = 12;      // 장중 = 캔들 12개 (약 10초)
 const DAYS_PER_ROUND    = 5;       // 1주(라운드) = 5거래일
-const ROUND_TARGETS     = [11020, 11320, 12240, 13970, 17340, 23560, 34880, 55790]; // 주차별 순자산 목표 (만원). 주간 상승폭 +3% → +60%로 점점 가파르게. 종목 움직임 +25%에 맞춰 이전 목표의 +2%
+const ROUND_TARGETS     = [10200, 10800, 11500, 12300, 13200, 14300, 15600, 17100]; // 주차별 순자산 목표 (만원). 주간 +2% → +10%로 점점 가파르게. 방어형(무레버리지·저베타)·헤지·공매도·레버리지·작전 빌드가 모두 클리어 가능한 곡선 (sim/runner.js: 1주차 통과 전 전략 57%+, 클리어 18~30%)
 const MAX_ROUND         = ROUND_TARGETS.length;
 
 // 시장
@@ -31,7 +31,7 @@ const CANDLE_WICK_SCALE = 0.5;     // 종목 캔들 꼬리 길이 (× 종목 고
 // 갭: 드물게 한 틱에 종목 가격이 크게 튄다. 반대매매는 갭 이후 가격으로 체결 → 레버리지·숏은 원금 이상 잃을 수 있다
 //   위험도 = volatility + |beta| × GAP_BETA_WEIGHT  (밈코인 .25 · 초전도체 .16 · 대장코인 .11 · 반도체 .03 · 국밥제약 .014)
 const GAP_BETA_WEIGHT     = 0.01;
-const GAP_CHANCE_PER_RISK = 0.035; // 틱당 갭 확률 = 위험도 × 이 값 × 장세 배수
+const GAP_CHANCE_PER_RISK = 0.02;  // 틱당 갭 확률 = 위험도 × 이 값 × 장세 배수. 0.035 → 0.02: 목표 곡선이 완만해진 뒤 레버리지 빌드가 갭 파산으로만 끝나지 않게 (allIn3x 파산 28% → 17%)
 const GAP_SIZE_PER_RISK   = 6;     // 갭 크기 = 위험도 × 이 값 × (1 + 난수)
 const GAP_SIZE_MAX        = 0.90;  // 갭 크기 상한 (하락 갭 −90%, 상승 갭 +90%)
 const GAP_UP_SHARE        = 0.5;   // 상승 갭 비율 (상승 갭은 숏을 턴다)
@@ -70,14 +70,14 @@ const CREDIT_LEV          = 2;     // 신용 매수
 const YOLO_LEV            = 3;     // 영끌
 const YOLO_PRINCIPAL_MULT = 2;     // 영끌 원금 배수
 const AVG_DOWN_RATIO      = 0.5;   // 물타기: 원금의 50% 추가
-const IPO_AMOUNT          = 400;   // 공모주 청약 (만원)
+const IPO_AMOUNT          = 250;   // 공모주 청약 (만원). 400 → 250 (기대 +3.7%)
 const STOP_LOSS_PCT       = -0.10; // 손절 예약
 const TAKE_PROFIT_PCT     = 0.15;  // 익절 예약
 const TRAIL_GAP           = 0.07;  // 트레일링 스탑 (최고 수익률 대비 %p)
-const CUT_LOSS_REFUND     = 0.20;  // 손절은 과학: 손실의 20% 환급
-const TAKE_PROFIT_BONUS   = 0.20;  // 익절은 항상 옳다: 수익의 20% 보너스
+const CUT_LOSS_REFUND     = 0.50;  // 손절은 과학: 손실의 50% 환급 (0.2 → 0.5)
+const TAKE_PROFIT_BONUS   = 0.50;  // 익절은 항상 옳다: 수익의 50% 보너스 (0.2 → 0.5, 익절 빌드 보상)
 const ESCAPE_DRAW         = 2;     // 탈출은 지능순 드로우
-const DIAMOND_BONUS       = 0.30;  // 다이아몬드 핸드: 주말 평가이익의 30%
+const DIAMOND_BONUS       = 0.60;  // 다이아몬드 핸드: 주말 평가이익의 60% (0.3 → 0.6)
 const FORCED_DIVIDEND     = 0.04;  // 강제 장기투자: 원금의 4% (소멸 카드)
 const DIVIDEND_PER_POS    = 80;    // 배당주 마인드: 포지션당 (만원)
 const DIVIDEND_MAX_POS    = 5;     // 배당주 마인드: 최대 포지션 수
@@ -88,7 +88,7 @@ const ANT_ARMY_DRAW       = 1;     // 개미 군단 총공격: 종목 카드를 
 const SPLIT_SELL_RATIO    = 1 / 3; // 분할 매도: 매도 비율
 const SPLIT_SELL_DRAW     = 1;     // 분할 매도: 드로우
 const TOP_SPOTTER_BONUS   = 0.30;  // 상투 감별사: 익절 예약·트레일링 스탑 체결 수익 보너스
-const COMPOUND_RATIO      = 0.20;  // 복리의 마법: 평가이익 중 원금에 더하는 비율
+const COMPOUND_RATIO      = 0.50;  // 복리의 마법: 평가이익 중 원금에 더하는 비율 (0.2 → 0.5, 장기 보유 빌드 보상)
 const VALUE_GOD_DAYS      = 2;     // 가치투자의 신: 장 마감을 이만큼 넘긴 롱 포지션부터
 const VALUE_GOD_PCT       = 0.015; //   원금의 이만큼을 장 마감마다 현금으로
 const ROTATION_MAX_DRAW   = 4;     // 테마 순환매: 최대 드로우
@@ -112,7 +112,7 @@ const MARGIN_TOPUP        = 500;   // 증거금 보충 (만원)
 const HEDGE_RATIO         = 0.30;  // 인버스 헤지: 롱 노출액의 30%
 const HEDGE_STOCK         = 'inv'; // 인버스 헤지로 사는 종목
 const OVERDRAFT_AMOUNT    = 1500;  // 마이너스 통장 (만원)
-const SAVINGS_AMOUNT      = 800;   // 적금 깨기 (만원)
+const SAVINGS_AMOUNT      = 300;   // 적금 깨기 (만원). 800 → 300: 1주차 목표(+1%)의 8배를 공짜로 주던 것 (기대 +7.6%)
 
 // 시장 카드 — 장세를 확정하지 않고 확률을 기울인다. 결과는 장이 열릴 때 판정 (chance 합 1, NORMAL = 시장이 무시함)
 const MARKET_CARD_ODDS = {
@@ -169,7 +169,7 @@ const STOCKS = [
   { id:'semi',   name:'반도체전자', sector:'우량주',   cost:1000, beta: 1.0, volatility:0.02,  basePrice:72000, rarity:'common' },
   { id:'coin',   name:'대장코인',   sector:'암호화폐', cost:1500, beta: 2.5, volatility:0.08,  basePrice:95000, rarity:'uncommon' },
   { id:'sc',     name:'초전도체',   sector:'테마주',   cost:800,  beta: 3.8, volatility:0.12,  basePrice:12000, rarity:'rare' },
-  { id:'gukbap', name:'국밥제약',   sector:'방어주',   cost:500,  beta: 0.4, volatility:0.01,  basePrice:8500,  rarity:'common' },
+  { id:'gukbap', name:'국밥제약',   sector:'방어주',   cost:800,  beta: 0.4, volatility:0.01,  basePrice:8500,  rarity:'common' },
   { id:'meme',   name:'밈코인',     sector:'동전주',   cost:300,  beta: 5.0, volatility:0.20,  basePrice:420,   rarity:'rare' },
   { id:'inv',    name:'지수 인버스', sector:'인버스',  cost:800,  beta:-1.0, volatility:0.004, basePrice:5000,  rarity:'common' },
   { id:'inv2',   name:'곱버스',     sector:'인버스',   cost:600,  beta:-2.0, volatility:0.008, basePrice:3000,  rarity:'uncommon' }
@@ -182,7 +182,7 @@ STOCKS.forEach(s => { STOCK_BY_ID[s.id] = s; });
 const RELIC_GUKBAP_SECTORS       = ['방어주', '우량주']; // 국밥 정신 적용 섹터
 const RELIC_GUKBAP_LOSS_CUT      = 0.5;   // 국밥 정신: 평가손실 50% 감소
 const RELIC_SEAL_DAYS            = 3;     // 존버의 인장: 장 마감을 이만큼 넘긴 포지션부터
-const RELIC_SEAL_BONUS           = 0.10;  // 존버의 인장: 평가이익 +10%
+const RELIC_SEAL_BONUS           = 0.20;  // 존버의 인장: 평가이익 +20% (0.1 → 0.2)
 const RELIC_VIP_PUMP_CHANCE      = 0.80;  // 리딩방 VIP: 찌라시 급등 확률 (기대값 +3.2% → +5.8%)
 const RELIC_HOTLINE_PENALTY_CUT = 1.0;    // 증권사 담당자 핫라인: 반대매매 투매 손실 면제 비율
 const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
@@ -191,7 +191,7 @@ const RELIC_LAWYER_DECAY_MULT    = 2;     // 전관 변호사: 금감원 게이�
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
 const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
 const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legendary:2200, mythic:3000 }; // 암시장 유물 가격 (비자금)
-const RELIC_PAYDAY_BASE          = 200;   // 월급날: 매주 첫날 현금 +이만큼 × 주차
+const RELIC_PAYDAY_BASE          = 60;    // 월급날: 매주 첫날 현금 +이만큼 × 주차. 200 → 60: 완만한 목표에서 카드 없이도 통과시키던 불로소득 (2~8주 합계 원금의 +70% → +21%)
 const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목을 살 때마다 드로우
 const RELIC_COLD_WALLET_RATIO    = 0.20;  // 콜드월렛: 코인 종목 반대매매 기준 (기본 25%)
 const RELIC_COLD_WALLET_STOCKS   = ['coin', 'meme'];

@@ -76,7 +76,7 @@ const inverseHedge = {
   shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
 };
 
-/* ── shortSeller: 매파 발언 → 공매도 + 고베타 종목 숏 → 숏 포지션에 존버. 찌라시 B ── */
+/* ── shortSeller: 매파 발언 → 공매도 + 고베타 종목 숏(최우선) → 숏 포지션에 존버 → 남은 종목은 저베타 롱. 찌라시 B ── */
 const shortSeller = {
   premarket(E){
     for(;;){
@@ -86,6 +86,9 @@ const shortSeller = {
       if(E.run.pending.dir === -1 && playOne(E, c => isLongStock(E, c), c => betaOf(E, c))) continue;
       if(playOne(E, c => c.id === 'hodl' || c.id === 'marginTopup',
                  () => 0, ids => ids.find(id => posById(E, id).dir < 0))) continue;
+      // 공매도는 '최우선'이지 전부가 아니다: 숏을 다 친 뒤 남은 종목 카드는 저베타부터 롱 (숏과 반대 방향 = 헤지)
+      if(E.run.pending.dir === 1 && !E.run.hand.some(h => h.id === 'short')
+         && playOne(E, c => isLongStock(E, c), c => -betaOf(E, c))) continue;
       break;
     }
   },
@@ -167,4 +170,13 @@ const random = {
   }
 };
 
-module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, random };
+/* ── nothing: 대조군 2. 카드를 하나도 안 쓰고 찌라시만 무작위로 고른다. 클리어율이 0%에 가까워야 정상
+      (아무것도 안 하고 이긴다면 목표가 찌라시 보상만으로 닿을 만큼 낮다는 뜻) ── */
+const nothing = {
+  premarket(){},
+  tip: (E, rng) => (rng() < 0.5 ? 0 : 1),
+  cardPick: [], relicPick: [],
+  shop(){}
+};
+
+module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, random, nothing };

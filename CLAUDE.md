@@ -19,7 +19,7 @@
   - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards,bearInverse,bearShort] [--file docs/demo] [--md out.md]`
   - 카드 한 장의 기대 수익: `node tools/sim/cardev.cjs [--file docs/demo]` (시장 카드, 원래 쓰는 상황) · `--all` (신화·상태 제외 전 카드, 공통 상황) — 같은 시드로 카드 사용/미사용 비교, 순자산 대비 %
   - 변경 전: `mkdir -p /tmp/before && git show HEAD:docs/demo > /tmp/before/demo && git show HEAD:docs/engine.js > /tmp/before/engine.js && node tools/sim/sim.cjs --file /tmp/before/demo`
-  - 헤드리스 전략 시뮬레이터 (브라우저 없이 Node에서 엔진 직접 실행, 전략 6종 × 500판): `node sim/runner.js [--n 500] [--strategies allIn3x,...]` → `sim/results/*.json`. 자세한 건 `sim/README.md`
+  - 헤드리스 전략 시뮬레이터 (브라우저 없이 Node에서 엔진 직접 실행, 전략 6종 × 500판): `node sim/runner.js [--n 500] [--strategies allIn3x,...] [--targets ...] [--set NAME=값;...] [--engine 변경전/engine.js]` → `sim/results/*.json`. 대조군 `random`·`nothing`(카드 0장)보다 잘 짠 빌드가 높아야 하고, `nothing`은 0%에 가까워야 한다. 자세한 건 `sim/README.md`
   - 목표치 실험: `--targets 11020,11320,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
 
 ## 파일 구조

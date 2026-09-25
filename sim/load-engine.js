@@ -9,9 +9,19 @@ const vm = require('vm');
 const ENGINE_FILE = path.join(__dirname, '../docs/engine.js');
 const LIVE = new Set(['run', 'assets', 'marketPrice', 'marketState', 'candleData', 'eventListener']);
 
-module.exports = function loadEngine(file = ENGINE_FILE){
+/* overrides: { NAME: '값 소스' } — CONFIG의 `const NAME = ...;` 한 줄을 파일 수정 없이 바꿔 실험한다 (예: { DAILY_INTEREST: '0.003' }) */
+function applyOverrides(src, overrides){
+  Object.keys(overrides).forEach(name => {
+    const re = new RegExp('^(const ' + name + '\\s*=\\s*)[^;]+;', 'm');
+    if(!re.test(src)) throw new Error('CONFIG에 없는 상수: ' + name);
+    src = src.replace(re, (m, head) => head + overrides[name] + ';');
+  });
+  return src;
+}
+
+module.exports = function loadEngine(file = ENGINE_FILE, overrides = {}){
   const ctx = vm.createContext({ console });
-  vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file });
+  vm.runInContext(applyOverrides(fs.readFileSync(file, 'utf8'), overrides), ctx, { filename: file });
   // 재대입되는 변수는 컨텍스트 안의 getter로 읽는다 (runInContext를 매번 컴파일하지 않도록)
   const live = vm.runInContext('({' + [...LIVE].map(k => `get ${k}(){ return ${k}; }`).join(',') + '})', ctx);
   const cache = {};
