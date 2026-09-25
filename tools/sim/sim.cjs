@@ -184,7 +184,7 @@ function installBots(){
     setSeed(null);
     return { seed, weeksCleared: run.weeksCleared, endReason: run.endReason, endCause: run.endCause,
              liquidations: run.liquidations, endEquity: Math.round(run.endEquity), peakEquity: Math.round(run.peakEquity),
-             round: run.round, day: run.day, cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
+             round: run.round, day: run.day, cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, fssFines: run.fssFines || 0, fssPeak: run.fssPeak || 0, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
   };
   window.__simTargets = t => { if(t){ if(t.length !== MAX_ROUND) throw new Error('--targets 는 ' + MAX_ROUND + '개'); t.forEach((v, i) => { ROUND_TARGETS[i] = v; }); } return ROUND_TARGETS.slice(); };
   window.__simBatch = (strategy, tipMode, seeds) => seeds.map(s => window.__simGame(strategy, tipMode, s));

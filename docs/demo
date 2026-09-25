@@ -1260,9 +1260,9 @@ const DIAMOND_BONUS       = 0.30;  // 다이아몬드 핸드: 주말 평가이�
 const FORCED_DIVIDEND     = 0.06;  // 강제 장기투자: 원금의 6%
 const DIVIDEND_PER_POS    = 80;    // 배당주 마인드: 포지션당 (만원)
 const HODL_RECOVER        = 0.30;  // 존버는 승리한다: 평가손실 30% 회복
-const PUMP_UP_CHANCE      = 0.55;  // 리딩방 찌라시: 급등 확률
-const PUMP_UP_PCT         = 0.15;  // 급등: 하루(12틱) 동안 +15%
-const PUMP_DOWN_PCT       = 0.11;  // 설거지: 하루 동안 −11%  → 한 번 쓸 때 기대값 약 +3%
+const PUMP_UP_CHANCE      = 0.70;  // 리딩방 찌라시: 급등 확률
+const PUMP_UP_PCT         = 0.11;  // 급등: 하루(12틱) 동안 +11%
+const PUMP_DOWN_PCT       = 0.15;  // 설거지: 하루 동안 −15%  → 한 번 쓸 때 기대값 약 +3.2%
 const PUMP_UP_DRIFT       = Math.log(1 + PUMP_UP_PCT) / TICKS_PER_DAY;    // 틱당 작전 추세
 const PUMP_DOWN_DRIFT     = Math.log(1 - PUMP_DOWN_PCT) / TICKS_PER_DAY;  // (음수)
 const INDICATOR_DRAW      = 2;     // 보조지표 42개 드로우
@@ -1275,9 +1275,9 @@ const SAVINGS_AMOUNT      = 800;   // 적금 깨기 (만원)
 
 // 시장 카드 — 장세를 확정하지 않고 확률을 기울인다. 결과는 장이 열릴 때 판정 (chance 합 1, NORMAL = 시장이 무시함)
 const MARKET_CARD_ODDS = {
-  dove:     [ { state:'BULL', chance:0.60 }, { state:'NORMAL', chance:0.25 }, { state:'BEAR', chance:0.15 } ],
-  hawk:     [ { state:'BEAR', chance:0.60 }, { state:'NORMAL', chance:0.25 }, { state:'BULL', chance:0.15 } ],
-  ceoTweet: [ { state:'VOLATILE', chance:0.50 }, { state:'BULL', chance:0.30 }, { state:'NORMAL', chance:0.20 } ]
+  dove:     [ { state:'BULL', chance:0.70 }, { state:'NORMAL', chance:0.20 }, { state:'BEAR', chance:0.10 } ],
+  hawk:     [ { state:'BEAR', chance:0.70 }, { state:'NORMAL', chance:0.20 }, { state:'BULL', chance:0.10 } ],
+  ceoTweet: [ { state:'VOLATILE', chance:0.70 }, { state:'BULL', chance:0.20 }, { state:'NORMAL', chance:0.10 } ]
 };
 const REVERSION_TICKS     = 3;     // 카드로 만든 강세·약세장 다음 날, 개장 후 이만큼 틱 동안
 const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세장 12의 절반) — 차익실현 매물
@@ -1285,9 +1285,9 @@ const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세�
 // 금감원 감시 게이지 — 시장 카드를 쓸 때마다 쌓이고, 주가 바뀌면 조금 줄고, 가득 차면 제재
 const FSS_CARDS           = ['dove', 'hawk', 'ceoTweet', 'pump'];
 const FSS_MAX             = 100;
-const FSS_PER_CARD        = 20;    // 시장 카드 1장당 (5장이면 가득)
-const FSS_WEEKLY_DECAY    = 40;    // 새 주가 시작될 때 줄어드는 양 (주 2장은 공짜)
-const FSS_WARN            = 70;    // 이 이상이면 '내사 착수'
+const FSS_PER_CARD        = 34;    // 시장 카드 1장당 (3장이면 가득 → 제재)
+const FSS_WEEKLY_DECAY    = 15;    // 새 주가 시작될 때 줄어드는 양 (주가 바뀌어도 거의 안 빠진다)
+const FSS_WARN            = 60;    // 이 이상이면 '내사 착수' (2장째 — 한 장 더 쓰면 제재)
 const FSS_FINE_CHANCE     = 0.5;   // 제재 중 과징금이 나올 확률 (나머지는 다음 날 매수 금지)
 const FSS_FINE_PCT        = 0.05;  // 과징금 = 순자산의 5%
 const FSS_BAN_TYPES       = ['stock', 'buy'];   // 매수 금지 날 못 쓰는 카드 종류
@@ -1332,7 +1332,7 @@ const RELIC_GUKBAP_SECTORS       = ['방어주', '우량주']; // 국밥 정신 
 const RELIC_GUKBAP_LOSS_CUT      = 0.5;   // 국밥 정신: 평가손실 50% 감소
 const RELIC_SEAL_DAYS            = 3;     // 존버의 인장: 장 마감을 이만큼 넘긴 포지션부터
 const RELIC_SEAL_BONUS           = 0.10;  // 존버의 인장: 평가이익 +10%
-const RELIC_VIP_PUMP_CHANCE      = 0.65;  // 리딩방 VIP: 찌라시 급등 확률 (기대값 +3% → +6%)
+const RELIC_VIP_PUMP_CHANCE      = 0.80;  // 리딩방 VIP: 찌라시 급등 확률 (기대값 +3.2% → +5.8%)
 const RELIC_HOTLINE_PENALTY_CUT = 1.0;    // 증권사 담당자 핫라인: 반대매매 투매 손실 면제 비율
 const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
 const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
@@ -2376,7 +2376,7 @@ function newRun(){
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
     marketCard: '', cardMarket: false,       // 오늘 쓴 시장 카드 (장이 열릴 때 판정) / 오늘 장세가 카드로 만들어졌는지
     revertDir: 0, revertTicksLeft: 0,        // 카드 장세 다음 날 되돌림 (지수 방향 ±1, 남은 틱)
-    fss: 0, fssSanctions: 0, buyBanNext: false, buyBanToday: false,   // 금감원 감시 게이지 · 제재
+    fss: 0, fssSanctions: 0, fssFines: 0, fssPeak: 0, buyBanNext: false, buyBanToday: false,   // 금감원 감시 게이지 · 제재
     pendingTip: null, tipsToday: 0, ticksSinceTip: 0, lastTipId: '', tipLog: [],
     eventTicksLeft: 0, ticksSinceEvent: 0,
     rewardChoices: [], endReason: '', endEquity: 0,
@@ -2446,6 +2446,7 @@ function rollMarketCard(cardId){
 function raiseFss(){
   const before = run.fss;
   run.fss = Math.min(FSS_MAX, run.fss + FSS_PER_CARD);
+  run.fssPeak = Math.max(run.fssPeak, run.fss);
   emit('fssRaised', {level: run.fss, warn: before < FSS_WARN && run.fss >= FSS_WARN && run.fss < FSS_MAX});
   if(run.fss >= FSS_MAX) sanctionFss();
 }
@@ -2455,6 +2456,7 @@ function sanctionFss(){
   if(rand() < FSS_FINE_CHANCE){
     const fine = Math.round(Math.max(0, netEquity()) * FSS_FINE_PCT);
     run.cash -= fine;
+    run.fssFines++;
     emit('fssSanction', {kind: 'fine', amount: fine});
   } else {
     run.buyBanNext = true;
