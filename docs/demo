@@ -1286,7 +1286,9 @@ const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세�
 const FSS_CARDS           = ['dove', 'hawk', 'ceoTweet', 'pump'];
 const FSS_MAX             = 100;
 const FSS_PER_CARD        = 34;    // 시장 카드 1장당 (3장이면 가득 → 제재)
-const FSS_WEEKLY_DECAY    = 15;    // 새 주가 시작될 때 줄어드는 양 (주가 바뀌어도 거의 안 빠진다)
+const FSS_WEEKLY_DECAY    = 15;    // 새 주가 시작될 때 줄어드는 양
+const FSS_DAILY_DECAY     = 5;     // 장 마감마다 줄어드는 양
+const FSS_CONFESS_CUT     = 40;    // '자진 신고' 카드: 게이지 감소량
 const FSS_WARN            = 60;    // 이 이상이면 '내사 착수' (2장째 — 한 장 더 쓰면 제재)
 const FSS_FINE_CHANCE     = 0.5;   // 제재 중 과징금이 나올 확률 (나머지는 다음 날 매수 금지)
 const FSS_FINE_PCT        = 0.05;  // 과징금 = 순자산의 5%
@@ -1336,6 +1338,7 @@ const RELIC_VIP_PUMP_CHANCE      = 0.80;  // 리딩방 VIP: 찌라시 급등 확
 const RELIC_HOTLINE_PENALTY_CUT = 1.0;    // 증권사 담당자 핫라인: 반대매매 투매 손실 면제 비율
 const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
 const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
+const RELIC_LAWYER_DECAY_MULT    = 2;     // 전관 변호사: 금감원 게이지 자연 감소(매일·매주) 배수
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
 const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
 const RELIC_PRICE                = { common:900, uncommon:1300, legendary:2000 }; // 암시장 유물 가격 (만원)
@@ -1361,7 +1364,10 @@ const RELICS = [
     flavor:'타이틀 화면에 붙어 있던 그 부적. 효과는 과학적으로 검증되지 않았다.' },
   { id:'parents',  icon:'💌', name:'부모님 카드',     rarity:'legendary',
     desc:'목표 미달로 강제 은퇴될 때 딱 한 번, 부족한 금액을 채워 결산을 통과시킨다. 쓰면 사라진다.',
-    flavor:'"이번이 진짜 마지막이다." 이후 연락 두절.' }
+    flavor:'"이번이 진짜 마지막이다." 이후 연락 두절.' },
+  { id:'lawyer',   icon:'👔', name:'전관 변호사',     rarity:'uncommon',
+    desc:`금감원 감시 게이지가 매일·매주 ${RELIC_LAWYER_DECAY_MULT}배로 빨리 줄어든다 (장 마감 −${FSS_DAILY_DECAY * RELIC_LAWYER_DECAY_MULT}, 새 주 −${FSS_WEEKLY_DECAY * RELIC_LAWYER_DECAY_MULT}).`,
+    flavor:'"그 건은 제가 전화 한 통이면 됩니다." 수임료는 묻지 마세요.' }
 ];
 
 /* 찌라시 — 장중 무작위 선택 이벤트. 도착하면 선택할 때까지 시장이 멈춘다.
@@ -2274,6 +2280,10 @@ defCard('overdraft', '마이너스 통장', 'defense', 1, 'uncommon', null, true
   `현금 +₩${OVERDRAFT_AMOUNT.toLocaleString()}만. 갚지 않는 영구 대출이라 매일 이자가 붙는다.`,
   () => true,
   () => { run.cash += OVERDRAFT_AMOUNT; run.overdraft += OVERDRAFT_AMOUNT; });
+defCard('confess', '자진 신고', 'defense', 1, 'uncommon', null, true,
+  `금감원 감시 게이지 −${FSS_CONFESS_CUT}. "반성문 제출했습니다." 소멸.`,
+  () => run.fss > 0,
+  () => { run.fss = Math.max(0, run.fss - FSS_CONFESS_CUT); });
 defCard('savings', '적금 깨기', 'defense', 0, 'uncommon', null, true,
   `현금 +₩${SAVINGS_AMOUNT}만.`,
   () => true,
@@ -2450,6 +2460,10 @@ function raiseFss(){
   emit('fssRaised', {level: run.fss, warn: before < FSS_WARN && run.fss >= FSS_WARN && run.fss < FSS_MAX});
   if(run.fss >= FSS_MAX) sanctionFss();
 }
+/* 자연 감소 (장 마감·새 주). 전관 변호사는 배수 */
+function decayFss(amount){
+  run.fss = Math.max(0, run.fss - amount * (hasRelic('lawyer') ? RELIC_LAWYER_DECAY_MULT : 1));
+}
 function sanctionFss(){
   run.fss = 0;
   run.fssSanctions++;
@@ -2585,6 +2599,7 @@ function endOfDay(){
   }
   if(run.forcedState){ marketState = 'NORMAL'; emit('eventEnd'); }
   STOCKS.forEach(s => { assets[s.id].dayOpen = assets[s.id].price; });
+  decayFss(FSS_DAILY_DECAY);
   emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital')});
   if(checkBankruptcy()) return;
   if(run.day >= DAYS_PER_ROUND){ endOfRound(); return; }
@@ -2829,7 +2844,7 @@ function leaveShop(){
 
 function startNextRound(){
   run.round++;
-  run.fss = Math.max(0, run.fss - FSS_WEEKLY_DECAY);
+  decayFss(FSS_WEEKLY_DECAY);
   run.day = 1;
   run.rewardChoices = [];
   markWeekStart();

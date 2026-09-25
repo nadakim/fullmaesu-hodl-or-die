@@ -173,7 +173,10 @@ function installBots(){
         } else tick();
       } else if(run.phase === 'reward'){
         if(run.rewardStep === 'card') pickCardReward(strategy);
-        else chooseRelicReward(run.relicChoices[0] || '');
+        else {   // 유물은 첫 번째 것. 단 시장 카드를 거의 안 쓰는 봇은 금감원 관련 유물(전관 변호사)을 건너뛴다
+          const skip = strategy === 'marketCards' ? [] : ['lawyer'];
+          chooseRelicReward(run.relicChoices.find(id => skip.indexOf(id) < 0) || '');
+        }
       } else if(run.phase === 'shop'){
         if(strategy === 'shopper' && shopOnce()) shopBuys++;
         if(strategy === 'marketCards' && shopMarketCard()) shopBuys++;
