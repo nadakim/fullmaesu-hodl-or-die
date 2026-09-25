@@ -1273,7 +1273,7 @@ const REWARD_RARITY_BY_WEEK = [
   { upTo: 8, weights: { common:36, uncommon:34, rare:18,   legendary:9,   mythic:3 } }
 ];
 const MYTHIC_DECK_LIMIT = 1;       // 덱 전체 신화 카드 수 한도 (전설·신화는 원래 카드별 1장 — 덱에 있는 카드는 후보에서 빠진다)
-const RELIC_RARITY_WEIGHTS = { common: 60, uncommon: 30, legendary: 10 };   // 유물 후보 가중치 (유물 1개당)
+const RELIC_RARITY_WEIGHTS = { common:30, uncommon:35, rare:22, legendary:10, mythic:3 };   // 유물 후보 등급 확률 (결산 보상·암시장 공통, 등급 먼저 → 등급 안 균등)
 const MIN_DECK_SIZE     = 5;       // 카드 제거로 이 아래로는 줄일 수 없다
 
 // 카드 수치
@@ -1394,10 +1394,19 @@ const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동
 const RELIC_LAWYER_DECAY_MULT    = 2;     // 전관 변호사: 금감원 게이지 자연 감소(매일·매주) 배수
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
 const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
-const RELIC_PRICE                = { common:900, uncommon:1300, legendary:2000 }; // 암시장 유물 가격 (만원)
+const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legendary:2200, mythic:3000 }; // 암시장 유물 가격 (만원)
+const RELIC_PAYDAY_BASE          = 200;   // 월급날: 매주 첫날 현금 +이만큼 × 주차
+const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목을 살 때마다 드로우
+const RELIC_COLD_WALLET_RATIO    = 0.20;  // 콜드월렛: 코인 종목 반대매매 기준 (기본 25%)
+const RELIC_COLD_WALLET_STOCKS   = ['coin', 'meme'];
+const RELIC_THEME_SECTORS        = ['테마주', '동전주'];   // 테마주 헌터 적용 섹터
+const RELIC_THEME_BONUS          = 0.15;  // 테마주 헌터: 평가이익 +15%
+const RELIC_COMMUNITY_BONUS      = 0.10;  // 개미 커뮤니티: 찌라시 A 선택의 대박 확률 +10%p
+const RELIC_DAYTRADER_CUT        = 1;     // 단타의 신: 하루 첫 매도 카드 행동력 −1
+const RELIC_FSS_CONNECT_CUT      = 0.5;   // 금감원 인맥: 게이지 상승량 50% 감소
 
 const RELICS = [
-  { id:'gukbap',   icon:'🍲', name:'국밥 정신',       rarity:'common',
+  { id:'gukbap',   icon:'🍲', name:'국밥 정신',       rarity:'rare',
     desc:`${RELIC_GUKBAP_SECTORS.join('·')} 종목 포지션의 평가손실 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}% 감소. 청산·반대매매 계산에도 적용.`,
     flavor:'든든하게 한 그릇 말고 오면 손실도 반만 아프다.' },
   { id:'seal',     icon:'🔏', name:'존버의 인장',     rarity:'uncommon',
@@ -1412,7 +1421,7 @@ const RELICS = [
   { id:'capital',  icon:'🏦', name:'캐피탈 VVIP 카드', rarity:'common',
     desc:`신용·대차·마이너스 통장 이자 ${Math.round(RELIC_CAPITAL_INTEREST_CUT * 100)}% 할인.`,
     flavor:'고객님은 저희 캐피탈의 소중한 VVIP입니다. (연 19.9%)' },
-  { id:'talisman', icon:'🧿', name:'떡상 기원 부적',  rarity:'legendary',
+  { id:'talisman', icon:'🧿', name:'떡상 기원 부적',  rarity:'mythic',
     desc:`매일 장전 행동력 +${RELIC_TALISMAN_AP}.`,
     flavor:'타이틀 화면에 붙어 있던 그 부적. 효과는 과학적으로 검증되지 않았다.' },
   { id:'parents',  icon:'💌', name:'부모님 카드',     rarity:'legendary',
@@ -1420,7 +1429,34 @@ const RELICS = [
     flavor:'"이번이 진짜 마지막이다." 이후 연락 두절.' },
   { id:'lawyer',   icon:'👔', name:'전관 변호사',     rarity:'uncommon',
     desc:`금감원 감시 게이지가 매일·매주 ${RELIC_LAWYER_DECAY_MULT}배로 빨리 줄어든다 (장 마감 −${FSS_DAILY_DECAY * RELIC_LAWYER_DECAY_MULT}, 새 주 −${FSS_WEEKLY_DECAY * RELIC_LAWYER_DECAY_MULT}).`,
-    flavor:'"그 건은 제가 전화 한 통이면 됩니다." 수임료는 묻지 마세요.' }
+    flavor:'"그 건은 제가 전화 한 통이면 됩니다." 수임료는 묻지 마세요.' },
+  { id:'payday',   icon:'🪙', name:'월급날',          rarity:'common',
+    desc:`매주 첫날 현금 +₩${RELIC_PAYDAY_BASE}만 × 주차.`,
+    flavor:'통장을 스쳐 지나가는 데 걸리는 시간 0.3초.' },
+  { id:'inverse',  icon:'🔄', name:'인버스 장인',     rarity:'common',
+    desc:`인버스 종목(지수 인버스·곱버스)을 카드로 살 때마다 카드 ${RELIC_INVERSE_DRAW}장을 뽑는다.`,
+    flavor:'"모두가 탐욕스러울 때 곱버스." 3년째 물려 있다.' },
+  { id:'coldwallet', icon:'🧊', name:'콜드월렛',      rarity:'common',
+    desc:`대장코인·밈코인 포지션의 반대매매 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
+    flavor:'시드 문구는 냉장고에 붙여 놨다.' },
+  { id:'theme',    icon:'🔥', name:'테마주 헌터',     rarity:'uncommon',
+    desc:`${RELIC_THEME_SECTORS.join('·')} 포지션의 평가이익 +${Math.round(RELIC_THEME_BONUS * 100)}%.`,
+    flavor:'테마는 순환한다. 내가 산 테마만 빼고.' },
+  { id:'community', icon:'👥', name:'개미 커뮤니티',   rarity:'uncommon',
+    desc:`찌라시에서 A(고위험)를 고르면 대박 확률 +${Math.round(RELIC_COMMUNITY_BONUS * 100)}%p.`,
+    flavor:'"형님들 이거 가나요?" "갑니다(떡상 이모티콘)"' },
+  { id:'shortpro', icon:'📉', name:'공매도 전문가',   rarity:'rare',
+    desc:'숏 포지션 대차 이자 면제.',
+    flavor:'개인도 할 수 있다. 서류가 47장이라서 그렇지.' },
+  { id:'daytrader', icon:'⚡', name:'단타의 신',      rarity:'rare',
+    desc:`하루 첫 매도 카드의 행동력 −${RELIC_DAYTRADER_CUT} (최소 0).`,
+    flavor:'보유 기간 평균 11초. 세금은 연말에 생각하기로.' },
+  { id:'fssconnect', icon:'🤝', name:'금감원 인맥',   rarity:'rare',
+    desc:`금감원 감시 게이지 상승량 ${Math.round(RELIC_FSS_CONNECT_CUT * 100)}% 감소.`,
+    flavor:'"고등학교 동창이 거기 다녀." 동창은 인사팀이다.' },
+  { id:'timemachine', icon:'🕰️', name:'타임머신',    rarity:'mythic',
+    desc:'매일 장전에 시장 카드(비둘기·매파·CEO 트윗) 판정과 리딩방 결과를 미리 본다.',
+    flavor:'정보가 곧 실력이다. 그 정보가 미래에서 왔을 뿐.' }
 ];
 
 /* 찌라시 — 장중 무작위 선택 이벤트. 도착하면 선택할 때까지 시장이 멈춘다.
@@ -1982,18 +2018,14 @@ function gainRelic(id, source){
 function loseRelic(id){ run.relics = run.relics.filter(x => x !== id); }
 
 /* 아직 없는 유물 n개 (희귀도 가중치, 중복 없음) */
-function rollRelics(n){
+function rollRelics(n){   // 등급을 먼저 뽑고(RELIC_RARITY_WEIGHTS), 그 등급 안에서 균등. 없는 유물만
   const picks = [];
   while(picks.length < n){
     const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0);
-    if(cands.length === 0) break;
-    const total = cands.reduce((sum, r) => sum + RELIC_RARITY_WEIGHTS[r.rarity], 0);
-    let roll = rand() * total, chosen = cands[cands.length - 1];
-    for(let i = 0; i < cands.length; i++){
-      roll -= RELIC_RARITY_WEIGHTS[cands[i].rarity];
-      if(roll < 0){ chosen = cands[i]; break; }
-    }
-    picks.push(chosen.id);
+    const rarity = rollRarity(RELIC_RARITY_WEIGHTS, cands);
+    if(!rarity) break;
+    const tier = cands.filter(r => r.rarity === rarity);
+    picks.push(tier[randInt(tier.length)].id);
   }
   return picks;
 }
@@ -2008,10 +2040,13 @@ const sealApplies   = p => hasRelic('seal') && p.daysHeld >= RELIC_SEAL_DAYS;
 const rawPnl = p => p.dir * (exposure(p) - p.entryExposure);
 function relicAdjustedPnl(p, pnl){
   if(pnl < 0 && gukbapApplies(p)) return pnl * (1 - RELIC_GUKBAP_LOSS_CUT);
-  if(pnl > 0 && sealApplies(p))   return pnl * (1 + RELIC_SEAL_BONUS);
-  return pnl;
+  let out = pnl;
+  if(pnl > 0 && sealApplies(p))   out *= 1 + RELIC_SEAL_BONUS;
+  if(pnl > 0 && hasRelic('theme') && RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0) out *= 1 + RELIC_THEME_BONUS;
+  return out;
 }
 const posEquity    = p => p.principal + relicAdjustedPnl(p, rawPnl(p));
+const marginCallRatio = p => hasRelic('coldwallet') && RELIC_COLD_WALLET_STOCKS.indexOf(p.assetId) >= 0 ? RELIC_COLD_WALLET_RATIO : MARGIN_CALL_RATIO;
 const posPnl       = p => posEquity(p) - p.principal;
 const posReturn    = p => posPnl(p) / p.principal;
 const avgPrice     = p => p.entryExposure / p.shares;
@@ -2117,7 +2152,12 @@ function resetPending(){ run.pending.lev = 1; run.pending.dir = 1; run.pending.p
 const stockCost = s => s.cost * run.pending.principalMult;
 function buyStock(stockId){
   const s = STOCK_BY_ID[stockId];
-  return openPosition(s.id, stockCost(s), run.pending.lev, run.pending.dir, true);
+  const p = openPosition(s.id, stockCost(s), run.pending.lev, run.pending.dir, true);
+  inverseMasterDraw(s.id);
+  return p;
+}
+function inverseMasterDraw(stockId){   // 인버스 장인
+  if(hasRelic('inverse') && STOCK_BY_ID[stockId].beta < 0) drawCards(RELIC_INVERSE_DRAW);
 }
 
 /* ── 예약주문 · 반대매매 (장중 매 틱) ── */
@@ -2140,7 +2180,7 @@ function checkOrders(){
 
 function checkMarginCalls(){
   run.positions
-    .filter(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < MARGIN_CALL_RATIO)
+    .filter(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < marginCallRatio(p))
     .forEach(p => {
       const fullPenalty = exposure(p) * LIQUIDATION_PENALTY;
       const saved = hasRelic('hotline') ? fullPenalty * RELIC_HOTLINE_PENALTY_CUT : 0;
@@ -2401,7 +2441,7 @@ defCard('cashOut', '현금화', 'defense', 0, 'common', 'position', false,
 defCard('hedge', '인버스 헤지', 'defense', 1, 'uncommon', null, false,
   `보유 롱 노출액의 ${pct(HEDGE_RATIO)}만큼 지수 인버스를 1x 매수(현금 사용).`,
   () => hedgeAmount() >= 1,
-  () => { openPosition(HEDGE_STOCK, hedgeAmount(), 1, 1, true); });
+  () => { openPosition(HEDGE_STOCK, hedgeAmount(), 1, 1, true); inverseMasterDraw(HEDGE_STOCK); });
 defCard('interestFree', '이자 유예', 'defense', 0, 'uncommon', null, false,
   '오늘 신용·대차 이자 면제. 카드 1장을 뽑는다.',
   () => !run.interestFree,
@@ -2449,6 +2489,7 @@ function resolveTarget(card, targetId){
 function cardCost(card){
   if(card.type === 'stock' && run.week.antArmy) return 0;
   if(run.week.topSpotter && (card.id === 'takeProfit' || card.id === 'trailing')) return 0;
+  if(card.type === 'sell' && hasRelic('daytrader') && !run.sellDiscountUsed) return Math.max(0, card.ap - RELIC_DAYTRADER_CUT);
   return card.ap;
 }
 
@@ -2483,6 +2524,7 @@ function playCard(handIdx, targetId){
   const card = CARD_BY_ID[inst.id];
   const t = resolveTarget(card, targetId);
   run.ap -= cardCost(card);
+  if(card.type === 'sell') run.sellDiscountUsed = true;   // 단타의 신: 하루 첫 매도 카드만
   run.hand.splice(handIdx, 1);
   if(card.exhaust) run.exhausted.push(inst); else run.discard.push(inst);
   card.play(t);
@@ -2536,7 +2578,7 @@ function newRun(){
     // 오늘만 유효한 효과 (startDay에서 초기화)
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
     week: { antArmy: false, topSpotter: false, valueGod: false },   // 이번 주 효과 (startNextRound에서 초기화)
-    lossGuardToday: false, circuitToday: false, circuitTripped: false, marketOpenEquity: 0,
+    lossGuardToday: false, sellDiscountUsed: false, dayRoll: 0, circuitToday: false, circuitTripped: false, marketOpenEquity: 0,
     gapToday: [], gapNext: [],               // 작전 세력: 오늘 건 갭 → 다음 날 개장 때 적용
     marketCard: '', cardMarket: false,       // 오늘 쓴 시장 카드 (장이 열릴 때 판정) / 오늘 장세가 카드로 만들어졌는지
     revertDir: 0, revertTicksLeft: 0,        // 카드 장세 다음 날 되돌림 (지수 방향 ±1, 남은 틱)
@@ -2567,6 +2609,9 @@ function startDay(){
   run.marketCard = '';
   run.cardMarket = false;
   run.lossGuardToday = false;
+  run.sellDiscountUsed = false;
+  run.dayRoll = rand();                    // 오늘 시장 카드 판정용 난수 (타임머신이면 장전에 결과를 보여준다)
+  if(run.day === 1 && hasRelic('payday')){ const pay = RELIC_PAYDAY_BASE * run.round; run.cash += pay; emit('relicTriggered', {id: 'payday', amount: pay}); }
   run.circuitToday = false;
   run.circuitTripped = false;
   run.buyBanToday = run.buyBanNext;
@@ -2603,9 +2648,9 @@ function startMarket(){
   return true;
 }
 
-function rollMarketCard(cardId){
+function rollMarketCard(cardId){   // 오늘의 난수(run.dayRoll)로 판정 → 장전에 미리 알 수 있다 (타임머신)
   const odds = MARKET_CARD_ODDS[cardId];
-  let roll = rand();
+  let roll = run.dayRoll;
   for(let i = 0; i < odds.length; i++){
     roll -= odds[i].chance;
     if(roll < 0) return odds[i].state;
@@ -2615,6 +2660,7 @@ function rollMarketCard(cardId){
 
 /* 금감원 감시 게이지 */
 function raiseFss(gain){
+  if(hasRelic('fssconnect')) gain = Math.round(gain * (1 - RELIC_FSS_CONNECT_CUT));   // 금감원 인맥
   const before = run.fss;
   run.fss = Math.min(FSS_MAX, run.fss + gain);
   run.fssPeak = Math.max(run.fssPeak, run.fss);
@@ -2722,14 +2768,23 @@ function applyTipEffect(tip, ef){
 }
 
 /* 선택 → 확률 판정 → 효과 적용. 결과(순자산 변화 포함)를 기록하고 알린다 */
+/* 결과 확률. 개미 커뮤니티: A(0번)의 대박(첫 결과) +10%p, 나머지는 비율대로 줄인다 */
+function tipChances(choiceIdx, choice){
+  const base = choice.outcomes.map(o => o.chance);
+  if(choiceIdx !== 0 || !hasRelic('community') || base.length < 2) return base;
+  const first = Math.min(1, base[0] + RELIC_COMMUNITY_BONUS), rest = 1 - base[0];
+  return base.map((c, i) => i === 0 ? first : rest > 0 ? c * (1 - first) / rest : 0);
+}
+
 function resolveTip(choiceIdx){
   const tip = run ? run.pendingTip : null;
   if(!tip) return null;
   const ev = TIP_BY_ID[tip.eventId], choice = ev.choices[choiceIdx];
   if(!choice) return null;
+  const chances = tipChances(choiceIdx, choice);
   let roll = rand(), outcomeIdx = choice.outcomes.length - 1;
-  for(let i = 0; i < choice.outcomes.length; i++){
-    roll -= choice.outcomes[i].chance;
+  for(let i = 0; i < chances.length; i++){
+    roll -= chances[i];
     if(roll < 0){ outcomeIdx = i; break; }
   }
   const eq0 = netEquity(), cash0 = run.cash;
@@ -2769,7 +2824,8 @@ function endOfDay(){
   run.discard = run.discard.concat(run.hand);   // 쓰지 않은 손패는 전부 버린다
   run.hand = [];
   run.positions.forEach(p => { p.daysHeld++; });   // 존버의 인장: 장 마감을 넘긴 횟수
-  const interest = run.interestFree ? 0 : totalBorrowed() * interestRate();
+  const shortFree = hasRelic('shortpro') ? run.positions.filter(p => p.dir < 0).reduce((sum, p) => sum + posBorrowed(p), 0) : 0;   // 공매도 전문가
+  const interest = run.interestFree ? 0 : (totalBorrowed() - shortFree) * interestRate();
   run.cash -= interest;
   run.interestPaid += interest;
   if(run.cardMarket && (run.forcedState === 'BULL' || run.forcedState === 'BEAR')){   // 카드로 만든 방향 장세 → 내일 개장 초반 되돌림
@@ -3262,6 +3318,7 @@ function onGameEvent(type, d){
       if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
       break;
     case 'relicTriggered':
+      if(d.id === 'payday') toast(`🪙 월급날: +₩${d.amount.toLocaleString()}만 (벌써 반은 카드값)`, 'good');
       if(d.id === 'parents') toast(`💌 부모님 카드 발동: +₩${d.amount.toLocaleString()}만. 이번이 진짜 마지막이란다.`, 'warn');
       break;
   }
@@ -3404,6 +3461,13 @@ function renderTurn(){
   if(run.week.antArmy) chips.push('<span class="chip buy">개미 군단: 이번 주 종목 카드 행동력 0 · 쓰면 1장 드로우</span>');
   if(run.week.topSpotter) chips.push('<span class="chip buy">상투 감별사: 이번 주 익절·트레일링 행동력 0 · 체결 수익 +30%</span>');
   if(run.week.valueGod) chips.push('<span class="chip buy">가치투자의 신: 이번 주 장 마감마다 장기 보유 배당</span>');
+  if(hasRelic('timemachine') && pre){   // 타임머신: 오늘 판정 미리 보기
+    const seen = [];
+    run.hand.map(i => i.id).concat(run.marketCard ? [run.marketCard] : []).forEach(id => {
+      if(MARKET_CARD_ODDS[id] && seen.indexOf(id) < 0){ seen.push(id); chips.push(`<span class="chip mod">🕰️ ${CARD_BY_ID[id].name} → ${STATE_LABEL[rollMarketCard(id)]}</span>`); }
+    });
+    STOCKS.filter(st => run.pumps[st.id] === 1 || run.pumps[st.id] === -1).forEach(st => chips.push(`<span class="chip mod">🕰️ ${st.name} ${run.pumps[st.id] > 0 ? '급등' : '설거지'}</span>`));
+  }
   if(run.lossGuardToday) chips.push('<span class="chip">손실 보전 약정: 오늘 반대매매 손실 50% 환급</span>');
   if(run.circuitToday) chips.push(`<span class="chip">서킷브레이커: 오늘 −${pct(CIRCUIT_DROP)}에서 장 마감 · 반대매매 면제${run.circuitTripped ? ' (발동)' : ''}</span>`);
   $('chipBox').innerHTML = chips.join('');
