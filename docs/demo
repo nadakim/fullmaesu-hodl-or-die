@@ -859,7 +859,7 @@ body::after{
 .pile-text{flex:1;text-align:right;}
 .deck-btn,.back-btn{
   border:none;cursor:pointer;background:var(--panel);color:var(--cyan);
-  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;padding:5px 7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;padding:5px 7px;white-space:nowrap;flex:none;
   box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
 }
 .deck-btn:hover,.back-btn:hover{box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;}
@@ -983,6 +983,27 @@ body::after{
 .coll-grid .card:hover,.deck-list .card:not([data-remove]):hover{transform:none;box-shadow:0 0 0 2px var(--cc),0 0 0 4px var(--rc),3px 3px 0 #000;}
 .deck-list .card[data-remove]{cursor:pointer;}
 
+/* 환경 설정 */
+#screen-settings{padding:18px 14px 28px;}
+.set-list{display:flex;flex-direction:column;gap:10px;max-width:760px;padding:6px 4px 12px;}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;
+  background:var(--panel);box-shadow:0 0 0 2px var(--line),3px 3px 0 #000;padding:10px 12px;}
+.set-row .sr-label{font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;color:var(--text);line-height:1.6;}
+.set-row .sr-desc{font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;color:var(--muted);margin-top:3px;}
+.set-row.disabled{opacity:.55;}
+.seg{display:flex;gap:6px;flex-wrap:wrap;}
+.seg button{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;padding:8px 10px;cursor:pointer;
+  background:var(--bg);color:var(--muted);border:none;box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;}
+.seg button.on{color:var(--bg);background:var(--gold);box-shadow:0 0 0 2px var(--gold2),2px 2px 0 #000;}
+.seg button:disabled{cursor:not-allowed;}
+.set-danger{color:var(--red);box-shadow:0 0 0 2px var(--red2),2px 2px 0 #000;}
+.set-danger.armed{color:var(--bg);background:var(--red);}
+/* CRT 강도·배경 연출 (body 속성으로 전환) */
+body[data-crt="weak"]::before{opacity:.5;}
+body[data-crt="weak"]::after{opacity:.55;}
+body[data-crt="off"]::before,body[data-crt="off"]::after{display:none;}
+body[data-bgfx="off"] #bgChartContainer{display:none;}
+
 /* 파산 기록 */
 #screen-records{padding:18px 14px 28px;}
 #screen-records .stat-grid{grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));}
@@ -995,7 +1016,8 @@ body::after{
 .end-tile .et-sub{font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;line-height:1.15;color:var(--text);margin-top:6px;}
 .end-tile .et-hint{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;line-height:1.15;color:var(--muted);margin-top:6px;}
 .rec-list{display:flex;flex-direction:column;gap:6px;padding:6px 4px 12px;max-width:860px;}
-.rec-row{display:grid;grid-template-columns:44px minmax(0, 1.6fr) 64px minmax(0, 1fr) 96px;gap:8px;align-items:center;
+.rec-row .rr-stats{grid-column:2 / -1;font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;color:var(--muted);}
+.rec-row{display:grid;grid-template-columns:44px minmax(0, 1.6fr) 64px minmax(0, 1fr) 96px;gap:4px 8px;align-items:center;
   background:var(--panel);box-shadow:0 0 0 2px var(--line);padding:7px 10px;font-family:'VT323','GalmuriV-17px',monospace;font-size:17px;color:var(--text);}
 .rec-row .rr-n{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);}
 .rec-row .rr-end{font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;line-height:1.5;}
@@ -1006,6 +1028,7 @@ body::after{
 @media (max-width: 600px){
   .rec-row{grid-template-columns:34px minmax(0, 1fr) 70px;}
   .rec-row .rr-eq,.rec-row .rr-when{display:none;}
+  .rec-row .rr-stats{grid-column:2 / -1;}
 }
 
 .cabinet.shake{animation:shake .4s steps(6);}
@@ -1049,7 +1072,7 @@ body::after{
   .screen.active{flex:1;min-height:0;overflow-y:auto;}
   #screen-event.active{display:flex;}
   #screen-title{max-width:620px;margin:0 auto;width:100%;}
-  #screen-shop,#screen-collection,#screen-records{padding:22px 28px 28px;}
+  #screen-shop,#screen-collection,#screen-records,#screen-settings{padding:22px 28px 28px;}
 
   /* ── TR룸: 상단 HUD 바 + 좌(시장) / 우(손패·포지션) ── */
   #screen-play.active{
@@ -1146,8 +1169,8 @@ body::after{
       <button id="collectionBtn">▷ 손절 기계
         <small>COLLECTION — 해금한 카드 · 유물 · 밈 도감</small>
       </button>
-      <button>▷ 환경 설정
-        <small>SETTINGS — 사운드 · 언어 · 심박수 안정화</small>
+      <button id="settingsBtn">▷ 환경 설정
+        <small>SETTINGS — 속도 · 화면 효과 · 기록 초기화</small>
       </button>
       <button id="recordsBtn">▷ 파산 기록
         <small>STATS — 엔딩 도감 · 역대 판 히스토리</small>
@@ -1286,6 +1309,18 @@ body::after{
     </div>
     <div class="coll-filter" id="collectionFilter"></div>
     <div id="collectionBox"></div>
+  </section>
+
+  <!-- ====== 환경 설정 (타이틀 > 환경 설정) ====== -->
+  <section id="screen-settings" class="screen">
+    <div class="coll-head">
+      <div>
+        <div class="shop-title">◈ 환경 설정</div>
+        <div class="shop-sub">이 브라우저에 저장됩니다. 저장이 막혀 있으면 이번 접속 동안만 적용됩니다.</div>
+      </div>
+      <button class="back-btn" id="settingsBack">◀ 타이틀</button>
+    </div>
+    <div id="settingsBox"></div>
   </section>
 
   <!-- ====== 파산 기록 (타이틀 > 파산 기록) ====== -->
@@ -1680,7 +1715,7 @@ function drawBgGrid(){
     }
   }
 }
-setInterval(drawBgGrid, 500);
+let bgGridTimer = setInterval(drawBgGrid, 500);
 drawBgGrid();
 
 /* ══════════════════════════════════════════════════════════
@@ -1700,7 +1735,8 @@ class HighDensityBgManager {
   }
 
   init() {
-    if (!this.container) return;
+    if (!this.container || this.running) return;
+    this.running = true;
     
     // 초기 시작 시 양쪽에 즉시 풍부한 배경 요소 생성 (비어보이지 않게 처리)
     for (let i = 0; i < 10; i++) {
@@ -1710,6 +1746,14 @@ class HighDensityBgManager {
 
     this.startSpawning();
     this.startAnimationLoop();
+  }
+
+  stop() {   // 환경 설정: 배경 연출 끄기 (저사양 PC)
+    this.running = false;
+    clearTimeout(this.spawnTimer);
+    cancelAnimationFrame(this.animLoopId);
+    this.activeCharts.forEach(c => c.el.remove());
+    this.activeCharts = [];
   }
 
   startSpawning() {
@@ -3390,6 +3434,7 @@ function toast(text, kind = 'info'){
 }
 
 function flashLiquidation(){
+  if(!settings.shake) return;   // 환경 설정: 화면 흔들림·빨간 번쩍임 끄기
   const cab = document.querySelector('.cabinet');
   cab.classList.remove('shake'); void cab.offsetWidth; cab.classList.add('shake');
   const f = document.createElement('div');
@@ -3907,13 +3952,19 @@ function countFinishedRun(){
    저장이 막혀 있으면(시크릿 모드 등) 이번 세션 동안만 메모리에 남긴다 */
 const RECORDS_KEY = 'hodl.records';
 const RECORDS_HISTORY = 30;   // 최근 판 목록 길이
-let recordsFallback = { counts: {}, history: [] };
+const emptyRecords = () => ({ counts: {}, history: [], totals: { runs: 0, bestWeeks: 0, bestPeak: 0, liq: 0 } });
+let recordsFallback = emptyRecords();
 function loadRecords(){
-  try {
-    const r = JSON.parse(localStorage.getItem(RECORDS_KEY));
-    if(r && r.counts && Array.isArray(r.history)) return r;
-  } catch(e) {}
-  return recordsFallback;
+  let r = null;
+  try { r = JSON.parse(localStorage.getItem(RECORDS_KEY)); } catch(e) {}
+  if(!r || !r.counts || !Array.isArray(r.history)) return recordsFallback;
+  if(!r.totals){   // 누적 통계가 없던 옛 기록: 남아 있는 목록으로 채운다
+    const h = r.history;
+    r.totals = { runs: Object.keys(r.counts).reduce((s, k) => s + r.counts[k], 0),
+      bestWeeks: h.reduce((m, x) => Math.max(m, x.weeks), 0), bestPeak: h.reduce((m, x) => Math.max(m, x.peak), 0),
+      liq: h.reduce((s, x) => s + x.liq, 0) };
+  }
+  return r;
 }
 function saveRecords(r){
   recordsFallback = r;
@@ -3924,16 +3975,23 @@ function recordRun(n, cause){
   const r = loadRecords();
   const first = !r.counts[cause];
   r.counts[cause] = (r.counts[cause] || 0) + 1;
+  const peak = Math.round(run.peakEquity);
   r.history.unshift({
     n, cause, round: run.round, day: run.day, weeks: run.weeksCleared,
-    eq: Math.round(run.endEquity), peak: Math.round(run.peakEquity), liq: run.liquidations, at: Date.now()
+    eq: Math.round(run.endEquity), peak, liq: run.liquidations,
+    relics: run.relics.length, deck: run.masterDeck.length, at: Date.now()
   });
+  const t = r.totals;   // 목록(최근 30판)과 달리 전체 판 누적
+  t.runs = Math.max(t.runs + 1, n);   // n = '개미 N회차' 카운터 (hodl.antRuns)
+  t.bestWeeks = Math.max(t.bestWeeks, run.weeksCleared);
+  t.bestPeak = Math.max(t.bestPeak, peak);
+  t.liq += run.liquidations;
   if(r.history.length > RECORDS_HISTORY) r.history.length = RECORDS_HISTORY;
   saveRecords(r);
   return first;
 }
 function clearRecords(){
-  saveRecords({ counts: {}, history: [] });
+  saveRecords(emptyRecords());
   antRunsFallback = 0;
   try { localStorage.removeItem('hodl.antRuns'); } catch(e) {}
 }
@@ -4248,6 +4306,79 @@ function buildCollection(){
   }).join('') + (() => { const rl = RELICS.filter(show); return rl.length ? `<div class="pile-title">▌ 유물 (${rl.length})</div>
       <div class="relic-row">${rl.map(r => relicTile(r, {})).join('')}</div>` : ''; })();
 }
+/* ── 환경 설정 (UI 전용 — 엔진 규칙에는 영향 없음) ── */
+const SETTINGS_KEY = 'hodl.settings';
+const SETTING_OPTIONS = {
+  speed: [[1, '1x'], [2, '2x'], [4, '4x']],
+  shake: [[true, '켜기'], [false, '끄기']],
+  crt:   [['off', '끄기'], ['weak', '약'], ['strong', '강']],
+  bgFx:  [[true, '켜기'], [false, '끄기']],
+  sound: [[true, '켜기'], [false, '끄기']]
+};
+const DEFAULT_SETTINGS = { speed: 1, shake: true, crt: 'strong', bgFx: true, sound: false };
+function loadSettings(){
+  const s = Object.assign({}, DEFAULT_SETTINGS);
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch(e) {}
+  if(saved && typeof saved === 'object'){
+    Object.keys(SETTING_OPTIONS).forEach(k => {   // 허용된 값만 받는다 (깨진 값이면 기본값)
+      if(SETTING_OPTIONS[k].some(o => o[0] === saved[k])) s[k] = saved[k];
+    });
+  }
+  return s;
+}
+let settings = loadSettings();
+function saveSettings(){
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+}
+function applySettings(){
+  document.body.dataset.crt = settings.crt;
+  document.body.dataset.bgfx = settings.bgFx ? 'on' : 'off';
+  if(settings.bgFx){
+    ambientBg.init();
+    if(!bgGridTimer) bgGridTimer = setInterval(drawBgGrid, 500);
+  } else {
+    ambientBg.stop();
+    clearInterval(bgGridTimer); bgGridTimer = null;
+    drawBgGrid();   // 정지된 격자 한 장만
+  }
+}
+function settingRow(key, label, desc, disabled){
+  return `<div class="set-row ${disabled ? 'disabled' : ''}" data-row="${key}">
+    <div><div class="sr-label">${label}</div><div class="sr-desc">${desc}</div></div>
+    <div class="seg">${SETTING_OPTIONS[key].map(([v, t]) =>
+      `<button data-set="${key}" data-val="${JSON.stringify(v).replace(/"/g, '&quot;')}" class="${settings[key] === v ? 'on' : ''}" ${disabled ? 'disabled' : ''}>${t}</button>`).join('')}</div>
+  </div>`;
+}
+function buildSettings(){
+  $('settingsBox').innerHTML = `<div class="set-list">
+    ${settingRow('speed', '장중 속도', `캔들 1개 ${TICK_MS}ms 기준 배율. 결과·확률은 그대로, 시간만 빨라집니다.`)}
+    ${settingRow('shake', '화면 흔들림 · 빨간 번쩍임', '반대매매 때 화면이 흔들리고 붉게 번쩍입니다. 어지러우면 끄세요.')}
+    ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
+    ${settingRow('bgFx', '배경 연출', '양옆에 떠다니는 시세 창·배경 격자 애니메이션. 저사양 PC면 끄세요.')}
+    ${settingRow('sound', '사운드', '준비 중 — 아직 게임에 소리가 없습니다.', true)}
+    <div class="set-row" data-row="reset">
+      <div><div class="sr-label">기록 초기화</div><div class="sr-desc">파산 기록(엔딩 도감·최근 판·누적 통계)과 개미 회차를 지웁니다. 설정은 남습니다.</div></div>
+      <div class="seg"><button class="set-danger" id="settingsReset">✕ 기록 초기화</button></div>
+    </div>
+  </div>`;
+}
+$('settingsBox').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if(!b || b.disabled) return;
+  if(b.id === 'settingsReset'){
+    if(!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = '정말 지울까요? 한 번 더 누르면 삭제'; return; }
+    clearRecords();
+    b.classList.remove('armed'); b.textContent = '✓ 기록을 지웠습니다';
+    return;
+  }
+  if(!b.dataset.set) return;
+  settings[b.dataset.set] = JSON.parse(b.dataset.val);
+  saveSettings();
+  applySettings();
+  buildSettings();
+});
+
 /* ── 파산 기록 화면 ── */
 const ENDING_GROUPS = [['bust', '파산'], ['miss', '목표 미달'], ['win', '졸업']];
 function fmtWhen(t){
@@ -4255,22 +4386,21 @@ function fmtWhen(t){
   return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function buildRecords(){
-  const r = loadRecords();
+  const r = loadRecords(), t = r.totals;
   const causes = Object.keys(ENDINGS);
-  const total = causes.reduce((sum, k) => sum + (r.counts[k] || 0), 0);
+  const total = t.runs;
   const unlocked = causes.filter(k => r.counts[k]).length;
   const bust = causes.filter(k => ENDINGS[k].group === 'bust').reduce((sum, k) => sum + (r.counts[k] || 0), 0);
   const h = r.history;
-  const best = h.reduce((m, x) => Math.max(m, x.peak), 0);
-  const longest = h.reduce((m, x) => Math.max(m, x.weeks), 0);
-  $('recordsSub').textContent = `엔딩 ${unlocked} / ${causes.length} 해금 · 끝낸 판 ${total}회`;
+  const top = causes.filter(k => r.counts[k]).sort((a, b) => r.counts[b] - r.counts[a])[0];   // 가장 많이 본 엔딩
+  $('recordsSub').textContent = `엔딩 ${unlocked} / ${causes.length} 해금 · 개미 ${total}회차`;
   const summary = `<div class="stat-grid">
-      ${statTile('끝낸 판', total + '회')}
-      ${statTile('파산', `<span class="${bust ? 'pnl-down' : ''}">${bust}회</span>`)}
-      ${statTile('졸업', (r.counts.VICTORY || 0) + '회')}
-      ${statTile('최장 생존', `${longest} / ${MAX_ROUND}주`)}
-      ${statTile('최고 순자산', best ? fmtMoney(best) : '—')}
-      ${statTile('최근 판 반대매매', h.reduce((sum, x) => sum + x.liq, 0) + '회')}
+      ${statTile('총 판 수', total + '판')}
+      ${statTile('최고 생존', `${t.bestWeeks} / ${MAX_ROUND}주`)}
+      ${statTile('최고 순자산', t.bestPeak ? fmtMoney(t.bestPeak) : '—')}
+      ${statTile('총 반대매매', t.liq + '회')}
+      ${statTile('파산 · 졸업', `<span class="${bust ? 'pnl-down' : ''}">${bust}</span> · ${r.counts.VICTORY || 0}회`)}
+      ${statTile('가장 많이 본 엔딩', top ? `<span style="color:${ENDINGS[top].color}">${ENDINGS[top].title}</span> ×${r.counts[top]}` : '—', 'wide')}
     </div>`;
   const tiles = ENDING_GROUPS.map(([g, label]) => {
     const list = causes.filter(k => ENDINGS[k].group === g);
@@ -4291,6 +4421,7 @@ function buildRecords(){
         <span>W${x.round} D${x.day}</span>
         <span class="rr-eq ${signCls(x.eq - START_CASH)}">${fmtMoney(x.eq)}</span>
         <span class="rr-when">${fmtWhen(x.at)}</span>
+        <span class="rr-stats">생존 ${x.weeks}주 · 최고 ${fmtMoney(x.peak)} · 반대매매 ${x.liq}회${x.deck !== undefined ? ` · 유물 ${x.relics}개 · 덱 ${x.deck}장` : ''}</span>
       </div>`; }).join('')}</div>`
     : `<div class="rec-empty">아직 끝낸 판이 없습니다. 첫 반대매매는 누구에게나 찾아옵니다.</div>`;
   $('recordsBox').innerHTML = summary + tiles +
@@ -4370,6 +4501,7 @@ function switchTab(s){
   }
   if(s === 'shop') renderShop();
   if(s === 'records') buildRecords();
+  if(s === 'settings') buildSettings();
   if(s === 'event') renderTipScreen();
   if(s === 'play' && run && run.pendingTip && !overlayOpen) showTipOverlay();
   renderTabs();
@@ -4385,6 +4517,8 @@ $('startBtn').addEventListener('click', () => {
 $('collectionBtn').addEventListener('click', () => switchTab('collection'));
 $('collectionBack').addEventListener('click', () => switchTab('title'));
 $('recordsBtn').addEventListener('click', () => switchTab('records'));
+$('settingsBtn').addEventListener('click', () => switchTab('settings'));
+$('settingsBack').addEventListener('click', () => switchTab('title'));
 $('recordsBack').addEventListener('click', () => switchTab('title'));
 
 $('openBtn').addEventListener('click', () => {
@@ -4472,12 +4606,12 @@ window.onload = () => {
   buildQuotes();
   buildCollection();
   renderTabs();
-  ambientBg.init();
-  setInterval(() => {   // 장중에만, TR룸 화면에서만 시장이 움직인다
-    if(currentTab !== 'play' || !run || run.phase !== 'market' || overlayOpen) return;
-    tick();
-    renderAll();
-  }, TICK_MS);
+  applySettings();
+  const loop = () => {   // 장중에만, TR룸 화면에서만 시장이 움직인다. 간격 = TICK_MS ÷ 장중 속도
+    if(currentTab === 'play' && run && run.phase === 'market' && !overlayOpen){ tick(); renderAll(); }
+    setTimeout(loop, TICK_MS / settings.speed);
+  };
+  setTimeout(loop, TICK_MS / settings.speed);
 };
 </script>
 </body>
