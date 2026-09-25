@@ -154,12 +154,13 @@ function installBots(){
     setSeed(seed);
     const botRand = mulberry((seed ^ 0x9E3779B9) >>> 0);   // 봇 선택용 난수는 엔진 난수와 분리
     startNewRun();
-    let tips = 0, shopBuys = 0, guard = 0;
+    let tips = 0, shopBuys = 0, guard = 0, mythicOffers = 0, mythicWeek = 0;
     played = 0; marketPlayed = 0;
     const weekEq = [];   // 주간 결산 순자산 (통과·탈락 모두)
     const noteWeek = () => { if(run.lastWeek && weekEq.length < run.lastWeek.round) weekEq.push(Math.round(run.lastWeek.eq)); };
     while(run.phase !== 'over'){
       noteWeek();
+      if(!mythicWeek && run.masterDeck.some(id => CARD_BY_ID[id].rarity === 'mythic')) mythicWeek = run.round;   // 신화를 처음 가진 주
       if(++guard > 200000) throw new Error('무한 루프: seed ' + seed);
       if(run.phase === 'premarket'){
         while(run.phase === 'premarket' && DAY_PLAY[strategy]()){}
@@ -172,9 +173,9 @@ function installBots(){
           tips++;
         } else tick();
       } else if(run.phase === 'reward'){
-        if(run.rewardStep === 'card') pickCardReward(strategy);
-        else {   // 유물은 첫 번째 것. 단 시장 카드를 거의 안 쓰는 봇은 금감원 관련 유물(전관 변호사)을 건너뛴다
-          const skip = strategy === 'marketCards' ? [] : ['lawyer'];
+        if(run.rewardStep === 'card'){ mythicOffers += run.rewardChoices.filter(id => CARD_BY_ID[id].rarity === 'mythic').length; pickCardReward(strategy); }
+        else {   // 유물은 첫 번째 것. 단 봇이 활용 못 하는 유물은 건너뛴다
+          const skip = strategy === 'marketCards' ? ['timemachine'] : ['lawyer', 'fssconnect', 'timemachine'];   // 봇이 활용 못 하는 유물
           chooseRelicReward(run.relicChoices.find(id => skip.indexOf(id) < 0) || '');
         }
       } else if(run.phase === 'shop'){
@@ -187,7 +188,7 @@ function installBots(){
     setSeed(null);
     return { seed, weeksCleared: run.weeksCleared, endReason: run.endReason, endCause: run.endCause,
              liquidations: run.liquidations, endEquity: Math.round(run.endEquity), peakEquity: Math.round(run.peakEquity),
-             round: run.round, day: run.day, cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, fssFines: run.fssFines || 0, fssPeak: run.fssPeak || 0, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
+             round: run.round, day: run.day, cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, fssFines: run.fssFines || 0, fssPeak: run.fssPeak || 0, mythicOffers, hadMythic: run.masterDeck.some(id => CARD_BY_ID[id].rarity === 'mythic'), mythicWeek, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
   };
   window.__simTargets = t => { if(t){ if(t.length !== MAX_ROUND) throw new Error('--targets 는 ' + MAX_ROUND + '개'); t.forEach((v, i) => { ROUND_TARGETS[i] = v; }); } return ROUND_TARGETS.slice(); };
   window.__simBatch = (strategy, tipMode, seeds) => seeds.map(s => window.__simGame(strategy, tipMode, s));

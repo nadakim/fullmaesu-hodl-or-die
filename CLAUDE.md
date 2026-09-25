@@ -17,7 +17,7 @@
 - UI를 바꾸면 Playwright로 1920×1080, 1366×768 스크린샷을 찍어 확인한다.
 - 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
   - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards] [--file docs/demo] [--md out.md]`
-  - 카드 한 장의 기대 수익(시장 카드): `node tools/sim/cardev.cjs [--file docs/demo]` — 같은 시드로 카드 사용/미사용을 비교, 순자산 대비 %
+  - 카드 한 장의 기대 수익: `node tools/sim/cardev.cjs [--file docs/demo]` (시장 카드, 원래 쓰는 상황) · `--all` (신화·상태 제외 전 카드, 공통 상황) — 같은 시드로 카드 사용/미사용 비교, 순자산 대비 %
   - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
   - 목표치 실험: `--targets 10800,11100,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
 
