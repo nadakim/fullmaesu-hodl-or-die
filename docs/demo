@@ -943,6 +943,31 @@ body::after{
 .coll-grid .card:hover,.deck-list .card:not([data-remove]):hover{transform:none;box-shadow:0 0 0 2px var(--cc),0 0 0 4px var(--rc),3px 3px 0 #000;}
 .deck-list .card[data-remove]{cursor:pointer;}
 
+/* 파산 기록 */
+#screen-records{padding:18px 14px 28px;}
+#screen-records .stat-grid{grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));}
+.end-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:10px;padding:6px 4px 12px;}
+.end-tile{position:relative;background:#000;box-shadow:0 0 0 2px var(--ec),3px 3px 0 #000;padding:9px 10px 8px;min-height:72px;}
+.end-tile.locked{--ec:var(--line);opacity:.6;}
+.end-tile .et-title{font-family:'Press Start 2P';font-size:8px;line-height:1.5;color:var(--ec);padding-right:34px;}
+.end-tile.locked .et-title{color:var(--muted);}
+.end-tile .et-count{position:absolute;top:8px;right:9px;font-family:'VT323';font-size:18px;color:var(--text);}
+.end-tile .et-sub{font-family:'VT323';font-size:16px;line-height:1.15;color:var(--text);margin-top:6px;}
+.end-tile .et-hint{font-family:'VT323';font-size:15px;line-height:1.15;color:var(--muted);margin-top:6px;}
+.rec-list{display:flex;flex-direction:column;gap:6px;padding:6px 4px 12px;max-width:860px;}
+.rec-row{display:grid;grid-template-columns:44px minmax(0, 1.6fr) 64px minmax(0, 1fr) 96px;gap:8px;align-items:center;
+  background:var(--panel);box-shadow:0 0 0 2px var(--line);padding:7px 10px;font-family:'VT323';font-size:17px;color:var(--text);}
+.rec-row .rr-n{font-family:'Press Start 2P';font-size:7px;color:var(--muted);}
+.rec-row .rr-end{font-family:'Press Start 2P';font-size:7.5px;line-height:1.5;}
+.rec-row .rr-when{color:var(--muted);text-align:right;white-space:nowrap;}
+.rec-empty{font-family:'VT323';font-size:18px;color:var(--muted);padding:14px 4px;}
+.rec-reset{margin-top:8px;}
+.ending-new{color:var(--green);}
+@media (max-width: 600px){
+  .rec-row{grid-template-columns:34px minmax(0, 1fr) 70px;}
+  .rec-row .rr-eq,.rec-row .rr-when{display:none;}
+}
+
 .cabinet.shake{animation:shake .4s steps(6);}
 @keyframes shake{0%,100%{transform:none;}20%{transform:translate(-4px,2px);}40%{transform:translate(4px,-2px);}60%{transform:translate(-3px,-1px);}80%{transform:translate(3px,1px);}}
 .red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut .5s steps(5) forwards;}
@@ -984,7 +1009,7 @@ body::after{
   .screen.active{flex:1;min-height:0;overflow-y:auto;}
   #screen-event.active{display:flex;}
   #screen-title{max-width:620px;margin:0 auto;width:100%;}
-  #screen-shop,#screen-collection{padding:22px 28px 28px;}
+  #screen-shop,#screen-collection,#screen-records{padding:22px 28px 28px;}
 
   /* ── TR룸: 상단 HUD 바 + 좌(시장) / 우(손패·포지션) ── */
   #screen-play.active{
@@ -1084,8 +1109,8 @@ body::after{
       <button>▷ 환경 설정
         <small>SETTINGS — 사운드 · 언어 · 심박수 안정화</small>
       </button>
-      <button>▷ 파산 기록
-        <small>STATS — 역대 반대매매 히스토리</small>
+      <button id="recordsBtn">▷ 파산 기록
+        <small>STATS — 엔딩 도감 · 역대 판 히스토리</small>
       </button>
     </div>
 
@@ -1220,6 +1245,18 @@ body::after{
     </div>
     <div class="coll-filter" id="collectionFilter"></div>
     <div id="collectionBox"></div>
+  </section>
+
+  <!-- ====== 파산 기록 (타이틀 > 파산 기록) ====== -->
+  <section id="screen-records" class="screen">
+    <div class="coll-head">
+      <div>
+        <div class="shop-title">◈ 파산 기록</div>
+        <div class="shop-sub" id="recordsSub"></div>
+      </div>
+      <button class="back-btn" id="recordsBack">◀ 타이틀</button>
+    </div>
+    <div id="recordsBox"></div>
   </section>
 
   <div class="footnote">■ 디자인 목업 · 실제 금융 조언 아님 ■</div>
@@ -3723,52 +3760,52 @@ function showDeck(){
 const shortfallShare = (w, amount) => Math.round(amount / (w.target - w.eq) * 100);   // 손실이 부족분에서 차지한 비율
 const bustWhy = () => run.misuDefault ? '갭 가격에 체결돼 미수 발생 — 현금으로 못 갚아 계좌 동결.' : '순자산이 0 아래로.';
 const ENDINGS = {
-  YOLO_BUST:     { title:'영끌 실패',              color:'var(--red)',
+  YOLO_BUST:     { title:'영끌 실패',              color:'var(--red)', group:'bust', hint:'영끌 3배 포지션이 반대매매되며 파산',
                    sub:'영혼까지 끌어모았는데, 영혼까지 청산됐습니다.',
                    cause:() => '3배 레버리지 포지션이 반대매매되며 ' + bustWhy() },
-  SHORT_SQUEEZE: { title:'숏 스퀴즈에 털렸습니다', color:'var(--red)',
+  SHORT_SQUEEZE: { title:'숏 스퀴즈에 털렸습니다', color:'var(--red)', group:'bust', hint:'숏 포지션이 급등에 반대매매되며 파산',
                    sub:'"떨어진다"에 걸었는데 로켓이 떴습니다. 공매도의 손실엔 천장이 없습니다.',
                    cause:() => '숏 포지션이 급등에 반대매매되며 ' + bustWhy() },
-  MARGIN_CALL:   { title:'반대매매 당했습니다',    color:'var(--red)',
+  MARGIN_CALL:   { title:'반대매매 당했습니다',    color:'var(--red)', group:'bust', hint:'신용 포지션이 반대매매되며 파산',
                    sub:'증권사가 당신 대신 매도 버튼을 눌렀습니다. 담보비율은 기다려주지 않습니다.',
                    cause:() => '신용 포지션이 반대매매되며 ' + bustWhy() },
-  DEBT_SPIRAL:   { title:'계좌가 녹았습니다',      color:'var(--red)',
+  DEBT_SPIRAL:   { title:'계좌가 녹았습니다',      color:'var(--red)', group:'bust', hint:'반대매매 없이 빚과 이자로 파산',
                    sub:'이자에 미수에 마이너스 통장까지. 잔고가 조용히 0을 뚫었습니다.',
                    cause:() => `반대매매 없이 빚과 이자로 파산 (누적 이자 ${fmtMoney(run.interestPaid)}).` },
-  NEAR_MISS:     { title:'아깝다, 강제 은퇴',      color:'var(--gold)',
+  NEAR_MISS:     { title:'아깝다, 강제 은퇴',      color:'var(--gold)', group:'miss', hint:'수익을 내고도 목표에 한 끗 모자람',
                    sub:'한 틱만 더 올랐어도… 차트는 당신이 떠난 다음 날 올랐습니다.',
                    cause:w => `목표까지 ${fmtMoney(w.target - w.eq)} 모자람 (달성률 ${Math.floor(w.pct * 100)}%).` },
-  HODL_FAIL:     { title:'존버 실패',              color:'var(--gold)',
+  HODL_FAIL:     { title:'존버 실패',              color:'var(--gold)', group:'miss', hint:'평가손실을 안고 결산에서 미달',
                    sub:'"언젠가 오른다"의 언젠가는 이번 주가 아니었습니다.',
                    cause:w => `평가손실 ${fmtMoney(-w.unrealized)}을 안고 결산 — 부족분의 대부분이 물린 돈.` },
-  LIQ_ADDICT:    { title:'반대매매 단골손님',      color:'var(--gold)',
+  LIQ_ADDICT:    { title:'반대매매 단골손님',      color:'var(--gold)', group:'miss', hint:`한 판에 반대매매 ${END_LIQ_ADDICT}회 이상 당하고 미달`,
                    sub:'증권사 VIP 등극. 담보 부족 문자는 이제 알림음만 들어도 압니다.',
                    cause:() => `이번 판 반대매매 ${run.liquidations}회. 그래도 레버리지는 못 끊었습니다.` },
-  SIDELINED:     { title:'관망의 신',              color:'var(--gold)',
+  SIDELINED:     { title:'관망의 신',              color:'var(--gold)', group:'miss', hint:'한 주 동안 아무것도 사지 않고 미달',
                    sub:'현금이 최고의 포지션이라더니, 목표도 현금처럼 제자리.',
                    cause:w => `이번 주 매수 0회. 목표까지 ${fmtMoney(w.target - w.eq)} 모자람.` },
-  ROUND_TRIP:    { title:'천당과 지옥',            color:'var(--gold)',
+  ROUND_TRIP:    { title:'천당과 지옥',            color:'var(--gold)', group:'miss', hint:'주중에 목표를 넘겼다가 결산 전에 토해내기',
                    sub:'목표를 넘겼던 계좌가 결산 전에 전부 토해냈습니다. 익절은 내일 하려고 했죠?',
                    cause:w => `이번 주 최고 ${fmtMoney(w.peak)} (목표 ${fmtMoney(w.target)} 돌파) → 결산 ${fmtMoney(w.eq)}.` },
-  FSS_FINED:     { title:'금감원에 털렸습니다',    color:'var(--gold)',
+  FSS_FINED:     { title:'금감원에 털렸습니다',    color:'var(--gold)', group:'miss', hint:'금감원 과징금 때문에 미달',
                    sub:'작전은 성공했는데 과징금이 수익을 가져갔습니다. 감시 게이지는 장식이 아니었습니다.',
                    cause:w => `이번 주 과징금 ${fmtMoney(w.fines)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, w.fines)}%에 해당.` },
-  TIP_VICTIM:    { title:'찌라시 피해자',          color:'var(--gold)',
+  TIP_VICTIM:    { title:'찌라시 피해자',          color:'var(--gold)', group:'miss', hint:'찌라시에 당해 미달',
                    sub:'"이건 확실한 정보야." 확실하게 틀린 정보였습니다.',
                    cause:w => `이번 주 찌라시로 순자산 ${fmtSigned(w.tipNet)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, -w.tipNet)}%에 해당.` },
-  INTEREST_DRAIN:{ title:'이자 노예',              color:'var(--gold)',
+  INTEREST_DRAIN:{ title:'이자 노예',              color:'var(--gold)', group:'miss', hint:'이자 때문에 미달',
                    sub:'번 돈은 증권사가, 잃은 돈은 내가. 신용이자는 매일 밤 꼬박꼬박 빠져나갔습니다.',
                    cause:w => `이번 주 이자 ${fmtMoney(w.interest)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, w.interest)}%에 해당.` },
-  PANIC_SELL:    { title:'손절 장인',              color:'var(--gold)',
+  PANIC_SELL:    { title:'손절 장인',              color:'var(--gold)', group:'miss', hint:'손절 손실 때문에 미달',
                    sub:'사면 떨어지고, 팔면 올랐습니다. 매도 버튼만 반질반질해졌습니다.',
                    cause:w => `이번 주 확정손익 ${fmtSigned(w.realized)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, -w.realized)}%에 해당.` },
-  TOO_SLOW:      { title:'거북이 수익',            color:'var(--gold)',
+  TOO_SLOW:      { title:'거북이 수익',            color:'var(--gold)', group:'miss', hint:'벌긴 벌었는데 목표가 더 빨랐다',
                    sub:'벌긴 벌었습니다. 목표가 더 빨리 달렸을 뿐.',
                    cause:w => `이번 주 ${fmtSigned(w.weekPnl)} (${fmtPct(w.weekReturn)}) — 그래도 목표까지 ${fmtMoney(w.target - w.eq)} 모자람.` },
-  SLOW_BLEED:    { title:'깡통 계좌',              color:'var(--gold)',
+  SLOW_BLEED:    { title:'깡통 계좌',              color:'var(--gold)', group:'miss', hint:'조금씩 꾸준히 잃고 미달',
                    sub:'큰 한 방은 없었습니다. 조금씩, 꾸준히, 확실하게 잃었습니다.',
                    cause:w => `목표 미달 (달성률 ${Math.floor(w.pct * 100)}%).` },
-  VICTORY:       { title:'개미 졸업!',             color:'var(--green)',
+  VICTORY:       { title:'개미 졸업!',             color:'var(--green)', group:'win', hint:`${MAX_ROUND}주 목표를 모두 달성`,
                    sub:`${MAX_ROUND}주 연속 목표 달성. 이제 당신이 세력입니다.`,
                    cause:() => '모든 주간 목표를 넘겼습니다.' }
 };
@@ -3791,12 +3828,49 @@ function countFinishedRun(){
   return n;
 }
 
+/* ── 파산 기록: 끝낸 판을 이 브라우저에 저장 (엔딩별 횟수 + 최근 판 목록) ──
+   저장이 막혀 있으면(시크릿 모드 등) 이번 세션 동안만 메모리에 남긴다 */
+const RECORDS_KEY = 'hodl.records';
+const RECORDS_HISTORY = 30;   // 최근 판 목록 길이
+let recordsFallback = { counts: {}, history: [] };
+function loadRecords(){
+  try {
+    const r = JSON.parse(localStorage.getItem(RECORDS_KEY));
+    if(r && r.counts && Array.isArray(r.history)) return r;
+  } catch(e) {}
+  return recordsFallback;
+}
+function saveRecords(r){
+  recordsFallback = r;
+  try { localStorage.setItem(RECORDS_KEY, JSON.stringify(r)); } catch(e) {}
+}
+/* 끝난 판 하나를 기록. 반환: 이번이 이 엔딩 첫 해금인지 */
+function recordRun(n, cause){
+  const r = loadRecords();
+  const first = !r.counts[cause];
+  r.counts[cause] = (r.counts[cause] || 0) + 1;
+  r.history.unshift({
+    n, cause, round: run.round, day: run.day, weeks: run.weeksCleared,
+    eq: Math.round(run.endEquity), peak: Math.round(run.peakEquity), liq: run.liquidations, at: Date.now()
+  });
+  if(r.history.length > RECORDS_HISTORY) r.history.length = RECORDS_HISTORY;
+  saveRecords(r);
+  return first;
+}
+function clearRecords(){
+  saveRecords({ counts: {}, history: [] });
+  antRunsFallback = 0;
+  try { localStorage.removeItem('hodl.antRuns'); } catch(e) {}
+}
+
 function statTile(label, value, cls){ return `<div class="${cls || ''}">${label}<b>${value}</b></div>`; }
 const signCls = v => v >= 0 ? 'pnl-up' : 'pnl-down';
 
 function showRunOver(reason){
   const cause = run.endCause || reason, e = ENDINGS[cause], w = run.lastWeek;
   const n = countFinishedRun();
+  const firstTime = recordRun(n, cause);
+  const unlocked = Object.keys(loadRecords().counts).filter(k => ENDINGS[k]).length;
   const weeks = run.weeksCleared;
   showOverlay(`
     <div class="result-kicker">GAME OVER · WEEK ${run.round} DAY ${run.day}</div>
@@ -3804,6 +3878,7 @@ function showRunOver(reason){
     <div class="ov-sub">${e.sub}</div>
     <div class="ending-cause">${e.cause(w)}</div>
     <div class="ending-badge">${cause === 'VICTORY' ? `개미 ${n}회차 만에 졸업` : `당신은 이제 개미 ${n}회차`} · 등급: ${antGrade(weeks)}</div>
+    ${firstTime ? `<div class="ending-badge ending-new">★ 새 엔딩 해금 · 파산 기록 ${unlocked} / ${Object.keys(ENDINGS).length}</div>` : ''}
     <div class="stat-grid">
       ${statTile('최종 순자산', `<span class="${signCls(run.endEquity - START_CASH)}">${fmtMoney(run.endEquity)}</span>`)}
       ${statTile('최고 순자산', fmtMoney(run.peakEquity))}
@@ -4095,6 +4170,63 @@ function buildCollection(){
   }).join('') + (() => { const rl = RELICS.filter(show); return rl.length ? `<div class="pile-title">▌ 유물 (${rl.length})</div>
       <div class="relic-row">${rl.map(r => relicTile(r, {})).join('')}</div>` : ''; })();
 }
+/* ── 파산 기록 화면 ── */
+const ENDING_GROUPS = [['bust', '파산'], ['miss', '목표 미달'], ['win', '졸업']];
+function fmtWhen(t){
+  const d = new Date(t), p = v => String(v).padStart(2, '0');
+  return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function buildRecords(){
+  const r = loadRecords();
+  const causes = Object.keys(ENDINGS);
+  const total = causes.reduce((sum, k) => sum + (r.counts[k] || 0), 0);
+  const unlocked = causes.filter(k => r.counts[k]).length;
+  const bust = causes.filter(k => ENDINGS[k].group === 'bust').reduce((sum, k) => sum + (r.counts[k] || 0), 0);
+  const h = r.history;
+  const best = h.reduce((m, x) => Math.max(m, x.peak), 0);
+  const longest = h.reduce((m, x) => Math.max(m, x.weeks), 0);
+  $('recordsSub').textContent = `엔딩 ${unlocked} / ${causes.length} 해금 · 끝낸 판 ${total}회`;
+  const summary = `<div class="stat-grid">
+      ${statTile('끝낸 판', total + '회')}
+      ${statTile('파산', `<span class="${bust ? 'pnl-down' : ''}">${bust}회</span>`)}
+      ${statTile('졸업', (r.counts.VICTORY || 0) + '회')}
+      ${statTile('최장 생존', `${longest} / ${MAX_ROUND}주`)}
+      ${statTile('최고 순자산', best ? fmtMoney(best) : '—')}
+      ${statTile('최근 판 반대매매', h.reduce((sum, x) => sum + x.liq, 0) + '회')}
+    </div>`;
+  const tiles = ENDING_GROUPS.map(([g, label]) => {
+    const list = causes.filter(k => ENDINGS[k].group === g);
+    const got = list.filter(k => r.counts[k]).length;
+    return `<div class="pile-title">▌ ${label} (${got} / ${list.length})</div>
+      <div class="end-grid">${list.map(k => {
+        const e = ENDINGS[k], c = r.counts[k] || 0;
+        return c
+          ? `<div class="end-tile" data-ending="${k}" style="--ec:${e.color}"><div class="et-title">${e.title}</div><div class="et-count">×${c}</div><div class="et-sub">${e.sub}</div></div>`
+          : `<div class="end-tile locked" data-ending="${k}"><div class="et-title">??? 미해금</div><div class="et-hint">조건: ${e.hint}</div></div>`;
+      }).join('')}</div>`;
+  }).join('');
+  const rows = h.length ? `<div class="rec-list">${h.map(x => {
+      const e = ENDINGS[x.cause] || { title: x.cause, color: 'var(--muted)' };
+      return `<div class="rec-row">
+        <span class="rr-n">#${x.n}</span>
+        <span class="rr-end" style="color:${e.color}">${e.title}</span>
+        <span>W${x.round} D${x.day}</span>
+        <span class="rr-eq ${signCls(x.eq - START_CASH)}">${fmtMoney(x.eq)}</span>
+        <span class="rr-when">${fmtWhen(x.at)}</span>
+      </div>`; }).join('')}</div>`
+    : `<div class="rec-empty">아직 끝낸 판이 없습니다. 첫 반대매매는 누구에게나 찾아옵니다.</div>`;
+  $('recordsBox').innerHTML = summary + tiles +
+    `<div class="pile-title">▌ 최근 ${RECORDS_HISTORY}판</div>` + rows +
+    (total ? `<button class="back-btn rec-reset" id="recordsReset">✕ 기록 초기화</button>` : '');
+}
+$('recordsBox').addEventListener('click', e => {
+  const b = e.target.closest('#recordsReset');
+  if(!b) return;
+  if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = '✕ 정말 지울까요? 한 번 더 누르면 삭제'; return; }
+  clearRecords();
+  buildRecords();
+});
+
 $('collectionFilter').addEventListener('click', e => {
   const b = e.target.closest('[data-rarity]');
   if(!b) return;
@@ -4159,6 +4291,7 @@ function switchTab(s){
     renderAll();
   }
   if(s === 'shop') renderShop();
+  if(s === 'records') buildRecords();
   if(s === 'event') renderTipScreen();
   if(s === 'play' && run && run.pendingTip && !overlayOpen) showTipOverlay();
   renderTabs();
@@ -4173,6 +4306,8 @@ $('startBtn').addEventListener('click', () => {
 });
 $('collectionBtn').addEventListener('click', () => switchTab('collection'));
 $('collectionBack').addEventListener('click', () => switchTab('title'));
+$('recordsBtn').addEventListener('click', () => switchTab('records'));
+$('recordsBack').addEventListener('click', () => switchTab('title'));
 
 $('openBtn').addEventListener('click', () => {
   selectedIdx = -1;
