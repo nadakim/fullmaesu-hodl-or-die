@@ -1284,6 +1284,8 @@ const MAX_ROUND         = ROUND_TARGETS.length;
 // 시장
 const IDX_SENS          = 0.6;     // 지수 움직임이 종목에 전달되는 비율 (× beta)
 const IDIO_SCALE        = 0.25;    // 종목 고유 변동 크기 (× volatility)
+const INVERSE_DECAY     = 0.0008;  // 인버스 ETF(beta < 0) 녹음: 틱당 기대 로그수익률 감소 (롤오버 비용·복리 손실).
+                                   // 평소 5일 보유 시 지수 인버스·곱버스 평균이 소폭 마이너스, 약세장(매파 발언) 하루 보유는 여전히 플러스
 const STOCK_DRIFT       = 0.001;   // 종목 틱당 기대 로그수익률 — 사면 이길 확률이 조금 더 높도록 (공매도는 그만큼 불리).
                                    // 0.001 = 지수 인버스도 1주 보유 시 반반(52%)이 되는 최소값. 우량주는 65% → 79%
 const ASSET_HISTORY     = 30;      // 시세 스파크라인 길이
@@ -1302,7 +1304,10 @@ const GAP_UP_SHARE        = 0.5;   // 상승 갭 비율 (상승 갭은 숏을 �
 const GAP_STATE_MULT      = { NORMAL:1, BULL:1, BEAR:2, VOLATILE:2.5 };   // 약세장·변동성 장세에서 확률 증가
 
 // 포지션 · 이자 · 반대매매
-const DAILY_INTEREST      = 0.004; // 신용이자·대차이자·마통이자: 장 마감마다 0.4% (게임용 과장)
+const DAILY_INTEREST      = 0.004; // 신용이자·마통이자: 장 마감마다 빌린 돈의 0.4% (게임용 과장)
+const SHORT_BORROW_RATE   = 0.002; // 대차 이자(공매도): 장 마감마다 빌린 주식 노출액 전체의 이 비율
+                                   // 역할 분담 — 인버스 ETF: 이자·반대매매 없음, 대신 지수 상승 추세에 조금씩 녹는 '안전한 하락 베팅'
+                                   //            공매도: 아무 종목(고베타)·레버리지와 결합, 이자·반대매매를 감수하는 '공격적인 하락 베팅'
 const MARGIN_CALL_RATIO   = 0.25;  // 증거금률(포지션순자산 ÷ 노출액) 25% 미만 → 반대매매
 const MARGIN_WARN_RATIO   = 0.40;  // 이 아래부터 위험 표시
 const LIQUIDATION_PENALTY = 0.05;  // 반대매매 때 노출액의 5% 추가 손실 (시장가 투매 슬리피지)
@@ -2063,6 +2068,7 @@ function updateAssetPrices(idxLogRet, pumps){
   STOCKS.forEach(s => {
     const a = assets[s.id];
     let r = STOCK_DRIFT + s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss();
+    if(s.beta < 0) r -= INVERSE_DECAY;
     if(pumps[s.id]) r += pumps[s.id] === PUMP_MANIP ? MANIP_DRIFT : pumps[s.id] > 0 ? PUMP_UP_DRIFT : PUMP_DOWN_DRIFT;
     const open = a.price;
     a.price *= Math.exp(r);
@@ -2112,7 +2118,16 @@ function rollRelics(n){   // 등급을 먼저 뽑고(RELIC_RARITY_WEIGHTS), 그 
 
 const pumpUpChance = () => hasRelic('vip') ? RELIC_VIP_PUMP_CHANCE : PUMP_UP_CHANCE;
 const maxAp        = () => AP_PER_DAY + (hasRelic('talisman') ? RELIC_TALISMAN_AP : 0);
-const interestRate = () => DAILY_INTEREST * (hasRelic('capital') ? 1 - RELIC_CAPITAL_INTEREST_CUT : 1);
+const capitalCut      = () => hasRelic('capital') ? 1 - RELIC_CAPITAL_INTEREST_CUT : 1;   // 캐피탈 VVIP: 신용·대차·마통 모두 할인
+const interestRate    = () => DAILY_INTEREST * capitalCut();
+const shortBorrowRate = () => SHORT_BORROW_RATE * capitalCut();
+/* 오늘 밤 낼 이자: 신용대출·마통 × 신용이자율 + 빌린 주식 × 대차 이자율 (공매도 전문가는 대차 이자 면제) */
+function dailyInterest(){
+  if(run.interestFree) return 0;
+  const credit = run.positions.filter(p => p.dir > 0).reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
+  const shorts = hasRelic('shortpro') ? 0 : run.positions.filter(p => p.dir < 0).reduce((s, p) => s + posBorrowed(p), 0);
+  return credit * interestRate() + shorts * shortBorrowRate();
+}
 const gukbapApplies = p => hasRelic('gukbap') && RELIC_GUKBAP_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0;
 const sealApplies   = p => hasRelic('seal') && p.daysHeld >= RELIC_SEAL_DAYS;
 
@@ -2338,7 +2353,7 @@ defCard('yolo', '영끌', 'buy', 1, 'legendary', null, false,
   () => run.pending.principalMult === 1,
   () => { run.pending.lev = YOLO_LEV; run.pending.principalMult = YOLO_PRINCIPAL_MULT; });
 defCard('short', '공매도', 'buy', 1, 'uncommon', null, false,
-  '다음 종목 매수를 숏(하락 베팅)으로. 대차 이자, 급등하면 반대매매.',
+  `다음 종목 매수를 숏(하락 베팅)으로. 대차 이자 매일 ${(SHORT_BORROW_RATE * 100).toFixed(1)}%, 급등하면 반대매매.`,
   () => run.pending.dir === 1,
   () => { run.pending.dir = -1; });
 defCard('avgDown', '물타기', 'buy', 1, 'common', 'position', false,
@@ -2941,8 +2956,7 @@ function endOfDay(){
   run.discard = run.discard.concat(run.hand);   // 쓰지 않은 손패는 전부 버린다
   run.hand = [];
   run.positions.forEach(p => { p.daysHeld++; });   // 존버의 인장: 장 마감을 넘긴 횟수
-  const shortFree = hasRelic('shortpro') ? run.positions.filter(p => p.dir < 0).reduce((sum, p) => sum + posBorrowed(p), 0) : 0;   // 공매도 전문가
-  const interest = run.interestFree ? 0 : (totalBorrowed() - shortFree) * interestRate();
+  const interest = dailyInterest();
   run.cash -= interest;
   run.interestPaid += interest;
   if(run.cardMarket && (run.forcedState === 'BULL' || run.forcedState === 'BEAR')){   // 카드로 만든 방향 장세 → 내일 개장 초반 되돌림

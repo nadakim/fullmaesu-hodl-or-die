@@ -18,7 +18,7 @@ function loadPlaywright(){
   return require(path.join(globalRoot, 'playwright'));
 }
 
-const STRATEGIES = ['nothing', 'stocksOnly', 'allCards', 'yolo', 'shopper', 'marketCards'];
+const STRATEGIES = ['nothing', 'stocksOnly', 'allCards', 'yolo', 'shopper', 'marketCards', 'bearInverse', 'bearShort'];
 const TIP_MODES = ['A', 'B', 'random'];
 
 function parseArgs(argv){
@@ -108,13 +108,57 @@ function installBots(){
     // 4) 나머지는 allCards와 같다
     return playFirst(() => true);
   }
+  // 하락 베팅 봇 2종 — 같은 플레이어가 하락 베팅 '수단'만 다르게 쓴다. 평소엔 allCards처럼 손패를 쓰되:
+  //   bearInverse: 공매도 카드는 안 쓴다. 하락 베팅 = 인버스 ETF(곱버스·지수 인버스·인버스 헤지), 레버리지 없이 → '안전한 하락 베팅'
+  //   bearShort:   인버스 종목은 안 산다. 하락 베팅 = 공매도 + 레버리지(신용·영끌·풀매수) + 손패에서 베타가 가장 큰 종목 → '공격적인 하락 베팅'
+  //   둘 다 매파 발언을 가장 먼저 쓰고, 그날은 롱을 사지 않고 하락 베팅만 한다 (상승 시장 카드도 안 씀)
+  const BULL_MARKET = ['dove', 'pump', 'manip', 'ceoTweet'];
+  const LEVER_IDS = ['credit', 'yolo', 'fullBuy'];
+  const isInverse = c => isStock(c) && beta(c) < 0;
+  let bearKey = '', bearDay = false;
+  function bearToday(){
+    const key = run.round + '/' + run.day;
+    if(bearKey !== key){ bearKey = key; bearDay = false; }
+    if(playBest(c => c.id === 'hawk', () => 0)){ bearDay = true; return true; }
+    return false;
+  }
+  const bearRest = skip => playFirst(c => skip(c) === false && !(bearDay && BULL_MARKET.indexOf(c.id) >= 0));
+  function bearInverseDay(){
+    if(bearToday()) return true;
+    if(playBest(c => isInverse(c) || c.id === 'hedge', c => isStock(c) ? -beta(c) : 0)) return true;   // 곱버스 → 지수 인버스 → 헤지
+    return bearRest(c => c.id === 'short' || (bearDay && (isStock(c) || LEVER_IDS.indexOf(c.id) >= 0)));   // 매파 날엔 롱·레버리지 안 함
+  }
+  function bearShortDay(){
+    if(bearToday()) return true;
+    const longTarget = run.hand.some(i => { const c = CARD_BY_ID[i.id]; return isStock(c) && beta(c) > 0; });
+    if(longTarget && run.pending.dir === 1 && playBest(c => c.id === 'short', () => 0)) return true;
+    if(run.pending.dir === -1){
+      if(run.pending.lev === 1 && playBest(c => LEVER_IDS.indexOf(c.id) >= 0, c => -LEVER_IDS.indexOf(c.id))) return true;
+      if(playBest(c => isStock(c) && beta(c) > 0, c => beta(c))) return true;   // 고베타 종목을 숏
+    }
+    return bearRest(c => isInverse(c) || c.id === 'hedge' || (bearDay && isStock(c)));   // 매파 날엔 롱 안 삼
+  }
+  const BEAR_PICKS = {
+    bearInverse: ['hawk', 'stk_inv2', 'stk_inv', 'hedge'],
+    bearShort:   ['hawk', 'short', 'yolo', 'credit', 'fullBuy', 'stk_meme', 'stk_sc', 'stk_coin']
+  };
+  function shopBearCard(strategy){
+    for(let i = 0; i < run.shop.singles.length; i++){
+      const id = run.shop.singles[i];
+      if(BEAR_PICKS[strategy].indexOf(id) >= 0 && run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && wallet() >= singlePrice(id)) return buySingle(i);
+    }
+    return false;
+  }
+
   const DAY_PLAY = {
     nothing:    () => false,
     stocksOnly: () => playFirst(isStock),                      // 대기 매수 효과를 안 쓰므로 항상 1x 롱
     allCards:   () => playFirst(() => true),
     yolo:       () => playFirst(c => c.id === 'yolo') || playFirst(c => c.id === 'credit') || playFirst(isStock),
     shopper:    () => playFirst(() => true),
-    marketCards: marketDay
+    marketCards: marketDay,
+    bearInverse: bearInverseDay,
+    bearShort:   bearShortDay
   };
   const YOLO_PICKS = ['yolo', 'credit', 'fullBuy'];
 
@@ -122,7 +166,8 @@ function installBots(){
     const ch = run.rewardChoices;
     if(!ch.length) return chooseReward('skip');
     const pref = strategy === 'yolo' ? ch.find(id => YOLO_PICKS.indexOf(id) >= 0)
-      : strategy === 'marketCards' ? (ch.find(id => MARKET_IDS.indexOf(id) >= 0) || ch.find(id => YOLO_PICKS.indexOf(id) >= 0)) : '';
+      : strategy === 'marketCards' ? (ch.find(id => MARKET_IDS.indexOf(id) >= 0) || ch.find(id => YOLO_PICKS.indexOf(id) >= 0))
+      : BEAR_PICKS[strategy] ? BEAR_PICKS[strategy].map(b => ch.find(id => id === b)).find(Boolean) : '';
     return chooseReward('take', pref || ch[0]);
   }
 
@@ -196,6 +241,7 @@ function installBots(){
       } else if(run.phase === 'shop'){
         if(strategy === 'shopper' && shopOnce()) shopBuys++;
         if(strategy === 'marketCards' && shopMarketCard()) shopBuys++;
+        if(BEAR_PICKS[strategy] && shopBearCard(strategy)) shopBuys++;
         leaveShop();
       }
     }
@@ -203,7 +249,7 @@ function installBots(){
     setSeed(null);
     return { seed, weeksCleared: run.weeksCleared, endReason: run.endReason, endCause: run.endCause,
              liquidations: run.liquidations, endEquity: Math.round(run.endEquity), peakEquity: Math.round(run.peakEquity),
-             round: run.round, day: run.day, cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, fssFines: run.fssFines || 0, fssPeak: run.fssPeak || 0, mythicOffers, hadMythic: run.masterDeck.some(id => CARD_BY_ID[id].rarity === 'mythic'), mythicWeek, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
+             round: run.round, day: run.day, interest: Math.round(run.interestPaid), cardsPlayed: played, marketPlayed, fssSanctions: run.fssSanctions || 0, fssFines: run.fssFines || 0, fssPeak: run.fssPeak || 0, mythicOffers, hadMythic: run.masterDeck.some(id => CARD_BY_ID[id].rarity === 'mythic'), mythicWeek, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
   };
   window.__simTargets = t => { if(t){ if(t.length !== MAX_ROUND) throw new Error('--targets 는 ' + MAX_ROUND + '개'); t.forEach((v, i) => { ROUND_TARGETS[i] = v; }); } return ROUND_TARGETS.slice(); };
   window.__simBatch = (strategy, tipMode, seeds) => seeds.map(s => window.__simGame(strategy, tipMode, s));

@@ -16,7 +16,7 @@
 - 금지 소재: 한강·다리·투신·수온 등 자살을 연상시키는 표현, 실존 기업명·실존 티커(삼성전자, NVDA, TSLA 등). 게임 오버·블랙코미디는 재정적 파산 소재(반대매매, 깡통계좌, 영끌 실패 등)로만 쓴다.
 - UI를 바꾸면 Playwright로 1920×1080, 1366×768 스크린샷을 찍어 확인한다.
 - 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
-  - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards] [--file docs/demo] [--md out.md]`
+  - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper,marketCards,bearInverse,bearShort] [--file docs/demo] [--md out.md]`
   - 카드 한 장의 기대 수익: `node tools/sim/cardev.cjs [--file docs/demo]` (시장 카드, 원래 쓰는 상황) · `--all` (신화·상태 제외 전 카드, 공통 상황) — 같은 시드로 카드 사용/미사용 비교, 순자산 대비 %
   - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
   - 목표치 실험: `--targets 10800,11100,...` (파일 수정 없이 ROUND_TARGETS 교체). `--json`의 `weekEq`는 판마다 주간 결산 순자산 목록
@@ -28,6 +28,7 @@
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
+- `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
 
@@ -43,14 +44,14 @@
 
 - 로직 함수는 DOM(`document`, `innerHTML`, `alert`), Canvas, `setTimeout`/`setInterval`에 직접 의존하지 않는다. 입력을 받아 상태를 바꾸거나 값을 반환하고, 화면 갱신은 호출 측(UI 레이어)이 `renderUI()`/`renderChart()`로 한다.
 - `docs/demo`의 `<script>`는 세 구역으로 나뉜다. 이 경계를 유지한다:
-  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 시장 카드 `MARKET_CARD_ODDS`·`REVERSION_*`·`PUMP_*`, 금감원 게이지 `FSS_*`, 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`·`MISU_CASH_FLOOR`, 갭 `GAP_*`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`, 등급 `RARITIES`·`REWARD_RARITY_BY_WEEK`·`MYTHIC_DECK_LIMIT`, 비자금 `SLUSH_*`·`TIP_SLUSH_SAFE`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`(`RELIC_RARITY_WEIGHTS`·`RELIC_PRICE`), 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
+  - **CONFIG**: 밸런스 상수 전부 (판 구조 `ROUND_TARGETS`·`TICKS_PER_DAY`, 시장 `STOCK_DRIFT`·`INVERSE_DECAY`·`INDEX_TICK_CENTER`·`IDX_SENS`·`EVENT_*`, 시장 카드 `MARKET_CARD_ODDS`·`REVERSION_*`·`PUMP_*`, 금감원 게이지 `FSS_*`, 이자 `DAILY_INTEREST`(신용·마통)·`SHORT_BORROW_RATE`(대차), 반대매매 `MARGIN_CALL_RATIO`·`LIQUIDATION_PENALTY`·`MISU_CASH_FLOOR`, 갭 `GAP_*`, 덱 `DRAW_PER_DAY`·`AP_PER_DAY`, 등급 `RARITIES`·`REWARD_RARITY_BY_WEEK`·`MYTHIC_DECK_LIMIT`, 비자금 `SLUSH_*`·`TIP_SLUSH_SAFE`, 암시장 `SHOP_PACKS`·`SHOP_SINGLE_*`·`SHOP_REMOVE_*`, 유물 `RELICS`·`RELIC_*`(`RELIC_RARITY_WEIGHTS`·`RELIC_PRICE`), 찌라시 `TIP_EVENTS`·`TIP_*`, 카드 수치 `STOP_LOSS_PCT` 등), 종목 데이터 `STOCKS`, 시작 덱 `STARTER_DECK`. 수치 조정은 여기서만.
   - **ENGINE** (DOM 접근 금지): 상태 `run`(한 판 전체: 현금·포지션·더미·행동력·대기 매수 효과·오늘의 효과), `assets`(종목별 가격·스파크라인 `history`·캔들 `candles`), `marketPrice`/`marketState`/`candleData`(지수).
     - 포지션 (롱·숏 공용, `dir` = +1/−1): `exposure`, `posEquity`, `posPnl`, `marginRatio`, `openPosition`(같은 종목·방향·레버리지 포지션이 있으면 `addToPosition`으로 통합), `closePosition`, `sellPosition`, `sellAllPositions`, `checkOrders`(예약주문), `checkMarginCalls`
     - 카드: `CARDS`/`CARD_BY_ID`를 `defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play)`로 정의. 사용은 `checkPlay` → `playCard(handIdx, targetId)`, 대상 목록은 `validTargetIds`. 행동력은 항상 `cardCost(card)`로 (주간 효과·유물 반영, 손패 표시도 같은 값)
     - 등급 5단계 common·uncommon·rare·legendary·mythic: 보상·낱장·유물은 `rollRarity`(등급 먼저) → 등급 안 균등. 후보 제한은 `cardAllowed`(덱에 없는 카드 + 신화는 덱 전체 `MYTHIC_DECK_LIMIT`장). 팩은 `packPool`(확률 0% 등급 제외)·`packRarityOdds`
     - 주간 효과 `run.week`(개미 군단·상투 감별사·가치투자의 신, `startNextRound`에서 초기화), 오늘 효과 `lossGuardToday`·`circuitToday`·`sellDiscountUsed`(`startDay`에서 초기화). 작전 세력 갭은 `gapToday` → 장 마감 `gapNext` → 다음 개장 `shockStock`
     - 더미: `buildWeekPiles`, `drawCards`, `newCard`
-    - 유물(패시브, `run.relics`): `hasRelic`, `gainRelic`, `rollRelics`. 효과는 계산 지점에 직접 개입한다 — 손익 `relicAdjustedPnl`(국밥 정신·존버의 인장, `posEquity`를 거쳐 청산·증거금률·순자산까지), `pumpUpChance`(리딩방 VIP), `checkMarginCalls` 패널티(증권사 담당자 핫라인), `interestRate`(캐피탈 VVIP), `maxAp`(떡상 기원 부적), `endOfRound`(부모님 카드), `decayFss`(전관 변호사), `relicAdjustedPnl`(테마주 헌터), `marginCallRatio`(콜드월렛), `endOfDay` 이자(공매도 전문가), `inverseMasterDraw`(인버스 장인), `tipChances`(개미 커뮤니티), `cardCost`(단타의 신), `raiseFss`(금감원 인맥), `startDay`(월급날), `run.dayRoll`+`rollMarketCard`(타임머신 — 판정 난수를 장전에 굴려 둔다). 새 유물도 이렇게 계산 함수 안에서 `hasRelic()`으로 분기한다.
+    - 유물(패시브, `run.relics`): `hasRelic`, `gainRelic`, `rollRelics`. 효과는 계산 지점에 직접 개입한다 — 손익 `relicAdjustedPnl`(국밥 정신·존버의 인장, `posEquity`를 거쳐 청산·증거금률·순자산까지), `pumpUpChance`(리딩방 VIP), `checkMarginCalls` 패널티(증권사 담당자 핫라인), `interestRate`(캐피탈 VVIP), `maxAp`(떡상 기원 부적), `endOfRound`(부모님 카드), `decayFss`(전관 변호사), `relicAdjustedPnl`(테마주 헌터), `marginCallRatio`(콜드월렛), `dailyInterest`(공매도 전문가 — 신용 `interestRate` + 대차 `shortBorrowRate`, 캐피탈 VVIP는 둘 다 할인), `inverseMasterDraw`(인버스 장인), `tipChances`(개미 커뮤니티), `cardCost`(단타의 신), `raiseFss`(금감원 인맥), `startDay`(월급날), `run.dayRoll`+`rollMarketCard`(타임머신 — 판정 난수를 장전에 굴려 둔다). 새 유물도 이렇게 계산 함수 안에서 `hasRelic()`으로 분기한다.
     - 갭(`rollGaps`, `tick`에서 종목 가격 갱신 직후 → 예약주문·반대매매보다 먼저): 종목마다 틱당 확률 `gapChance` = `gapRisk`(volatility + |beta|×`GAP_BETA_WEIGHT`) × `GAP_CHANCE_PER_RISK` × `GAP_STATE_MULT[marketState]`로 ±크기만큼 한 번에 튄다. 이번 틱 캔들에 합쳐 `candle.gap = ±1`로 기록하고 `emit('gap')`. 반대매매는 갭 이후 가격으로 체결되므로 포지션 순자산이 음수(미수)일 수 있고, 그 뒤 현금이 `MISU_CASH_FLOOR` 미만이면 `run.misuDefault` → `checkBankruptcy`가 파산 처리(엔딩 원인은 기존 `classifyEnd` 그대로).
     - 시장 카드(비둘기·매파·CEO 트윗): 장전엔 `run.marketCard`만 기록 → `startMarket`에서 `rollMarketCard`가 `MARKET_CARD_ODDS`로 장세 판정(`run.forcedState`, NORMAL = 무시됨). 카드로 만든 강세·약세장이면 `endOfDay`가 다음 날 되돌림(`run.revertDir`·`revertTicksLeft`)을 예약하고, `tick`이 `pushNewCandle(extraDrift)`로 반영.
     - 금감원 감시 게이지(`run.fss`): `playCard`에서 `FSS_CARDS`를 쓰면 `raiseFss` → 가득 차면 `sanctionFss`(과징금 또는 `run.buyBanNext` → 다음 날 `buyBanToday`, `checkPlay`가 `'banned'`). 줄이는 법: `decayFss` — 장 마감 `FSS_DAILY_DECAY`, 새 주 `FSS_WEEKLY_DECAY` (전관 변호사 유물이면 `RELIC_LAWYER_DECAY_MULT`배), 카드 '자진 신고' `FSS_CONFESS_CUT`. HUD `#fssBox`.
