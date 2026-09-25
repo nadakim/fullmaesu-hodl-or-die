@@ -34,7 +34,7 @@
 
 - 순수 **HTML / CSS / JavaScript + Canvas** (캔들 차트, 배경 그리드)
 - **빌드 도구·번들러·프레임워크·npm 의존성 추가 금지** (React, Vite, TypeScript, Tailwind 등 X). 브라우저에서 파일 하나로 바로 열려야 한다.
-- 외부 리소스는 Google Fonts(`Press Start 2P`, `VT323`)만 사용.
+- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/assets/`를 함께 배포해야 한다.
 
 ## 코드 규칙
 
@@ -71,7 +71,10 @@
 - 색상은 반드시 `:root`의 CSS 변수를 쓴다: `--bg`, `--panel`, `--panel2`, `--green`, `--green2`, `--green-dim`, `--red`, `--red2`, `--red-dim`, `--gold`, `--gold2`, `--purple`, `--cyan`, `--text`, `--muted`, `--line`, `--line2`. 새 hex 값을 하드코딩하지 않는다 (Canvas에서 부득이하면 같은 값을 사용).
 - 카드 테두리: 안쪽 `--cc` = 종류 색, 바깥 `--rc` = 등급 색(일반 `--muted`·고급 `--green2`·희귀 `--blue`·전설 `--purple`·신화 `--gold`). 라벨 `.c-rar.<등급>`.
 - 테두리는 기존 픽셀 유틸리티 재사용: `.px-border`, `.px-border-gold`, `.px-border-green`, `.px-border-red`, `.px-corner-box`. `border-radius`·부드러운 그림자·그라데이션 대신 `box-shadow` 픽셀 테두리와 오프셋 그림자(`6px 6px 0 #000`).
-- 폰트: 제목/라벨은 `Press Start 2P`, 본문/숫자는 `VT323`.
+- 폰트: 제목/라벨은 `Press Start 2P`, 본문/숫자는 `VT323`. 한글은 뒤에 붙은 Galmuri로 떨어진다 — `font-family:'Press Start 2P','Galmuri-9px',monospace`처럼 **font-family를 쓰는 곳마다 그 글자 크기에 맞는 Galmuri 얼굴을 붙인다.**
+  - Galmuri는 픽셀 폰트라 원래 크기(Galmuri7 8px · 9 10px · 11 12px · 14 15px)나 그 2배에서만 획이 빠지지 않는다. 그래서 `<style>` 맨 위에 CSS 글자 크기별 `@font-face`를 `size-adjust`로 따로 둔다: Press Start 2P 옆은 `Galmuri-<크기>px`(글자 크기 근처 원래 크기), VT323 옆은 `GalmuriV-<크기>px`(VT323 글자가 작아서 약 75%), 카드 설명은 `Galmuri-desc`.
+  - 새 글자 크기를 쓰면 그 크기의 얼굴도 추가한다. font-size만 바꾸는 규칙(미디어 쿼리 등)에도 같은 크기의 font-family를 함께 쓴다. Canvas `ctx.font`도 같다.
+  - `overflow:hidden` + 좁은 line-height 안의 한글은 윗줄이 잘린다 (Galmuri가 VT323보다 키가 크다). 이런 곳은 line-height 1.1 이상·padding-top을 준다.
 - `image-rendering: pixelated`, Canvas는 `imageSmoothingEnabled = false` 유지.
 - 상승 = `--green`, 하락 = `--red` (한국식 반대 색 쓰지 않음 — 기존 컨벤션 유지).
 
@@ -88,7 +91,7 @@
 
 1. `docs/demo`는 확장자가 없어 그대로 서빙하면 HTML로 인식되지 않는다. 임시 폴더에 `demo.html`로 복사해 로컬 서버로 띄운다:
    ```sh
-   mkdir -p /tmp/site && cp docs/demo /tmp/site/demo.html
+   mkdir -p /tmp/site && cp docs/demo /tmp/site/demo.html && cp -r docs/assets /tmp/site/
    python3 -m http.server 8765 --bind 127.0.0.1 -d /tmp/site
    ```
 2. Playwright MCP(`.mcp.json`) 또는 Playwright 스크립트로 `http://127.0.0.1:8765/demo.html`을 연다.

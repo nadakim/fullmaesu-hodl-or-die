@@ -3,9 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <title>풀매수 기원단: HODL or Die — PIXEL EDITION</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
+/* ── 폰트 (전부 로컬 파일: docs/assets/fonts/, 라이선스 OFL 1.1 — 같은 폴더의 *-OFL.txt) ──
+   영문·숫자 = Press Start 2P(제목·라벨) / VT323(본문·숫자), 한글은 Galmuri로 떨어진다.
+   글자 크기별 한글 폰트: 아주 작은 라벨 Galmuri7 · 작은 글씨 Galmuri9 · 본문 Galmuri11 · 제목 Galmuri14 (아래 크기 표) */
+@font-face{font-family:'Press Start 2P';src:url('assets/fonts/PressStart2P-Regular.ttf') format('truetype');font-display:swap;}
+@font-face{font-family:'VT323';src:url('assets/fonts/VT323-Regular.ttf') format('truetype');font-display:swap;}
+/* 한글 = Galmuri. 픽셀 폰트라 원래 픽셀 크기(Galmuri7 8px · 9 10px · 11 12px · 14 15px)나 그 2배에서만 획이 빠지지 않는다.
+   그래서 CSS 글자 크기마다 size-adjust로 한글만 그 크기에 맞춘 얼굴을 따로 둔다 (Galmuri-<CSS 크기>px). 영문·숫자는 Press Start 2P / VT323 그대로 */
+@font-face{font-family:'Galmuri-6px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:133.3333%;font-display:swap;}  /* 6px → Galmuri7 8px */
+@font-face{font-family:'Galmuri-6_5px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:123.0769%;font-display:swap;}  /* 6.5px → Galmuri7 8px */
+@font-face{font-family:'Galmuri-7px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:114.2857%;font-display:swap;}  /* 7px → Galmuri7 8px */
+@font-face{font-family:'Galmuri-7_5px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:106.6667%;font-display:swap;}  /* 7.5px → Galmuri7 8px */
+@font-face{font-family:'Galmuri-8px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:100.0000%;font-display:swap;}  /* 8px → Galmuri7 8px */
+@font-face{font-family:'Galmuri-8_5px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:117.6471%;font-display:swap;}  /* 8.5px → Galmuri9 10px */
+@font-face{font-family:'Galmuri-9px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:111.1111%;font-display:swap;}  /* 9px → Galmuri9 10px */
+@font-face{font-family:'Galmuri-10px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:100.0000%;font-display:swap;}  /* 10px → Galmuri9 10px */
+@font-face{font-family:'Galmuri-11px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:109.0909%;font-display:swap;}  /* 11px → Galmuri11 12px */
+@font-face{font-family:'Galmuri-12px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:100.0000%;font-display:swap;}  /* 12px → Galmuri11 12px */
+@font-face{font-family:'Galmuri-13px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:92.3077%;font-display:swap;}  /* 13px → Galmuri11 12px */
+@font-face{font-family:'Galmuri-14px';src:url('assets/fonts/Galmuri14.woff2') format('woff2');size-adjust:107.1429%;font-display:swap;}  /* 14px → Galmuri14 15px */
+@font-face{font-family:'Galmuri-16px';src:url('assets/fonts/Galmuri14.woff2') format('woff2');size-adjust:93.7500%;font-display:swap;}  /* 16px → Galmuri14 15px */
+@font-face{font-family:'Galmuri-17px';src:url('assets/fonts/Galmuri14.woff2') format('woff2');size-adjust:88.2353%;font-display:swap;}  /* 17px → Galmuri14 15px */
+@font-face{font-family:'Galmuri-18px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:111.1111%;font-display:swap;}  /* 18px → Galmuri9 20px */
+@font-face{font-family:'Galmuri-19px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:105.2632%;font-display:swap;}  /* 19px → Galmuri9 20px */
+@font-face{font-family:'Galmuri-20px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:100.0000%;font-display:swap;}  /* 20px → Galmuri9 20px */
+@font-face{font-family:'Galmuri-22px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:109.0909%;font-display:swap;}  /* 22px → Galmuri11 24px */
+@font-face{font-family:'Galmuri-5_5px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:145.4545%;font-display:swap;}  /* 5.5px → Galmuri7 8px */
+/* VT323 옆의 한글: VT323 글자가 작게 그려지므로(글자 크기의 약 60%) 한글도 글자 크기의 약 75% 근처 Galmuri 원래 크기로 */
+@font-face{font-family:'GalmuriV-14px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:71.4286%;font-display:swap;}  /* VT323 14px → Galmuri9 10px */
+@font-face{font-family:'GalmuriV-15px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:80.0000%;font-display:swap;}  /* VT323 15px → Galmuri11 12px */
+@font-face{font-family:'GalmuriV-16px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:75.0000%;font-display:swap;}  /* VT323 16px → Galmuri11 12px */
+@font-face{font-family:'GalmuriV-17px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:70.5882%;font-display:swap;}  /* VT323 17px → Galmuri11 12px */
+@font-face{font-family:'GalmuriV-18px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:66.6667%;font-display:swap;}  /* VT323 18px → Galmuri11 12px */
+@font-face{font-family:'GalmuriV-19px';src:url('assets/fonts/Galmuri14.woff2') format('woff2');size-adjust:78.9474%;font-display:swap;}  /* VT323 19px → Galmuri14 15px */
+@font-face{font-family:'GalmuriV-20px';src:url('assets/fonts/Galmuri14.woff2') format('woff2');size-adjust:75.0000%;font-display:swap;}  /* VT323 20px → Galmuri14 15px */
+@font-face{font-family:'GalmuriV-22px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:72.7273%;font-display:swap;}  /* VT323 22px → Galmuri7 16px */
+@font-face{font-family:'GalmuriV-24px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:66.6667%;font-display:swap;}  /* VT323 24px → Galmuri7 16px */
+@font-face{font-family:'GalmuriV-26px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:76.9231%;font-display:swap;}  /* VT323 26px → Galmuri9 20px */
+@font-face{font-family:'Galmuri-desc';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:85.7143%;font-display:swap;}  /* 카드 설명 14px → Galmuri11 12px (좁은 카드에 줄 수를 맞추려고 한 단계 작게) */
+button,input,select,textarea{font-family:inherit;}
+
 /* ── PIXEL DESIGN SYSTEM ─────────────────────────────────── */
 :root{
   --bg:#02040a;
@@ -57,7 +95,7 @@ html,body{
   margin:0;padding:0;
   background:var(--bg);
   color:var(--text);
-  font-family:'VT323',monospace;
+  font-family:'VT323','GalmuriV-16px',monospace;
   overflow-x:hidden;
 }
 
@@ -103,7 +141,7 @@ body::after{
   border: 1px solid rgba(0, 229, 255, 0.3);
   box-shadow: 0 0 10px rgba(0,0,0,0.85);
   padding: 5px;
-  font-family: 'Press Start 2P', monospace;
+  font-family:'Press Start 2P','Galmuri-6px',monospace;
   font-size: 6px;
   color: var(--text);
   opacity: 0;
@@ -121,7 +159,7 @@ body::after{
   display: flex;
   justify-content: space-between;
   margin-bottom: 3px;
-  font-size: 6px;
+  font-size: 6px;font-family:'Press Start 2P','Galmuri-6px',monospace;
   white-space: nowrap;
 }
 .ambient-hdr .sym { color: var(--gold); }
@@ -156,7 +194,7 @@ body::after{
   flex:1;padding:10px 4px;
   background:none;border:none;cursor:pointer;
   color:var(--muted);
-  font-family:'Press Start 2P',monospace;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;
   font-size:7px;
   border-bottom:3px solid transparent;
   transition:none;
@@ -179,7 +217,7 @@ body::after{
 #screen-title{padding:28px 18px 24px;text-align:center;}
 
 .eyebrow{
-  font-family:'Press Start 2P';font-size:9px;
+  font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;
   color:var(--red);
   letter-spacing:.06em;
   text-shadow:2px 2px 0 #8b0000, 0 0 10px var(--red);
@@ -201,11 +239,11 @@ body::after{
   border-radius:0;
   transform:rotate(12deg);
   display:flex;align-items:center;justify-content:center;flex-direction:column;
-  font-family:'Press Start 2P';color:var(--gold);font-size:10px;line-height:1.2;
+  font-family:'Press Start 2P','Galmuri-10px',monospace;color:var(--gold);font-size:10px;line-height:1.2;
   animation:badgeFloat 2.4s steps(4) infinite;
   cursor:default;
 }
-.jibu-badge span{font-size:7px;color:var(--text);margin-top:4px;}
+.jibu-badge span{font-size:7px;font-family:'Press Start 2P','Galmuri-7px',monospace;color:var(--text);margin-top:4px;}
 @keyframes badgeFloat{
   0%{transform:rotate(12deg) translateY(0);}
   50%{transform:rotate(8deg) translateY(-5px);}
@@ -213,7 +251,7 @@ body::after{
 }
 
 .title-main{
-  font-family:'Press Start 2P';
+  font-family:'Press Start 2P','Galmuri-18px',monospace;
   font-size:18px;line-height:1.6;
   margin:18px 0 4px;
   color:var(--green);
@@ -224,7 +262,7 @@ body::after{
   letter-spacing:.03em;
 }
 .title-hodl{
-  font-family:'Press Start 2P';
+  font-family:'Press Start 2P','Galmuri-14px',monospace;
   font-size:14px;
   color:var(--gold);
   text-shadow:
@@ -234,7 +272,7 @@ body::after{
   letter-spacing:.05em;
 }
 .title-tagline{
-  font-family:'VT323';font-size:20px;
+  font-family:'VT323','GalmuriV-20px',monospace;font-size:20px;
   color:var(--muted);margin-bottom:22px;
 }
 .title-tagline b{color:var(--cyan);}
@@ -248,7 +286,7 @@ body::after{
     0 0 0 2px var(--green2),
     4px 4px 0 #000;
   color:var(--text);
-  font-family:'Press Start 2P';font-size:10px;
+  font-family:'Press Start 2P','Galmuri-10px',monospace;font-size:10px;
   cursor:pointer;
   border-radius:0;
   transition:none;
@@ -264,7 +302,7 @@ body::after{
   box-shadow:0 0 0 2px var(--green2),2px 2px 0 #000;
 }
 .menu button small{
-  display:block;font-family:'VT323';font-size:15px;
+  display:block;font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;
   color:var(--muted);margin-top:5px;
 }
 
@@ -277,7 +315,7 @@ body::after{
 }
 .ticker{
   display:inline-block;
-  font-family:'Press Start 2P';font-size:9px;
+  font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;
   color:var(--green);
   text-shadow:0 0 4px rgba(0,255,65,.6);
   animation:scrollLeft 22s linear infinite;
@@ -294,12 +332,12 @@ body::after{
   margin-bottom:8px;
 }
 .hdr h2{
-  font-family:'Press Start 2P';font-size:9px;margin:0;
+  font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;margin:0;
   color:var(--gold);
   text-shadow:1px 1px 0 #5c3d00;
 }
 .state-tag{
-  font-family:'Press Start 2P';font-size:7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
   color:var(--green);
   background:#000;
   border:0;
@@ -312,7 +350,7 @@ body::after{
   border:0;
   box-shadow:0 0 0 2px var(--red2),2px 2px 0 #000;
   color:var(--gold);
-  font-family:'Press Start 2P';font-size:7.5px;
+  font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;
   padding:8px 10px;margin-bottom:10px;
   display:flex;justify-content:space-between;align-items:center;
   line-height:1.8;
@@ -325,11 +363,11 @@ body::after{
   padding:10px;text-align:center;margin-bottom:10px;
 }
 .balance-main .label{
-  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);
   letter-spacing:.05em;
 }
 .balance-main .total{
-  font-family:'Press Start 2P';font-size:19px;
+  font-family:'Press Start 2P','Galmuri-19px',monospace;font-size:19px;
   color:var(--green);margin-top:6px;
   text-shadow:2px 2px 0 #003a14, 0 0 12px rgba(0,255,65,.5);
 }
@@ -343,11 +381,11 @@ body::after{
   padding:8px;text-align:center;
 }
 .asset-card .label{
-  font-family:'Press Start 2P';font-size:6.5px;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;color:var(--muted);
   margin-bottom:6px;letter-spacing:.03em;
 }
 .asset-card .val{
-  font-family:'Press Start 2P';font-size:11px;color:var(--text);
+  font-family:'Press Start 2P','Galmuri-11px',monospace;font-size:11px;color:var(--text);
 }
 .asset-card .val.highlight{color:var(--gold);}
 
@@ -365,7 +403,7 @@ body::after{
 }
 .chart-header{
   position:absolute;top:5px;left:8px;z-index:10;
-  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);
   text-shadow:1px 1px 0 #000;
 }
 .chart-header span{color:var(--cyan);text-shadow:0 0 6px var(--cyan);}
@@ -374,7 +412,7 @@ body::after{
 .chart-header .ch-chg.pnl-down{color:var(--red);text-shadow:none;}
 .chart-back{
   position:absolute;top:5px;right:8px;z-index:10;border:none;cursor:pointer;
-  background:#000;color:var(--cyan);font-family:'Press Start 2P';font-size:7px;padding:4px 6px;
+  background:#000;color:var(--cyan);font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;padding:4px 6px;
   box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;
 }
 .chart-back:hover{background:var(--panel2);}
@@ -384,14 +422,14 @@ body::after{
 .quote-row.charted{background:var(--panel2);box-shadow:0 0 0 2px var(--cyan),3px 3px 0 #000;}
 
 .section-title{
-  font-family:'Press Start 2P';font-size:8px;
+  font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;
   color:var(--gold);
   margin:12px 0 6px;
   display:flex;justify-content:space-between;align-items:baseline;
   text-shadow:1px 1px 0 #5c3d00;
 }
 .section-title span:last-child{
-  font-size:7px;color:var(--muted);
+  font-size:7px;font-family:'Press Start 2P','Galmuri-7px',monospace;color:var(--muted);
 }
 
 .hand{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;}
@@ -407,7 +445,7 @@ body::after{
   box-shadow:0 0 0 2px var(--cc),0 0 0 4px var(--rc),3px 3px 0 #000;
   display:flex;flex-direction:column;gap:5px;
   padding:7px 7px 6px;
-  font-family:'Press Start 2P';font-size:7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
   color:var(--text);cursor:pointer;flex-shrink:0;
   transition:none;
 }
@@ -432,13 +470,13 @@ body::after{
 .card.t-status{--cc:var(--muted);cursor:not-allowed;}
 
 .c-top{display:flex;justify-content:space-between;align-items:center;}
-.c-ap{background:var(--cc);color:#000;padding:2px 4px;font-size:8px;}
-.c-type{color:var(--cc);font-size:6px;}
-.card .sym{font-size:9px;line-height:1.5;color:var(--text);text-align:center;text-shadow:1px 1px 0 #000;}
-.c-cost{font-size:8px;color:var(--gold);text-align:center;}
-.c-price{font-size:6.5px;color:var(--cyan);text-align:center;}
-.c-desc{flex:1;overflow:hidden;font-family:'VT323';font-size:14px;line-height:1.05;color:var(--text);opacity:.8;text-align:center;}
-.c-foot{display:flex;justify-content:space-between;gap:4px;font-size:5.5px;color:var(--muted);}
+.c-ap{background:var(--cc);color:#000;padding:2px 4px;font-size:8px;font-family:'Press Start 2P','Galmuri-8px',monospace;}
+.c-type{color:var(--cc);font-size:6px;font-family:'Press Start 2P','Galmuri-6px',monospace;}
+.card .sym{font-size:9px;font-family:'Press Start 2P','Galmuri-9px',monospace;line-height:1.5;color:var(--text);text-align:center;text-shadow:1px 1px 0 #000;}
+.c-cost{font-size:8px;font-family:'Press Start 2P','Galmuri-8px',monospace;color:var(--gold);text-align:center;}
+.c-price{font-size:6.5px;font-family:'Press Start 2P','Galmuri-6_5px',monospace;color:var(--cyan);text-align:center;}
+.c-desc{flex:1;overflow:hidden;font-family:'VT323','Galmuri-desc',monospace;font-size:14px;line-height:1.1;padding-top:1px;color:var(--text);opacity:.8;text-align:center;}
+.c-foot{display:flex;justify-content:space-between;gap:4px;font-size:5.5px;font-family:'Press Start 2P','Galmuri-5_5px',monospace;color:var(--muted);}
 .card.r-common{--rc:var(--muted);}
 .card.r-uncommon{--rc:var(--green2);}
 .card.r-rare{--rc:var(--blue);}
@@ -453,7 +491,7 @@ body::after{
 .c-rar.mythic{color:var(--gold);text-shadow:0 0 4px var(--gold2);}
 .coll-filter{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px;}
 .coll-filter button{
-  font-family:'Press Start 2P';font-size:7px;padding:6px 8px;cursor:pointer;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;padding:6px 8px;cursor:pointer;
   background:#000;color:var(--muted);border:0;box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
 }
 .coll-filter button.on{color:var(--text);box-shadow:0 0 0 2px var(--gold),2px 2px 0 #000;}
@@ -477,12 +515,12 @@ body::after{
   box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
   padding:7px 9px;
   display:flex;justify-content:space-between;align-items:center;
-  font-family:'Press Start 2P';font-size:7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
 }
-.pos-info .name{font-size:9px;color:var(--text);}
-.pos-info .detail{font-size:6.5px;color:var(--muted);margin-top:3px;}
+.pos-info .name{font-size:9px;font-family:'Press Start 2P','Galmuri-9px',monospace;color:var(--text);}
+.pos-info .detail{font-size:6.5px;font-family:'Press Start 2P','Galmuri-6_5px',monospace;color:var(--muted);margin-top:3px;}
 .pos-pnl{text-align:right;}
-.pos-pnl .val{font-weight:bold;font-size:8px;}
+.pos-pnl .val{font-weight:bold;font-size:8px;font-family:'Press Start 2P','Galmuri-8px',monospace;}
 .pnl-up{color:var(--green);text-shadow:1px 1px 0 #003a14;}
 .pnl-down{color:var(--red);text-shadow:1px 1px 0 #5c0010;}
 
@@ -490,7 +528,7 @@ body::after{
   background:var(--red-dim);
   box-shadow:0 0 0 2px var(--red2),2px 2px 0 #000;
   color:var(--text);
-  font-family:'Press Start 2P';font-size:7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
   padding:4px 7px;cursor:pointer;
   border:none;margin-left:8px;
   border-radius:0;
@@ -500,7 +538,7 @@ body::after{
 
 .sell-all-btn{
   width:100%;padding:14px;
-  font-family:'Press Start 2P';font-size:11px;
+  font-family:'Press Start 2P','Galmuri-11px',monospace;font-size:11px;
   background:var(--red-dim);
   box-shadow:0 0 0 2px var(--red),0 0 0 4px #000,5px 5px 0 #000;
   color:var(--gold);border:none;
@@ -521,7 +559,7 @@ body::after{
 
 .popnum{
   position:absolute;
-  font-family:'Press Start 2P';font-size:11px;
+  font-family:'Press Start 2P','Galmuri-11px',monospace;font-size:11px;
   pointer-events:none;z-index:10;
   animation:pixelPop .9s steps(8) forwards;
   image-rendering:pixelated;
@@ -536,7 +574,7 @@ body::after{
 .confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:80;}
 .bill{
   position:absolute;top:-30px;
-  font-family:'Press Start 2P';font-size:12px;
+  font-family:'Press Start 2P','Galmuri-12px',monospace;font-size:12px;
   color:var(--gold);text-shadow:1px 1px 0 #5c3d00;
   animation:pixelFall 1.6s steps(16) forwards;
 }
@@ -549,17 +587,17 @@ body::after{
   padding:18px 14px 28px;
 }
 .shop-title{
-  font-family:'Press Start 2P';font-size:14px;
+  font-family:'Press Start 2P','Galmuri-14px',monospace;font-size:14px;
   color:var(--purple);
   text-shadow:2px 2px 0 #2d006b,0 0 12px rgba(159,95,255,.6);
   margin-bottom:4px;
 }
 .shop-sub{
-  font-family:'VT323';font-size:18px;
+  font-family:'VT323','GalmuriV-18px',monospace;font-size:18px;
   color:var(--muted);margin-bottom:16px;
 }
 .section-label{
-  font-family:'Press Start 2P';font-size:8px;
+  font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;
   color:var(--gold);
   box-shadow:inset 3px 0 0 0 var(--gold);
   padding-left:10px;margin:18px 0 10px;
@@ -572,7 +610,7 @@ body::after{
   box-shadow:0 0 0 2px #3a2a5c,0 0 0 4px #000,3px 3px 0 #000;
   display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:8px;
-  font-family:'Press Start 2P';font-size:9px;text-align:center;padding:8px;
+  font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;text-align:center;padding:8px;
   border-radius:0;
 }
 .pack:hover{
@@ -583,10 +621,10 @@ body::after{
 .tabnav button.alert{color:var(--red);animation:blink 1s step-end infinite;}
 
 /* 유물 */
-.relic-bar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:2px 0 8px;font-family:'Press Start 2P';font-size:7px;color:var(--muted);}
+.relic-bar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:2px 0 8px;font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);}
 .relic-bar .relic-label{color:var(--gold);margin-right:2px;}
 .relic{
-  width:30px;height:30px;padding:0;border:none;cursor:pointer;font-size:17px;line-height:30px;
+  width:30px;height:30px;padding:0;border:none;cursor:pointer;font-size:17px;font-family:'Press Start 2P','Galmuri-17px',monospace;line-height:30px;
   background:var(--panel2);box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
 }
 .relic.uncommon{box-shadow:0 0 0 2px var(--green2),2px 2px 0 #000;}
@@ -595,12 +633,12 @@ body::after{
 .relic.mythic{box-shadow:0 0 0 2px var(--gold),2px 2px 0 #000;}
 .relic:hover,.relic.on{transform:translate(-1px,-2px);background:var(--panel);}
 .relic.on{box-shadow:0 0 0 2px var(--text),3px 3px 0 #000;}
-.relic-empty{font-family:'VT323';font-size:15px;}
+.relic-empty{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;}
 .relic-tip{
   margin:0 0 8px;padding:8px 10px;background:#000;box-shadow:0 0 0 2px var(--gold2),3px 3px 0 #000;
-  font-family:'VT323';font-size:17px;line-height:1.2;color:var(--text);
+  font-family:'VT323','GalmuriV-17px',monospace;font-size:17px;line-height:1.2;color:var(--text);
 }
-.relic-tip b{font-family:'Press Start 2P';font-size:8px;font-weight:normal;color:var(--gold);}
+.relic-tip b{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;font-weight:normal;color:var(--gold);}
 .relic-tip i{display:block;margin-top:4px;color:var(--muted);}
 .relic-tile{
   width:170px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;text-align:center;
@@ -612,40 +650,40 @@ body::after{
 .relic-tile.mythic{box-shadow:0 0 0 2px var(--gold),0 0 0 4px #000,3px 3px 0 #000;}
 .relic-tile[data-relic-reward]{cursor:pointer;}
 .relic-tile[data-relic-reward]:hover{transform:translate(-2px,-2px);}
-.relic-tile .rt-icon{font-size:26px;}
-.relic-tile .rt-name{font-family:'Press Start 2P';font-size:8px;color:var(--text);line-height:1.5;}
-.relic-tile .c-rar{font-family:'Press Start 2P';font-size:6px;}
-.relic-tile .rt-desc{font-family:'VT323';font-size:16px;line-height:1.1;color:var(--text);}
-.relic-tile .rt-flavor{font-family:'VT323';font-size:14px;line-height:1.1;color:var(--muted);}
+.relic-tile .rt-icon{font-size:26px;font-family:'VT323','GalmuriV-26px',monospace;}
+.relic-tile .rt-name{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;color:var(--text);line-height:1.5;}
+.relic-tile .c-rar{font-family:'Press Start 2P','Galmuri-6px',monospace;font-size:6px;}
+.relic-tile .rt-desc{font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;line-height:1.1;color:var(--text);}
+.relic-tile .rt-flavor{font-family:'VT323','GalmuriV-14px',monospace;font-size:14px;line-height:1.1;color:var(--muted);}
 .relic-row{display:flex;flex-wrap:wrap;gap:14px;padding:6px 4px 12px;}
 .o-tag.relic-on{color:var(--gold);}
 .tabnav button.locked:hover{color:var(--muted);}
 .shop-locked{
   margin-top:24px;padding:28px 18px;text-align:center;background:var(--panel);
   box-shadow:0 0 0 2px var(--line),4px 4px 0 #000;
-  font-family:'Press Start 2P';font-size:10px;color:var(--muted);line-height:1.8;
+  font-family:'Press Start 2P','Galmuri-10px',monospace;font-size:10px;color:var(--muted);line-height:1.8;
 }
-.shop-locked small{display:block;margin-top:10px;font-family:'VT323';font-size:18px;}
+.shop-locked small{display:block;margin-top:10px;font-family:'VT323','GalmuriV-18px',monospace;font-size:18px;}
 .shop-bar{
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
   padding:10px 12px;background:#000;box-shadow:0 0 0 2px var(--purple),3px 3px 0 #000;
-  font-family:'Press Start 2P';font-size:8.5px;line-height:2;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-8_5px',monospace;font-size:8.5px;line-height:2;color:var(--muted);
 }
 .shop-bar b{color:var(--gold);font-weight:normal;}
 .slush-amt{color:var(--gold);font-weight:normal;}
-.slush-line{font-family:'Press Start 2P';font-size:6.5px;color:var(--muted);margin-top:6px;white-space:nowrap;}
-.shop-bar .open-btn{width:auto;margin:0;padding:10px 14px;font-size:9px;}
-.shop-note{font-family:'VT323';font-size:16px;color:var(--muted);margin:6px 2px 0;}
+.slush-line{font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;color:var(--muted);margin-top:6px;white-space:nowrap;}
+.shop-bar .open-btn{width:auto;margin:0;padding:10px 14px;font-size:9px;font-family:'Press Start 2P','Galmuri-9px',monospace;}
+.shop-note{font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;color:var(--muted);margin:6px 2px 0;}
 .pack-row{gap:16px;padding:6px 6px 10px;flex-wrap:wrap;overflow:visible;}
 .pack-col{display:flex;flex-direction:column;gap:8px;width:170px;}
 .pack{width:100%;height:auto;min-height:150px;gap:7px;padding:12px 8px;border:none;color:var(--text);}
-.pack .pk-icon{font-size:24px;font-family:'VT323';}
-.pack .pk-price{color:var(--gold);font-size:9px;}
-.pack .pk-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:7.5px;color:var(--muted);}
-.pack .pk-desc{font-family:'VT323';font-size:15px;color:var(--muted);}
+.pack .pk-icon{font-size:24px;font-family:'VT323','GalmuriV-24px',monospace;}
+.pack .pk-price{color:var(--gold);font-size:9px;font-family:'Press Start 2P','Galmuri-9px',monospace;}
+.pack .pk-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:7.5px;font-family:'Press Start 2P','Galmuri-7_5px',monospace;color:var(--muted);}
+.pack .pk-desc{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;color:var(--muted);}
 .pack.disabled,.pack:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-.pk-detail{font-family:'VT323';font-size:15px;color:var(--muted);}
-.pk-detail summary{cursor:pointer;font-family:'Press Start 2P';font-size:6.5px;color:var(--cyan);}
+.pk-detail{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;color:var(--muted);}
+.pk-detail summary{cursor:pointer;font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;color:var(--cyan);}
 .pk-detail ol{margin:6px 0 0;padding-left:0;list-style:none;max-height:180px;overflow-y:auto;}
 .pk-detail li{display:flex;justify-content:space-between;gap:6px;padding:1px 4px;}
 .pk-detail li:nth-child(odd){background:var(--panel);}
@@ -653,7 +691,7 @@ body::after{
 .shop-item{display:flex;flex-direction:column;align-items:center;gap:10px;}
 .buy-btn{
   border:none;cursor:pointer;padding:7px 10px;min-width:108px;
-  font-family:'Press Start 2P';font-size:7.5px;background:var(--green-dim);color:var(--green);
+  font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;background:var(--green-dim);color:var(--green);
   box-shadow:0 0 0 2px var(--green2),2px 2px 0 #000;
 }
 .buy-btn:disabled{background:var(--panel);color:var(--muted);box-shadow:0 0 0 2px var(--line);cursor:not-allowed;}
@@ -670,7 +708,7 @@ body::after{
 .flip-back{
   transform:rotateY(180deg);display:flex;align-items:center;justify-content:center;
   background:var(--panel2);box-shadow:0 0 0 2px var(--purple),0 0 0 4px #000,3px 3px 0 #000;
-  font-family:'Press Start 2P';font-size:22px;color:var(--purple);
+  font-family:'Press Start 2P','Galmuri-22px',monospace;font-size:22px;color:var(--purple);
 }
 @media (prefers-reduced-motion: reduce){ .flip-card{animation:none;} }
 
@@ -690,12 +728,12 @@ body::after{
   padding:18px;
 }
 .noti-headline{
-  font-family:'Press Start 2P';font-size:10px;
+  font-family:'Press Start 2P','Galmuri-10px',monospace;font-size:10px;
   color:var(--gold);margin-bottom:8px;
   text-shadow:1px 1px 0 #5c3d00;
 }
 .noti-body{
-  font-family:'VT323';font-size:18px;
+  font-family:'VT323','GalmuriV-18px',monospace;font-size:18px;
   color:var(--text);line-height:1.4;margin-bottom:16px;
 }
 .choice{
@@ -703,26 +741,26 @@ body::after{
   box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
   padding:11px 13px;margin-bottom:10px;cursor:pointer;
   background:var(--panel2);
-  font-family:'Press Start 2P';font-size:8px;
+  font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;
   transition:none;
 }
 .choice .ch-label{display:block;line-height:1.6;}
 .choice.risky .ch-label{color:var(--red);}
 .choice.safe .ch-label{color:var(--green);}
-.choice .ch-meta{display:block;margin-top:5px;font-family:'VT323';font-size:16px;color:var(--muted);}
+.choice .ch-meta{display:block;margin-top:5px;font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;color:var(--muted);}
 .tip-box{width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px;}
 .tip-box .phone-noti{max-width:none;}
-.tip-empty{text-align:center;font-family:'Press Start 2P';font-size:9px;color:var(--muted);line-height:1.8;}
-.tip-empty small{display:block;margin-top:8px;font-family:'VT323';font-size:17px;}
+.tip-empty{text-align:center;font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;color:var(--muted);line-height:1.8;}
+.tip-empty small{display:block;margin-top:8px;font-family:'VT323','GalmuriV-17px',monospace;font-size:17px;}
 .tip-result{
   margin-top:4px;padding:12px;text-align:center;background:#000;
-  font-family:'Press Start 2P';font-size:9px;line-height:1.8;
+  font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;line-height:1.8;
 }
-.tip-result b{display:block;margin-top:6px;font-size:14px;font-weight:normal;}
+.tip-result b{display:block;margin-top:6px;font-size:14px;font-family:'Press Start 2P','Galmuri-14px',monospace;font-weight:normal;}
 .tip-result.up{color:var(--green);box-shadow:0 0 0 2px var(--green2);}
 .tip-result.down{color:var(--red);box-shadow:0 0 0 2px var(--red2);}
 .tip-result.flat{color:var(--gold);box-shadow:0 0 0 2px var(--gold2);}
-.tip-log{list-style:none;margin:0;padding:0;font-family:'VT323';font-size:16px;color:var(--muted);}
+.tip-log{list-style:none;margin:0;padding:0;font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;color:var(--muted);}
 .tip-log li{display:flex;justify-content:space-between;gap:10px;padding:4px 6px;}
 .tip-log li span:last-child{white-space:nowrap;}
 .tip-log li:nth-child(odd){background:var(--panel);}
@@ -736,7 +774,7 @@ body::after{
 
 .footnote{
   text-align:center;
-  font-family:'Press Start 2P';font-size:7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
   color:var(--muted);padding:18px 20px 10px;
 }
 
@@ -754,14 +792,14 @@ body::after{
 ═══════════════════════════════════════════════════════════ */
 .hud{
   display:flex;align-items:center;gap:8px;margin-bottom:10px;
-  font-family:'Press Start 2P';font-size:7px;color:var(--cyan);
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--cyan);
 }
 .day-track{flex:1;height:8px;background:#000;box-shadow:0 0 0 2px var(--line);}
 .hud-col{margin-bottom:10px;}
 .hud-col .hud{margin-bottom:8px;}
 .fss{
   display:flex;align-items:center;gap:8px;
-  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);
 }
 .fss-label{white-space:nowrap;}
 .fss-track{flex:1;height:6px;background:#000;box-shadow:0 0 0 2px var(--line);}
@@ -773,15 +811,15 @@ body::after{
 .fss.hot .fss-label,.fss.hot .fss-state{color:var(--red);animation:blink 1s step-end infinite;}
 .fss-verdict{
   margin:12px 0;padding:12px;background:#000;box-shadow:0 0 0 2px var(--red2);
-  font-family:'VT323';font-size:22px;color:var(--text);text-align:center;line-height:1.3;
+  font-family:'VT323','GalmuriV-22px',monospace;font-size:22px;color:var(--text);text-align:center;line-height:1.3;
 }
 .fss-verdict b{color:var(--red);}
-.fss-verdict small{font-size:16px;color:var(--muted);}
+.fss-verdict small{font-size:16px;font-family:'VT323','GalmuriV-16px',monospace;color:var(--muted);}
 .day-fill{height:100%;width:0;background:var(--cyan);}
 
 .target-line{
   display:flex;justify-content:space-between;margin-top:9px;
-  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);
 }
 .target-track{height:6px;background:#000;box-shadow:0 0 0 2px var(--line);margin-top:6px;}
 .target-fill{height:100%;width:0;background:var(--gold2);}
@@ -791,13 +829,13 @@ body::after{
 .quote-row{
   display:grid;grid-template-columns:1fr 64px 62px 50px;align-items:center;gap:6px;
   background:var(--panel);box-shadow:0 0 0 2px var(--line);
-  padding:5px 8px;font-family:'Press Start 2P';font-size:7px;
+  padding:5px 8px;font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
 }
-.q-name{font-size:8px;color:var(--text);}
-.q-name small{display:block;font-size:6px;color:var(--muted);margin-top:3px;}
+.q-name{font-size:8px;font-family:'Press Start 2P','Galmuri-8px',monospace;color:var(--text);}
+.q-name small{display:block;font-size:6px;font-family:'Press Start 2P','Galmuri-6px',monospace;color:var(--muted);margin-top:3px;}
 .quote-row canvas{width:64px;height:18px;display:block;image-rendering:pixelated;}
 .q-price,.q-chg{text-align:right;}
-.q-tag{font-size:6px;margin-left:5px;}
+.q-tag{font-size:6px;font-family:'Press Start 2P','Galmuri-6px',monospace;margin-left:5px;}
 .q-tag.hidden{color:var(--purple);}
 .q-tag.up{color:var(--green);}
 .q-tag.down{color:var(--red);}
@@ -812,7 +850,7 @@ body::after{
 /* 행동력 · 더미 */
 .turn-bar{
   display:flex;align-items:center;gap:8px;margin:14px 0 8px;
-  font-family:'Press Start 2P';font-size:7px;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);
 }
 .ap-pips{display:flex;gap:4px;}
 .ap-pip{width:10px;height:10px;background:#000;box-shadow:0 0 0 2px var(--gold2);}
@@ -821,7 +859,7 @@ body::after{
 .pile-text{flex:1;text-align:right;}
 .deck-btn,.back-btn{
   border:none;cursor:pointer;background:var(--panel);color:var(--cyan);
-  font-family:'Press Start 2P';font-size:7px;padding:5px 7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;padding:5px 7px;
   box-shadow:0 0 0 2px var(--line),2px 2px 0 #000;
 }
 .deck-btn:hover,.back-btn:hover{box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;}
@@ -829,7 +867,7 @@ body::after{
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .chips:empty{display:none;}
 .chip{
-  font-family:'Press Start 2P';font-size:6.5px;padding:4px 6px;background:#000;
+  font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;padding:4px 6px;background:#000;
   color:var(--gold);box-shadow:0 0 0 2px var(--gold2);
 }
 .chip.buy{color:var(--green);box-shadow:0 0 0 2px var(--green2);}
@@ -839,12 +877,12 @@ body::after{
 .hand{gap:12px;padding:4px 4px 12px;}
 .empty-note{
   width:100%;text-align:center;padding:14px;color:var(--muted);
-  font-family:'Press Start 2P';font-size:7px;
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;
 }
 
 .open-btn{
   width:100%;padding:13px;margin:4px 0 6px;border:none;cursor:pointer;
-  font-family:'Press Start 2P';font-size:11px;letter-spacing:.05em;
+  font-family:'Press Start 2P','Galmuri-11px',monospace;font-size:11px;letter-spacing:.05em;
   background:var(--green-dim);color:var(--green);text-shadow:2px 2px 0 #000;
   box-shadow:0 0 0 2px var(--green),0 0 0 4px #000,5px 5px 0 #000;
 }
@@ -855,17 +893,17 @@ body::after{
 }
 
 /* 포지션 배지 · 예약주문 태그 */
-.lev-badge{font-size:6px;padding:1px 3px;margin-left:5px;background:var(--gold2);color:#000;vertical-align:middle;}
+.lev-badge{font-size:6px;font-family:'Press Start 2P','Galmuri-6px',monospace;padding:1px 3px;margin-left:5px;background:var(--gold2);color:#000;vertical-align:middle;}
 .lev-badge.lev3{background:var(--red);color:var(--text);}
 .lev-badge.short{background:var(--red2);color:var(--text);}
 .o-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
-.o-tag{font-size:5.5px;padding:2px 3px;background:#000;box-shadow:0 0 0 1px var(--line);color:var(--muted);}
+.o-tag{font-size:5.5px;font-family:'Press Start 2P','Galmuri-5_5px',monospace;padding:2px 3px;background:#000;box-shadow:0 0 0 1px var(--line);color:var(--muted);}
 .o-tag.stop{color:var(--red);}
 .o-tag.take{color:var(--green);}
 .o-tag.trail{color:var(--cyan);}
 .o-tag.hodl{color:var(--cyan);}
 .o-tag.diamond{color:var(--gold);}
-.ratio{font-size:6.5px;margin-top:4px;}
+.ratio{font-size:6.5px;font-family:'Press Start 2P','Galmuri-6_5px',monospace;margin-top:4px;}
 .ratio.safe{color:var(--gold);}
 .ratio.danger{color:var(--red);animation:blink .6s step-end infinite;}
 .positions-wrap{max-height:240px;}
@@ -877,7 +915,7 @@ body::after{
 }
 .toast{
   background:#000;color:var(--cyan);
-  font-family:'Press Start 2P';font-size:7.5px;line-height:1.7;padding:8px 10px;
+  font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;line-height:1.7;padding:8px 10px;
   box-shadow:0 0 0 2px var(--cyan),3px 3px 0 #000;
   animation:toastIn 2.6s steps(13) forwards;
 }
@@ -896,17 +934,17 @@ body::after{
   background:var(--panel);text-align:center;padding:18px;
   box-shadow:0 0 0 2px var(--gold2),0 0 0 4px #000,6px 6px 0 #000;
 }
-.ov-title{font-family:'Press Start 2P';font-size:13px;line-height:1.6;margin-bottom:8px;}
-.ov-sub{font-family:'VT323';font-size:19px;color:var(--text);margin-bottom:14px;line-height:1.3;}
+.ov-title{font-family:'Press Start 2P','Galmuri-13px',monospace;font-size:13px;line-height:1.6;margin-bottom:8px;}
+.ov-sub{font-family:'VT323','GalmuriV-19px',monospace;font-size:19px;color:var(--text);margin-bottom:14px;line-height:1.3;}
 .ov-stats{
   text-align:left;background:#000;box-shadow:0 0 0 2px var(--line);
-  font-family:'Press Start 2P';font-size:7.5px;line-height:2.3;color:var(--muted);
+  font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;line-height:2.3;color:var(--muted);
   padding:8px 10px;margin-bottom:12px;
 }
 .ov-stats b{float:right;color:var(--text);font-weight:normal;}
 .ov-btn{
   width:100%;padding:12px;margin-top:8px;border:none;cursor:pointer;
-  font-family:'Press Start 2P';font-size:9px;
+  font-family:'Press Start 2P','Galmuri-9px',monospace;font-size:9px;
   background:var(--green-dim);color:var(--green);
   box-shadow:0 0 0 2px var(--green2),4px 4px 0 #000;
 }
@@ -915,27 +953,27 @@ body::after{
 .ov-btn.warn{background:var(--red-dim);color:var(--red);box-shadow:0 0 0 2px var(--red2),4px 4px 0 #000;}
 
 /* 라운드 결과 · 게임오버 */
-.result-kicker{font-family:'Press Start 2P';font-size:8px;color:var(--muted);margin-bottom:6px;}
-.result-hero{font-family:'Press Start 2P';font-size:20px;margin:6px 0 4px;text-shadow:2px 2px 0 #000;}
+.result-kicker{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;color:var(--muted);margin-bottom:6px;}
+.result-hero{font-family:'Press Start 2P','Galmuri-20px',monospace;font-size:20px;margin:6px 0 4px;text-shadow:2px 2px 0 #000;}
 .result-bar{position:relative;height:12px;margin:8px 0 4px;background:#000;box-shadow:0 0 0 2px var(--line);}
 .result-bar i{position:absolute;inset:0 auto 0 0;background:var(--gold2);}
 .result-bar i.done{background:var(--green);}
 .result-bar b{position:absolute;top:-2px;bottom:-2px;left:calc(100% / 1.5 - 1px);width:2px;background:var(--text);}
-.result-pct{font-family:'Press Start 2P';font-size:8px;color:var(--muted);text-align:right;margin-bottom:12px;}
+.result-pct{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;color:var(--muted);text-align:right;margin-bottom:12px;}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 12px;text-align:left;}
-.stat-grid div{background:#000;box-shadow:0 0 0 2px var(--line);padding:7px 9px;font-family:'Press Start 2P';font-size:6.5px;color:var(--muted);line-height:1.5;}
-.stat-grid div b{display:block;margin-top:4px;font-family:'VT323';font-size:20px;font-weight:normal;color:var(--text);}
+.stat-grid div{background:#000;box-shadow:0 0 0 2px var(--line);padding:7px 9px;font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;color:var(--muted);line-height:1.5;}
+.stat-grid div b{display:block;margin-top:4px;font-family:'VT323','GalmuriV-20px',monospace;font-size:20px;font-weight:normal;color:var(--text);}
 .stat-grid .wide{grid-column:1 / -1;}
-.stat-caption{font-family:'Press Start 2P';font-size:7px;color:var(--gold);text-align:left;margin-top:12px;}
+.stat-caption{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--gold);text-align:left;margin-top:12px;}
 .ending-badge{
   display:inline-block;margin:4px 0 10px;padding:5px 8px;background:#000;
-  font-family:'Press Start 2P';font-size:7.5px;color:var(--gold);box-shadow:0 0 0 2px var(--gold2);
+  font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;color:var(--gold);box-shadow:0 0 0 2px var(--gold2);
 }
-.ending-cause{font-family:'VT323';font-size:17px;color:var(--muted);margin-bottom:6px;}
+.ending-cause{font-family:'VT323','GalmuriV-17px',monospace;font-size:17px;color:var(--muted);margin-bottom:6px;}
 .ov-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
 .ov-cards,.deck-list{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:6px 4px 12px;}
 .deck-list{max-height:46vh;overflow-y:auto;}
-.pile-title{font-family:'Press Start 2P';font-size:7px;color:var(--gold);text-align:left;margin:10px 0 6px;}
+.pile-title{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--gold);text-align:left;margin:10px 0 6px;}
 
 /* 카드 도감 */
 #screen-collection{padding:18px 14px 28px;}
@@ -951,18 +989,18 @@ body::after{
 .end-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:10px;padding:6px 4px 12px;}
 .end-tile{position:relative;background:#000;box-shadow:0 0 0 2px var(--ec),3px 3px 0 #000;padding:9px 10px 8px;min-height:72px;}
 .end-tile.locked{--ec:var(--line);opacity:.6;}
-.end-tile .et-title{font-family:'Press Start 2P';font-size:8px;line-height:1.5;color:var(--ec);padding-right:34px;}
+.end-tile .et-title{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;line-height:1.5;color:var(--ec);padding-right:34px;}
 .end-tile.locked .et-title{color:var(--muted);}
-.end-tile .et-count{position:absolute;top:8px;right:9px;font-family:'VT323';font-size:18px;color:var(--text);}
-.end-tile .et-sub{font-family:'VT323';font-size:16px;line-height:1.15;color:var(--text);margin-top:6px;}
-.end-tile .et-hint{font-family:'VT323';font-size:15px;line-height:1.15;color:var(--muted);margin-top:6px;}
+.end-tile .et-count{position:absolute;top:8px;right:9px;font-family:'VT323','GalmuriV-18px',monospace;font-size:18px;color:var(--text);}
+.end-tile .et-sub{font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;line-height:1.15;color:var(--text);margin-top:6px;}
+.end-tile .et-hint{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;line-height:1.15;color:var(--muted);margin-top:6px;}
 .rec-list{display:flex;flex-direction:column;gap:6px;padding:6px 4px 12px;max-width:860px;}
 .rec-row{display:grid;grid-template-columns:44px minmax(0, 1.6fr) 64px minmax(0, 1fr) 96px;gap:8px;align-items:center;
-  background:var(--panel);box-shadow:0 0 0 2px var(--line);padding:7px 10px;font-family:'VT323';font-size:17px;color:var(--text);}
-.rec-row .rr-n{font-family:'Press Start 2P';font-size:7px;color:var(--muted);}
-.rec-row .rr-end{font-family:'Press Start 2P';font-size:7.5px;line-height:1.5;}
+  background:var(--panel);box-shadow:0 0 0 2px var(--line);padding:7px 10px;font-family:'VT323','GalmuriV-17px',monospace;font-size:17px;color:var(--text);}
+.rec-row .rr-n{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--muted);}
+.rec-row .rr-end{font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;line-height:1.5;}
 .rec-row .rr-when{color:var(--muted);text-align:right;white-space:nowrap;}
-.rec-empty{font-family:'VT323';font-size:18px;color:var(--muted);padding:14px 4px;}
+.rec-empty{font-family:'VT323','GalmuriV-18px',monospace;font-size:18px;color:var(--muted);padding:14px 4px;}
 .rec-reset{margin-top:8px;}
 .ending-new{color:var(--green);}
 @media (max-width: 600px){
@@ -1003,7 +1041,7 @@ body::after{
     border:3px solid var(--line);
   }
   .tabnav{flex:none;}
-  .tabnav button{font-size:8px;padding:11px 4px;}
+  .tabnav button{font-size:8px;font-family:'Press Start 2P','Galmuri-8px',monospace;padding:11px 4px;}
   .footnote{display:none;}
 
   /* 화면마다 게임 영역 안에서만 스크롤 */
@@ -1034,17 +1072,17 @@ body::after{
 
   /* 상단 바 구성: 타이틀·장세 | 주차·일자 | 순자산·목표 | 현금·대출·확정·이자 */
   .play-top .hdr{flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;margin:0;}
-  .play-top .hud-col{flex:1 1 240px;min-width:220px;margin:0;align-self:center;display:flex;flex-direction:column;gap:8px;}
+  .play-top .hud-col{flex:1 1 200px;min-width:200px;margin:0;align-self:center;display:flex;flex-direction:column;gap:8px;}
   .play-top .hud{margin:0;white-space:nowrap;}
   .play-top .balance-main{flex:0 1 270px;min-width:230px;margin:0;padding:8px 12px;}
-  .play-top .balance-main .total{font-size:16px;margin-top:4px;}
+  .play-top .balance-main .total{font-size:16px;font-family:'Press Start 2P','Galmuri-16px',monospace;margin-top:4px;}
   .play-top .target-line{margin-top:6px;}
   .play-top .assets-grid{
-    flex:0 1 560px;min-width:420px;margin:0;
+    flex:0 1 500px;min-width:420px;margin:0;   /* 1280×1024(게임 폭 1120px)에서도 상단 바가 한 줄에 들어가게 */
     grid-template-columns:repeat(4, minmax(0, 1fr));gap:8px;
   }
   .play-top .asset-card{display:flex;flex-direction:column;justify-content:center;padding:6px;}
-  .play-top .asset-card .val{font-size:10px;}
+  .play-top .asset-card .val{font-size:10px;font-family:'Press Start 2P','Galmuri-10px',monospace;}
 
   /* 왼쪽: 뉴스 → 지수 차트(남는 높이 전부) → 종목 시세판 */
   .play-left .news-banner{flex:none;}
@@ -1836,7 +1874,7 @@ class HighDensityBgManager {
       ctx.stroke();
     } else { // 호가/전광판 텍스트 정보
       ctx.fillStyle = mainColor;
-      ctx.font = '6px "Press Start 2P"';
+      ctx.font = '6px "Press Start 2P", "Galmuri-6px", monospace';
       const val1 = (Math.random()*9000 + 1000).toFixed(0);
       const val2 = (Math.random()*9000 + 1000).toFixed(0);
       ctx.fillText(`ASK:${val1}`, 2, Math.round(h*0.4));
@@ -1983,7 +2021,7 @@ function renderChart(data = candleData){
       cctx.fillStyle = '#ffd700';
       cctx.fillRect(bx, by, bw, 2); cctx.fillRect(bx, by + bh - 2, bw, 2);
       cctx.fillRect(bx, by, 2, bh); cctx.fillRect(bx + bw - 2, by, 2, bh);
-      cctx.font = '8px "Press Start 2P", monospace';
+      cctx.font = '8px "Press Start 2P", "Galmuri-8px", monospace';
       cctx.textAlign = 'center';
       const lx = bx - 16 >= 14 ? bx - 16 : bx + bw + 16;   // 갭 캔들 왼쪽 (자리가 없으면 오른쪽), 세로는 가운데
       const ly = Math.min(cc.height - 4, Math.max(12, Math.round(by + bh / 2) + 4));
