@@ -130,24 +130,39 @@ function installBots(){
   function shopMarketCard(){
     for(let i = 0; i < run.shop.singles.length; i++){
       const id = run.shop.singles[i];
-      if(MARKET_IDS.indexOf(id) >= 0 && run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && run.cash >= singlePrice(id)) return buySingle(i);
+      if(MARKET_IDS.indexOf(id) >= 0 && run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && wallet() >= singlePrice(id)) return buySingle(i);
     }
     return false;
   }
 
-  // 암시장: 살 수 있는 것 하나 (낱장 → 유물 → 팩 순서로 처음 되는 것)
+  // 암시장 지갑: 비자금이 있으면 비자금, 없는 옛 버전이면 현금 (변경 전/후를 같은 봇으로 비교)
+  const wallet = () => run.slush !== undefined ? run.slush : run.cash;
+  // 이 봇(손패를 전부 쓰는 봇)에게 손해인 카드 — cardev --all 기준 기대 수익이 음수인 카드 + 상태 카드
+  const SHOP_BAD = ['hawk', 'escape', 'cutLoss', 'short', 'takeWin', 'cashOut', 'overdraft'];
+  const SHOP_SKIP_RELICS = ['lawyer', 'fssconnect', 'timemachine'];   // 봇이 활용 못 하는 유물
+  const RARITY_RANK = { common:0, uncommon:1, rare:2, legendary:3, mythic:4 };
+
+  // 암시장 한 번 방문: 덱 압축(상태·손해 카드 제거) → 유물 → 희귀 이상 낱장 → (아무것도 못 샀으면) 팩. 매주 뭔가 하나는 산다
   function shopOnce(){
-    for(let i = 0; i < run.shop.singles.length; i++){
-      const id = run.shop.singles[i];
-      if(run.shop.singlesBought.indexOf(i) < 0 && !inDeck(id) && run.cash >= singlePrice(id)) return buySingle(i);
+    let bought = 0;
+    if(run.shop.removed < SHOP_REMOVE_LIMIT && wallet() >= shopRemoveCost()){
+      let idx = run.masterDeck.findIndex(id => CARD_BY_ID[id].type === 'status');
+      if(idx < 0) idx = run.masterDeck.findIndex(id => SHOP_BAD.indexOf(id) >= 0);
+      if(idx >= 0 && shopRemoveCard(idx)) bought++;
     }
     for(const id of run.shop.relics){
-      if(!hasRelic(id) && run.cash >= RELIC_PRICE[RELIC_BY_ID[id].rarity]) return buyRelic(id);
+      if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= RELIC_PRICE[RELIC_BY_ID[id].rarity] && buyRelic(id)) bought++;
     }
-    for(const pk of SHOP_PACKS){
-      if(packPool(pk).length && run.cash >= pk.price) return buyPack(pk.id);
+    const singles = run.shop.singles.map((id, i) => ({ id, i }))
+      .filter(x => run.shop.singlesBought.indexOf(x.i) < 0 && !inDeck(x.id) && SHOP_BAD.indexOf(x.id) < 0 && RARITY_RANK[CARD_BY_ID[x.id].rarity] >= RARITY_RANK.rare)
+      .sort((a, b) => RARITY_RANK[CARD_BY_ID[b.id].rarity] - RARITY_RANK[CARD_BY_ID[a.id].rarity]);
+    for(const x of singles){ if(wallet() >= singlePrice(x.id) && buySingle(x.i)){ bought++; break; } }
+    if(!bought){
+      for(const pk of SHOP_PACKS){
+        if(packPool(pk).length && wallet() >= pk.price && buyPack(pk.id)){ bought++; break; }
+      }
     }
-    return false;
+    return bought > 0;
   }
 
   window.__simGame = function(strategy, tipMode, seed){

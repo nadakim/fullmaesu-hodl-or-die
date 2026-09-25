@@ -632,6 +632,8 @@ body::after{
   font-family:'Press Start 2P';font-size:8.5px;line-height:2;color:var(--muted);
 }
 .shop-bar b{color:var(--gold);font-weight:normal;}
+.slush-amt{color:var(--gold);font-weight:normal;}
+.slush-line{font-family:'Press Start 2P';font-size:6.5px;color:var(--muted);margin-top:6px;white-space:nowrap;}
 .shop-bar .open-btn{width:auto;margin:0;padding:10px 14px;font-size:9px;}
 .shop-note{font-family:'VT323';font-size:16px;color:var(--muted);margin:6px 2px 0;}
 .pack-row{gap:16px;padding:6px 6px 10px;flex-wrap:wrap;overflow:visible;}
@@ -1152,6 +1154,7 @@ body::after{
         <div class="asset-card">
           <div class="label" id="cashLabel">■ CASH</div>
           <div class="val highlight" id="availableCash">₩ 10,000만</div>
+          <div class="slush-line">비자금 <b class="slush-amt" id="slushVal">💼 0만</b></div>
         </div>
         <div class="asset-card">
           <div class="label">■ 대출·대차</div>
@@ -1393,7 +1396,14 @@ const FSS_SANCTION_WEIGHTS = { fine: 1, ban: 1, liquidate: 1 };   // 제재 종�
 const FSS_FINE_PCT        = 0.05;  // 과징금 = 순자산의 5%
 const FSS_BAN_TYPES       = ['stock', 'buy'];   // 매수 금지 날 못 쓰는 카드 종류
 
-// 암시장 (주간 결산 → 보상 선택 후, 다음 주 개장 전까지만 열림). 돈은 현금(=순자산)에서 나간다.
+// 비자금: 암시장 전용 화폐. 순자산에 포함되지 않고, 계좌 현금과 섞이지 않는다.
+// 주간 결산에서 목표를 달성하면 적립 = 기본 + 목표 초과분 × 비율 (초과분 자체는 계좌에 그대로 남는다)
+const SLUSH_START         = 0;     // 시작 비자금 (만원)
+const SLUSH_WEEKLY_BASE   = 500;   // 주간 결산 통과 시 기본 적립
+const SLUSH_EXCESS_RATE   = 0.25;  // 목표 초과 달성분의 이 비율만큼 추가 적립
+const TIP_SLUSH_SAFE      = 80;    // 찌라시 안전한 선택(B)의 확정 보상 — 계좌 현금 대신 비자금
+
+// 암시장 (주간 결산 → 보상 선택 후, 다음 주 개장 전까지만 열림). 값은 전부 비자금으로 낸다 (아래 가격 단위 = 비자금 만원).
 // 카드 팩: 희귀도를 weights로 먼저 뽑고, 그 희귀도 안에서 풀의 카드를 균등하게 뽑는다 → 화면의 %가 곧 실제 확률.
 // pool이 빈 배열이면 전체 카드(상태 카드 제외).
 const SHOP_PACKS = [
@@ -1410,8 +1420,8 @@ const SHOP_PACKS = [
 const SHOP_SINGLE_MIN     = 3;     // 낱장 진열 최소 장수
 const SHOP_SINGLE_MAX     = 5;     // 낱장 진열 최대 장수
 const SHOP_SINGLE_LIMIT   = 1;     // 주당 낱장 구매 가능 수
-const SHOP_SINGLE_PRICE   = { common:300, uncommon:500, rare:750, legendary:1100, mythic:1800 }; // 낱장 정가 (만원)
-const SHOP_REMOVE_BASE    = 400;   // 카드 제거 기본 비용 (만원)
+const SHOP_SINGLE_PRICE   = { common:300, uncommon:500, rare:750, legendary:1100, mythic:1800 }; // 낱장 정가 (비자금)
+const SHOP_REMOVE_BASE    = 400;   // 카드 제거 기본 비용 (비자금)
 const SHOP_REMOVE_PER_WEEK = 200;  // 주차가 지날 때마다 제거 비용 증가
 const SHOP_REMOVE_LIMIT   = 1;     // 주당 제거 가능 수
 
@@ -1441,7 +1451,7 @@ const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동
 const RELIC_LAWYER_DECAY_MULT    = 2;     // 전관 변호사: 금감원 게이지 자연 감소(매일·매주) 배수
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
 const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
-const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legendary:2200, mythic:3000 }; // 암시장 유물 가격 (만원)
+const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legendary:2200, mythic:3000 }; // 암시장 유물 가격 (비자금)
 const RELIC_PAYDAY_BASE          = 200;   // 월급날: 매주 첫날 현금 +이만큼 × 주차
 const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목을 살 때마다 드로우
 const RELIC_COLD_WALLET_RATIO    = 0.20;  // 콜드월렛: 코인 종목 반대매매 기준 (기본 25%)
@@ -1509,7 +1519,7 @@ const RELICS = [
 /* 찌라시 — 장중 무작위 선택 이벤트. 도착하면 선택할 때까지 시장이 멈춘다.
    choices[0] = A(고위험), choices[1] = B(작지만 확정 / 위험 회피). outcomes의 chance 합은 1.
    효과 kind: cash(현금 ±) · buy(종목 1x 매수, 현금 사용) · shock(종목 가격 즉시 ±%) · pump(오늘 남은 장 동안 작전 추세 ±)
-            · market(시장 분위기 BULL/BEAR/VOLATILE) · sellStock(그 종목 포지션 정리) · protect(오늘 모든 포지션 반대매매 면제)
+            · market(시장 분위기 BULL/BEAR/VOLATILE) · sellStock(그 종목 포지션 정리) · protect(오늘 모든 포지션 반대매매 면제) · slush(비자금 +amount, 주차 배율 없음)
    cash·buy 금액은 1주차 기준 만원이고, 주차 목표에 비례해 커진다 (tipScale).
    stock:'$pick' = 찌라시가 도착할 때 무작위로 정한 종목(인버스 제외), 글에서는 {stock}. */
 const TIP_EVENT_CHANCE  = 0.08;  // 장중 캔들마다 찌라시 도착 확률
@@ -1524,21 +1534,21 @@ const TIP_EVENTS = [
         { chance:0.5, tag:'대박', text:'숏 스퀴즈 성공! 공매도 세력이 털렸다', effects:[{ kind:'cash', amount:300 }, { kind:'market', state:'BULL' }] },
         { chance:0.5, tag:'쪽박', text:'역으로 털렸습니다… 세력은 늘 한 수 위', effects:[{ kind:'cash', amount:-300 }, { kind:'market', state:'BEAR' }] } ] },
       { label:'관망하며 현금 기원', outcomes:[
-        { chance:1, tag:'확정', text:'관망 성공. 커피값은 벌었다', effects:[{ kind:'cash', amount:20 }] } ] } ] },
+        { chance:1, tag:'확정', text:'관망 성공. 커피값은 비자금으로', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
   { id:'semi10', headline:'[찌라시] 반도체전자 "10만 전자" 간다', body:'단톡방 17곳에서 동시에 같은 캡처가 돌고 있다. 출처는 "아는 형".', pick:false,
     choices:[
       { label:'소문에 올라탄다', outcomes:[
         { chance:0.5, tag:'대박', text:'10만 전자 가즈아! 반도체전자 급등', effects:[{ kind:'buy', stock:'semi', amount:1500 }, { kind:'shock', stock:'semi', pct:0.1 }] },
         { chance:0.5, tag:'쪽박', text:'고점에 물렸다. 반도체전자 급락', effects:[{ kind:'buy', stock:'semi', amount:1500 }, { kind:'shock', stock:'semi', pct:-0.1 }] } ] },
       { label:'찌라시를 되판다', outcomes:[
-        { chance:1, tag:'확정', text:'리딩방에 캡처를 팔았다', effects:[{ kind:'cash', amount:20 }] } ] } ] },
+        { chance:1, tag:'확정', text:'리딩방에 캡처를 팔았다. 뒷돈은 비자금으로', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
   { id:'memeList', headline:'[속보] 밈코인 해외 거래소 상장설', body:'"오늘 밤 12시 상장" 트윗. 계정 생성일은 사흘 전이다.', pick:false,
     choices:[
       { label:'밈코인 몰빵', outcomes:[
         { chance:0.4, tag:'대박', text:'상장 확정! 밈코인 폭등', effects:[{ kind:'buy', stock:'meme', amount:600 }, { kind:'shock', stock:'meme', pct:0.45 }] },
         { chance:0.6, tag:'쪽박', text:'가짜 뉴스였다. 밈코인 폭락', effects:[{ kind:'buy', stock:'meme', amount:600 }, { kind:'shock', stock:'meme', pct:-0.3 }] } ] },
       { label:'구경하며 방송 켠다', outcomes:[
-        { chance:1, tag:'확정', text:'"떡락 중계" 방송 후원이 들어왔다', effects:[{ kind:'cash', amount:10 }] } ] } ] },
+        { chance:1, tag:'확정', text:'"떡락 중계" 방송 후원이 비자금으로 들어왔다', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
   { id:'hack', headline:'[속보] 대장 거래소 해킹 의혹', body:'출금이 막혔다는 글이 올라온다. 거래소 공지는 "점검 중" 한 줄뿐.', pick:false,
     choices:[
       { label:'공포에 산다', outcomes:[
@@ -1552,7 +1562,7 @@ const TIP_EVENTS = [
         { chance:0.5, tag:'대박', text:'재현 성공 소식! 오늘 종일 상한가 행진', effects:[{ kind:'buy', stock:'sc', amount:800 }, { kind:'shock', stock:'sc', pct:0.1 }, { kind:'pump', stock:'sc', dir:1 }] },
         { chance:0.5, tag:'쪽박', text:'재현 실패. 오늘 종일 설거지', effects:[{ kind:'buy', stock:'sc', amount:800 }, { kind:'shock', stock:'sc', pct:-0.1 }, { kind:'pump', stock:'sc', dir:-1 }] } ] },
       { label:'논문부터 읽어본다', outcomes:[
-        { chance:1, tag:'확정', text:'논문 요약 블로그 광고 수익', effects:[{ kind:'cash', amount:10 }] } ] } ] },
+        { chance:1, tag:'확정', text:'논문 요약 블로그 광고 수익 (비자금)', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
   { id:'bigstep', headline:'[속보] 한은 총재 "빅스텝도 배제 안 해"', body:'금리가 오르면 누가 웃고 누가 우는가.', pick:false,
     choices:[
       { label:'곱버스 풀매수', outcomes:[
@@ -1566,14 +1576,14 @@ const TIP_EVENTS = [
         { chance:0.35, tag:'대박', text:'진짜 인생 종목! {stock} 급등', effects:[{ kind:'buy', stock:'$pick', amount:700 }, { kind:'shock', stock:'$pick', pct:0.4 }] },
         { chance:0.65, tag:'쪽박', text:'영상 올리기 전에 본인이 팔았다. {stock} 급락', effects:[{ kind:'buy', stock:'$pick', amount:700 }, { kind:'shock', stock:'$pick', pct:-0.22 }] } ] },
       { label:'댓글로 "잘 봤습니다"만', outcomes:[
-        { chance:1, tag:'확정', text:'베스트 댓글 등극. 광고 수익 셰어', effects:[{ kind:'cash', amount:10 }] } ] } ] },
+        { chance:1, tag:'확정', text:'베스트 댓글 등극. 광고 수익은 비자금으로', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
   { id:'mom', headline:'[문자] 엄마: "너 요즘 주식하니?"', body:'읽음 표시가 떴다. 답장을 기다리고 계신다.', pick:false,
     choices:[
       { label:'코인 한다고 고백', outcomes:[
         { chance:0.45, tag:'대박', text:'"우리 아들 대단하네" 용돈 입금', effects:[{ kind:'cash', amount:500 }] },
         { chance:0.55, tag:'쪽박', text:'등짝 스매싱. 이번 달 용돈 끊김', effects:[{ kind:'cash', amount:-400 }] } ] },
       { label:'"적금 들고 있어요"', outcomes:[
-        { chance:1, tag:'확정', text:'"기특하네" 적금에 보태라며 입금', effects:[{ kind:'cash', amount:30 }] } ] } ] }
+        { chance:1, tag:'확정', text:'"기특하네" 몰래 쓰라며 비상금 입금', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] }
 ];
 
 /* 게임오버 원인 판정 기준 (문구는 UI의 ENDINGS) */
@@ -2644,6 +2654,7 @@ function newRun(){
     phase: 'premarket',          // premarket | market | reward | shop | over
     round: 1, day: 1, tickInDay: 0,
     cash: START_CASH, realized: 0, interestPaid: 0, overdraft: 0,
+    slush: SLUSH_START,   // 비자금 (암시장 전용, 순자산 제외)
     liquidations: 0, peakEquity: START_CASH, weekPeak: START_CASH,   // 판 최고 · 이번 주 최고 순자산
     buys: 0, finesPaid: 0, tipNet: 0,   // 누적: 카드로 매수한 횟수 · 금감원 과징금 · 찌라시 순자산 변화 (엔딩 판정용)
     weekStart: { equity: START_CASH, realized: 0, liquidations: 0, interestPaid: 0, buys: 0, finesPaid: 0, tipNet: 0 },   // 주간 결산 비교 기준
@@ -2852,6 +2863,7 @@ function shockStock(stockId, pct){
 function applyTipEffect(tip, ef){
   const stockId = tipStockId(tip, ef.stock || '');
   if(ef.kind === 'cash') run.cash += ef.amount * tipScale();
+  else if(ef.kind === 'slush') run.slush += ef.amount;   // 비자금은 주차 배율 없이 고정 (암시장 가격이 고정이라)
   else if(ef.kind === 'buy'){
     const amount = Math.min(ef.amount * tipScale(), Math.max(0, run.cash));   // 현금이 모자라면 있는 만큼만
     if(amount >= 1){
@@ -2890,10 +2902,10 @@ function resolveTip(choiceIdx){
     roll -= chances[i];
     if(roll < 0){ outcomeIdx = i; break; }
   }
-  const eq0 = netEquity(), cash0 = run.cash;
+  const eq0 = netEquity(), cash0 = run.cash, slush0 = run.slush;
   choice.outcomes[outcomeIdx].effects.forEach(ef => applyTipEffect(tip, ef));
   const result = { eventId: tip.eventId, stockId: tip.stockId, choiceIdx, outcomeIdx,
-                   delta: netEquity() - eq0, cashDelta: run.cash - cash0 };
+                   delta: netEquity() - eq0, cashDelta: run.cash - cash0, slushDelta: run.slush - slush0 };
   run.tipNet += result.delta;
   run.tipLog.unshift(result);
   if(run.tipLog.length > TIP_LOG_SIZE) run.tipLog.pop();
@@ -2976,6 +2988,8 @@ function endOfRound(){
   notePeak(eq);   // 틱 밖(카드·찌라시·결산 보너스)에서 오른 순자산도 최고 기록에 반영
   run.lastWeek = weekSummary(eq, target, diamondBonus, bailout);
   if(eq < target) return endRun('MISSED');
+  run.lastWeek.slush = slushEarned(eq, target);
+  run.slush += run.lastWeek.slush;
   run.weeksCleared = run.round;
   if(run.round >= MAX_ROUND) return endRun('VICTORY');
   run.phase = 'reward';
@@ -2996,6 +3010,7 @@ function weekSummary(eq, target, diamondBonus, bailout){
     positions: run.positions.length, unrealized: run.positions.reduce((sum, p) => sum + posPnl(p), 0),
     invested: eq > 0 ? run.positions.filter(p => !p.viaTip).reduce((sum, p) => sum + exposure(p), 0) / eq : 0,   // 직접 산 포지션 노출액 ÷ 순자산
     buys: run.buys - ws.buys, fines: run.finesPaid - ws.finesPaid, tipNet: run.tipNet - ws.tipNet, peak: run.weekPeak,
+    slush: 0,   // 이번 주 비자금 적립 (통과했을 때 endOfRound가 채움)
     progress: target > ws.equity ? (eq - ws.equity) / (target - ws.equity) : 1   // 이번 주 필요 상승분 중 번 비율
   };
 }
@@ -3004,6 +3019,9 @@ function notePeak(eq){
   run.peakEquity = Math.max(run.peakEquity, eq);
   run.weekPeak = Math.max(run.weekPeak, eq);
 }
+
+/* 주간 결산 비자금 적립: 기본 + 목표 초과분 × 비율 (계좌 돈은 건드리지 않는다) */
+const slushEarned = (eq, target) => Math.round(SLUSH_WEEKLY_BASE + Math.max(0, eq - target) * SLUSH_EXCESS_RATE);
 
 function markWeekStart(){
   run.weekStart = { equity: netEquity(), realized: run.realized, liquidations: run.liquidations, interestPaid: run.interestPaid,
@@ -3161,8 +3179,8 @@ function buyPack(packId){
   const pk = SHOP_PACK_BY_ID[packId];
   if(!shopOpenNow() || !pk) return shopReject('phase');
   if(packPool(pk).length === 0) return shopReject('empty');
-  if(run.cash < pk.price) return shopReject('cash');
-  run.cash -= pk.price;
+  if(run.slush < pk.price) return shopReject('slush');
+  run.slush -= pk.price;
   const cardId = rollPack(pk);
   run.masterDeck.push(cardId);
   emit('packOpened', {packId, cardId, deckSize: run.masterDeck.length});
@@ -3177,8 +3195,8 @@ function buySingle(idx){
   if(!cardAllowed(cardId)) return shopReject('mythic');   // 신화는 덱 전체 1장
   if(run.shop.singlesBought.length >= SHOP_SINGLE_LIMIT) return shopReject('limit');
   const price = singlePrice(cardId);
-  if(run.cash < price) return shopReject('cash');
-  run.cash -= price;
+  if(run.slush < price) return shopReject('slush');
+  run.slush -= price;
   run.shop.singlesBought.push(idx);
   run.masterDeck.push(cardId);
   emit('singleBought', {cardId, price, deckSize: run.masterDeck.length});
@@ -3191,8 +3209,8 @@ function shopRemoveCard(deckIdx){
   if(run.masterDeck.length <= MIN_DECK_SIZE) return shopReject('deckMin');
   if(deckIdx < 0 || deckIdx >= run.masterDeck.length) return shopReject('none');
   const price = shopRemoveCost();
-  if(run.cash < price) return shopReject('cash');
-  run.cash -= price;
+  if(run.slush < price) return shopReject('slush');
+  run.slush -= price;
   const cardId = run.masterDeck[deckIdx];
   run.masterDeck.splice(deckIdx, 1);
   run.shop.removed++;
@@ -3205,8 +3223,8 @@ function buyRelic(id){
   if(run.shop.relics.indexOf(id) < 0) return shopReject('none');
   if(hasRelic(id)) return shopReject('sold');
   const price = RELIC_PRICE[RELIC_BY_ID[id].rarity];
-  if(run.cash < price) return shopReject('cash');
-  run.cash -= price;
+  if(run.slush < price) return shopReject('slush');
+  run.slush -= price;
   gainRelic(id, 'shop');
   return true;
 }
@@ -3275,7 +3293,7 @@ const MARKET_CARD_NEWS = {
 };
 const FSS_TEXT = level => level >= FSS_WARN ? '내사 착수' : level >= FSS_WARN / 2 ? '주시 중' : '조용함';
 const SHOP_REJECT_TEXT = {
-  phase:'암시장은 라운드 종료 후 이용 가능', cash:'현금이 부족합니다',
+  phase:'암시장은 라운드 종료 후 이용 가능', cash:'현금이 부족합니다', slush:'비자금이 부족합니다',
   limit:'이번 주에는 더 이상 할 수 없습니다', sold:'이미 산 카드입니다',
   deckMin:`덱은 ${MIN_DECK_SIZE}장 아래로 줄일 수 없습니다`, none:'카드를 고르세요',
   empty:'이 팩에서 나올 새 카드가 없습니다 (전부 덱에 있음)', owned:'이미 덱에 있는 카드입니다',
@@ -3292,6 +3310,7 @@ const CARD_ORDER = {};
 CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; });
 
 const fmtMoney  = v => '₩ ' + Math.round(v).toLocaleString() + '만';
+const fmtSlush  = v => '💼 ' + Math.round(v).toLocaleString() + '만';   // 비자금 (계좌 돈 ₩와 구분)
 const fmtSigned = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString() + '만';
 const fmtPct    = r => (r >= 0 ? '+' : '') + (r * 100).toFixed(1) + '%';
 const posLabel  = p => (p.dir < 0 ? '숏 ' : '') + p.lev + 'x';
@@ -3434,8 +3453,8 @@ function onGameEvent(type, d){
       break;
     case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); break;
     case 'packOpened':   showPackResult(d); break;
-    case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${d.price}만 · 덱 ${d.deckSize}장`, 'good'); break;
-    case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${d.price}만 · 덱 ${d.deckSize}장`, 'warn'); break;
+    case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
+    case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver': showRunOver(d.reason); break;
     case 'tipEvent':
       renderTabs();
@@ -3493,6 +3512,7 @@ function renderHud(){
 
   $('cashLabel').textContent = run.cash < 0 ? '■ 미수금' : '■ CASH';
   $('availableCash').textContent = fmtMoney(run.cash);
+  $('slushVal').textContent = fmtSlush(run.slush);
   $('availableCash').style.color = run.cash < 0 ? 'var(--red)' : '';
   $('debtVal').textContent = fmtMoney(borrowed);
   $('debtVal').style.color = borrowed > 0 ? 'var(--red)' : '';
@@ -3919,6 +3939,7 @@ function showRoundResult(w){
       ${statTile('이월 포지션', `${w.positions}개 · 평가 <span class="${signCls(w.unrealized)}">${fmtSigned(w.unrealized)}</span>`, 'wide')}
       ${w.diamondBonus > 0 ? statTile('💎 다이아몬드 보너스', '+' + fmtMoney(w.diamondBonus)) : ''}
       ${w.bailout > 0 ? statTile('💌 부모님 카드', '+' + fmtMoney(w.bailout)) : ''}
+      ${statTile('비자금 적립 (암시장 전용)', `<span class="slush-amt">+${fmtSlush(w.slush)}</span> · 잔액 ${fmtSlush(run.slush)}`, 'wide')}
     </div>
     <div class="stat-caption">▌ 이번 판 누적</div>
     <div class="stat-grid">
@@ -3941,6 +3962,8 @@ function tipChoiceMeta(tip, choice){
     const amount = Math.min(buy.amount * tipScale(), Math.max(0, run.cash));
     parts.push(`${STOCK_BY_ID[tipStockId(tip, buy.stock)].name} ₩${Math.round(amount).toLocaleString()}만 매수`);
   }
+  const slush = choice.outcomes[0].effects.find(ef => ef.kind === 'slush');
+  if(slush) parts.push(`비자금 +${fmtSlush(slush.amount)}`);
   parts.push(choice.outcomes.map(o => `${o.tag} ${Math.round(o.chance * 100)}%`).join(' · '));
   return parts.join(' · ');
 }
@@ -3962,7 +3985,7 @@ function tipResultHtml(r){
   const ev = TIP_BY_ID[r.eventId], outcome = ev.choices[r.choiceIdx].outcomes[r.outcomeIdx];
   const cls = Math.abs(r.delta) < 0.5 ? 'flat' : r.delta > 0 ? 'up' : 'down';
   return `<div class="tip-result ${cls}">${fillTip(outcome.text, r.stockId)}
-    <b>순자산 ${Math.abs(r.delta) < 0.5 ? '±0만' : fmtSigned(r.delta)}</b></div>`;
+    <b>순자산 ${Math.abs(r.delta) < 0.5 ? '±0만' : fmtSigned(r.delta)}${r.slushDelta > 0 ? ` · 비자금 +${fmtSlush(r.slushDelta)}` : ''}</b></div>`;
 }
 
 function showTipOverlay(){
@@ -4057,7 +4080,7 @@ const fmtChance = c => (Math.round(c * 1000) / 10) + '%';
 
 function packHtml(pk){
   const empty = packPool(pk).length === 0;
-  const afford = run.cash >= pk.price && !empty;
+  const afford = run.slush >= pk.price && !empty;
   const odds = packRarityOdds(pk).map(o => `<span class="c-rar ${o.rarity}">${RARITY_LABEL[o.rarity]} ${fmtChance(o.chance)}</span>`).join('');
   const cards = packCardOdds(pk).sort((a, b) => b.chance - a.chance || CARD_ORDER[a.cardId] - CARD_ORDER[b.cardId]);
   return `
@@ -4065,7 +4088,7 @@ function packHtml(pk){
       <button class="pack ${afford ? '' : 'disabled'}" data-pack="${pk.id}">
         <div class="pk-icon">${pk.icon}</div>
         <div>${pk.name}</div>
-        <div class="pk-price">₩${pk.price.toLocaleString()}만</div>
+        <div class="pk-price">${fmtSlush(pk.price)}</div>
         <div class="pk-odds">${empty ? '덱에 없는 카드가 남지 않음' : odds}</div>
         <div class="pk-desc">${pk.desc}</div>
       </button>
@@ -4089,11 +4112,11 @@ function renderShop(){
   if(shopPickIdx >= run.masterDeck.length) shopPickIdx = -1;
   box.innerHTML = `
     <div class="shop-bar">
-      <span>WEEK ${run.round} 결산 완료 · 현금 <b>${fmtMoney(run.cash)}</b> · 덱 <b>${run.masterDeck.length}장</b><br>
+      <span>WEEK ${run.round} 결산 완료 · 비자금 <b class="slush-amt" id="shopSlush">${fmtSlush(run.slush)}</b> · 덱 <b>${run.masterDeck.length}장</b><br>
         다음 주 목표 <b>${fmtMoney(ROUND_TARGETS[run.round])}</b> · 순자산 <b>${fmtMoney(netEquity())}</b></span>
       <button class="open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
     </div>
-    <div class="shop-note">여기서 쓰는 돈은 현금(=순자산)에서 빠집니다. 다음 주 목표와 저울질하세요.</div>
+    <div class="shop-note">암시장은 비자금만 받습니다. 계좌 돈(순자산)은 그대로 — 비자금은 주간 목표를 넘긴 만큼 더 쌓입니다 (기본 ${fmtSlush(SLUSH_WEEKLY_BASE)} + 초과분의 ${Math.round(SLUSH_EXCESS_RATE * 100)}%).</div>
 
     <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
     <div class="pack-row">${SHOP_PACKS.map(packHtml).join('')}</div>
@@ -4101,23 +4124,23 @@ function renderShop(){
     <span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 주 ${SHOP_SINGLE_LIMIT}장 (남은 ${singlesLeft})</span>
     <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
       const bought = sh.singlesBought.indexOf(i) >= 0, owned = !bought && inDeck(id), price = singlePrice(id);
-      const label = bought ? '구매 완료' : owned ? '덱에 있음' : singlesLeft <= 0 ? '이번 주 마감' : `₩${price.toLocaleString()}만 구매`;
+      const label = bought ? '구매 완료' : owned ? '덱에 있음' : singlesLeft <= 0 ? '이번 주 마감' : `${fmtSlush(price)} 구매`;
       return `<div class="shop-item">${cardHtml(CARD_BY_ID[id], {})}
-        <button class="buy-btn" data-single="${i}" ${bought || owned || singlesLeft <= 0 || run.cash < price ? 'disabled' : ''}>${label}</button></div>`;
+        <button class="buy-btn" data-single="${i}" ${bought || owned || singlesLeft <= 0 || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
     <span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>
     <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
       const r = RELIC_BY_ID[id], price = RELIC_PRICE[r.rarity], owned = hasRelic(id);
-      return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.cash < price ? 'disabled' : ''}>${owned ? '보유 중' : `₩${price.toLocaleString()}만 구매`}</button>` });
+      return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtSlush(price)} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
-    <span class="section-label">▌ 카드 제거 (덱 압축) — 주 ${SHOP_REMOVE_LIMIT}회 · 이번 주 ₩${removeCost.toLocaleString()}만 (주차마다 +₩${SHOP_REMOVE_PER_WEEK}만)</span>
+    <span class="section-label">▌ 카드 제거 (덱 압축) — 주 ${SHOP_REMOVE_LIMIT}회 · 이번 주 ${fmtSlush(removeCost)} (주차마다 +${SHOP_REMOVE_PER_WEEK}만)</span>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
       cardHtml(CARD_BY_ID[id], { attrs: canRemove ? `data-shop-remove="${i}"` : '', cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
-    <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.cash >= removeCost ? '' : 'disabled'}>
+    <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.slush >= removeCost ? '' : 'disabled'}>
       ${!canRemove ? (sh.removed >= SHOP_REMOVE_LIMIT ? '이번 주 제거 완료' : `덱 ${MIN_DECK_SIZE}장 이하 — 제거 불가`)
-        : shopPickIdx < 0 ? '제거할 카드를 고르세요' : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (₩${removeCost.toLocaleString()}만)`}
+        : shopPickIdx < 0 ? '제거할 카드를 고르세요' : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (${fmtSlush(removeCost)})`}
     </button>`;
 }
 
