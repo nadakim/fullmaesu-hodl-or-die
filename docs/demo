@@ -1293,6 +1293,8 @@ const EVENT_DURATION    = 15;      // 랜덤 시장 이벤트 지속 틱
 const EVENT_MIN_GAP     = 12;      // 랜덤 시장 이벤트 사이 최소 틱
 const EVENT_CHANCE      = 0.08;    // 최소 간격이 지난 뒤 틱마다 시장 이벤트 확률
 const INDEX_TICK_CENTER = 0.49;    // 지수 캔들 변화 = (난수 − 이 값) × 40 → 0.5보다 작으면 지수가 조금씩 오른다 (틱당 약 +0.04%)
+const STOCK_MOVE_MULT   = { NORMAL:1.25, BULL:1.25, BEAR:1.25, VOLATILE:1 };   // 장세별 종목 한 틱 움직임 배수 (지수 전달분 + 고유 변동 + 꼬리).
+                                   // 횡보·상승·하락장은 이전보다 25% 크게 요동 (변동성 장세는 이미 커서 그대로). 기대 수익(드리프트)은 건드리지 않는다
 const CANDLE_WICK_SCALE = 0.5;     // 종목 캔들 꼬리 길이 (× 종목 고유 변동 크기)
 // 갭: 드물게 한 틱에 종목 가격이 크게 튄다. 반대매매는 갭 이후 가격으로 체결 → 레버리지·숏은 원금 이상 잃을 수 있다
 //   위험도 = volatility + |beta| × GAP_BETA_WEIGHT  (밈코인 .25 · 초전도체 .16 · 대장코인 .11 · 반도체 .03 · 국밥제약 .014)
@@ -2067,12 +2069,13 @@ function initAssets(){
 function updateAssetPrices(idxLogRet, pumps){
   STOCKS.forEach(s => {
     const a = assets[s.id];
-    let r = STOCK_DRIFT + s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss();
+    const move = STOCK_MOVE_MULT[marketState] || 1;
+    let r = STOCK_DRIFT + move * (s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss());
     if(s.beta < 0) r -= INVERSE_DECAY;
     if(pumps[s.id]) r += pumps[s.id] === PUMP_MANIP ? MANIP_DRIFT : pumps[s.id] > 0 ? PUMP_UP_DRIFT : PUMP_DOWN_DRIFT;
     const open = a.price;
     a.price *= Math.exp(r);
-    const wick = s.volatility * IDIO_SCALE * CANDLE_WICK_SCALE;
+    const wick = move * s.volatility * IDIO_SCALE * CANDLE_WICK_SCALE;
     a.candles.push({
       open, close: a.price,
       high: Math.max(open, a.price) * (1 + Math.abs(gauss()) * wick),
