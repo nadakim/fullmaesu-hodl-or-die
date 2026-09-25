@@ -4,6 +4,7 @@
 
    node tools/sim/sim.cjs [--n 400] [--seed 1] [--tip A|B|random] [--strategies nothing,stocksOnly,...]
                           [--file docs/demo] [--md out.md] [--json out.json]
+                          [--targets 10800,12000,...]   (ROUND_TARGETS를 파일 수정 없이 바꿔서 실험)
 
    변경 전/후 비교: git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before --md before.md */
 const fs = require('fs');
@@ -21,11 +22,12 @@ const STRATEGIES = ['nothing', 'stocksOnly', 'allCards', 'yolo', 'shopper'];
 const TIP_MODES = ['A', 'B', 'random'];
 
 function parseArgs(argv){
-  const o = { n: 400, seed: 1, tip: 'random', strategies: STRATEGIES, file: path.join(__dirname, '../../docs/demo'), md: '', json: '' };
+  const o = { n: 400, seed: 1, tip: 'random', strategies: STRATEGIES, file: path.join(__dirname, '../../docs/demo'), md: '', json: '', targets: null };
   for(let i = 0; i < argv.length; i += 2){
     const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
     if(k === 'n' || k === 'seed') o[k] = parseInt(v, 10);
     else if(k === 'strategies') o.strategies = v.split(',');
+    else if(k === 'targets') o.targets = v.split(',').map(Number);
     else if(k in o) o[k] = v;
     else throw new Error('알 수 없는 옵션: ' + argv[i]);
   }
@@ -97,7 +99,10 @@ function installBots(){
     startNewRun();
     let tips = 0, shopBuys = 0, guard = 0;
     played = 0;
+    const weekEq = [];   // 주간 결산 순자산 (통과·탈락 모두)
+    const noteWeek = () => { if(run.lastWeek && weekEq.length < run.lastWeek.round) weekEq.push(Math.round(run.lastWeek.eq)); };
     while(run.phase !== 'over'){
+      noteWeek();
       if(++guard > 200000) throw new Error('무한 루프: seed ' + seed);
       if(run.phase === 'premarket'){
         while(run.phase === 'premarket' && DAY_PLAY[strategy]()){}
@@ -117,11 +122,13 @@ function installBots(){
         leaveShop();
       }
     }
+    noteWeek();
     setSeed(null);
     return { seed, weeksCleared: run.weeksCleared, endReason: run.endReason, endCause: run.endCause,
              liquidations: run.liquidations, endEquity: Math.round(run.endEquity), peakEquity: Math.round(run.peakEquity),
-             round: run.round, day: run.day, cardsPlayed: played, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length };
+             round: run.round, day: run.day, cardsPlayed: played, tips, shopBuys, deck: run.masterDeck.length, relics: run.relics.length, weekEq };
   };
+  window.__simTargets = t => { if(t){ if(t.length !== MAX_ROUND) throw new Error('--targets 는 ' + MAX_ROUND + '개'); t.forEach((v, i) => { ROUND_TARGETS[i] = v; }); } return ROUND_TARGETS.slice(); };
   window.__simBatch = (strategy, tipMode, seeds) => seeds.map(s => window.__simGame(strategy, tipMode, s));
   return { maxRound: MAX_ROUND, causes: Object.keys(ENDINGS) };
 }
@@ -152,6 +159,7 @@ function toMarkdown(meta, rows, causes){
   const L = [];
   L.push(`- 판 수: 전략당 ${meta.n}판 · 시드 ${meta.seed}~${meta.seed + meta.n - 1} · 찌라시 선택: ${meta.tip}`);
   L.push(`- 대상: \`${meta.file}\` (sha1 ${meta.sha})`);
+  L.push(`- 주간 목표${meta.overridden ? ' (--targets 로 덮어씀)' : ''}: ${meta.targets.map(v => v.toLocaleString('en-US')).join(' → ')}`);
   L.push('');
   L.push('| 전략 | 1주 통과 | 4주 통과 | 8주 클리어 | 파산율 | 반대매매/판 | 평균 생존 주 | 평균 최종 순자산 | 카드 사용/판 |');
   L.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|');
@@ -179,6 +187,7 @@ async function main(){
     : r.abort());
   await page.goto('http://sim.local/demo.html');
   const info = await page.evaluate(installBots);
+  const targets = await page.evaluate(t => window.__simTargets(t), opt.targets);
 
   const seeds = Array.from({ length: opt.n }, (_, i) => opt.seed + i);
   const CHUNK = 50;
@@ -199,7 +208,7 @@ async function main(){
   if(!reproducible) throw new Error('같은 시드인데 결과가 다름 — 엔진에 rand()를 거치지 않는 난수가 있다');
 
   const sha = crypto.createHash('sha1').update(html).digest('hex').slice(0, 10);
-  const meta = { n: opt.n, seed: opt.seed, tip: opt.tip, file: path.relative(process.cwd(), opt.file) || opt.file, sha };
+  const meta = { targets, overridden: !!opt.targets, n: opt.n, seed: opt.seed, tip: opt.tip, file: path.relative(process.cwd(), opt.file) || opt.file, sha };
   const md = toMarkdown(meta, rows, info.causes);
   console.log(md);
   if(opt.md) fs.writeFileSync(opt.md, md + '\n');
