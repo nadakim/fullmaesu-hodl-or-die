@@ -965,6 +965,43 @@ body::after{
 .stat-grid div b{display:block;margin-top:4px;font-family:'VT323','GalmuriV-20px',monospace;font-size:20px;font-weight:normal;color:var(--text);}
 .stat-grid .wide{grid-column:1 / -1;}
 .stat-caption{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;color:var(--gold);text-align:left;margin-top:12px;}
+
+/* 결산 체인: 주간 결산 통과 때 유물·보너스가 포지션 손익을 불린 순서를 재생 (연출 전용) */
+.chain-list{display:flex;flex-direction:column;gap:12px;margin:12px 0;text-align:left;}
+.chain-row{position:relative;background:#000;box-shadow:0 0 0 2px var(--line);padding:9px 10px 8px;animation:chainIn .24s steps(4) both;}
+.chain-row.playing{box-shadow:0 0 0 2px var(--gold2),3px 3px 0 #000;}
+.chain-head{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.chain-name{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;line-height:1.6;padding-top:1px;color:var(--text);}
+.chain-name small{color:var(--muted);font-size:8px;}
+.chain-total{font-family:'VT323','GalmuriV-26px',monospace;font-size:26px;line-height:1.1;color:var(--text);white-space:nowrap;}
+.chain-total.up{color:var(--green);text-shadow:2px 2px 0 var(--green-dim);}
+.chain-total.down{color:var(--red);text-shadow:2px 2px 0 var(--red-dim);}
+.chain-total.final.up{text-shadow:2px 0 0 var(--green-dim),-2px 0 0 var(--green-dim),0 2px 0 var(--green-dim),0 -2px 0 var(--green-dim),0 0 6px var(--green);animation:chainGlow .6s steps(6) both;}
+.chain-total.final.down{text-shadow:2px 0 0 var(--red-dim),-2px 0 0 var(--red-dim),0 2px 0 var(--red-dim),0 -2px 0 var(--red-dim),0 0 6px var(--red);animation:chainGlow .6s steps(6) both;}
+.chain-list .pending{visibility:hidden;animation:none;}   /* 자리를 미리 잡아 두고 차례가 오면 드러낸다 (박스 높이가 흔들리지 않게) */
+.chain-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;min-height:17px;}
+.chain-chips.none{display:none;}
+.chain-chip{
+  font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;line-height:1.6;
+  padding:3px 6px 2px;background:var(--panel2);color:var(--gold);box-shadow:0 0 0 2px var(--gold2),2px 2px 0 #000;
+  animation:chipDrop .4s steps(8) both;
+}
+.chain-chip.add{color:var(--cyan);box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;}
+.chain-chip.cut{color:var(--green);box-shadow:0 0 0 2px var(--green2),2px 2px 0 #000;}
+.chain-stamp{
+  position:absolute;bottom:-10px;right:-8px;padding:4px 6px 3px;background:#000;
+  font-family:'Press Start 2P','Galmuri-10px',monospace;font-size:10px;line-height:1.3;
+  color:var(--green);box-shadow:0 0 0 2px var(--green2),3px 3px 0 #000;
+  transform:rotate(-8deg);animation:stampIn .32s steps(6) both;
+}
+.chain-stamp.down{color:var(--red);box-shadow:0 0 0 2px var(--red2),3px 3px 0 #000;}
+.chain-rest{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;line-height:1.8;color:var(--muted);text-align:left;animation:chainIn .24s steps(4) both;}
+.chain-sum{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;line-height:1.8;color:var(--gold);text-align:right;animation:chainIn .24s steps(4) both;}
+.chain-skip{font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;color:var(--muted);margin-top:6px;animation:blink 1.2s steps(2) infinite;}
+@keyframes chainIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:none;}}
+@keyframes chipDrop{0%{opacity:0;transform:translateY(-16px);}50%{opacity:1;transform:translateY(3px);}75%{transform:translateY(-1px);}100%{opacity:1;transform:none;}}
+@keyframes stampIn{0%{opacity:0;transform:rotate(-8deg) scale(2.2);}100%{opacity:1;transform:rotate(-8deg) scale(1);}}
+@keyframes chainGlow{0%,50%{filter:brightness(1.8);}100%{filter:none;}}
 .ending-badge{
   display:inline-block;margin:4px 0 10px;padding:5px 8px;background:#000;
   font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;color:var(--gold);box-shadow:0 0 0 2px var(--gold2);
@@ -1875,7 +1912,7 @@ function onGameEvent(type, d){
         <div class="ov-sub">감시 게이지는 0으로 돌아갑니다. 당분간 조용히 지내세요.</div>
         <button class="ov-btn" data-act="close">…네, 알겠습니다</button>`);
       break;
-    case 'roundClear': lastRoundClear = d; showRoundResult(d); break;
+    case 'roundClear': lastRoundClear = d; playSettlementChain(d.settlementChain, () => showRoundResult(d)); break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
         : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['카드 보상 건너뜀', 'info']);
@@ -1896,7 +1933,10 @@ function onGameEvent(type, d){
     case 'packOpened':   showPackResult(d); break;
     case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
     case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'warn'); break;
-    case 'runOver': showRunOver(d.reason); break;
+    case 'runOver':   // 결산 체인은 결산을 통과했을 때만 (마지막 주 통과 = 졸업). 파산·목표 미달은 바로 게임오버
+      if(d.reason === 'VICTORY') playSettlementChain(run.lastWeek.settlementChain, () => showRunOver(d.reason));
+      else showRunOver(d.reason);
+      break;
     case 'tipEvent':
       renderTabs();
       if(currentTab === 'play') showTipOverlay();
@@ -2376,6 +2416,106 @@ function roundResultLine(w){
   return '턱걸이 통과. 심장은 이미 반대매매 당했습니다.';
 }
 
+/* ── 결산 체인: 통과한 결산에서 유물·보너스가 포지션 손익을 불린 순서를 재생 ──
+   값은 엔진이 이미 확정한 run.lastWeek.settlementChain을 그대로 보여줄 뿐이다 (계산 없음).
+   보정 없는 포지션은 숫자만, 보정 있는 포지션만 칩 연출. 클릭 · SPACE = 전체 건너뛰기. */
+const CHAIN_MAX_ROWS    = 4;     // 포지션이 이보다 많으면
+const CHAIN_TOP_ROWS    = 3;     //   손익 절댓값 상위 이만큼만 재생하고 나머지는 요약 한 줄
+const CHAIN_COUNT_STEPS = 8;     // 숫자 카운트업 칸 수 (픽셀 톤: 부드럽게 말고 8칸)
+const CHAIN_MS = { row: 280, base: 360, chip: 480, stamp: 520, plain: 220, end: 900 };
+const CHAIN_SKIP_GUARD_MS = 300; // 건너뛴 직후 연타가 결산 화면 버튼을 누르지 않게
+let chainPlay = null;            // 재생 중: { run, timers, onDone }
+let chainSkippedAt = 0;
+
+const chainHasMods = c => c.steps.length > 1;
+const chainChipText = st => st.kind === 'mult' ? `${st.label} ×${st.value.toFixed(2)}` : `${st.label} +${fmtMoney(st.value)}`;
+const chainChipCls  = st => st.kind === 'add' ? 'add' : st.value < 1 ? 'cut' : '';
+
+function playSettlementChain(chain, onDone){
+  if(!settings.chainFx || !chain || !chain.some(chainHasMods)){ onDone(); return; }   // 보정이 하나도 없으면 바로 결산 화면
+  let rows = chain, rest = [];
+  if(chain.length > CHAIN_MAX_ROWS){
+    const sorted = chain.slice().sort((a, b) => Math.abs(b.finalPnl) - Math.abs(a.finalPnl));
+    rows = sorted.slice(0, CHAIN_TOP_ROWS);
+    rest = sorted.slice(CHAIN_TOP_ROWS);
+  }
+  if(!rows.some(chainHasMods)){ onDone(); return; }
+  const restSum = rest.reduce((sum, c) => sum + c.finalPnl, 0);
+  const sum = chain.reduce((s2, c) => s2 + c.finalPnl, 0);
+  showOverlay(`
+    <div class="result-kicker">WEEK ${run.round} / ${MAX_ROUND} 결산 · 정산 중</div>
+    <div class="ov-title" style="color:var(--gold)">결산 체인</div>
+    <div class="chain-list" id="chainList">
+      ${rows.map((c, i) => `<div class="chain-row pending" id="chainRow${i}">
+        <div class="chain-head"><span class="chain-name">${c.posName} <small>${posLabel(c)}</small></span><span class="chain-total"></span></div>
+        <div class="chain-chips ${chainHasMods(c) ? '' : 'none'}"></div></div>`).join('')}
+      ${rest.length ? `<div class="chain-rest pending">▌ 외 포지션 ${rest.length}개 · 합계 <span class="${signCls(restSum)}">${fmtSigned(restSum)}</span></div>` : ''}
+      <div class="chain-sum pending">정산 합계 <span class="${signCls(sum)}">${fmtSigned(sum)}</span></div>
+    </div>
+    <div class="chain-skip">클릭 · SPACE = 건너뛰기</div>`);
+  chainPlay = { run, timers: [], onDone };
+  const list = $('chainList');
+  let t = 0;
+  const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, ms));   // 오버레이가 바뀌었으면 아무것도 안 한다
+  const setTotal = (el, v) => { el.textContent = fmtSigned(v); el.className = 'chain-total ' + (v >= 0 ? 'up' : 'down'); };
+  const countUp = (elFn, from, to, start, dur) => {   // 8칸 카운트업, 마지막 칸은 정확한 값
+    for(let k = 1; k <= CHAIN_COUNT_STEPS; k++) at(start + dur * k / CHAIN_COUNT_STEPS, () => setTotal(elFn(), k === CHAIN_COUNT_STEPS ? to : from + (to - from) * k / CHAIN_COUNT_STEPS));
+  };
+  rows.forEach((c, i) => {
+    const id = 'chainRow' + i;
+    at(t, () => {
+      list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
+      $(id).classList.remove('pending');
+      if(chainHasMods(c)) $(id).classList.add('playing');
+    });
+    const total = () => $(id).querySelector('.chain-total');
+    if(!chainHasMods(c)){   // 보정 없음: 숫자만
+      at(t, () => setTotal(total(), c.finalPnl));
+      t += CHAIN_MS.plain;
+      return;
+    }
+    t += CHAIN_MS.row;
+    at(t, () => setTotal(total(), 0));
+    countUp(total, 0, c.steps[0].runningTotal, t, CHAIN_MS.base);
+    t += CHAIN_MS.base;
+    c.steps.slice(1).forEach((st, k) => {
+      const prev = c.steps[k].runningTotal;
+      at(t, () => $(id).querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip ${chainChipCls(st)}">${chainChipText(st)}</span>`));
+      countUp(total, prev, st.runningTotal, t + CHAIN_MS.chip / 3, CHAIN_MS.chip * 2 / 3);
+      t += CHAIN_MS.chip;
+    });
+    at(t, () => {
+      const el = total();
+      setTotal(el, c.finalPnl);   // 카운트업 마지막 칸과 같은 값 — 순서가 뒤바뀌어도 최종 숫자는 정확히
+      el.classList.add('final');
+      $(id).insertAdjacentHTML('beforeend', `<span class="chain-stamp ${c.finalPnl >= 0 ? '' : 'down'}">${c.finalPnl >= 0 ? '떡상!' : '물림'}</span>`);
+    });
+    t += CHAIN_MS.stamp;
+  });
+  at(t, () => {
+    list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
+    list.querySelectorAll('.chain-rest, .chain-sum').forEach(e => e.classList.remove('pending'));
+  });
+  chainPlay.timers.push(setTimeout(finishSettlementChain, t + CHAIN_MS.end));   // 끝내기는 조건 없이 (재생 상태가 남지 않게)
+}
+function finishSettlementChain(){
+  if(!chainPlay) return;
+  const cp = chainPlay;
+  chainPlay = null;
+  cp.timers.forEach(clearTimeout);
+  if(cp.run === run) cp.onDone();   // 그 사이 새 판을 시작했으면 옛 결산 화면은 띄우지 않는다
+}
+function cancelSettlementChain(){   // 결과 화면 없이 재생만 멈춘다 (새 판 시작)
+  if(!chainPlay) return;
+  chainPlay.timers.forEach(clearTimeout);
+  chainPlay = null;
+}
+function skipSettlementChain(){
+  if(!chainPlay) return;
+  chainSkippedAt = performance.now();
+  finishSettlementChain();
+}
+
 function showRoundResult(w){
   const barPct = Math.min(1.5, w.pct) / 1.5 * 100;   // 막대 끝 = 목표의 150%, 흰 선 = 목표
   showOverlay(`
@@ -2654,9 +2794,10 @@ const SETTING_OPTIONS = {
   shake: [[true, '켜기'], [false, '끄기']],
   crt:   [['off', '끄기'], ['weak', '약'], ['strong', '강']],
   bgFx:  [[true, '켜기'], [false, '끄기']],
-  sound: [[true, '켜기'], [false, '끄기']]
+  sound: [[true, '켜기'], [false, '끄기']],
+  chainFx: [[true, '켜기'], [false, '끄기']]
 };
-const DEFAULT_SETTINGS = { speed: 1, shake: true, crt: 'strong', bgFx: true, sound: false };
+const DEFAULT_SETTINGS = { speed: 1, shake: true, crt: 'strong', bgFx: true, sound: false, chainFx: true };
 function loadSettings(){
   const s = Object.assign({}, DEFAULT_SETTINGS);
   let saved = null;
@@ -2696,6 +2837,7 @@ function buildSettings(){
     ${settingRow('speed', '장중 속도', `캔들 1개 ${TICK_MS}ms 기준 배율. 결과·확률은 그대로, 시간만 빨라집니다.`)}
     ${settingRow('shake', '화면 흔들림 · 빨간 번쩍임', '반대매매 때 화면이 흔들리고 붉게 번쩍입니다. 어지러우면 끄세요.')}
     ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
+    ${settingRow('chainFx', '결산 연출', '주간 결산을 통과하면 유물·보너스가 포지션 손익을 불린 순서를 칩으로 보여줍니다. 끄면 바로 결산 요약.')}
     ${settingRow('bgFx', '배경 연출', '양옆에 떠다니는 시세 창·배경 격자 애니메이션. 저사양 PC면 끄세요.')}
     ${settingRow('sound', '사운드', '준비 중 — 아직 게임에 소리가 없습니다.', true)}
     <div class="set-row" data-row="reset">
@@ -2815,6 +2957,7 @@ function cashRain(){
    흐름 제어 — 탭 전환, 새 판 시작, 입력, 게임 루프
 ══════════════════════════════════════════════════════════ */
 function startRun(){
+  cancelSettlementChain();
   selectedIdx = -1;
   relicTipId = ''; relicSig = '';
   chartTarget = 'idx';
@@ -2913,10 +3056,13 @@ $('quoteBox').addEventListener('click', e => {
 $('chartBackBtn').addEventListener('click', () => showChart('idx'));
 
 document.addEventListener('keydown', e => {
+  if(chainPlay && (e.code === 'Space' || e.key === ' ')){ e.preventDefault(); skipSettlementChain(); return; }
   if(e.key === 'Escape' && selectedIdx >= 0){ selectedIdx = -1; renderAll(); }
 });
 
 $('overlay').addEventListener('click', e => {
+  if(chainPlay){ skipSettlementChain(); return; }
+  if(performance.now() - chainSkippedAt < CHAIN_SKIP_GUARD_MS) return;
   const tc = e.target.closest('[data-tip-choice]');
   if(tc){ chooseTip(+tc.dataset.tipChoice); return; }
   const rr = e.target.closest('[data-relic-reward]');

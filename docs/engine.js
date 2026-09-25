@@ -538,6 +538,44 @@ function relicAdjustedPnl(p, pnl){
   return out;
 }
 const posEquity    = p => p.principal + relicAdjustedPnl(p, rawPnl(p));
+
+/* 결산 체인 (연출용 기록) — relicAdjustedPnl과 같은 조건·순서·연산으로 유물 보정을 한 단계씩 다시 적는다.
+   값은 아무것도 바꾸지 않는다 (rand() 없음, 상태 변경 없음). UI가 주간 결산 때 이 순서대로 '재생'만 한다.
+   step = { label, kind: 'base'|'mult'|'add', value, runningTotal, source: 'base'|유물 id|'diamond' }
+   마지막 runningTotal === relicAdjustedPnl(p, rawPnl(p)). relicAdjustedPnl을 고치면 여기도 같이 고친다. */
+const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
+function buildSettlementSteps(p){
+  const pnl = rawPnl(p);
+  const steps = [{ label: '평가손익', kind: 'base', value: pnl, runningTotal: pnl, source: 'base' }];
+  if(pnl < 0 && gukbapApplies(p)){
+    steps.push({ label: relicStepLabel('gukbap'), kind: 'mult', value: 1 - RELIC_GUKBAP_LOSS_CUT,
+                 runningTotal: pnl * (1 - RELIC_GUKBAP_LOSS_CUT), source: 'gukbap' });
+    return steps;
+  }
+  let out = pnl;
+  if(pnl > 0 && sealApplies(p)){
+    out *= 1 + RELIC_SEAL_BONUS;
+    steps.push({ label: relicStepLabel('seal'), kind: 'mult', value: 1 + RELIC_SEAL_BONUS, runningTotal: out, source: 'seal' });
+  }
+  if(pnl > 0 && hasRelic('theme') && RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0){
+    out *= 1 + RELIC_THEME_BONUS;
+    steps.push({ label: relicStepLabel('theme'), kind: 'mult', value: 1 + RELIC_THEME_BONUS, runningTotal: out, source: 'theme' });
+  }
+  return steps;
+}
+/* 이번 결산의 포지션별 체인. diamondPaid = endOfRound가 이미 계산해 현금으로 준 다이아몬드 보너스 [{ posId, amount }] */
+function buildSettlementChain(diamondPaid){
+  return run.positions.map(p => {
+    const steps = buildSettlementSteps(p);
+    const paid = diamondPaid.find(d => d.posId === p.id);
+    if(paid){
+      const prev = steps[steps.length - 1].runningTotal;
+      steps.push({ label: '💎 다이아몬드 핸드', kind: 'add', value: paid.amount, runningTotal: prev + paid.amount, source: 'diamond' });
+    }
+    return { posId: p.id, posName: p.name, assetId: p.assetId, dir: p.dir, lev: p.lev,
+             steps, finalPnl: steps[steps.length - 1].runningTotal };
+  });
+}
 const marginCallRatio = p => hasRelic('coldwallet') && RELIC_COLD_WALLET_STOCKS.indexOf(p.assetId) >= 0 ? RELIC_COLD_WALLET_RATIO : MARGIN_CALL_RATIO;
 const posPnl       = p => posEquity(p) - p.principal;
 const posReturn    = p => posPnl(p) / p.principal;
@@ -1380,10 +1418,11 @@ function endOfDay(){
 /* 주말 결산: 다이아몬드 핸드 보너스 → 목표 판정 → 보상 선택. 포지션은 이월. */
 function endOfRound(){
   let diamondBonus = 0;
+  const diamondPaid = [];   // 결산 체인 연출용: 포지션별로 준 보너스 (계산은 위 합계와 같은 식)
   run.positions.forEach(p => {
     if(!p.diamond) return;
     const pnl = posPnl(p);
-    if(pnl > 0) diamondBonus += pnl * DIAMOND_BONUS;
+    if(pnl > 0){ diamondBonus += pnl * DIAMOND_BONUS; diamondPaid.push({ posId: p.id, amount: pnl * DIAMOND_BONUS }); }
     p.diamond = false;
   });
   run.cash += diamondBonus;
@@ -1399,6 +1438,7 @@ function endOfRound(){
   }
   notePeak(eq);   // 틱 밖(카드·찌라시·결산 보너스)에서 오른 순자산도 최고 기록에 반영
   run.lastWeek = weekSummary(eq, target, diamondBonus, bailout);
+  run.lastWeek.settlementChain = buildSettlementChain(diamondPaid);   // 연출용 기록 (값은 위에서 이미 확정)
   if(eq < target) return endRun('MISSED');
   run.lastWeek.slush = slushEarned(eq, target);
   run.slush += run.lastWeek.slush;
@@ -1423,6 +1463,7 @@ function weekSummary(eq, target, diamondBonus, bailout){
     invested: eq > 0 ? run.positions.filter(p => !p.viaTip).reduce((sum, p) => sum + exposure(p), 0) / eq : 0,   // 직접 산 포지션 노출액 ÷ 순자산
     buys: run.buys - ws.buys, fines: run.finesPaid - ws.finesPaid, tipNet: run.tipNet - ws.tipNet, peak: run.weekPeak,
     slush: 0,   // 이번 주 비자금 적립 (통과했을 때 endOfRound가 채움)
+    settlementChain: [],   // 결산 체인 연출용 포지션별 단계 (endOfRound가 채움)
     progress: target > ws.equity ? (eq - ws.equity) / (target - ws.equity) : 1   // 이번 주 필요 상승분 중 번 비율
   };
 }
