@@ -1285,12 +1285,13 @@ const IPO_AMOUNT          = 400;   // 공모주 청약 (만원)
 const STOP_LOSS_PCT       = -0.10; // 손절 예약
 const TAKE_PROFIT_PCT     = 0.15;  // 익절 예약
 const TRAIL_GAP           = 0.07;  // 트레일링 스탑 (최고 수익률 대비 %p)
-const CUT_LOSS_REFUND     = 0.30;  // 손절은 과학: 손실의 30% 환급
+const CUT_LOSS_REFUND     = 0.20;  // 손절은 과학: 손실의 20% 환급
 const TAKE_PROFIT_BONUS   = 0.20;  // 익절은 항상 옳다: 수익의 20% 보너스
 const ESCAPE_DRAW         = 2;     // 탈출은 지능순 드로우
 const DIAMOND_BONUS       = 0.30;  // 다이아몬드 핸드: 주말 평가이익의 30%
-const FORCED_DIVIDEND     = 0.06;  // 강제 장기투자: 원금의 6%
+const FORCED_DIVIDEND     = 0.04;  // 강제 장기투자: 원금의 4% (소멸 카드)
 const DIVIDEND_PER_POS    = 80;    // 배당주 마인드: 포지션당 (만원)
+const DIVIDEND_MAX_POS    = 5;     // 배당주 마인드: 최대 포지션 수
 const HODL_RECOVER        = 0.30;  // 존버는 승리한다: 평가손실 30% 회복
 const PUMP_UP_CHANCE      = 0.70;  // 리딩방 찌라시: 급등 확률
 const PUMP_UP_PCT         = 0.11;  // 급등: 하루(12틱) 동안 +11%
@@ -2182,13 +2183,14 @@ defCard('ipo', '공모주 청약', 'buy', 1, 'uncommon', null, true,
     openPosition(pool[randInt(pool.length)].id, IPO_AMOUNT, 1, 1, false);
   });
 defCard('fullBuy', '풀매수', 'buy', 2, 'legendary', null, false,
-  '손패의 모든 종목 카드를 행동력 없이 한 번에 매수. 대기 효과 전부 적용.',
+  '손패의 모든 종목 카드를 행동력 없이 한 번에 매수. 레버리지·방향은 전부, 원금 배수(영끌)는 첫 종목에만.',
   () => run.hand.some(i => CARD_BY_ID[i.id].type === 'stock'),
   () => {
     run.hand.filter(i => CARD_BY_ID[i.id].type === 'stock').forEach(inst => {
       const s = STOCK_BY_ID[CARD_BY_ID[inst.id].stock];
       if(run.cash < stockCost(s)) return;   // 현금이 모자라면 손패에 남긴다
       buyStock(s.id);
+      run.pending.principalMult = 1;          // 영끌 원금 배수는 첫 종목에만
       run.hand.splice(run.hand.indexOf(inst), 1);
       run.discard.push(inst);
     });
@@ -2242,14 +2244,14 @@ defCard('diamond', '다이아몬드 핸드', 'hold', 1, 'rare', 'position', fals
   `이번 주 매도·예약주문 불가. 주말 결산 때 평가이익의 ${pct(DIAMOND_BONUS)} 보너스.`,
   p => !p.diamond,
   p => { p.diamond = true; p.stopLoss = false; p.takeProfit = false; p.trailing = false; });
-defCard('forcedLong', '강제 장기투자', 'hold', 0, 'common', 'position', false,
+defCard('forcedLong', '강제 장기투자', 'hold', 0, 'common', 'position', true,
   `손실 중인 포지션 원금의 ${pct(FORCED_DIVIDEND)}를 배당금으로. 물린 게 아니라 배당주다.`,
   p => isLosing(p),
   p => { run.cash += p.principal * FORCED_DIVIDEND; });
 defCard('dividend', '배당주 마인드', 'hold', 0, 'uncommon', null, false,
-  `보유 포지션 1개당 ₩${DIVIDEND_PER_POS}만을 받는다.`,
+  `보유 포지션 1개당 ₩${DIVIDEND_PER_POS}만을 받는다 (최대 ${DIVIDEND_MAX_POS}개).`,
   () => run.positions.length > 0,
-  () => { run.cash += run.positions.length * DIVIDEND_PER_POS; });
+  () => { run.cash += Math.min(run.positions.length, DIVIDEND_MAX_POS) * DIVIDEND_PER_POS; });
 defCard('forgotPw', '계좌 비번 까먹기', 'hold', 1, 'uncommon', null, false,
   '오늘 모든 포지션 반대매매 면제. 대신 오늘은 수동 매도 불가(예약주문은 체결).',
   () => !run.noSellToday,
