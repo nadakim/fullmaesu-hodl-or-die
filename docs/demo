@@ -28,6 +28,7 @@
 @font-face{font-family:'Galmuri-18px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:111.1111%;font-display:swap;}  /* 18px → Galmuri9 20px */
 @font-face{font-family:'Galmuri-19px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:105.2632%;font-display:swap;}  /* 19px → Galmuri9 20px */
 @font-face{font-family:'Galmuri-20px';src:url('assets/fonts/Galmuri9.woff2') format('woff2');size-adjust:100.0000%;font-display:swap;}  /* 20px → Galmuri9 20px */
+@font-face{font-family:'Galmuri-30px';src:url('assets/fonts/Galmuri14.woff2') format('woff2');size-adjust:100.0000%;font-display:swap;}  /* 30px → Galmuri14 15px의 2배 */
 @font-face{font-family:'Galmuri-22px';src:url('assets/fonts/Galmuri11.woff2') format('woff2');size-adjust:109.0909%;font-display:swap;}  /* 22px → Galmuri11 24px */
 @font-face{font-family:'Galmuri-5_5px';src:url('assets/fonts/Galmuri7.woff2') format('woff2');size-adjust:145.4545%;font-display:swap;}  /* 5.5px → Galmuri7 8px */
 /* VT323 옆의 한글: VT323 글자가 작게 그려지므로(글자 크기의 약 60%) 한글도 글자 크기의 약 75% 근처 Galmuri 원래 크기로 */
@@ -1073,6 +1074,38 @@ body[data-bgfx="off"] #bgChartContainer{display:none;}
 .red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut .5s steps(5) forwards;}
 @keyframes fadeOut{to{opacity:0;}}
 
+/* ── 타격감 (fx.js) — 흔들림 3단계 · 히트스톱 · 글리치 · 도장 · 번쩍임 · 파티클 캔버스. 전부 steps() 끊김 모션 ── */
+.cabinet.shake-1{animation:shake1 .25s steps(4);}
+.cabinet.shake-2{animation:shake .4s steps(6);}
+.cabinet.shake-3{animation:shake3 .56s steps(8);}
+.cabinet.fx-glitch{animation:fxGlitch .38s steps(6);}
+.cabinet.shake-3.fx-glitch{animation:shake3 .56s steps(8),fxGlitch .38s steps(6);}
+@keyframes shake1{0%,100%{transform:none;}33%{transform:translate(-2px,1px);}66%{transform:translate(2px,-1px);}}
+@keyframes shake3{0%,100%{transform:none;}12%{transform:translate(-8px,4px);}25%{transform:translate(7px,-5px);}37%{transform:translate(-6px,-3px);}50%{transform:translate(6px,3px);}62%{transform:translate(-4px,2px);}75%{transform:translate(3px,-2px);}87%{transform:translate(-2px,1px);}}
+@keyframes fxGlitch{0%,100%{filter:none;}20%{filter:drop-shadow(4px 0 0 var(--red)) drop-shadow(-4px 0 0 var(--cyan));}40%{filter:drop-shadow(-3px 0 0 var(--red)) drop-shadow(3px 0 0 var(--cyan));}60%{filter:drop-shadow(5px 0 0 var(--red)) drop-shadow(-2px 0 0 var(--cyan));}80%{filter:none;}}
+body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-play-state:paused !important;}   /* 히트스톱: 화면을 잠깐 얼린다 */
+.fx-scan{position:fixed;inset:0;z-index:86;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 2px,transparent 2px 4px);animation:fxScan .38s steps(6) forwards;}
+@keyframes fxScan{0%{transform:none;opacity:1;}25%{transform:translateY(3px);}50%{transform:translate(2px,-2px);}75%{transform:translateY(4px);}100%{transform:none;opacity:0;}}
+.fx-stamp{
+  position:fixed;left:50%;top:44%;z-index:93;pointer-events:none;white-space:nowrap;
+  font-family:'Press Start 2P','Galmuri-30px',monospace;font-size:30px;line-height:1.2;padding:14px 18px 10px;
+  color:var(--red);background:#000;box-shadow:0 0 0 4px var(--red2),0 0 0 8px #000,8px 8px 0 #000;
+  transform:translate(-50%,-50%) rotate(-6deg);animation:fxStamp .95s steps(10) forwards;
+}
+.fx-stamp.up{color:var(--green);box-shadow:0 0 0 4px var(--green2),0 0 0 8px #000,8px 8px 0 #000;}
+@keyframes fxStamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(2.6);}15%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}75%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}}
+.fx-hit{animation:fxHit .45s steps(4);}
+@keyframes fxHit{0%,50%{box-shadow:0 0 0 2px var(--gold),0 0 0 4px var(--gold2),3px 3px 0 #000;background:var(--panel2);}}
+.balance-main.fx-goal{animation:fxGoal .6s steps(6);}
+@keyframes fxGoal{0%,40%{box-shadow:0 0 0 2px var(--green),0 0 0 4px var(--green2),0 0 0 6px #000,4px 4px 0 #000;background:var(--green-dim);}}
+.fss-track.fx-jiggle{animation:fxJiggle .3s steps(4);}
+@keyframes fxJiggle{25%{transform:translate(-2px,0);}50%{transform:translate(2px,-1px);}75%{transform:translate(-1px,1px);}}
+.fss.hot .fss-track{box-shadow:0 0 0 2px var(--red);animation:fssPulse 1s steps(2) infinite;}   /* 내사 착수: 테두리가 빨갛게 맥동 */
+@keyframes fssPulse{50%{box-shadow:0 0 0 2px var(--red2),0 0 0 4px var(--red-dim);}}
+.fx-combo{position:fixed;z-index:94;pointer-events:none;font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;text-shadow:1px 1px 0 #000;animation:pixelPop .9s steps(8) forwards;}
+.fx-card-ghost{position:fixed;z-index:91;pointer-events:none;margin:0;}
+.fx-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:92;pointer-events:none;image-rendering:pixelated;}
+
 /* ═══════════════════════════════════════════════════════════
    DESKTOP (가로) 레이아웃 — 901px 이상
    게임 영역은 16:10 고정, 뷰포트 안에 letterbox로 맞춘다.
@@ -1380,6 +1413,8 @@ body[data-bgfx="off"] #bgChartContainer{display:none;}
 <div class="overlay" id="overlay"><div class="overlay-box" id="overlayBox"></div></div>
 
 <script src="engine.js"></script>
+<script src="audio.js"></script>
+<script src="fx.js"></script>
 <script>
 
 /* ══════════════════════════════════════════════════════════
@@ -1810,14 +1845,71 @@ function toast(text, kind = 'info'){
   setTimeout(() => t.remove(), 2600);
 }
 
-function flashLiquidation(){
-  if(!settings.shake) return;   // 환경 설정: 화면 흔들림·빨간 번쩍임 끄기
-  const cab = document.querySelector('.cabinet');
-  cab.classList.remove('shake'); void cab.offsetWidth; cab.classList.add('shake');
-  const f = document.createElement('div');
-  f.className = 'red-flash';
-  document.body.appendChild(f);
-  setTimeout(() => f.remove(), 600);
+/* 반대매매: 포지션 행이 부서지고(파티클) → 히트스톱 → 강한 흔들림 + RGB 글리치 + 스캔라인 떨림 + '반대매매' 도장.
+   흔들림·번쩍임·글리치·히트스톱은 설정 '화면 흔들림'을 따르고, 파티클·도장·소리는 항상 */
+function flashLiquidation(i, rowRect){
+  Fx.shatter(rowRect, Math.round(30 + 50 * i));
+  if(settings.shake){
+    const f = document.createElement('div');
+    f.className = 'red-flash';
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 600);
+  }
+  Fx.hitStop(Math.round(80 + 40 * i));   // 80~120ms
+  Fx.afterStop(() => { Fx.shake(3); Fx.glitch(); Fx.stamp('반대매매'); });
+}
+const posRowEl   = id => $('positionsBox').querySelector(`[data-id="${id}"]`);
+const quoteRowEl = id => $('quoteBox').querySelector(`[data-q="${id}"]`);
+const rectOf     = el => el ? el.getBoundingClientRect() : null;
+
+/* 청산 손익: 소리 + 수익이면 동전이 순자산으로 빨려 들어가고, 큰 익절은 히트스톱 / 큰 손실은 약한 흔들림 */
+function juiceSell(pnl, fromRect){
+  const i = Fx.intensity(pnl, netEquity()), lvl = Fx.level(i);
+  Sound.play(pnl >= 0 ? 'sellWin' : 'sellLoss', { volume: 0.8 + 0.4 * i });
+  if(pnl > 0){
+    Fx.coinsTo(fromRect || rectOf($('positionsBox')), rectOf($('totalAssets')), Math.round(6 + 26 * i));
+    if(lvl === 3) Fx.hitStop(Math.round(50 + 40 * i));
+  } else if(pnl < 0 && lvl >= 2) Fx.shake(1);
+}
+
+/* 갭: 시세 행에서 스파크. 보유 중인 종목이면 히트스톱 + 중간 흔들림 */
+function juiceGap(stockId, pct){
+  const held = run.positions.some(p => p.assetId === stockId);
+  Sound.play(pct > 0 ? 'gapUp' : 'gapDown', { volume: held ? 1 : 0.6 });
+  Fx.sparks(rectOf(quoteRowEl(stockId)), pct > 0 ? 1 : -1, held ? 30 : 14, pct > 0 ? '--green' : '--red');
+  if(held){ Fx.hitStop(70); Fx.afterStop(() => Fx.shake(2)); }
+}
+
+/* 카드 사용 + 연출: 엔진 호출은 playCard 그대로. 성공하면 손패 카드가 대상(포지션·시세 행, 종목 카드는 새 포지션)으로 날아간다 */
+let lastBoughtPosId = -1;
+function playCardFx(idx, targetId){
+  const el = $('handBox').querySelector(`[data-idx="${idx}"]`);
+  const inst = run.hand[idx];
+  const card = inst ? CARD_BY_ID[inst.id] : null;
+  const rect = rectOf(el), ghost = el ? el.cloneNode(true) : null;
+  lastBoughtPosId = -1;
+  const ok = playCard(idx, targetId);
+  renderAll();
+  if(!ok || !ghost || !card) return ok;
+  const target = card.target === 'position' ? posRowEl(targetId) : card.target === 'asset' ? quoteRowEl(targetId)
+               : lastBoughtPosId >= 0 ? posRowEl(lastBoughtPosId) : null;
+  Fx.cardFly(ghost, rect, target);
+  return ok;
+}
+
+/* HUD 숫자 펀치 + 목표 달성 순간 (순자산·현금이 바뀐 만큼, 이번 주 목표를 처음 넘으면 초록 섬광 + 징글) */
+let hudPrev = null;
+function hudJuice(eq, target){
+  const done = eq >= target, prev = hudPrev;
+  hudPrev = { run, round: run.round, eq, cash: run.cash, done };
+  if(!prev || prev.run !== run) return;   // 새 판 첫 화면: 비교 대상 없음
+  const dEq = eq - prev.eq, dCash = run.cash - prev.cash;
+  if(Math.abs(dEq) >= Math.abs(eq) * FX_PUNCH_MIN) Fx.punch($('totalAssets'), dEq, Fx.intensity(dEq, eq));
+  if(Math.abs(dCash) >= 1) Fx.punch($('availableCash'), dCash, Fx.intensity(dCash, eq));
+  if(prev.round === run.round && !prev.done && done && (run.phase === 'market' || run.phase === 'premarket')){
+    Fx.flash(document.querySelector('.balance-main'), 'fx-goal');
+    Sound.play('goalReach');
+  }
 }
 
 function resetNews(){
@@ -1828,43 +1920,52 @@ function resetNews(){
 setEventListener((type, d) => onGameEvent(type, d));   // 엔진 이벤트 → 화면 (onGameEvent를 바꿔 끼워도 따라가도록 한 번 감싼다)
 function onGameEvent(type, d){
   switch(type){
-    case 'cardRejected': toast(REJECT_TEXT[d.reason] || d.reason, 'bad'); break;
+    case 'cardRejected': toast(REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
     case 'bought':
+      lastBoughtPosId = d.pos.id;
+      Sound.play('buy', { lev: d.pos.lev, dir: d.pos.dir });
       if(d.merged) toast(`${d.pos.name} ${posLabel(d.pos)} 추가 매수 +${Math.round(d.added).toLocaleString()}만 → 평단 ${fmtPrice(avgPrice(d.pos))}`, 'info');
       break;
-    case 'cardPlayed':   if(d.card.type !== 'stock') toast('▶ ' + d.card.name, 'info'); break;
+    case 'cardPlayed':   if(d.card.type !== 'stock') toast('▶ ' + d.card.name, 'info'); Sound.play('cardPlay'); break;
     case 'sold':
+      juiceSell(d.pnl, rectOf(posRowEl(d.pos.id)));
       showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
       if(d.pnl > 500) cashRain();
       break;
     case 'soldAll':
+      juiceSell(d.pnl, rectOf($('positionsBox')));
       showPopNum('청산: ' + fmtSigned(d.pnl), d.pnl >= 0);
       if(d.pnl > 1000) cashRain();
       break;
     case 'orderFilled':
       toast(`${ORDER_LABEL[d.kind]} 체결 · ${d.pos.name} ${fmtSigned(d.pnl)}` + (d.bonus > 0 ? ` (상투 감별사 +${Math.round(d.bonus)}만)` : ''), d.pnl >= 0 ? 'good' : 'bad');
       showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
+      juiceSell(d.pnl, rectOf(posRowEl(d.pos.id)));
       break;
     case 'marginCall':
       toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (` +
         (d.saved > 0 ? `📞 투매 손실 ${Math.round(d.saved)}만 면제` : `투매 −${Math.round(d.penalty)}만`) + ' · 트라우마 +1)', 'bad');
       if(d.deficit) toast('🧾 미수 발생! 현금으로 못 갚아 계좌 동결', 'bad');
       if(d.refund > 0) toast(`🤝 손실 보전 약정: +${Math.round(d.refund)}만 환급 (※ 실제로는 불법)`, 'warn');
-      flashLiquidation();
+      Sound.play('marginCall');   // 가장 무거운 소리
+      flashLiquidation(Math.max(FX_LEVEL_BIG, Fx.intensity(d.pnl, netEquity())), rectOf(posRowEl(d.pos.id)));
       break;
     case 'gap': {
       const name = STOCK_BY_ID[d.stockId].name, txt = `${name} ${d.pct > 0 ? '갭상승' : '갭하락'} ${d.pct > 0 ? '+' : '−'}${Math.round(Math.abs(d.pct) * 100)}%!`;
       const held = run.positions.some(p => p.assetId === d.stockId);
       toast((d.pct > 0 ? '🚀 ' : '💥 ') + txt, held ? 'warn' : 'info');
       $('newsText').textContent = '⚡ ' + txt + (d.pct > 0 ? ' 숏 포지션 비상' : ' 레버리지 비상');
+      juiceGap(d.stockId, d.pct);
       break;
     }
     case 'circuitBreak':
       toast(`🛑 서킷브레이커 발동! 개장 대비 −${pct(1 - d.eq / d.open)} — 오늘 장 조기 마감`, 'warn');
       $('newsText').textContent = '서킷브레이커 발동 — 매매 거래 일시 중단';
+      Sound.play('dayEnd'); Fx.shake(2);
       break;
     case 'gapOpen':
       toast(`📉 작전 세력 이탈: ${STOCK_BY_ID[d.stockId].name} 개장 직후 ${Math.round(d.pct * 100)}% 갭`, 'bad');
+      juiceGap(d.stockId, d.pct);
       break;
     case 'valueGodPaid':
       toast(`📜 가치투자의 신: 장기 보유 배당 +${Math.round(d.amount)}만`, 'good');
@@ -1876,6 +1977,7 @@ function onGameEvent(type, d){
       break;
     case 'marketOpen':
       toast('▶ 장 시작!', 'good');
+      Sound.play('marketOpen');
       if(d.marketCard){
         const [news, kind] = MARKET_CARD_NEWS[d.marketCard][d.outcome];
         $('newsText').textContent = news;
@@ -1889,6 +1991,7 @@ function onGameEvent(type, d){
       d.pumps.forEach(pm => toast(pm.dir > 0 ? `📈 ${pm.name} 작전 성공! 급등 중` : `📉 ${pm.name} 설거지 당함! 급락 중`, pm.dir > 0 ? 'good' : 'bad'));
       break;
     case 'dayEnd':
+      Sound.play('dayEnd');
       if(d.waived) toast('장 마감 · 오늘 이자 면제', 'good');
       else if(d.interest > 0.5) toast(`장 마감 · 이자 −${Math.round(d.interest).toLocaleString()}만` + (d.discounted ? ' (🏦 VVIP 할인)' : ''), 'warn');
       break;
@@ -1898,9 +2001,12 @@ function onGameEvent(type, d){
       break;
     case 'eventEnd': resetNews(); break;
     case 'fssRaised':
-      if(d.warn) toast('☎ 금감원: "최근 거래 패턴을 살펴보고 있습니다"', 'warn');
+      Fx.jiggle(document.querySelector('#fssBox .fss-track'));   // 게이지가 오를 때마다 바가 흔들린다
+      if(d.warn){ toast('☎ 금감원: "최근 거래 패턴을 살펴보고 있습니다"', 'warn'); Sound.play('fssWarn'); }
       break;
     case 'fssSanction':
+      Sound.play('fssSanction');
+      Fx.hitStop(60); Fx.afterStop(() => Fx.shake(2));
       showOverlay(`
         <div class="ov-title" style="color:var(--red)">☎ 금감원에서 전화가 왔습니다</div>
         <div class="ov-sub">"고객님 계좌에서 시세조종이 의심되는 거래가 반복적으로 확인되어 연락드렸습니다."</div>
@@ -1912,7 +2018,10 @@ function onGameEvent(type, d){
         <div class="ov-sub">감시 게이지는 0으로 돌아갑니다. 당분간 조용히 지내세요.</div>
         <button class="ov-btn" data-act="close">…네, 알겠습니다</button>`);
       break;
-    case 'roundClear': lastRoundClear = d; playSettlementChain(d.settlementChain, () => showRoundResult(d)); break;
+    case 'roundClear':
+      lastRoundClear = d;
+      playSettlementChain(d.settlementChain, skipped => { if(!skipped) Sound.play('weekClear'); showRoundResult(d); });   // 건너뛰면 도장 소리 1번만
+      break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
         : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['카드 보상 건너뜀', 'info']);
@@ -1929,24 +2038,30 @@ function onGameEvent(type, d){
       pendingRewardToasts = [];
       toast('◈ 암시장 개장 — 다음 주 개장 전까지', 'info');
       break;
-    case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); break;
-    case 'packOpened':   showPackResult(d); break;
+    case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
+    case 'packOpened':   showPackResult(d); juicePack(d); break;
     case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
     case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver':   // 결산 체인은 결산을 통과했을 때만 (마지막 주 통과 = 졸업). 파산·목표 미달은 바로 게임오버
-      if(d.reason === 'VICTORY') playSettlementChain(run.lastWeek.settlementChain, () => showRunOver(d.reason));
-      else showRunOver(d.reason);
+      if(d.reason === 'VICTORY') playSettlementChain(run.lastWeek.settlementChain, skipped => {   // 체인을 건너뛰었으면 도장 소리 뒤에 팡파레
+        setTimeout(() => Sound.play('victory'), skipped ? 450 : 0);
+        showRunOver(d.reason);
+      });
+      else { Sound.play(d.reason === 'BANKRUPT' ? 'bankrupt' : 'weekFail'); showRunOver(d.reason); }
       break;
     case 'tipEvent':
+      Sound.play('tipArrive');
       renderTabs();
       if(currentTab === 'play') showTipOverlay();
       if(currentTab === 'event') renderTipScreen();
       break;
     case 'tipResolved':
+      Sound.play(d.delta > 0 ? 'tipJackpot' : d.delta < 0 ? 'tipBust' : 'uiClick');
       renderTabs();
       if(overlayOpen && $('overlayBox').querySelector('[data-tip-choice]')) showTipResultOverlay(d);
       break;
     case 'relicGained':
+      Sound.play('relicGain');
       if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
       break;
     case 'relicTriggered':
@@ -1984,6 +2099,7 @@ function renderHud(){
 
   $('totalAssets').textContent = fmtMoney(eq);
   $('totalAssets').style.color = eq >= START_CASH ? 'var(--green)' : 'var(--red)';
+  hudJuice(eq, target);
   $('targetText').textContent = `WEEK ${run.round} 목표 ${fmtMoney(target)}`;
   const done = eq >= target;
   $('targetPct').textContent = done ? '달성 ✓' : Math.max(0, eq / target * 100).toFixed(0) + '%';
@@ -2422,7 +2538,9 @@ function roundResultLine(w){
 const CHAIN_MAX_ROWS    = 4;     // 포지션이 이보다 많으면
 const CHAIN_TOP_ROWS    = 3;     //   손익 절댓값 상위 이만큼만 재생하고 나머지는 요약 한 줄
 const CHAIN_COUNT_STEPS = 8;     // 숫자 카운트업 칸 수 (픽셀 톤: 부드럽게 말고 8칸)
-const CHAIN_MS = { row: 280, base: 360, chip: 480, stamp: 520, plain: 220, end: 900 };
+const CHAIN_MS = { row: 280, base: 360, chip: 480, hitstop: 60, stamp: 520, plain: 220, end: 900 };
+const CHAIN_ROW_SEMIS  = 2;      // 소리: 두 번째 포지션부터 체인 시작음을 이만큼(반음)씩 높여 결산 전체가 고조된다
+const CHAIN_MULT_SEMIS = 2;      //   곱연산(×) 스텝은 덧셈 스텝보다 이만큼 더 높게 + 약한 흔들림 + 큰 숫자 펀치
 const CHAIN_SKIP_GUARD_MS = 300; // 건너뛴 직후 연타가 결산 화면 버튼을 누르지 않게
 let chainPlay = null;            // 재생 중: { run, timers, onDone }
 let chainSkippedAt = 0;
@@ -2447,22 +2565,27 @@ function playSettlementChain(chain, onDone){
     <div class="ov-title" style="color:var(--gold)">결산 체인</div>
     <div class="chain-list" id="chainList">
       ${rows.map((c, i) => `<div class="chain-row pending" id="chainRow${i}">
-        <div class="chain-head"><span class="chain-name">${c.posName} <small>${posLabel(c)}</small></span><span class="chain-total"></span></div>
+        <div class="chain-head"><span class="chain-name">${c.posName} <small>${posLabel(c)}</small></span><span class="chain-total" id="chainTotal${i}"></span></div>
         <div class="chain-chips ${chainHasMods(c) ? '' : 'none'}"></div></div>`).join('')}
       ${rest.length ? `<div class="chain-rest pending">▌ 외 포지션 ${rest.length}개 · 합계 <span class="${signCls(restSum)}">${fmtSigned(restSum)}</span></div>` : ''}
       <div class="chain-sum pending">정산 합계 <span class="${signCls(sum)}">${fmtSigned(sum)}</span></div>
     </div>
     <div class="chain-skip">클릭 · SPACE = 건너뛰기</div>`);
-  chainPlay = { run, timers: [], onDone };
+  chainPlay = { run, timers: [], onDone, sum };
   const list = $('chainList');
   let t = 0;
   const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, ms));   // 오버레이가 바뀌었으면 아무것도 안 한다
   const setTotal = (el, v) => { el.textContent = fmtSigned(v); el.className = 'chain-total ' + (v >= 0 ? 'up' : 'down'); };
-  const countUp = (elFn, from, to, start, dur) => {   // 8칸 카운트업, 마지막 칸은 정확한 값
-    for(let k = 1; k <= CHAIN_COUNT_STEPS; k++) at(start + dur * k / CHAIN_COUNT_STEPS, () => setTotal(elFn(), k === CHAIN_COUNT_STEPS ? to : from + (to - from) * k / CHAIN_COUNT_STEPS));
+  const countUp = (elFn, from, to, start, dur, semi) => {   // 8칸 카운트업 + 칸마다 블립, 마지막 칸은 정확한 값
+    for(let k = 1; k <= CHAIN_COUNT_STEPS; k++) at(start + dur * k / CHAIN_COUNT_STEPS, () => {
+      setTotal(elFn(), k === CHAIN_COUNT_STEPS ? to : from + (to - from) * k / CHAIN_COUNT_STEPS);
+      Sound.play('countTick', { pitch: Sound.semis(semi + k / 4) });
+    });
   };
   rows.forEach((c, i) => {
     const id = 'chainRow' + i;
+    const rowSemi = i * CHAIN_ROW_SEMIS;
+    const eqNow = Math.max(1, netEquity());
     at(t, () => {
       list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
       $(id).classList.remove('pending');
@@ -2470,25 +2593,40 @@ function playSettlementChain(chain, onDone){
     });
     const total = () => $(id).querySelector('.chain-total');
     if(!chainHasMods(c)){   // 보정 없음: 숫자만
-      at(t, () => setTotal(total(), c.finalPnl));
+      at(t, () => { setTotal(total(), c.finalPnl); Sound.play('countTick', { pitch: Sound.semis(rowSemi) }); });
       t += CHAIN_MS.plain;
       return;
     }
     t += CHAIN_MS.row;
-    at(t, () => setTotal(total(), 0));
-    countUp(total, 0, c.steps[0].runningTotal, t, CHAIN_MS.base);
+    at(t, () => { setTotal(total(), 0); Sound.play('chainStep', { pitch: Sound.semis(rowSemi) }); });
+    countUp(total, 0, c.steps[0].runningTotal, t, CHAIN_MS.base, rowSemi);
     t += CHAIN_MS.base;
     c.steps.slice(1).forEach((st, k) => {
-      const prev = c.steps[k].runningTotal;
-      at(t, () => $(id).querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip ${chainChipCls(st)}">${chainChipText(st)}</span>`));
-      countUp(total, prev, st.runningTotal, t + CHAIN_MS.chip / 3, CHAIN_MS.chip * 2 / 3);
+      const prev = c.steps[k].runningTotal, mult = st.kind === 'mult';
+      const semi = rowSemi + k + 1 + (mult ? CHAIN_MULT_SEMIS : 0);   // 스텝마다 반음씩, 곱연산은 한 단계 더
+      at(t, () => {
+        $(id).querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip ${chainChipCls(st)}">${chainChipText(st)}</span>`);
+        Sound.play('chainStep', { pitch: Sound.semis(semi), volume: mult ? 1.15 : 0.9 });
+        if(mult) Fx.shake(1);
+        Fx.punch(total(), st.runningTotal - prev || 1, mult ? 0.8 : 0.3);
+      });
+      countUp(total, prev, st.runningTotal, t + CHAIN_MS.chip / 3, CHAIN_MS.chip * 2 / 3, semi);
       t += CHAIN_MS.chip;
     });
-    at(t, () => {
-      const el = total();
-      setTotal(el, c.finalPnl);   // 카운트업 마지막 칸과 같은 값 — 순서가 뒤바뀌어도 최종 숫자는 정확히
+    at(t, () => {   // 최종값 도달 → 히트스톱
+      setTotal(total(), c.finalPnl);   // 카운트업 마지막 칸과 같은 값 — 순서가 뒤바뀌어도 최종 숫자는 정확히
+      Fx.hitStop(CHAIN_MS.hitstop);
+    });
+    t += CHAIN_MS.hitstop;
+    at(t, () => {   // → 도장 쾅 → 파티클
+      const el = total(), win = c.finalPnl >= 0;
+      setTotal(el, c.finalPnl);
       el.classList.add('final');
-      $(id).insertAdjacentHTML('beforeend', `<span class="chain-stamp ${c.finalPnl >= 0 ? '' : 'down'}">${c.finalPnl >= 0 ? '떡상!' : '물림'}</span>`);
+      $(id).insertAdjacentHTML('beforeend', `<span class="chain-stamp ${win ? '' : 'down'}">${win ? '떡상!' : '물림'}</span>`);
+      Sound.play(win ? 'stampWin' : 'stampLoss', { pitch: Sound.semis(rowSemi) });
+      Fx.punch(el, c.finalPnl || 1, Fx.intensity(c.finalPnl, eqNow));
+      const r = rectOf($(id).querySelector('.chain-stamp'));
+      if(r) Fx.burst(r.left + r.width / 2, r.top + r.height / 2, Math.round(12 + 30 * Fx.intensity(c.finalPnl, eqNow)), win ? ['--gold', '--green', '--gold2'] : ['--red', '--red2', '--muted']);
     });
     t += CHAIN_MS.stamp;
   });
@@ -2496,14 +2634,14 @@ function playSettlementChain(chain, onDone){
     list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
     list.querySelectorAll('.chain-rest, .chain-sum').forEach(e => e.classList.remove('pending'));
   });
-  chainPlay.timers.push(setTimeout(finishSettlementChain, t + CHAIN_MS.end));   // 끝내기는 조건 없이 (재생 상태가 남지 않게)
+  chainPlay.timers.push(setTimeout(() => finishSettlementChain(false), t + CHAIN_MS.end));   // 끝내기는 조건 없이 (재생 상태가 남지 않게)
 }
-function finishSettlementChain(){
+function finishSettlementChain(skipped){
   if(!chainPlay) return;
   const cp = chainPlay;
   chainPlay = null;
   cp.timers.forEach(clearTimeout);
-  if(cp.run === run) cp.onDone();   // 그 사이 새 판을 시작했으면 옛 결산 화면은 띄우지 않는다
+  if(cp.run === run) cp.onDone(!!skipped);   // 그 사이 새 판을 시작했으면 옛 결산 화면은 띄우지 않는다
 }
 function cancelSettlementChain(){   // 결과 화면 없이 재생만 멈춘다 (새 판 시작)
   if(!chainPlay) return;
@@ -2513,7 +2651,10 @@ function cancelSettlementChain(){   // 결과 화면 없이 재생만 멈춘다 
 function skipSettlementChain(){
   if(!chainPlay) return;
   chainSkippedAt = performance.now();
-  finishSettlementChain();
+  const win = chainPlay.sum >= 0;
+  Sound.stopAll();                              // 남은 소리는 즉시 끊고
+  Sound.play(win ? 'stampWin' : 'stampLoss');   // 최종 도장 소리 1번만
+  finishSettlementChain(true);
 }
 
 function showRoundResult(w){
@@ -2738,6 +2879,17 @@ function renderShop(){
     </button>`;
 }
 
+const PACK_BURST = { common: [8, ['--muted', '--line2']], uncommon: [16, ['--green2', '--green']], rare: [26, ['--blue', '--cyan']],
+                     legendary: [42, ['--purple', '--gold']], mythic: [80, ['--gold', '--gold2', '--text']] };   // 등급별 파티클 수 · 색
+const PACK_REVEAL_MS = 500;   // .flip-card: 0.2초 대기 + 0.6초 뒤집기 → 절반 지점
+function juicePack(d){
+  const rarity = CARD_BY_ID[d.cardId].rarity, pb = PACK_BURST[rarity];
+  setTimeout(() => Sound.play('packFlip', { rarity }), PACK_REVEAL_MS - 220);   // 휘릭(0.22초) 끝에 등급 음
+  setTimeout(() => {
+    const el = $('overlayBox').querySelector('.flip-card'), r = rectOf(el);
+    if(r) Fx.burst(r.left + r.width / 2, r.top + r.height / 2, pb[0], pb[1]);
+  }, PACK_REVEAL_MS);
+}
 function showPackResult(d){
   const pk = SHOP_PACK_BY_ID[d.packId], card = CARD_BY_ID[d.cardId];
   showOverlay(`
@@ -2795,9 +2947,15 @@ const SETTING_OPTIONS = {
   crt:   [['off', '끄기'], ['weak', '약'], ['strong', '강']],
   bgFx:  [[true, '켜기'], [false, '끄기']],
   sound: [[true, '켜기'], [false, '끄기']],
-  chainFx: [[true, '켜기'], [false, '끄기']]
+  chainFx: [[true, '켜기'], [false, '끄기']],
+  sfxVol: [[0, '0'], [25, '25'], [50, '50'], [75, '75'], [100, '100']],
+  tickSound: [[true, '켜기'], [false, '끄기']],
+  hitStop: [[true, '켜기'], [false, '끄기']]
 };
-const DEFAULT_SETTINGS = { speed: 1, shake: true, crt: 'strong', bgFx: true, sound: false, chainFx: true };
+// 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
+const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', bgFx: true, sound: true, chainFx: true,
+                           sfxVol: 50, tickSound: false, hitStop: true };
 function loadSettings(){
   const s = Object.assign({}, DEFAULT_SETTINGS);
   let saved = null;
@@ -2814,6 +2972,9 @@ function saveSettings(){
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
 }
 function applySettings(){
+  Sound.setEnabled(settings.sound);
+  Sound.setVolume(settings.sfxVol / 100);
+  Fx.setOptions({ motion: settings.shake, hitStop: settings.hitStop });   // 흔들림을 끄면 글리치·히트스톱도 꺼진다
   document.body.dataset.crt = settings.crt;
   document.body.dataset.bgfx = settings.bgFx ? 'on' : 'off';
   if(settings.bgFx){
@@ -2835,11 +2996,14 @@ function settingRow(key, label, desc, disabled){
 function buildSettings(){
   $('settingsBox').innerHTML = `<div class="set-list">
     ${settingRow('speed', '장중 속도', `캔들 1개 ${TICK_MS}ms 기준 배율. 결과·확률은 그대로, 시간만 빨라집니다.`)}
-    ${settingRow('shake', '화면 흔들림 · 빨간 번쩍임', '반대매매 때 화면이 흔들리고 붉게 번쩍입니다. 어지러우면 끄세요.')}
+    ${settingRow('shake', '화면 흔들림 · 번쩍임 · 글리치', '반대매매·갭 때 흔들림·번쩍임·글리치. 끄면 히트스톱도 꺼짐 (시스템 동작 줄이기면 기본 끔).')}
+    ${settingRow('hitStop', '히트스톱', '반대매매·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
     ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
     ${settingRow('chainFx', '결산 연출', '주간 결산을 통과하면 유물·보너스가 포지션 손익을 불린 순서를 칩으로 보여줍니다. 끄면 바로 결산 요약.')}
     ${settingRow('bgFx', '배경 연출', '양옆에 떠다니는 시세 창·배경 격자 애니메이션. 저사양 PC면 끄세요.')}
-    ${settingRow('sound', '사운드', '준비 중 — 아직 게임에 소리가 없습니다.', true)}
+    ${settingRow('sound', '사운드', '칩튠 효과음 (음원 파일 없이 브라우저에서 합성).')}
+    ${settingRow('sfxVol', '효과음 볼륨', '0 · 25 · 50 · 75 · 100%.', !settings.sound)}
+    ${settingRow('tickSound', '장중 틱 소리', '캔들이 하나 생길 때마다 작은 시계 소리. 계속 울리니 기본은 끔.', !settings.sound)}
     <div class="set-row" data-row="reset">
       <div><div class="sr-label">기록 초기화</div><div class="sr-desc">파산 기록(엔딩 도감·최근 판·누적 통계)과 개미 회차를 지웁니다. 설정은 남습니다.</div></div>
       <div class="seg"><button class="set-danger" id="settingsReset">✕ 기록 초기화</button></div>
@@ -2860,6 +3024,7 @@ $('settingsBox').addEventListener('click', e => {
   saveSettings();
   applySettings();
   buildSettings();
+  if(settings.sound){ Sound.unlock(); if(b.dataset.set === 'sound' || b.dataset.set === 'sfxVol') Sound.play('sellWin'); }   // 켜거나 볼륨을 바꾸면 바로 들려준다
 });
 
 /* ── 파산 기록 화면 ── */
@@ -3017,8 +3182,7 @@ $('sellAllBtn').addEventListener('click', () => { sellAllPositions(); renderAll(
 function playSelectedOn(targetId){
   const idx = selectedIdx;
   selectedIdx = -1;
-  playCard(idx, targetId);
-  renderAll();
+  playCardFx(idx, targetId);
 }
 
 $('handBox').addEventListener('click', e => {
@@ -3033,7 +3197,7 @@ $('handBox').addEventListener('click', e => {
     else selectedIdx = idx;                                       // 대상 지정 모드
   } else {
     selectedIdx = -1;
-    playCard(idx, null);
+    playCardFx(idx, null);
   }
   renderAll();
 });
@@ -3054,6 +3218,9 @@ $('quoteBox').addEventListener('click', e => {
   else showChart(chartTarget === row.dataset.q ? 'idx' : row.dataset.q);   // 같은 종목 다시 누르면 지수로
 });
 $('chartBackBtn').addEventListener('click', () => showChart('idx'));
+
+Sound.attachUnlock(document);   // 브라우저 자동재생 정책: 첫 클릭·키 입력 때 AudioContext를 만든다
+document.addEventListener('click', e => { if(e.target.closest('button, [data-s]')) Sound.play('uiClick'); }, true);
 
 document.addEventListener('keydown', e => {
   if(chainPlay && (e.code === 'Space' || e.key === ' ')){ e.preventDefault(); skipSettlementChain(); return; }
@@ -3095,7 +3262,13 @@ window.onload = () => {
   renderTabs();
   applySettings();
   const loop = () => {   // 장중에만, TR룸 화면에서만 시장이 움직인다. 간격 = TICK_MS ÷ 장중 속도
-    if(currentTab === 'play' && run && run.phase === 'market' && !overlayOpen){ tick(); renderAll(); }
+    const frozen = Fx.frozenFor();   // 히트스톱: 다음 tick을 그만큼 미룰 뿐 (tick 순서·횟수·결과는 그대로)
+    if(frozen > 0){ setTimeout(loop, frozen); return; }
+    if(currentTab === 'play' && run && run.phase === 'market' && !overlayOpen){
+      tick();
+      if(settings.tickSound) Sound.play('tick', { volume: 0.6 });
+      renderAll();
+    }
     setTimeout(loop, TICK_MS / settings.speed);
   };
   setTimeout(loop, TICK_MS / settings.speed);

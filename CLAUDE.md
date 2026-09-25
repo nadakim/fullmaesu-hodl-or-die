@@ -26,6 +26,8 @@
 
 - `docs/demo` — 프로토타입 본체 (HTML, **확장자 없음**). CSS·마크업·UI JS. 엔진은 `<script src="engine.js">`로 불러온다.
 - `docs/engine.js` — CONFIG + ENGINE (DOM 없음). 브라우저와 Node(`sim/load-engine.js`, vm) 양쪽에서 같은 파일을 쓴다.
+- `docs/audio.js` — 효과음 (UI 전용). Web Audio API 합성 칩튠, 음원 파일 없음. `Sound.play(이름, {pitch, volume})`, 사전 `Sound.SFX`, 파일 상단에 이름 → 이벤트 표.
+- `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`, 캔버스 한 장).
 - `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
@@ -37,7 +39,7 @@
 
 - 순수 **HTML / CSS / JavaScript + Canvas** (캔들 차트, 배경 그리드)
 - **빌드 도구·번들러·프레임워크·npm 의존성 추가 금지** (React, Vite, TypeScript, Tailwind 등 X). 브라우저에서 파일 하나로 바로 열려야 한다.
-- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/engine.js` + `docs/assets/`를 함께 배포해야 한다.
+- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/engine.js` + `docs/audio.js` + `docs/fx.js` + `docs/assets/`를 함께 배포해야 한다. 외부 오디오·연출 라이브러리(Howler.js·Tone.js 등) 금지 — Web Audio API와 Canvas만.
 
 ## 코드 규칙
 
@@ -66,9 +68,10 @@
   - **UI**: `onGameEvent`가 엔진 이벤트를 받아 토스트/연출/오버레이를 띄우고, `renderAll()`이 화면을 그린다. 대상 지정 상태(`selectedIdx`), 설명을 펼친 유물(`relicTipId`), 도감 등급 필터(`collectionRarity`), 큰 차트에 보이는 대상(`chartTarget`: `'idx'` 또는 종목 id)은 UI에만 있다. 입력 핸들러는 엔진 함수 호출 → `renderAll()` 순서.
   - 결산 체인 연출 `playSettlementChain(chain, onDone)`: `roundClear`(와 졸업 `runOver` VICTORY)에서 결산 화면 전에 포지션별 유물 칩 ×배수 → 카운트업 → 떡상!/물림 스탬프를 재생 (`CHAIN_*` 상수). 보정 없는 포지션은 숫자만, 보정이 하나도 없으면 생략, 포지션 `CHAIN_MAX_ROWS`개 초과면 손익 절댓값 상위 `CHAIN_TOP_ROWS`개 + 요약 한 줄. 클릭·SPACE = `skipSettlementChain`. 파산·목표 미달엔 재생하지 않는다.
   - 결산 결과 화면 `showRoundResult`(`roundClear` → `data-act="toReward"`로 보상 단계) / 게임오버 화면 `showRunOver`(`runOver`). 게임오버 문구는 UI의 `ENDINGS[endCause]` 테이블에만 둔다 (`group`: bust·miss·win, `hint`: 파산 기록의 미해금 조건). 파산 기록(타이틀 > `#recordsBtn` → `#screen-records`, `buildRecords`): `showRunOver`가 `recordRun`으로 localStorage `hodl.records`(엔딩별 횟수 `counts` + 최근 `RECORDS_HISTORY`판 `history`)에 저장하고, 처음 본 엔딩이면 '새 엔딩 해금' 배지. 저장이 막히면 세션 메모리로 대신한다. 기록에는 판마다 날짜·생존 주·엔딩·최종/최고 순자산·반대매매·유물 수·덱 크기, 전체 누적 `totals`(판 수 = '개미 N회차' `hodl.antRuns`·최고 생존·최고 순자산·총 반대매매)를 둔다.
-  - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 결산 연출 `chainFx` → `playSettlementChain`, 사운드 `sound`는 자리만). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
+  - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 결산 연출 `chainFx` → `playSettlementChain`, 사운드 `sound`·효과음 볼륨 `sfxVol` 0~100(기본 50) → `Sound.setEnabled`·`setVolume`, 장중 틱 소리 `tickSound`(기본 끔), 히트스톱 `hitStop` → `Fx.setOptions`. `prefers-reduced-motion`이면 `shake` 기본값이 끔). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
 - 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
+- 소리·타격감은 엔진에 한 줄도 넣지 않는다. `onGameEvent`와 UI 연출 함수에서만 `Sound.play`·`Fx.*`를 부른다 (새 효과음은 `audio.js` 사전 + 상단 표에 추가). 세기는 `Fx.intensity(금액, 순자산)`(순자산의 `FX_MONEY_FULL` = 1)로 정하고 '강'은 대략 10번 중 1번. 히트스톱은 게임 루프가 `Fx.frozenFor()`만큼 다음 tick을 미루는 것뿐 — tick 순서·횟수·결과는 그대로여야 한다 (`sim/runner.js` 전후 결과 JSON 동일로 확인). 설정 '화면 흔들림'을 끄면 흔들림·글리치·히트스톱이 모두 꺼지고, 파티클·소리는 남는다.
 - 엔진 안의 시간 흐름은 틱 카운트(`tickInDay`, `eventTicksLeft`)로 처리한다. `setTimeout`/`setInterval`은 UI 쪽 게임 루프(`window.onload`)에만 둔다.
 - C#으로 옮기기 쉬운 형태를 선호: 명확한 필드를 가진 평범한 객체, 순수 함수, 숫자 상수는 이름 있는 상수로. JS 전용 트릭(동적 프로퍼티 추가, 암묵적 형변환, 프로토타입 조작)은 피한다.
 - 금액 단위는 "만 원" 정수 기준(`₩ 10,000만`)을 유지한다.
