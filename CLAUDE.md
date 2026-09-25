@@ -8,11 +8,23 @@
 - 다음 단계: **Unity + C#으로 이식** 예정 → 지금 작성하는 게임 로직은 그대로 C#으로 옮길 수 있어야 한다.
 - 개발 기록: `DEVELOPMENT_LOG.md` / 기능 현황: `README.md`
 
+## 공통 규칙 (모든 작업에 적용)
+
+- 게임 로직(ENGINE)은 DOM을 건드리지 않는다. UI에는 `emit()`으로 이벤트만 알린다. 나중에 다른 엔진으로 옮기기 위한 원칙이다.
+- 밸런스 수치는 전부 파일 상단 CONFIG 상수로 둔다. 코드 중간에 숫자를 박지 않는다.
+- 엔진의 무작위는 전부 `rand()`를 쓴다 (`Math.random` 직접 호출 금지 — UI 연출은 예외). `setSeed(n)`이면 같은 시드 = 같은 판.
+- 금지 소재: 한강·다리·투신·수온 등 자살을 연상시키는 표현, 실존 기업명·실존 티커(삼성전자, NVDA, TSLA 등). 게임 오버·블랙코미디는 재정적 파산 소재(반대매매, 깡통계좌, 영끌 실패 등)로만 쓴다.
+- UI를 바꾸면 Playwright로 1920×1080, 1366×768 스크린샷을 찍어 확인한다.
+- 밸런스를 바꾸면 `tools/sim` 시뮬레이터를 변경 전/후로 돌리고 표로 비교해서 보고한다. 기준점은 `docs/balance-baseline.md`.
+  - 실행: `node tools/sim/sim.cjs [--n 400] [--tip A|B|random] [--strategies nothing,stocksOnly,allCards,yolo,shopper] [--file docs/demo] [--md out.md]`
+  - 변경 전: `git show HEAD:docs/demo > /tmp/before && node tools/sim/sim.cjs --file /tmp/before`
+
 ## 파일 구조
 
 - `docs/demo` — 프로토타입 본체 (단일 HTML 파일, **확장자 없음**). CSS·마크업·JS가 한 파일에 들어 있다.
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
+- `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 5종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 
 ## 기술 스택
 
