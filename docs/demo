@@ -1540,9 +1540,15 @@ const TIP_EVENTS = [
 ];
 
 /* 게임오버 원인 판정 기준 (문구는 UI의 ENDINGS) */
-const END_NEAR_MISS_PCT = 0.90;  // 목표의 90% 이상에서 미달 → '아깝다'
-const END_HODL_SHARE    = 0.50;  // 부족분의 절반 이상이 평가손실 → '존버 실패'
-const END_LIQ_ADDICT    = 3;     // 한 판 반대매매 이 횟수 이상 → '반대매매 단골'
+// 목표 미달 엔딩 판정 (classifyEnd). 위에서부터 먼저 맞는 것
+//   이번 주 매수 0회 + 현금 위주 → 관망의 신 · 주중에 목표를 넘겼다가 미달 → 천당과 지옥 · 아깝다 → 반대매매 단골
+//   → 부족분의 END_CAUSE_SHARE 이상을 차지한 손실 원인 (과징금 → 찌라시 → 이자 → 평가손실 → 확정손실) → 수익은 났지만 미달 → 깡통 계좌
+const END_NEAR_MISS_PCT      = 0.90;  // 아깝다: 목표의 90% 이상이면서
+const END_NEAR_MISS_PROGRESS = 0.50;  //         이번 주 필요 상승분(목표 − 주 시작 순자산)의 50% 이상을 벌었을 때 (주간 수익 플러스)
+const END_CAUSE_SHARE        = 0.50;  // 부족분(목표 − 순자산)의 절반 이상을 한 원인이 차지하면 그 원인의 엔딩
+const END_LIQ_ADDICT         = 3;     // 한 판 반대매매 이 횟수 이상 → '반대매매 단골'
+const END_SIDELINE_INVESTED  = 0.50;  // 관망의 신: 매수 0회 + 결산 때 직접 산 포지션(찌라시 제외) 노출액이 순자산의 이 비율 미만
+const END_ROUND_TRIP_OVER    = 0.03;  // 천당과 지옥: 주중 최고 순자산이 목표를 이만큼(+3%) 넘겼다가 결산에서 미달
 
 /* 시작 덱 15장: 종목 8 + 증강 7 */
 const STARTER_DECK = [
@@ -2120,7 +2126,7 @@ function openPosition(stockId, principal, lev, dir, payCash){
     id: run.nextPosId++, assetId: stockId, name: s.name, dir, lev,
     principal, shares: exp / assets[stockId].price, entryExposure: exp,
     stopLoss: false, takeProfit: false, trailing: false, trailPeak: 0,
-    protectedToday: false, diamond: false, daysHeld: 0
+    protectedToday: false, diamond: false, daysHeld: 0, viaTip: false
   };
   run.positions.push(p);
   emit('bought', {pos: p, merged: false, added: principal});
@@ -2177,9 +2183,12 @@ function sellAllPositions(){
 /* ── 대기 중인 매수 효과 (신용·영끌·공매도 → 다음 종목 카드에 적용) ── */
 function resetPending(){ run.pending.lev = 1; run.pending.dir = 1; run.pending.principalMult = 1; }
 const stockCost = s => s.cost * run.pending.principalMult;
+/* 카드로 한 매수: 횟수를 세고 '내가 산 포지션'으로 표시 (찌라시가 사게 한 것은 제외) — '관망의 신' 판정용 */
+function noteBuy(p){ run.buys++; p.viaTip = false; }
 function buyStock(stockId){
   const s = STOCK_BY_ID[stockId];
   const p = openPosition(s.id, stockCost(s), run.pending.lev, run.pending.dir, true);
+  noteBuy(p);
   inverseMasterDraw(s.id);
   return p;
 }
@@ -2292,13 +2301,14 @@ defCard('avgDown', '물타기', 'buy', 1, 'common', 'position', false,
     const add = p.principal * AVG_DOWN_RATIO;
     run.cash -= add;
     addToPosition(p, add);
+    noteBuy(p);
   });
 defCard('ipo', '공모주 청약', 'buy', 1, 'uncommon', null, true,
   `무작위 종목(인버스 제외)을 ₩${IPO_AMOUNT}만어치 공짜로 1x 매수.`,
   () => true,
   () => {
     const pool = STOCKS.filter(s => s.beta > 0);
-    openPosition(pool[randInt(pool.length)].id, IPO_AMOUNT, 1, 1, false);
+    noteBuy(openPosition(pool[randInt(pool.length)].id, IPO_AMOUNT, 1, 1, false));
   });
 defCard('fullBuy', '풀매수', 'buy', 2, 'legendary', null, false,
   '손패의 모든 종목을 행동력 없이 매수. 대기 효과 적용, 원금 배수(영끌)는 첫 종목만.',
@@ -2321,7 +2331,7 @@ defCard('chaseLimit', '상한가 따라잡기', 'buy', 1, 'rare', null, false,
   () => {
     const top = STOCKS.slice().sort((a, b) => assets[b.id].lastDayChg - assets[a.id].lastDayChg)[0];
     const hot = assets[top.id].lastDayChg >= CHASE_HOT_PCT;
-    openPosition(top.id, CHASE_AMOUNT, hot ? CHASE_HOT_LEV : 1, 1, true);
+    noteBuy(openPosition(top.id, CHASE_AMOUNT, hot ? CHASE_HOT_LEV : 1, 1, true));
   });
 defCard('antArmy', '개미 군단 총공격', 'buy', 3, 'mythic', null, true,
   `이번 주 종목 카드 행동력 0, 쓸 때마다 ${ANT_ARMY_DRAW}장 드로우. 소멸.`,
@@ -2471,7 +2481,7 @@ defCard('cashOut', '현금화', 'defense', 0, 'common', 'position', false,
 defCard('hedge', '인버스 헤지', 'defense', 1, 'uncommon', null, false,
   `보유 롱 노출액의 ${pct(HEDGE_RATIO)}만큼 지수 인버스를 1x 매수(현금 사용).`,
   () => hedgeAmount() >= 1,
-  () => { openPosition(HEDGE_STOCK, hedgeAmount(), 1, 1, true); inverseMasterDraw(HEDGE_STOCK); });
+  () => { noteBuy(openPosition(HEDGE_STOCK, hedgeAmount(), 1, 1, true)); inverseMasterDraw(HEDGE_STOCK); });
 defCard('interestFree', '이자 유예', 'defense', 0, 'uncommon', null, false,
   '오늘 신용·대차 이자 면제. 카드 1장을 뽑는다.',
   () => !run.interestFree,
@@ -2597,8 +2607,9 @@ function newRun(){
     phase: 'premarket',          // premarket | market | reward | shop | over
     round: 1, day: 1, tickInDay: 0,
     cash: START_CASH, realized: 0, interestPaid: 0, overdraft: 0,
-    liquidations: 0, peakEquity: START_CASH,
-    weekStart: { equity: START_CASH, realized: 0, liquidations: 0, interestPaid: 0 },   // 주간 결산 비교 기준
+    liquidations: 0, peakEquity: START_CASH, weekPeak: START_CASH,   // 판 최고 · 이번 주 최고 순자산
+    buys: 0, finesPaid: 0, tipNet: 0,   // 누적: 카드로 매수한 횟수 · 금감원 과징금 · 찌라시 순자산 변화 (엔딩 판정용)
+    weekStart: { equity: START_CASH, realized: 0, liquidations: 0, interestPaid: 0, buys: 0, finesPaid: 0, tipNet: 0 },   // 주간 결산 비교 기준
     lastLiquidation: { lev: 0, dir: 0, round: 0, day: 0 },   // 파산 원인 판정용
     misuDefault: false,   // 반대매매 미수를 현금으로 못 갚음 → 파산
     weeksCleared: 0, lastWeek: null, endCause: '',
@@ -2717,6 +2728,7 @@ function sanctionFss(){
     const fine = Math.round(Math.max(0, netEquity()) * FSS_FINE_PCT);
     run.cash -= fine;
     run.fssFines++;
+    run.finesPaid += fine;
     emit('fssSanction', {kind, amount: fine});
   } else if(kind === 'ban'){
     run.buyBanNext = true;
@@ -2805,7 +2817,11 @@ function applyTipEffect(tip, ef){
   if(ef.kind === 'cash') run.cash += ef.amount * tipScale();
   else if(ef.kind === 'buy'){
     const amount = Math.min(ef.amount * tipScale(), Math.max(0, run.cash));   // 현금이 모자라면 있는 만큼만
-    if(amount >= 1) openPosition(stockId, amount, 1, 1, true);
+    if(amount >= 1){
+      const fresh = !findSamePosition(stockId, 1, 1);   // 내가 산 포지션에 합쳐지면 그대로 내 포지션
+      const p = openPosition(stockId, amount, 1, 1, true);
+      if(fresh) p.viaTip = true;
+    }
   }
   else if(ef.kind === 'shock') shockStock(stockId, ef.pct);
   else if(ef.kind === 'pump') run.pumps[stockId] = ef.dir;
@@ -2841,6 +2857,7 @@ function resolveTip(choiceIdx){
   choice.outcomes[outcomeIdx].effects.forEach(ef => applyTipEffect(tip, ef));
   const result = { eventId: tip.eventId, stockId: tip.stockId, choiceIdx, outcomeIdx,
                    delta: netEquity() - eq0, cashDelta: run.cash - cash0 };
+  run.tipNet += result.delta;
   run.tipLog.unshift(result);
   if(run.tipLog.length > TIP_LOG_SIZE) run.tipLog.pop();
   run.pendingTip = null;
@@ -2858,7 +2875,7 @@ function tick(){
   updateMarketEvent();
   checkOrders();
   checkMarginCalls();
-  run.peakEquity = Math.max(run.peakEquity, netEquity());
+  notePeak(netEquity());
   if(checkBankruptcy()) return;
   if(run.circuitToday && !run.circuitTripped && netEquity() <= run.marketOpenEquity * (1 - CIRCUIT_DROP)){
     run.circuitTripped = true;
@@ -2919,7 +2936,7 @@ function endOfRound(){
     emit('relicTriggered', {id: 'parents', amount: bailout});
     eq = netEquity();
   }
-  run.peakEquity = Math.max(run.peakEquity, eq);   // 틱 밖(카드·찌라시·결산 보너스)에서 오른 순자산도 최고 기록에 반영
+  notePeak(eq);   // 틱 밖(카드·찌라시·결산 보너스)에서 오른 순자산도 최고 기록에 반영
   run.lastWeek = weekSummary(eq, target, diamondBonus, bailout);
   if(eq < target) return endRun('MISSED');
   run.weeksCleared = run.round;
@@ -2939,12 +2956,22 @@ function weekSummary(eq, target, diamondBonus, bailout){
     weekPnl: eq - ws.equity, weekReturn: ws.equity > 0 ? eq / ws.equity - 1 : 0,
     realized: run.realized - ws.realized, liquidations: run.liquidations - ws.liquidations,
     interest: run.interestPaid - ws.interestPaid, diamondBonus, bailout,
-    positions: run.positions.length, unrealized: run.positions.reduce((sum, p) => sum + posPnl(p), 0)
+    positions: run.positions.length, unrealized: run.positions.reduce((sum, p) => sum + posPnl(p), 0),
+    invested: eq > 0 ? run.positions.filter(p => !p.viaTip).reduce((sum, p) => sum + exposure(p), 0) / eq : 0,   // 직접 산 포지션 노출액 ÷ 순자산
+    buys: run.buys - ws.buys, fines: run.finesPaid - ws.finesPaid, tipNet: run.tipNet - ws.tipNet, peak: run.weekPeak,
+    progress: target > ws.equity ? (eq - ws.equity) / (target - ws.equity) : 1   // 이번 주 필요 상승분 중 번 비율
   };
 }
 
+function notePeak(eq){
+  run.peakEquity = Math.max(run.peakEquity, eq);
+  run.weekPeak = Math.max(run.weekPeak, eq);
+}
+
 function markWeekStart(){
-  run.weekStart = { equity: netEquity(), realized: run.realized, liquidations: run.liquidations, interestPaid: run.interestPaid };
+  run.weekStart = { equity: netEquity(), realized: run.realized, liquidations: run.liquidations, interestPaid: run.interestPaid,
+                    buys: run.buys, finesPaid: run.finesPaid, tipNet: run.tipNet };
+  run.weekPeak = run.weekStart.equity;
 }
 
 /* 게임오버 원인: 파산은 직전 반대매매의 종류로, 목표 미달은 이번 주 내용으로 */
@@ -2959,9 +2986,17 @@ function classifyEnd(reason){
     return 'DEBT_SPIRAL';
   }
   const w = run.lastWeek;
-  if(w.pct >= END_NEAR_MISS_PCT) return 'NEAR_MISS';
-  if(w.unrealized < 0 && -w.unrealized >= (w.target - w.eq) * END_HODL_SHARE) return 'HODL_FAIL';
+  const big = loss => loss > 0 && loss >= (w.target - w.eq) * END_CAUSE_SHARE;   // 부족분의 큰 몫을 차지한 손실
+  if(w.buys === 0 && w.invested < END_SIDELINE_INVESTED) return 'SIDELINED';
+  if(w.peak >= w.target * (1 + END_ROUND_TRIP_OVER)) return 'ROUND_TRIP';
+  if(w.weekPnl > 0 && w.pct >= END_NEAR_MISS_PCT && w.progress >= END_NEAR_MISS_PROGRESS) return 'NEAR_MISS';
   if(run.liquidations >= END_LIQ_ADDICT) return 'LIQ_ADDICT';
+  if(big(w.fines)) return 'FSS_FINED';
+  if(big(-w.tipNet)) return 'TIP_VICTIM';
+  if(big(w.interest)) return 'INTEREST_DRAIN';
+  if(big(-w.unrealized)) return 'HODL_FAIL';
+  if(big(-w.realized)) return 'PANIC_SELL';
+  if(w.weekPnl > 0) return 'TOO_SLOW';
   return 'SLOW_BLEED';
 }
 
@@ -3685,6 +3720,7 @@ function showDeck(){
 }
 
 /* 게임오버 문구 — 전부 재정적 파산 소재(반대매매·깡통계좌·존버/영끌 실패)로만 쓴다 */
+const shortfallShare = (w, amount) => Math.round(amount / (w.target - w.eq) * 100);   // 손실이 부족분에서 차지한 비율
 const bustWhy = () => run.misuDefault ? '갭 가격에 체결돼 미수 발생 — 현금으로 못 갚아 계좌 동결.' : '순자산이 0 아래로.';
 const ENDINGS = {
   YOLO_BUST:     { title:'영끌 실패',              color:'var(--red)',
@@ -3708,6 +3744,27 @@ const ENDINGS = {
   LIQ_ADDICT:    { title:'반대매매 단골손님',      color:'var(--gold)',
                    sub:'증권사 VIP 등극. 담보 부족 문자는 이제 알림음만 들어도 압니다.',
                    cause:() => `이번 판 반대매매 ${run.liquidations}회. 그래도 레버리지는 못 끊었습니다.` },
+  SIDELINED:     { title:'관망의 신',              color:'var(--gold)',
+                   sub:'현금이 최고의 포지션이라더니, 목표도 현금처럼 제자리.',
+                   cause:w => `이번 주 매수 0회. 목표까지 ${fmtMoney(w.target - w.eq)} 모자람.` },
+  ROUND_TRIP:    { title:'천당과 지옥',            color:'var(--gold)',
+                   sub:'목표를 넘겼던 계좌가 결산 전에 전부 토해냈습니다. 익절은 내일 하려고 했죠?',
+                   cause:w => `이번 주 최고 ${fmtMoney(w.peak)} (목표 ${fmtMoney(w.target)} 돌파) → 결산 ${fmtMoney(w.eq)}.` },
+  FSS_FINED:     { title:'금감원에 털렸습니다',    color:'var(--gold)',
+                   sub:'작전은 성공했는데 과징금이 수익을 가져갔습니다. 감시 게이지는 장식이 아니었습니다.',
+                   cause:w => `이번 주 과징금 ${fmtMoney(w.fines)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, w.fines)}%에 해당.` },
+  TIP_VICTIM:    { title:'찌라시 피해자',          color:'var(--gold)',
+                   sub:'"이건 확실한 정보야." 확실하게 틀린 정보였습니다.',
+                   cause:w => `이번 주 찌라시로 순자산 ${fmtSigned(w.tipNet)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, -w.tipNet)}%에 해당.` },
+  INTEREST_DRAIN:{ title:'이자 노예',              color:'var(--gold)',
+                   sub:'번 돈은 증권사가, 잃은 돈은 내가. 신용이자는 매일 밤 꼬박꼬박 빠져나갔습니다.',
+                   cause:w => `이번 주 이자 ${fmtMoney(w.interest)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, w.interest)}%에 해당.` },
+  PANIC_SELL:    { title:'손절 장인',              color:'var(--gold)',
+                   sub:'사면 떨어지고, 팔면 올랐습니다. 매도 버튼만 반질반질해졌습니다.',
+                   cause:w => `이번 주 확정손익 ${fmtSigned(w.realized)} — 부족분 ${fmtMoney(w.target - w.eq)}의 ${shortfallShare(w, -w.realized)}%에 해당.` },
+  TOO_SLOW:      { title:'거북이 수익',            color:'var(--gold)',
+                   sub:'벌긴 벌었습니다. 목표가 더 빨리 달렸을 뿐.',
+                   cause:w => `이번 주 ${fmtSigned(w.weekPnl)} (${fmtPct(w.weekReturn)}) — 그래도 목표까지 ${fmtMoney(w.target - w.eq)} 모자람.` },
   SLOW_BLEED:    { title:'깡통 계좌',              color:'var(--gold)',
                    sub:'큰 한 방은 없었습니다. 조금씩, 꾸준히, 확실하게 잃었습니다.',
                    cause:w => `목표 미달 (달성률 ${Math.floor(w.pct * 100)}%).` },
