@@ -187,7 +187,7 @@ body::after{
 }
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 
-.badge-wrap{position:relative;height:72px;margin:8px 0 0;}
+.badge-wrap{position:relative;height:72px;margin:18px 0 0;}   /* 회전한 부적 모서리가 위 문구를 가리지 않도록 */
 .jibu-badge{
   position:absolute;top:0;right:12%;
   width:82px;height:82px;
@@ -1023,7 +1023,7 @@ body::after{
 
   <!-- ====== 01 TITLE ====== -->
   <section id="screen-title" class="screen active">
-    <div class="eyebrow">★ "한강물이 따뜻한가요?" ★</div>
+    <div class="eyebrow">★ "오늘도 반대매매 없는 하루 되세요" ★</div>
     <div class="badge-wrap">
       <div class="jibu-badge">떡상<span>기원부적</span></div>
     </div>
@@ -1278,7 +1278,7 @@ const RELIC_GUKBAP_LOSS_CUT      = 0.5;   // 국밥 정신: 평가손실 50% 감
 const RELIC_SEAL_DAYS            = 3;     // 존버의 인장: 장 마감을 이만큼 넘긴 포지션부터
 const RELIC_SEAL_BONUS           = 0.10;  // 존버의 인장: 평가이익 +10%
 const RELIC_VIP_PUMP_CHANCE      = 0.85;  // 리딩방 VIP: 찌라시 급등 확률
-const RELIC_HANRIVER_PENALTY_CUT = 1.0;   // 한강 수온 알림: 반대매매 투매 손실 면제 비율
+const RELIC_HOTLINE_PENALTY_CUT = 1.0;    // 증권사 담당자 핫라인: 반대매매 투매 손실 면제 비율
 const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
 const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
@@ -1295,9 +1295,9 @@ const RELICS = [
   { id:'vip',      icon:'📱', name:'리딩방 VIP',      rarity:'uncommon',
     desc:`리딩방 찌라시 급등 확률 ${Math.round(PUMP_UP_CHANCE * 100)}% → ${Math.round(RELIC_VIP_PUMP_CHANCE * 100)}%.`,
     flavor:'월 99만원. 무료방보다 3초 빨리 알려준다.' },
-  { id:'hanriver', icon:'🌊', name:'한강 수온 알림',  rarity:'uncommon',
-    desc:`반대매매 때 투매 손실(노출액 ${Math.round(LIQUIDATION_PENALTY * 100)}%)이 ${Math.round(RELIC_HANRIVER_PENALTY_CUT * 100)}% 면제된다.`,
-    flavor:'오늘 한강 수온 4℃. 아직은 아닙니다.' },
+  { id:'hotline', icon:'📞', name:'증권사 담당자 핫라인', rarity:'uncommon',
+    desc:`반대매매 때 투매 손실(노출액 ${Math.round(LIQUIDATION_PENALTY * 100)}%)이 ${Math.round(RELIC_HOTLINE_PENALTY_CUT * 100)}% 면제된다.`,
+    flavor:'담보 부족 문자보다 전화가 먼저 온다.' },
   { id:'capital',  icon:'🏦', name:'캐피탈 VVIP 카드', rarity:'common',
     desc:`신용·대차·마이너스 통장 이자 ${Math.round(RELIC_CAPITAL_INTEREST_CUT * 100)}% 할인.`,
     flavor:'고객님은 저희 캐피탈의 소중한 VVIP입니다. (연 19.9%)' },
@@ -1434,7 +1434,7 @@ class HighDensityBgManager {
     this.container = document.getElementById('bgChartContainer');
     this.activeCharts = [];
     this.maxCharts = 36; // 밀도 높임 (최대 36개)
-    this.symbols = ['KORX', 'TECH', 'MOON', 'DOGE', 'HODL', 'YOLO', 'NVDA', 'BTC', 'ETH', 'MEME', 'TSLA', 'SPY', 'SOXL', 'SQQQ', 'NQ1!'];
+    this.symbols = ['KORX', 'TECH', 'MOON', 'PUMP', 'HODL', 'YOLO', 'SEMI', 'COIN', 'GKBP', 'MEME', 'LEV3', 'APE', 'INV2', 'FOMO', 'ANT!'];
     this.phrases = ['BUY', 'SELL', 'HOLD', '▲ LIMIT UP', '▼ PANIC', 'FOMO', 'REKT', 'GAZUA', 'RALLY', 'DUMP', 'WHALE', 'SQUEEZE'];
     
     this.spawnTimer = null;
@@ -2024,7 +2024,7 @@ function checkMarginCalls(){
     .filter(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < MARGIN_CALL_RATIO)
     .forEach(p => {
       const fullPenalty = exposure(p) * LIQUIDATION_PENALTY;
-      const saved = hasRelic('hanriver') ? fullPenalty * RELIC_HANRIVER_PENALTY_CUT : 0;
+      const saved = hasRelic('hotline') ? fullPenalty * RELIC_HOTLINE_PENALTY_CUT : 0;
       const penalty = fullPenalty - saved;
       const pnl = closePosition(p, penalty);
       run.liquidations++;
@@ -2837,7 +2837,7 @@ function onGameEvent(type, d){
       break;
     case 'marginCall':
       toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (` +
-        (d.saved > 0 ? `🌊 투매 손실 ${Math.round(d.saved)}만 면제` : `투매 −${Math.round(d.penalty)}만`) + ' · 트라우마 +1)', 'bad');
+        (d.saved > 0 ? `📞 투매 손실 ${Math.round(d.saved)}만 면제` : `투매 −${Math.round(d.penalty)}만`) + ' · 트라우마 +1)', 'bad');
       flashLiquidation();
       break;
     case 'reshuffle': toast('버린 카드를 섞어 새 덱으로', 'info'); break;
@@ -3675,7 +3675,7 @@ $('overlay').addEventListener('click', e => {
   else if(act === 'title'){ hideOverlay(); switchTab('title'); }
 });
 
-const tickerContent = '▶ 삼성전자 10만 전자 가즈아! &nbsp;·&nbsp; DOGE TO THE MOON 🚀 &nbsp;·&nbsp; 존버는 승리한다 &nbsp;·&nbsp; 풀매수 기원단 &nbsp;·&nbsp; 영끌 아니면 영원히 무주택 &nbsp;·&nbsp; HODL OR DIE &nbsp;·&nbsp; ';
+const tickerContent = '▶ 반도체전자 10만 전자 가즈아! &nbsp;·&nbsp; 밈코인 TO THE MOON 🚀 &nbsp;·&nbsp; 존버는 승리한다 &nbsp;·&nbsp; 풀매수 기원단 &nbsp;·&nbsp; 영끌 아니면 영원히 무주택 &nbsp;·&nbsp; HODL OR DIE &nbsp;·&nbsp; ';
 document.getElementById('tickerText').innerHTML = tickerContent.repeat(3);
 
 window.addEventListener('resize', () => { if(run) renderMainChart(); });
