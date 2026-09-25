@@ -1108,7 +1108,7 @@ body::after{
           <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
           <span id="dayText">DAY 1/5 · 장전</span>
         </div>
-        <div class="fss" id="fssBox" title="시장 카드(비둘기·매파·CEO 트윗·리딩방)를 쓸 때마다 쌓인다. 가득 차면 제재.">
+        <div class="fss" id="fssBox" title="시장 카드(비둘기·매파·CEO 트윗·리딩방·작전 세력)를 쓸 때마다 쌓인다. 가득 차면 제재: 과징금 / 매수 금지 / 강제 청산.">
           <span class="fss-label">☎ 금감원 감시</span>
           <div class="fss-track"><div class="fss-fill" id="fssFill"></div></div>
           <span class="fss-state" id="fssState">조용함</span>
@@ -1335,14 +1335,14 @@ const REVERSION_TICKS     = 3;     // 카드로 만든 강세·약세장 다음 
 const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세장 12의 절반) — 차익실현 매물
 
 // 금감원 감시 게이지 — 시장 카드를 쓸 때마다 쌓이고, 주가 바뀌면 조금 줄고, 가득 차면 제재
-const FSS_CARDS           = ['dove', 'hawk', 'ceoTweet', 'pump', 'manip'];
 const FSS_MAX             = 100;
-const FSS_PER_CARD        = 34;    // 시장 카드 1장당 (3장이면 가득 → 제재)
+// 시장 카드별 게이지 상승량 (설계서 20/15/25/50 비율 × 1.7 — 비둘기·매파 3장이면 제재)
+const FSS_GAIN            = { dove: 34, hawk: 34, ceoTweet: 26, pump: 42, manip: 85 };
 const FSS_WEEKLY_DECAY    = 15;    // 새 주가 시작될 때 줄어드는 양
 const FSS_DAILY_DECAY     = 5;     // 장 마감마다 줄어드는 양
 const FSS_CONFESS_CUT     = 40;    // '자진 신고' 카드: 게이지 감소량
 const FSS_WARN            = 60;    // 이 이상이면 '내사 착수' (2장째 — 한 장 더 쓰면 제재)
-const FSS_FINE_CHANCE     = 0.5;   // 제재 중 과징금이 나올 확률 (나머지는 다음 날 매수 금지)
+const FSS_SANCTION_WEIGHTS = { fine: 1, ban: 1, liquidate: 1 };   // 제재 종류 가중치: 과징금 / 다음 날 매수 금지 / 가장 큰 포지션 강제 청산
 const FSS_FINE_PCT        = 0.05;  // 과징금 = 순자산의 5%
 const FSS_BAN_TYPES       = ['stock', 'buy'];   // 매수 금지 날 못 쓰는 카드 종류
 
@@ -2352,19 +2352,19 @@ defCard('valueGod', '가치투자의 신', 'hold', 2, 'mythic', null, true,
 
 /* 행동 */
 defCard('pump', '리딩방 찌라시', 'action', 1, 'uncommon', 'asset', false,
-  `오늘 작전: ${pct(PUMP_UP_CHANCE)} 급등(+${pct(PUMP_UP_PCT)}) / ${pct(1 - PUMP_UP_CHANCE)} 설거지(−${pct(PUMP_DOWN_PCT)}). 개장 때 공개. 금감원 +${FSS_PER_CARD}.`,
+  `오늘 작전: ${pct(PUMP_UP_CHANCE)} 급등(+${pct(PUMP_UP_PCT)}) / ${pct(1 - PUMP_UP_CHANCE)} 설거지(−${pct(PUMP_DOWN_PCT)}). 개장 때 공개. 금감원 +${FSS_GAIN.pump}.`,
   s => !run.pumps[s.id],
   s => { run.pumps[s.id] = rand() < pumpUpChance() ? 1 : -1; });
 defCard('dove', '연준 비둘기 발언', 'action', 1, 'uncommon', null, false,
-  `개장 판정: ${marketOddsText('dove')}. 금감원 +${FSS_PER_CARD}.`,
+  `개장 판정: ${marketOddsText('dove')}. 금감원 +${FSS_GAIN.dove}.`,
   () => run.marketCard !== 'dove',
   () => { run.marketCard = 'dove'; });
 defCard('hawk', '연준 매파 발언', 'action', 1, 'uncommon', null, false,
-  `개장 판정: ${marketOddsText('hawk')}. 금감원 +${FSS_PER_CARD}.`,
+  `개장 판정: ${marketOddsText('hawk')}. 금감원 +${FSS_GAIN.hawk}.`,
   () => run.marketCard !== 'hawk',
   () => { run.marketCard = 'hawk'; });
 defCard('ceoTweet', 'CEO 밈 트윗', 'action', 0, 'uncommon', null, false,
-  `개장 판정: ${marketOddsText('ceoTweet')}. 금감원 +${FSS_PER_CARD}.`,
+  `개장 판정: ${marketOddsText('ceoTweet')}. 금감원 +${FSS_GAIN.ceoTweet}.`,
   () => run.marketCard !== 'ceoTweet',
   () => { run.marketCard = 'ceoTweet'; });
 defCard('indicators', '보조지표 42개', 'action', 0, 'common', null, false,
@@ -2385,7 +2385,7 @@ defCard('rotation', '테마 순환매', 'action', 1, 'rare', null, false,
     if(n >= ROTATION_AP_SECTORS) run.ap += ROTATION_AP;
   });
 defCard('manip', '작전 세력', 'action', 2, 'mythic', 'asset', true,
-  `오늘 이 종목 확정 +${pct(MANIP_PCT)}. 내일 개장 ${Math.round(MANIP_GAP * 100)}% 갭. 금감원 감시 큼. 소멸.`,
+  `오늘 이 종목 확정 +${pct(MANIP_PCT)}. 내일 개장 ${Math.round(MANIP_GAP * 100)}% 갭. 금감원 +${FSS_GAIN.manip}. 소멸.`,
   s => !run.pumps[s.id],
   s => { run.pumps[s.id] = PUMP_MANIP; run.gapToday.push({ stockId: s.id, pct: MANIP_GAP }); });
 
@@ -2488,7 +2488,7 @@ function playCard(handIdx, targetId){
   card.play(t);
   if(card.type === 'stock' && run.week.antArmy) drawCards(ANT_ARMY_DRAW);   // 개미 군단 총공격
   emit('cardPlayed', {card});
-  if(FSS_CARDS.indexOf(card.id) >= 0) raiseFss();
+  if(FSS_GAIN[card.id]) raiseFss(FSS_GAIN[card.id]);
   checkBankruptcy();
   return true;
 }
@@ -2614,9 +2614,9 @@ function rollMarketCard(cardId){
 }
 
 /* 금감원 감시 게이지 */
-function raiseFss(){
+function raiseFss(gain){
   const before = run.fss;
-  run.fss = Math.min(FSS_MAX, run.fss + FSS_PER_CARD);
+  run.fss = Math.min(FSS_MAX, run.fss + gain);
   run.fssPeak = Math.max(run.fssPeak, run.fss);
   emit('fssRaised', {level: run.fss, warn: before < FSS_WARN && run.fss >= FSS_WARN && run.fss < FSS_MAX});
   if(run.fss >= FSS_MAX) sanctionFss();
@@ -2628,14 +2628,26 @@ function decayFss(amount){
 function sanctionFss(){
   run.fss = 0;
   run.fssSanctions++;
-  if(rand() < FSS_FINE_CHANCE){
+  const kinds = Object.keys(FSS_SANCTION_WEIGHTS);
+  const total = kinds.reduce((sum, k) => sum + FSS_SANCTION_WEIGHTS[k], 0);
+  let roll = rand() * total, kind = kinds[kinds.length - 1];
+  for(let i = 0; i < kinds.length; i++){
+    roll -= FSS_SANCTION_WEIGHTS[kinds[i]];
+    if(roll < 0){ kind = kinds[i]; break; }
+  }
+  if(kind === 'liquidate' && run.positions.length === 0) kind = 'fine';   // 청산할 포지션이 없으면 과징금
+  if(kind === 'fine'){
     const fine = Math.round(Math.max(0, netEquity()) * FSS_FINE_PCT);
     run.cash -= fine;
     run.fssFines++;
-    emit('fssSanction', {kind: 'fine', amount: fine});
-  } else {
+    emit('fssSanction', {kind, amount: fine});
+  } else if(kind === 'ban'){
     run.buyBanNext = true;
-    emit('fssSanction', {kind: 'ban'});
+    emit('fssSanction', {kind});
+  } else {
+    const p = run.positions.slice().sort((a, b) => exposure(b) - exposure(a))[0];   // 가장 큰 포지션
+    const pnl = closePosition(p, 0);
+    emit('fssSanction', {kind, pos: p, pnl});
   }
 }
 
@@ -3209,7 +3221,9 @@ function onGameEvent(type, d){
         <div class="ov-sub">"고객님 계좌에서 시세조종이 의심되는 거래가 반복적으로 확인되어 연락드렸습니다."</div>
         <div class="fss-verdict">${d.kind === 'fine'
           ? `과징금 <b>−${fmtMoney(d.amount)}</b><br><small>순자산의 ${pct(FSS_FINE_PCT)}. 리딩방 회비보다는 쌉니다.</small>`
-          : `내일 하루 <b>신규 매수 금지</b><br><small>"투자주의 계좌" 지정. 보유 종목은 팔 수 있습니다.</small>`}</div>
+          : d.kind === 'ban'
+          ? `내일 하루 <b>신규 매수 금지</b><br><small>"투자주의 계좌" 지정. 보유 종목은 팔 수 있습니다.</small>`
+          : `<b>${d.pos.name} ${posLabel(d.pos)}</b> 강제 청산 ${fmtSigned(d.pnl)}<br><small>보유 중 가장 큰 포지션. "증거 보전 차원입니다."</small>`}</div>
         <div class="ov-sub">감시 게이지는 0으로 돌아갑니다. 당분간 조용히 지내세요.</div>
         <button class="ov-btn" data-act="close">…네, 알겠습니다</button>`);
       break;
