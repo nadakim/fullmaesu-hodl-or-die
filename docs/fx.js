@@ -190,11 +190,12 @@ const Fx = (() => {
   }
   function draw(p){
     if(p.delay > 0) return;
-    const x = Math.round(p.x), y = Math.round(p.y), s = p.size;
-    cx.globalAlpha = p.seek ? 1 : Math.max(0, 1 - p.age / p.life);
+    const x = Math.round(p.x), y = Math.round(p.y), w = p.w || p.size, h = p.h || p.size;
+    cx.globalAlpha = p.seek || p.solid ? 1 : Math.max(0, 1 - p.age / p.life);
     cx.fillStyle = p.edge || p.color;
-    cx.fillRect(x, y, s, s);
-    if(p.edge){ cx.fillStyle = p.color; cx.fillRect(x + 1, y + 1, s - 2, s - 2); }   // 동전: 테두리 + 안쪽
+    cx.fillRect(x, y, w, h);
+    if(p.edge){ cx.fillStyle = p.color; cx.fillRect(x + 1, y + 1, w - 2, h - 2); }   // 동전·지폐: 테두리 + 안쪽
+    if(p.mark){ cx.fillStyle = p.edge; cx.fillRect(x + Math.floor(w / 2) - 1, y + 2, 2, h - 4); }   // 지폐 가운데 초상 자리
   }
   function frame(t){
     const dt = Math.min(0.05, (t - lastT) / 1000);
@@ -223,6 +224,16 @@ const Fx = (() => {
       const x0 = rnd(fromRect.left, fromRect.right), y0 = rnd(fromRect.top, fromRect.bottom);
       add({ seek: true, x: x0, y: y0, x0, y0, cx: x0 + rnd(-60, 60), cy: y0 - rnd(30, 90), tx: to.x + rnd(-20, 20), ty: to.y + rnd(-6, 6),
             dur: rnd(0.45, 0.8), age: 0, life: 99, delay: i * 0.018, size: 5, color: color('--gold'), edge: color('--gold2') });
+    }
+  }
+  // 찌라시 적중: 지폐가 화면 위에서 쏟아진다 (옛 cashRain의 DOM 지폐 → 파티클 캔버스). 끝에서 흐려진다
+  function billRain(n){
+    const W = window.innerWidth, H = window.innerHeight;
+    for(let i = 0; i < n; i++){
+      const big = Math.random() < 0.3;
+      add({ x: rnd(0, W), y: rnd(-60, -10), vx: rnd(-40, 40), vy: rnd(60, 160), g: rnd(120, 260), age: 0, life: rnd(1.1, 1.8) * Math.max(1, H / 900),
+            delay: rnd(0, 0.5), w: big ? 14 : 10, h: big ? 8 : 6, size: 6, solid: false, mark: true,
+            color: color(Math.random() < 0.8 ? '--green2' : '--gold'), edge: color('--green-dim') });
     }
   }
   // 유물 조명: 아이콘에서 픽셀이 튀어나와 영향을 받는 숫자 쪽으로 날아간다
@@ -344,7 +355,7 @@ const Fx = (() => {
   return { setOptions, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
            get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, glitch, stamp, flash, jiggle, punch, cardFly,
-           coinsTo, shatter, sparks, burst,
+           coinsTo, billRain, shatter, sparks, burst,
            get particleCount(){ return parts.length; }, get running(){ return raf !== 0; },
            get motion(){ return motion; }, get hitStopOn(){ return hitStopOn; } };
 })();

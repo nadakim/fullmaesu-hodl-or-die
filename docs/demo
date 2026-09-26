@@ -1183,6 +1183,15 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 .gap-alert.t1 .ga-name,.gap-alert.t1 .ga-pct{font-family:'Press Start 2P','Galmuri-16px',monospace;font-size:16px;}
 .gap-alert.t1 .ga-meme{font-family:'Press Start 2P','Galmuri-10px',monospace;font-size:10px;}
 .gap-alert.t1 .ga-flash{animation:none;}
+/* 찌라시 결과 알림: 갭 경보와 같은 틀 (상승 up · 횡보 flat · 하락 down) */
+.gap-alert.tip-res .ga-name{font-family:'Press Start 2P','Galmuri-14px',monospace;font-size:14px;line-height:1.6;padding:8px 14px 0;}
+.gap-alert.tip-res.t1 .ga-name{font-family:'Press Start 2P','Galmuri-11px',monospace;font-size:11px;}
+.gap-alert.tip-res .ga-slush{font-family:'Press Start 2P','Galmuri-11px',monospace;font-size:11px;line-height:1.5;margin-top:6px;color:var(--gold);}
+.gap-alert.flat .ga-box,.gap-alert.t1.flat .ga-box{box-shadow:0 0 0 2px var(--muted),5px 5px 0 #000;}
+.gap-alert.flat .ga-pct{color:var(--text);text-shadow:3px 3px 0 var(--line);}
+.gap-alert.flat .ga-flash{animation:none;}
+.ga-vig{position:absolute;inset:0;box-shadow:inset 0 0 0 40px rgba(0,0,0,.55),inset 0 0 0 90px rgba(0,0,0,.3);opacity:0;animation:gaVig .3s steps(3) forwards;}
+@keyframes gaVig{to{opacity:1;}}
 @media (max-width:900px){
   .ga-name,.ga-pct{font-family:'Press Start 2P','Galmuri-24px',monospace;font-size:24px;}
   .gap-alert.t2 .ga-name,.gap-alert.t2 .ga-pct{font-family:'Press Start 2P','Galmuri-18px',monospace;font-size:18px;}
@@ -1514,6 +1523,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 <div class="overlay" id="overlay"><div class="overlay-box" id="overlayBox"></div></div>
 
 <script src="engine.js"></script>
+<script src="assets/sfx/files.js"></script>
 <script src="audio.js"></script>
 <script src="music.js"></script>
 <script src="fx.js"></script>
@@ -2037,6 +2047,78 @@ function hideGapAlert(item){
   (item.blinks || []).forEach(r => r.classList.remove('fx-blink-up', 'fx-blink-down'));
 }
 
+/* ══ 찌라시 결과 중앙 알림 (갭 경보와 같은 틀). 순자산 변화로 상승·횡보·하락 ══ */
+const TIP_RESULT_FLAT_PCT = 0.005;   // |순자산 변화| ≤ 순자산의 0.5% → 횡보 (B로 비자금만 받은 경우 포함)
+const TIP_RESULT_BIG_PCT  = 0.05;    // 순자산의 5% 이상 → tier 3, 그 미만 tier 2 (횡보는 tier 1)
+const TIP_RESULT_MS = { 1: 1100, 2: 1500, 3: 2000 };
+const TIP_RESULT_TAPE = { up: '📈 찌라시 적중!', flat: '➖ 본전 치기', down: '📉 찌라시 설거지' };
+const TIP_RESULT_MEMES = {   // 연출용 무작위 (Math.random). 여기에만 추가
+  up:   ['리딩방 형님 믿습니다', '이번엔 진짜였다', '찌라시도 가끔 맞는다'],
+  flat: ['본전이면 승리', '아무 일도 없었다', '관망도 실력이다'],
+  down: ['리딩방 탈퇴합니다', '아는 형 연락 두절', "출처는 늘 '아는 형'"]
+};
+const fmtTipMoney = v => Math.abs(v) < 0.5 ? '±0만' : (v > 0 ? '+' : '−') + '₩' + Math.abs(Math.round(v)).toLocaleString() + '만';
+function tipResultKind(d){
+  const eq = Math.max(1, Math.abs(netEquity()));
+  const kind = d.delta > eq * TIP_RESULT_FLAT_PCT ? 'up' : d.delta < -eq * TIP_RESULT_FLAT_PCT ? 'down' : 'flat';
+  const tier = kind === 'flat' ? 1 : Math.abs(d.delta) >= eq * TIP_RESULT_BIG_PCT ? 3 : 2;
+  return { kind, tier };
+}
+function enqueueTipResult(d, fromOverlay){
+  const k = tipResultKind(d), owner = run;
+  const xs = TIP_RESULT_MEMES[k.kind];
+  const item = { kind: 'tipResult', tier: k.tier, blocking: true, duration: TIP_RESULT_MS[k.tier],
+                 payload: { d, kind: k.kind, meme: xs[Math.floor(Math.random() * xs.length)] } };
+  let done = false;
+  const finish = () => {
+    hideGapAlert(item);
+    (item.timers || []).forEach(clearTimeout);
+    if(done) return;
+    done = true;
+    if(run !== owner || run.phase === 'over') return;   // 새 판을 시작하며 스킵된 경우
+    if(fromOverlay && currentTab === 'play' && !overlayOpen) showTipResultOverlay(d);
+    if(currentTab === 'event') renderTipScreen();
+  };
+  item.play = ctx => showTipResult(item, ctx);
+  item.stop = item.skip = finish;
+  Fx.enqueue(item);
+}
+function showTipResult(item, ctx){
+  const { d, kind, meme } = item.payload, t = item.tier, T = FX_TIER[t];
+  const ev = TIP_BY_ID[d.eventId], outcome = ev.choices[d.choiceIdx].outcomes[d.outcomeIdx];
+  const el = document.createElement('div');
+  el.className = `gap-alert tip-res ${kind} t${t}`;
+  el.innerHTML = `<div class="ga-flash"></div>${kind === 'down' ? '<div class="ga-vig"></div>' : ''}${t > 1 ? '<div class="ga-rays"></div>' : ''}
+    <div class="ga-box">
+      <div class="ga-tape"><span>${TIP_RESULT_TAPE[kind]}</span></div>
+      <div class="ga-name">${fillTip(outcome.text, d.stockId)}</div>
+      <div class="ga-pct">${fmtTipMoney(0)}</div>
+      ${d.slushDelta > 0 ? `<div class="ga-slush">💼 비자금 +${Math.round(d.slushDelta).toLocaleString()}만</div>` : ''}
+      <div class="ga-meme">${meme}</div>
+    </div>`;
+  document.body.appendChild(el);
+  item.el = el;
+  item.timers = [];
+  // 금액 카운트업 (알림 시간의 40% 동안 10칸). 상승이면 칸마다 지폐 세는 소리
+  const pctEl = el.querySelector('.ga-pct'), steps = 10, span = ctx.duration * 0.4;
+  for(let k = 1; k <= steps; k++) item.timers.push(setTimeout(() => {
+    pctEl.textContent = fmtTipMoney(d.delta * k / steps);
+    if(kind === 'up') Sound.play('billFlip', { count: 3, volume: 0.7 });
+  }, 80 + span * k / steps));
+  const pitch = chainPitch(ctx);
+  if(kind === 'up'){
+    Fx.hitStop(T.hs);
+    cashRain(t === 3 ? 70 : 35);
+    Sound.play('coinDrop', { count: t === 3 ? 8 : 5, pitch });
+    if(t === 3) item.timers.push(setTimeout(() => Sound.play('cashRegister', { pitch }), 120 + span));
+  } else if(kind === 'down'){
+    Fx.hitStop(T.hs);
+    Fx.afterStop(() => Fx.shake(T.shake));
+    Sound.play('crashDown', { pitch });
+    Sound.play('crowdScream', { volume: 0.8 });   // 파일(assets/sfx/scream.*)이 있을 때만 울린다 — 합성 비명은 넣지 않았다
+  } else Sound.play('flatShrug', { pitch });
+}
+
 /* 반대매매 (tier 4 고정): 히트스톱 → 적색 섬광 → 행이 부서짐 → '반대매매' 도장 → '트라우마 카드 +1'이 덱 버튼으로 */
 function enqueueLiquidation(d){
   const item = { kind: 'marginCall', tier: 4, blocking: true, duration: 1500, payload: { rect: rectOf(posRowEl(d.pos.id)), pnl: d.pnl } };
@@ -2387,12 +2469,14 @@ function onGameEvent(type, d){
       if(currentTab === 'play') showTipOverlay();
       if(currentTab === 'event') renderTipScreen();
       break;
-    case 'tipResolved':
+    case 'tipResolved': {
       Music.unduck('tip');
-      Sound.play(d.delta > 0 ? 'tipJackpot' : d.delta < 0 ? 'tipBust' : 'uiClick');
       renderTabs();
-      if(overlayOpen && $('overlayBox').querySelector('[data-tip-choice]')) showTipResultOverlay(d);
+      const fromOverlay = overlayOpen && !!$('overlayBox').querySelector('[data-tip-choice]');
+      if(fromOverlay) hideOverlay();
+      enqueueTipResult(d, fromOverlay);   // 중앙 알림 → 끝나거나 스킵하면 결과 요약 오버레이
       break;
+    }
     case 'relicGained':
       Sound.play('relicGain');
       if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
@@ -3548,19 +3632,7 @@ function showPopNum(text, isUp){
   setTimeout(()=>pop.remove(), 900);
 }
 
-function cashRain(){
-  const layer = document.getElementById('confettiLayer');
-  const syms = ['$','₩','★','◆'];
-  for(let i=0;i<18;i++){
-    const b = document.createElement('div');
-    b.className = 'bill';
-    b.style.left = Math.random()*100+'vw';
-    b.style.animationDelay = (Math.random()*.5)+'s';
-    b.textContent = syms[Math.floor(Math.random()*syms.length)];
-    layer.appendChild(b);
-    setTimeout(()=>b.remove(), 2000);
-  }
-}
+function cashRain(n){ Fx.billRain(n || 40); }   // 지폐 비 — fx.js 파티클 캔버스 (예전 DOM 지폐 대신)
 
 /* ══════════════════════════════════════════════════════════
    흐름 제어 — 탭 전환, 새 판 시작, 입력, 게임 루프

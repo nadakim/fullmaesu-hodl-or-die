@@ -26,7 +26,17 @@
    | gapAlarm    | 강 단계 갭 경보 · 파산 직전 경고                            | 경보 사이렌 2회 (쿵 없음)              |
    | tipArrive   | tipEvent                                                    | 휴대폰 진동 "지잉 지잉"                |
    | tipJackpot  | tipResolved (delta > 0)                                     | 짧은 팡파레                            |
-   | tipBust     | tipResolved (delta < 0)                                     | 트롬본 하강 "뿌와와와"                 |
+   | tipBust     | (예전 tipResolved delta < 0 — 지금은 찌라시 결과 알림이 아래 소리들을 쓴다) | 트롬본 하강 "뿌와와와" |
+   | coinDrop    | 찌라시 결과 알림: 상승 (지폐·동전이 쏟아질 때)              | 고음 사각·사인 3개 어긋난 "짤랑" × opts.count 무작위 간격 |
+   | billFlip    | 찌라시 결과 알림: 상승, 금액 카운트업 한 칸마다             | 하이패스 노이즈 12ms × opts.count "촤르르" |
+   | cashRegister| 찌라시 결과 알림: 상승 tier 3, 카운트업 끝                  | 저음 노이즈 "철컹" + 고음 벨 "띵"      |
+   | flatShrug   | 찌라시 결과 알림: 횡보                                      | 살짝 올라갔다 내려오는 김빠진 "음~음"   |
+   | crashDown   | 찌라시 결과 알림: 하락                                      | 긴 하강 글리산도 + 저음 쿵             |
+   | crowdScream | 찌라시 결과 알림: 하락 — 합성음 없음, 파일(scream.*)이 있을 때만 | (파일 전용)                      |
+
+   파일 덮어쓰기: docs/assets/sfx/<이름>.ogg|mp3|wav 를 docs/assets/sfx/files.js의 SFX_FILES 목록에 적으면 합성음 대신 그 파일을 튼다
+   (fetch + decodeAudioData, 실패하면 조용히 합성음). crowdScream은 'scream' 파일명도 받는다 (SFX_FILE_ALIAS). 목록이 비어 있으면 요청 0번.
+   목록을 두는 이유: 브라우저는 없는 파일을 찾아보기만 해도 콘솔에 404 에러를 남긴다.
    | fssWarn     | fssRaised (warn)                                            | 전화벨 1회                             |
    | fssSanction | fssSanction                                                 | 전화벨 + 도장 쾅                       |
    | chainStep   | 결산 체인 스텝 (opts.pitch로 반음씩 상승)                   | "칭"                                   |
@@ -45,11 +55,14 @@ const SFX_MERGE_MS    = 30;    // 같은 소리가 이 안에 또 오면 합친�
 const SFX_MERGE_GAIN  = 1.2;   //   합칠 때마다 앞 소리 볼륨 × 이만큼
 const SFX_MERGE_MAX   = 1.8;   //   최대 배율
 const SFX_MAX_VOICES  = 8;     // 동시 발음 수
-const SFX_MASTER_GAIN = 0.6;   // 마스터 게인 = 이 값 × 설정 볼륨(0~1). 설정 볼륨 50%면 0.3
+const SFX_MASTER_GAIN = 0.6;
+const SFX_FILE_DIR    = 'assets/sfx/';            // 덮어쓰기 파일 폴더 (docs/demo 기준)
+const SFX_FILE_ALIAS  = { crowdScream: 'scream' }; // SFX 이름 → 다른 파일명도 허용   // 마스터 게인 = 이 값 × 설정 볼륨(0~1). 설정 볼륨 50%면 0.3
 
 const Sound = (() => {
   let ctx = null, master = null, comp = null, noiseBuf = null, drive = null;
   let enabled = true, volume = 0.5;
+  let buffers = {};                // 덮어쓰기 파일: SFX 이름 → AudioBuffer
   let voices = [];                 // 울리는 중: { name, bus, base, boost, end }
   let lastByName = {};             // 이름 → { at(ms), voice } — 중복 합치기용
   const stats = { played: {}, merged: 0, stolen: 0 };   // 검증·디버그용 카운터
@@ -200,6 +213,49 @@ const Sound = (() => {
       for(let i = 0; i < 6; i++) noise(b, t + 0.8 + i * 0.045 + Math.random() * 0.015, 0.02, 0.22, 'bandpass', 800 + Math.random() * 3000, 0, 3);
       return 1.3;
     },
+    coinDrop(b, t, p, o){   // 동전 "짤랑": 고음 3개를 몇 ms씩 어긋나게, 짧은 감쇠. count번 무작위 간격으로
+      const n = o.count || 5;
+      let x = t;
+      for(let i = 0; i < n; i++){
+        const f = (2400 + Math.random() * 900) * p, v = 0.05 + Math.random() * 0.03;
+        tone(b, 'square', f, x, 0.09, v);
+        tone(b, 'sine', f * 1.5, x + 0.006, 0.14, v * 1.3);
+        tone(b, 'square', f * 1.19, x + 0.013, 0.07, v * 0.7);
+        x += 0.05 + Math.random() * 0.11;
+      }
+      return x - t + 0.15;
+    },
+    billFlip(b, t, p, o){   // 지폐 세는 기계: 아주 짧은 하이패스 노이즈를 빠르게
+      const n = o.count || 6;
+      for(let i = 0; i < n; i++) noise(b, t + i * 0.022, 0.012 + Math.random() * 0.006, 0.28, 'highpass', 3500 * p, 0, 0.7);
+      return n * 0.022 + 0.03;
+    },
+    cashRegister(b, t, p){   // 금전등록기: 저음 "철컹" + 고음 "띵"
+      noise(b, t, 0.08, 0.6, 'lowpass', 500);
+      tone(b, 'square', 150 * p, t, 0.07, 0.12, { f1: 90 * p });
+      noise(b, t + 0.06, 0.05, 0.35, 'bandpass', 1800, 0, 2);
+      bell(b, 100, t + 0.13, 0.9, 0.22, p);
+      bell(b, 107, t + 0.13, 0.5, 0.08, p);
+      return 1.05;
+    },
+    flatShrug(b, t, p){   // 김빠진 "음~음": 조금 올라갔다가, 아래로 내려앉는다
+      tone(b, 'triangle', midi(62) * p, t, 0.26, 0.2, { f1: midi(64) * p, hold: 0.6, vibrato: 5 });
+      tone(b, 'triangle', midi(60) * p, t + 0.3, 0.42, 0.2, { f1: midi(55) * p, hold: 0.5, vibrato: 4 });
+      return 0.75;
+    },
+    crashDown(b, t, p){   // 폭락: 긴 하강 글리산도 + 저음 쿵
+      const s = ctx.createOscillator(), g = ctx.createGain();
+      s.type = 'sawtooth';
+      s.frequency.setValueAtTime(900 * p, t);
+      s.frequency.exponentialRampToValueAtTime(55 * p, t + 0.85);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.1, t + 0.02);
+      g.gain.setValueAtTime(0.1, t + 0.6); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.88);
+      s.connect(g); g.connect(filter(b, 'lowpass', 1600)); s.start(t); s.stop(t + 0.9);
+      tone(b, 'square', 450 * p, t, 0.8, 0.03, { f1: 40 * p });
+      thud(b, t + 0.84, 1);
+      noise(b, t + 0.84, 0.35, 0.35, 'lowpass', 300);
+      return 1.3;
+    },
     gapAlarm(b, t, p){   // 강 단계 갭 경보: 사이렌만 (반대매매의 저음 쿵은 뺀다)
       const s = ctx.createOscillator(), g = ctx.createGain();
       s.type = 'square';
@@ -310,7 +366,29 @@ const Sound = (() => {
     master.connect(comp); comp.connect(ctx.destination);
     noiseBuf = makeNoise(ctx);
     voices = []; lastByName = {};
+    const offline = typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext;
+    if(!offline) loadFiles();
     return ctx;
+  }
+  /* 덮어쓰기 파일 읽기: files.js의 SFX_FILES에 적힌 것만. 실패는 조용히 무시 (합성음 그대로) */
+  function loadFiles(){
+    const list = typeof SFX_FILES !== 'undefined' && Array.isArray(SFX_FILES) ? SFX_FILES : [];
+    if(!list.length || typeof fetch === 'undefined') return;
+    list.forEach(file => {
+      const base = String(file).replace(/\.[^.]+$/, '');
+      const name = Object.keys(SFX_FILE_ALIAS).find(k => SFX_FILE_ALIAS[k] === base) || base;
+      fetch(SFX_FILE_DIR + file)
+        .then(r => (r.ok ? r.arrayBuffer() : null))
+        .then(ab => (ab ? new Promise(res => ctx.decodeAudioData(ab, res, () => res(null))) : null))
+        .then(buf => { if(buf) buffers[name] = buf; })
+        .catch(() => {});
+    });
+  }
+  function playBuffer(bus, t, p, buf){
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.playbackRate.value = p;
+    src.connect(bus); src.start(t);
+    return buf.duration / p;
   }
   function unlock(){
     if(!enabled) return;
@@ -345,7 +423,7 @@ const Sound = (() => {
   }
   function play(name, opts){
     opts = opts || {};
-    if(!enabled || !ctx || !SFX[name]) return false;
+    if(!enabled || !ctx || (!SFX[name] && !buffers[name])) return false;
     const offline = typeof OfflineAudioContext !== 'undefined' && ctx instanceof OfflineAudioContext;   // 검증용 렌더링은 렌더 전까지 늘 suspended
     if(ctx.state === 'closed' || (ctx.state === 'suspended' && !offline)) return false;   // 아직 잠김: 나중에 한꺼번에 터지지 않게 버린다
     const at = nowMs();
@@ -364,7 +442,7 @@ const Sound = (() => {
     bus.gain.value = base;
     bus.connect(master);
     const t = ctx.currentTime + 0.005;
-    const len = SFX[name](bus, t, opts.pitch || 1, opts);
+    const len = buffers[name] ? playBuffer(bus, t, opts.pitch || 1, buffers[name]) : SFX[name](bus, t, opts.pitch || 1, opts);
     const v = { name, bus, base, boost: 1, end: t + len };
     voices.push(v);
     lastByName[name] = { at, voice: v };
@@ -388,5 +466,6 @@ const Sound = (() => {
 
   return { SFX, play, unlock, attachUnlock, init, stopAll, setEnabled, setVolume, semis, stats,
            get context(){ return ctx; }, get mixBus(){ return comp; },   // 배경음악(music.js)도 같은 컴프레서로 섞는다
-           get activeVoices(){ return voices.length; } };
+           get activeVoices(){ return voices.length; },
+           hasFile: name => !!buffers[name] };
 })();
