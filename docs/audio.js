@@ -47,7 +47,7 @@ const SFX_MAX_VOICES  = 8;     // 동시 발음 수
 const SFX_MASTER_GAIN = 0.6;   // 마스터 게인 = 이 값 × 설정 볼륨(0~1). 설정 볼륨 50%면 0.3
 
 const Sound = (() => {
-  let ctx = null, master = null, noiseBuf = null, drive = null;
+  let ctx = null, master = null, comp = null, noiseBuf = null, drive = null;
   let enabled = true, volume = 0.5;
   let voices = [];                 // 울리는 중: { name, bus, base, boost, end }
   let lastByName = {};             // 이름 → { at(ms), voice } — 중복 합치기용
@@ -288,7 +288,7 @@ const Sound = (() => {
   /* ── 재생 관리 ── */
   function init(context){   // 실제 AudioContext 또는 (검증용) OfflineAudioContext
     ctx = context;
-    const comp = ctx.createDynamicsCompressor();
+    comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -20; comp.knee.value = 6; comp.ratio.value = 8;
     comp.attack.value = 0.003; comp.release.value = 0.15;
     master = ctx.createGain();
@@ -373,5 +373,6 @@ const Sound = (() => {
   const semis = n => Math.pow(2, n / 12);   // 반음 n개 → 피치 배율
 
   return { SFX, play, unlock, attachUnlock, init, stopAll, setEnabled, setVolume, semis, stats,
-           get context(){ return ctx; }, get activeVoices(){ return voices.length; } };
+           get context(){ return ctx; }, get mixBus(){ return comp; },   // 배경음악(music.js)도 같은 컴프레서로 섞는다
+           get activeVoices(){ return voices.length; } };
 })();

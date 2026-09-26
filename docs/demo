@@ -1414,6 +1414,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 
 <script src="engine.js"></script>
 <script src="audio.js"></script>
+<script src="music.js"></script>
 <script src="fx.js"></script>
 <script>
 
@@ -2020,7 +2021,10 @@ function onGameEvent(type, d){
       break;
     case 'roundClear':
       lastRoundClear = d;
-      playSettlementChain(d.settlementChain, skipped => { if(!skipped) Sound.play('weekClear'); showRoundResult(d); });   // 건너뛰면 도장 소리 1번만
+      playSettlementChain(d.settlementChain, skipped => {
+        if(!skipped && !(musicOn() && Music.stinger('weekClear'))) Sound.play('weekClear');   // BGM이 켜져 있으면 효과음 대신 스팅어
+        showRoundResult(d);
+      });   // 건너뛰면 도장 소리 1번만
       break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
@@ -2044,18 +2048,23 @@ function onGameEvent(type, d){
     case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver':   // 결산 체인은 결산을 통과했을 때만 (마지막 주 통과 = 졸업). 파산·목표 미달은 바로 게임오버
       if(d.reason === 'VICTORY') playSettlementChain(run.lastWeek.settlementChain, skipped => {   // 체인을 건너뛰었으면 도장 소리 뒤에 팡파레
-        setTimeout(() => Sound.play('victory'), skipped ? 450 : 0);
+        setTimeout(() => { if(!(musicOn() && Music.stinger('victory', { thenTrack: true }))) Sound.play('victory'); }, skipped ? 450 : 0);
         showRunOver(d.reason);
       });
-      else { Sound.play(d.reason === 'BANKRUPT' ? 'bankrupt' : 'weekFail'); showRunOver(d.reason); }
+      else {   // 스팅어가 끝나면 records 트랙
+        if(!(musicOn() && Music.stinger('gameOver', { thenTrack: true }))) Sound.play(d.reason === 'BANKRUPT' ? 'bankrupt' : 'weekFail');
+        showRunOver(d.reason);
+      }
       break;
     case 'tipEvent':
       Sound.play('tipArrive');
+      Music.stinger('tipAlert'); Music.duck('tip', 0.5);   // 고를 때까지 BGM 50%
       renderTabs();
       if(currentTab === 'play') showTipOverlay();
       if(currentTab === 'event') renderTipScreen();
       break;
     case 'tipResolved':
+      Music.unduck('tip');
       Sound.play(d.delta > 0 ? 'tipJackpot' : d.delta < 0 ? 'tipBust' : 'uiClick');
       renderTabs();
       if(overlayOpen && $('overlayBox').querySelector('[data-tip-choice]')) showTipResultOverlay(d);
@@ -2313,8 +2322,33 @@ function renderPositions(){
   });
 }
 
+/* 배경음악: 화면과 게임 상태를 읽기만 해서 트랙 · 적응형 무드를 넘긴다 (엔진은 모른다) */
+const musicOn = () => settings.sound && settings.bgm;
+function musicTrackFor(){
+  if(currentTab === 'title') return 'title';
+  if(currentTab === 'shop') return 'shop';
+  if(currentTab === 'records' || currentTab === 'collection' || currentTab === 'settings') return 'records';
+  if(!run) return 'title';
+  if(run.phase === 'over') return 'records';
+  if(run.phase === 'market') return 'market';
+  if(run.phase === 'premarket') return 'premarket';
+  if(run.phase === 'shop') return 'shop';
+  return null;   // 결산·보상 중: 지금 곡 유지
+}
+function updateMusic(){
+  const t = musicTrackFor();
+  if(t) Music.setTrack(t);
+  if(run && run.phase === 'market') Music.setMood({
+    state: marketState,
+    progress: run.tickInDay / TICKS_PER_DAY,
+    danger: run.positions.some(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < MARGIN_WARN_RATIO),
+    fss: run.fss >= FSS_WARN
+  });
+}
+
 function renderAll(){
   renderTabs();
+  updateMusic();
   if(!run) return;
   if(run.phase !== 'premarket') selectedIdx = -1;
   renderMainChart();
@@ -2572,6 +2606,7 @@ function playSettlementChain(chain, onDone){
     </div>
     <div class="chain-skip">클릭 · SPACE = 건너뛰기</div>`);
   chainPlay = { run, timers: [], onDone, sum };
+  Music.duck('chain', 0.2);   // 결산 체인 효과음이 주인공
   const list = $('chainList');
   let t = 0;
   const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, ms));   // 오버레이가 바뀌었으면 아무것도 안 한다
@@ -2641,12 +2676,14 @@ function finishSettlementChain(skipped){
   const cp = chainPlay;
   chainPlay = null;
   cp.timers.forEach(clearTimeout);
+  Music.unduck('chain');
   if(cp.run === run) cp.onDone(!!skipped);   // 그 사이 새 판을 시작했으면 옛 결산 화면은 띄우지 않는다
 }
 function cancelSettlementChain(){   // 결과 화면 없이 재생만 멈춘다 (새 판 시작)
   if(!chainPlay) return;
   chainPlay.timers.forEach(clearTimeout);
   chainPlay = null;
+  Music.unduck('chain');
 }
 function skipSettlementChain(){
   if(!chainPlay) return;
@@ -2950,12 +2987,14 @@ const SETTING_OPTIONS = {
   chainFx: [[true, '켜기'], [false, '끄기']],
   sfxVol: [[0, '0'], [25, '25'], [50, '50'], [75, '75'], [100, '100']],
   tickSound: [[true, '켜기'], [false, '끄기']],
-  hitStop: [[true, '켜기'], [false, '끄기']]
+  hitStop: [[true, '켜기'], [false, '끄기']],
+  bgm: [[true, '켜기'], [false, '끄기']],
+  bgmVol: [[0, '0'], [25, '25'], [40, '40'], [50, '50'], [75, '75'], [100, '100']]
 };
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', bgFx: true, sound: true, chainFx: true,
-                           sfxVol: 50, tickSound: false, hitStop: true };
+                           sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40 };
 function loadSettings(){
   const s = Object.assign({}, DEFAULT_SETTINGS);
   let saved = null;
@@ -2974,6 +3013,8 @@ function saveSettings(){
 function applySettings(){
   Sound.setEnabled(settings.sound);
   Sound.setVolume(settings.sfxVol / 100);
+  Music.setEnabled(settings.sound && settings.bgm);   // 사운드를 끄면 배경음악도 꺼진다
+  Music.setVolume(settings.bgmVol / 100);
   Fx.setOptions({ motion: settings.shake, hitStop: settings.hitStop });   // 흔들림을 끄면 글리치·히트스톱도 꺼진다
   document.body.dataset.crt = settings.crt;
   document.body.dataset.bgfx = settings.bgFx ? 'on' : 'off';
@@ -3003,6 +3044,8 @@ function buildSettings(){
     ${settingRow('bgFx', '배경 연출', '양옆에 떠다니는 시세 창·배경 격자 애니메이션. 저사양 PC면 끄세요.')}
     ${settingRow('sound', '사운드', '칩튠 효과음 (음원 파일 없이 브라우저에서 합성).')}
     ${settingRow('sfxVol', '효과음 볼륨', '0 · 25 · 50 · 75 · 100%.', !settings.sound)}
+    ${settingRow('bgm', '배경음악', '화면·장세에 따라 바뀌는 칩튠 BGM. 장중에는 강세·약세·변동성·반대매매 위험에 맞춰 곡이 변합니다.', !settings.sound)}
+    ${settingRow('bgmVol', '배경음악 볼륨', '0 · 25 · 40 · 50 · 75 · 100%. 효과음보다 작게 기본 40.', !settings.sound || !settings.bgm)}
     ${settingRow('tickSound', '장중 틱 소리', '캔들이 하나 생길 때마다 작은 시계 소리. 계속 울리니 기본은 끔.', !settings.sound)}
     <div class="set-row" data-row="reset">
       <div><div class="sr-label">기록 초기화</div><div class="sr-desc">파산 기록(엔딩 도감·최근 판·누적 통계)과 개미 회차를 지웁니다. 설정은 남습니다.</div></div>
@@ -3123,6 +3166,7 @@ function cashRain(){
 ══════════════════════════════════════════════════════════ */
 function startRun(){
   cancelSettlementChain();
+  Music.unduck('tip');
   selectedIdx = -1;
   relicTipId = ''; relicSig = '';
   chartTarget = 'idx';
@@ -3155,6 +3199,7 @@ function switchTab(s){
   if(s === 'play' && run && run.pendingTip && !overlayOpen) showTipOverlay();
   renderTabs();
   syncOverlay();
+  updateMusic();
 }
 
 tabBtns.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.s)));
@@ -3261,6 +3306,7 @@ window.onload = () => {
   buildCollection();
   renderTabs();
   applySettings();
+  updateMusic();   // 타이틀 곡 (소리는 첫 클릭·키 입력 뒤부터)
   const loop = () => {   // 장중에만, TR룸 화면에서만 시장이 움직인다. 간격 = TICK_MS ÷ 장중 속도
     const frozen = Fx.frozenFor();   // 히트스톱: 다음 tick을 그만큼 미룰 뿐 (tick 순서·횟수·결과는 그대로)
     if(frozen > 0){ setTimeout(loop, frozen); return; }
