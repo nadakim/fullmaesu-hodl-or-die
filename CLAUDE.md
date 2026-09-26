@@ -71,7 +71,7 @@
   - **UI**: `onGameEvent`가 엔진 이벤트를 받아 토스트/연출/오버레이를 띄우고, `renderAll()`이 화면을 그린다. 대상 지정 상태(`selectedIdx`), 설명을 펼친 유물(`relicTipId`), 도감 등급 필터(`collectionRarity`), 큰 차트에 보이는 대상(`chartTarget`: `'idx'` 또는 종목 id)은 UI에만 있다. 입력 핸들러는 엔진 함수 호출 → `renderAll()` 순서.
   - 결산 체인 연출 `playSettlementChain(chain, onDone)`: `roundClear`(와 졸업 `runOver` VICTORY)에서 결산 화면 전에 포지션별 유물 칩 ×배수 → 카운트업 → 떡상!/물림 스탬프를 재생 (`CHAIN_*` 상수). 보정 없는 포지션은 숫자만, 보정이 하나도 없으면 생략, 포지션 `CHAIN_MAX_ROWS`개 초과면 손익 절댓값 상위 `CHAIN_TOP_ROWS`개 + 요약 한 줄. 클릭·SPACE = `skipSettlementChain`(최종 결과로 점프). 재생이 끝나거나 스킵하면 자동으로 넘어가지 않고 최종 결과에서 멈춰 `chainHold` → '▶ 다음'(`data-act="chainNext"`)·엔터만 `chainNext`로 결산 화면(`onDone`)으로 간다 (결과가 뜬 뒤 `CHAIN_NEXT_GUARD_MS` 0.5초는 입력 무시, 스페이스는 넘기지 않음). 연출 끔·보정 없음이어도 같은 틀의 '결산 요약' + '▶ 다음'을 거친다. 파산·목표 미달엔 재생하지 않는다.
   - 결산 결과 화면 `showRoundResult`(`roundClear` → `data-act="toReward"`로 보상 단계) / 게임오버 화면 `showRunOver`(`runOver`). 게임오버 문구는 UI의 `ENDINGS[endCause]` 테이블에만 둔다 (`group`: bust·miss·win, `hint`: 파산 기록의 미해금 조건). 파산 기록(타이틀 > `#recordsBtn` → `#screen-records`, `buildRecords`): `showRunOver`가 `recordRun`으로 localStorage `hodl.records`(엔딩별 횟수 `counts` + 최근 `RECORDS_HISTORY`판 `history`)에 저장하고, 처음 본 엔딩이면 '새 엔딩 해금' 배지. 저장이 막히면 세션 메모리로 대신한다. 기록에는 판마다 날짜·생존 주·엔딩·최종/최고 순자산·반대매매·유물 수·덱 크기, 전체 누적 `totals`(판 수 = '개미 N회차' `hodl.antRuns`·최고 생존·최고 순자산·총 반대매매)를 둔다.
-  - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 결산 연출 `chainFx` → `playSettlementChain`, 배경음악 `bgm`·`bgmVol`(기본 40) → `Music.setEnabled(sound && bgm)`·`setVolume`, 트랙은 `updateMusic`(`renderAll`·`switchTab`에서 화면·`run.phase`·장세·증거금률·금감원 게이지를 읽어 `Music.setTrack`·`setMood`), 사운드 `sound`·효과음 볼륨 `sfxVol` 0~100(기본 50) → `Sound.setEnabled`·`setVolume`, 장중 틱 소리 `tickSound`(기본 끔), 히트스톱 `hitStop` → `Fx.setOptions`. `prefers-reduced-motion`이면 `shake` 기본값이 끔). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
+  - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 결산 연출 `chainFx` → `playSettlementChain`, 배경음악 `bgm`·`bgmVol`(기본 40) → `Music.setEnabled(sound && bgm)`·`setVolume`, 트랙은 `updateMusic`(`renderAll`·`switchTab`에서 화면·`run.phase`·장세·증거금률·금감원 게이지를 읽어 `Music.setTrack`·`setMood`), 사운드 `sound`·효과음 볼륨 `sfxVol` 0~100(기본 50) → `Sound.setEnabled`·`setVolume`, 장중 틱 소리 `tickSound`(기본 끔), 히트스톱 `hitStop` → `Fx.setOptions`, 화면 크기 `uiSize` auto·small·large·xlarge → `layoutUi`, 글자 크기 `fontSize` normal·large → `html[data-font]`. `prefers-reduced-motion`이면 `shake` 기본값이 끔). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
 - 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
 - 연쇄 연출(demo `enqueueGap`·`enqueueLiquidation`·`enqueueRelic`·`juiceMilestones`·`juiceStreak`): tier 1~4 = `FX_TIER`(히트스톱·흔들림·파티클), 갭 경보 강도는 약(미보유, 시장 안 멈춤)·중(보유+유리)·강(보유+불리), 밈 문구는 `GAP_MEMES`에만 추가 (금지 소재 규칙 그대로). 유물 연출은 엔진 `emit('relicTriggered', {id, amount})` — 엔진에 넣어도 되는 건 이미 계산된 값을 담는 emit 추가뿐(`rand()`·상태 변경 금지). 결산 체인·게임오버 화면은 `whenFxIdle`로 큐가 끝난 뒤. 찌라시 결과는 `enqueueTipResult`(같은 갭 경보 틀, 순자산 변화로 상승·횡보·하락 = `TIP_RESULT_FLAT_PCT`, 5% 이상 tier 3, 밈 `TIP_RESULT_MEMES`) → 끝나거나 스킵하면 `showTipResultOverlay`. 효과음 파일 덮어쓰기: `docs/assets/sfx/<SFX 이름>.ogg` + `assets/sfx/files.js`의 `SFX_FILES` 목록 (README 참고, 라이선스 CC0 권장). 설정 `fxSpeed` 보통·빠름·최소(간격 0.1초, 갭 경보 전부 약).
@@ -82,22 +82,25 @@
 
 ### 픽셀 디자인 시스템 재사용
 
-- 색상은 반드시 `:root`의 CSS 변수를 쓴다: `--bg`, `--panel`, `--panel2`, `--green`, `--green2`, `--green-dim`, `--red`, `--red2`, `--red-dim`, `--gold`, `--gold2`, `--purple`, `--cyan`, `--text`, `--muted`, `--line`, `--line2`. 새 hex 값을 하드코딩하지 않는다 (Canvas에서 부득이하면 같은 값을 사용).
+- 색상은 반드시 `:root`의 CSS 변수를 쓴다: `--bg`, `--panel`, `--panel2`, `--green`, `--green2`, `--green-dim`, `--red`, `--red2`, `--red-dim`, `--gold`, `--gold2`, `--purple`, `--cyan`, `--text`, `--text2`(보조 본문), `--muted`, `--line`, `--line2`. 새 hex 값을 하드코딩하지 않는다 (Canvas에서 부득이하면 같은 값을 사용). 글자색은 배경 대비 4.5:1 이상 — `--muted` #8a96c4(bg 7.07:1), `--line`·`--line2`는 테두리 전용이고 글자에 쓰지 않는다. 보조 글자를 opacity로 흐리게 하지 말고 색으로 (비활성 상태만 예외).
 - 카드 테두리: 안쪽 `--cc` = 종류 색, 바깥 `--rc` = 등급 색(일반 `--muted`·고급 `--green2`·희귀 `--blue`·전설 `--purple`·신화 `--gold`). 라벨 `.c-rar.<등급>`.
 - 테두리는 기존 픽셀 유틸리티 재사용: `.px-border`, `.px-border-gold`, `.px-border-green`, `.px-border-red`, `.px-corner-box`. `border-radius`·부드러운 그림자·그라데이션 대신 `box-shadow` 픽셀 테두리와 오프셋 그림자(`6px 6px 0 #000`).
-- 폰트: 제목/라벨은 `Press Start 2P`, 본문/숫자는 `VT323`. 한글은 뒤에 붙은 Galmuri로 떨어진다 — `font-family:'Press Start 2P','Galmuri-9px',monospace`처럼 **font-family를 쓰는 곳마다 그 글자 크기에 맞는 Galmuri 얼굴을 붙인다.**
-  - Galmuri는 픽셀 폰트라 원래 크기(Galmuri7 8px · 9 10px · 11 12px · 14 15px)나 그 2배에서만 획이 빠지지 않는다. 그래서 `<style>` 맨 위에 CSS 글자 크기별 `@font-face`를 `size-adjust`로 따로 둔다: Press Start 2P 옆은 `Galmuri-<크기>px`(글자 크기 근처 원래 크기), VT323 옆은 `GalmuriV-<크기>px`(VT323 글자가 작아서 약 75%), 카드 설명은 `Galmuri-desc`.
-  - 새 글자 크기를 쓰면 그 크기의 얼굴도 추가한다. font-size만 바꾸는 규칙(미디어 쿼리 등)에도 같은 크기의 font-family를 함께 쓴다. Canvas `ctx.font`도 같다.
+- 폰트 (글자 크기 체계, docs/demo `<style>` 맨 위): 크기는 변수로만 쓴다 — 숫자 px를 새로 박지 않는다.
+  - 한글 위주 텍스트(긴 라벨·설명)는 Galmuri만: `font-family:var(--gf-sm),monospace;font-size:var(--fs-sm)`. 크기 `--fs-xs`10 · `sm`12 · `md`15 · `m16`16 · `lg`20 · `xl`24 · `xxl`30 (Galmuri 원래 크기 또는 2배, 최소 10px), 얼굴 `--gf-*`가 짝.
+  - `Press Start 2P`는 8·16·24px만, 제목·큰 숫자·버튼·짧은 영문 태그에만: `font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1)` (p1 8 · p2 16 · p3 24, `--gp-*` = 한글 대체 얼굴 GP8·GP16·GP24).
+  - `VT323`(숫자·본문)은 최소 16px: `'VT323',var(--gv-v1)` + `--fs-v1`16 · `v2`20 · `v3`24 · `v4`30 (`--gv-*` = GV16… 한글 약 75%/67%).
+  - '글자 크기: 크게' 설정은 `html[data-font="large"]`에서 이 변수들을 한 단계씩 올린다 (Press Start 2P 글자 자체는 그대로, 한글 대체 얼굴만 L 버전). 새 크기가 필요하면 변수·@font-face·large 재정의를 같이 추가한다. Canvas `ctx.font`도 같은 얼굴(`"Press Start 2P","GP8"`).
+  - 카드는 124×180 고정. 설명이 넘치면 `clampCards`가 첫 문장만 남기고(`.c-desc.clamped`, 카드 `data-clamp="1"`, 발밑 ⓘ) 전문은 툴팁 `.card-tip`(마우스 올리기·길게 누르기)으로. 문구를 CSS로 줄이지 말고, 잘리는 카드는 문구로 해결한다.
   - `overflow:hidden` + 좁은 line-height 안의 한글은 윗줄이 잘린다 (Galmuri가 VT323보다 키가 크다). 이런 곳은 line-height 1.1 이상·padding-top을 준다.
 - `image-rendering: pixelated`, Canvas는 `imageSmoothingEnabled = false` 유지.
 - 상승 = `--green`, 하락 = `--red` (한국식 반대 색 쓰지 않음 — 기존 컨벤션 유지).
 
 ### 레이아웃 (가로 데스크톱 / 세로 모바일)
 
-- **901px 이상**: `.cabinet`은 16:10 고정(`--cab-ratio-w/h`), 폭 = `min(--cab-max-w, --cab-max-h × 16/10)`. 화면이 16:10보다 넓으면 좌우, 좁으면 위아래로 배경이 보인다(letterbox). 페이지는 스크롤되지 않고 화면별로 게임 영역 안에서만 스크롤.
+- **901px 이상**: `.cabinet`은 기준 해상도 `BASE_W×BASE_H`(960×600, 16:10) 고정 크기로 그리고 CSS `zoom: var(--ui-zoom)`로 키운다. 배율 `uiZoom`은 `layoutUi()`가 `min(창 폭/960, 창 높이/600)`을 0.5 단위로 내림(최소 1), 설정 '화면 크기'(자동·작게 −0.5·크게 +0.5·매우 크게 +1, 창에 들어가는 만큼만)가 조정. 창이 960×600보다 작으면 `html.ui-overflow`로 페이지 스크롤. body에 붙는 fixed 레이어(`.overlay`·`.toast-layer`·`.gap-alert`·fx 요소)도 같은 zoom — 요소 rect로 위치를 잡을 땐 `rect ÷ uiZoom`(`Fx.setUiZoom`). 줌 레이어 안에서 vh/vw를 쓰면 `÷ var(--ui-zoom)`. Canvas는 `uiCanvasScale()`(= uiZoom × devicePixelRatio) 배로 그린다.
 - TR룸은 그리드 3구역: `.play-top`(HUD 바) / `.play-left`(뉴스·지수 차트·종목 시세) / `.play-right`(행동력·손패·장 시작·포지션·전량 매도). 새 UI는 이 셋 중 하나에 넣는다.
-- **900px 이하**: 데스크톱 CSS(`@media (min-width: 901px)`)가 꺼지고 기존 세로 스택(최대 520px).
-- 레이아웃을 건드렸으면 1920×1080, 1366×768, 모바일 폭(예: 390×844)에서 스크린샷으로 카드 잘림·겹침을 확인한다.
+- **900px 이하**: 데스크톱 CSS(`@media (min-width: 901px)`)가 꺼지고 기존 세로 스택(최대 520px), zoom 1. 글자 최소 크기 규칙은 똑같다.
+- 레이아웃을 건드렸으면 1366×768, 1920×1080, 2560×1440, 모바일 폭(예: 390×844)에서 스크린샷으로 카드 잘림·겹침을 확인한다.
 
 ## 수정 후 검증 (필수)
 

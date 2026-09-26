@@ -64,6 +64,11 @@ const Fx = (() => {
     clearTimeout(shakeTimer);
     shakeTimer = setTimeout(() => cab.classList.remove('shake-' + lvl), 700);
   }
+  /* 데스크톱 UI 확대 배율 (demo의 CSS zoom과 같은 값). 화면 좌표(getBoundingClientRect)에 붙이는 요소는
+     같은 배율로 확대하고 좌표는 배율로 나눈다 — 확대된 요소의 left/top도 배율만큼 커지기 때문 */
+  let uiZoom = 1;
+  function setUiZoom(z){ uiZoom = z > 0 ? z : 1; }
+  const zpx = v => (v / uiZoom) + 'px';
   function glitch(){
     if(!motion) return;
     const cab = cabinet();
@@ -108,8 +113,9 @@ const Fx = (() => {
     if(st.combo >= 3){
       const r = el.getBoundingClientRect(), tag = document.createElement('div');
       tag.className = 'fx-combo';
-      tag.style.left = Math.round(r.right - 8) + 'px';
-      tag.style.top = Math.round(r.top - 4) + 'px';
+      tag.style.zoom = uiZoom;
+      tag.style.left = zpx(Math.round(r.right - 8 * uiZoom));
+      tag.style.top = zpx(Math.round(r.top - 4 * uiZoom));
       tag.style.color = c;
       tag.textContent = 'COMBO ×' + st.combo;
       document.body.appendChild(tag);
@@ -129,13 +135,13 @@ const Fx = (() => {
   }
   function cardFlyOne(ghost, fromRect, targetEl, onHit, main){
     if(!ghost.animate || !shown(fromRect)){ if(onHit) onHit(); return; }
-    Object.assign(ghost.style, { left: fromRect.left + 'px', top: fromRect.top + 'px', width: fromRect.width + 'px', height: fromRect.height + 'px' });
+    Object.assign(ghost.style, { zoom: uiZoom, left: zpx(fromRect.left), top: zpx(fromRect.top), width: zpx(fromRect.width), height: zpx(fromRect.height) });
     ghost.classList.add('fx-card-ghost');
     ghost.removeAttribute('data-idx');
     document.body.appendChild(ghost);
     const tr = targetEl ? targetEl.getBoundingClientRect() : null;
     const tx = tr ? tr.left + tr.width / 2 : window.innerWidth / 2, ty = tr ? tr.top + tr.height / 2 : window.innerHeight * 0.45;
-    const dx = Math.round(tx - (fromRect.left + fromRect.width / 2)), dy = Math.round(ty - (fromRect.top + fromRect.height / 2));
+    const dx = Math.round((tx - (fromRect.left + fromRect.width / 2)) / uiZoom), dy = Math.round((ty - (fromRect.top + fromRect.height / 2)) / uiZoom);   // 확대된 요소 안의 translate
     const a = ghost.animate([
       { transform: 'translate(0,0) scale(1,1)', opacity: 1 },
       { transform: 'translate(0,-6px) scale(1.12,0.9)', offset: 0.18 },
@@ -190,7 +196,7 @@ const Fx = (() => {
   }
   function draw(p){
     if(p.delay > 0) return;
-    const x = Math.round(p.x), y = Math.round(p.y), w = p.w || p.size, h = p.h || p.size;
+    const x = Math.round(p.x), y = Math.round(p.y), w = Math.round((p.w || p.size) * uiZoom), h = Math.round((p.h || p.size) * uiZoom);   // 확대 배율만큼 굵게
     cx.globalAlpha = p.seek || p.solid ? 1 : Math.max(0, 1 - p.age / p.life);
     cx.fillStyle = p.edge || p.color;
     cx.fillRect(x, y, w, h);
@@ -252,8 +258,9 @@ const Fx = (() => {
       const el = document.createElement('div');
       el.className = 'fx-chip ' + (tone || '');
       el.textContent = text;
-      el.style.left = Math.round(rect.left + rect.width / 2) + 'px';
-      el.style.top = Math.round(rect.top) + 'px';
+      el.style.zoom = uiZoom;
+      el.style.left = zpx(Math.round(rect.left + rect.width / 2));
+      el.style.top = zpx(Math.round(rect.top));
       document.body.appendChild(el);
       setTimeout(() => el.remove(), 1100);
     }, delayMs || 0);
@@ -352,7 +359,7 @@ const Fx = (() => {
   }
   const onSkip = fn => onSkipHooks.push(fn);
 
-  return { setOptions, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, streak, chip,
+  return { setOptions, setUiZoom, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
            get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, billRain, shatter, sparks, burst,
