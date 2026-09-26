@@ -91,7 +91,7 @@
   - `Press Start 2P`는 8·16·24px만, 제목·큰 숫자·버튼·짧은 영문 태그에만: `font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1)` (p1 8 · p2 16 · p3 24, `--gp-*` = 한글 대체 얼굴 GP8·GP16·GP24).
   - `VT323`(숫자·본문)은 최소 16px: `'VT323',var(--gv-v1)` + `--fs-v1`16 · `v2`20 · `v3`24 · `v4`30 (`--gv-*` = GV16… 한글 약 75%/67%).
   - '글자 크기: 크게' 설정은 `html[data-font="large"]`에서 이 변수들을 한 단계씩 올린다 (Press Start 2P 글자 자체는 그대로, 한글 대체 얼굴만 L 버전). 새 크기가 필요하면 변수·@font-face·large 재정의를 같이 추가한다. Canvas `ctx.font`도 같은 얼굴(`"Press Start 2P","GP8"`).
-  - 카드는 기준 124×180(× `--u`). 데스크톱 손패는 칸 높이에 맞춰 같은 비율로 커진다(최소 180·최대 250). 설명이 넘치면 `clampCards`가 첫 문장만 남기고(`.c-desc.clamped`, 카드 `data-clamp="1"`, 발밑 ⓘ) 전문은 툴팁 `.card-tip`(마우스 올리기·길게 누르기)으로. 문구를 CSS로 줄이지 말고, 잘리는 카드는 문구로 해결한다.
+  - 손패는 3열 × 3행 격자(`#handBox.hand`, 10장 = `HAND_MAX`면 `.g4` 4열), 카드는 칸을 꽉 채우는 격자용 카드 `handCardHtml`(`.card.gcard`: 행동력·종류 띠·등급 점 / 이름 / 종목이면 가격·현재가, 아니면 설명 한 줄 / 대상·소멸) + 빈 칸 `.g-slot`. 전체 설명·수치·기대값은 툴팁. 그 밖(보상·암시장·도감·덱)의 카드는 `cardHtml` 기준 124×180(× `--u`). 설명이 넘치면 `clampCards`가 첫 문장만 남기고(`.c-desc.clamped`, 카드 `data-clamp="1"`, 발밑 ⓘ) 전문은 툴팁 `.card-tip`(마우스 올리기·길게 누르기)으로. 문구를 CSS로 줄이지 말고, 잘리는 카드는 문구로 해결한다.
   - `overflow:hidden` + 좁은 line-height 안의 한글은 윗줄이 잘린다 (Galmuri가 VT323보다 키가 크다). 이런 곳은 line-height 1.1 이상·padding-top을 준다.
 - `image-rendering: pixelated`, Canvas는 `imageSmoothingEnabled = false` 유지.
 - 상승 = `--green`, 하락 = `--red` (한국식 반대 색 쓰지 않음 — 기존 컨벤션 유지).
@@ -99,8 +99,9 @@
 ### 레이아웃 (가로 데스크톱 / 세로 모바일)
 
 - **901px 이상**: `.cabinet`이 창 전체(100vw × 100dvh)를 채운다 (고정 비율·레터박스·확대 없음, 배경 차트·격자 레이어 없음). 배율 `uiScale`(CSS `--ui`)은 `layoutUi()`가 창 높이 ÷ `UI_BASE_H`(600)를 0.25 단위로 반올림, 1~2.5 — 창 크기가 바뀌면(`resize`, rAF 한 번) 다시 정하고 `renderAll`로 캔버스·카드 잘림을 다시 그린다. '화면 크기'를 키울 때는 창이 `UI_MIN_UNITS_W × UI_MIN_UNITS_H` 칸보다 작아지지 않는 선까지만. Canvas 내부 해상도 = 화면 크기 × devicePixelRatio, 점·선 굵기 = `round(uiScale × dpr)`. fx 파티클 크기는 `Fx.setUiScale`.
-- TR룸: 폭 ≥ 1200 이고 폭/높이 ≥ 1.45면 **3단** — 상단 HUD(전체 폭) / 왼쪽 시장(뉴스 전광판·`#newsSub` 오늘/내일 뉴스·차트(남는 높이)·시세 7행) / 가운데 행동(유물·행동력·칩·손패·장 시작) / 오른쪽 포지션(목록 스크롤·전량 매도). `.play-right`를 `display:contents`로 풀어 자식들을 `#screen-play` 그리드 영역(relic·turn·chips·ht·hand·open / pt·pos·sell)에 놓는다. 그보다 좁으면 **2단** `.play-left` | `.play-right`(포지션 최소 35vh, 모자라면 이 칸만 스크롤, 장 시작·전량 매도는 sticky). 시세표는 자동 배율에서 7행이 스크롤 없이 보여야 한다 (차트가 먼저 줄어든다). 새 UI는 이 구역 중 하나에 넣는다.
+- TR룸: 폭 ≥ 1200 이고 폭/높이 ≥ 1.45면 **3단** — 상단 HUD(전체 폭) / 왼쪽 시장(뉴스 전광판 + '📰 내일' 버튼(호버로 예고)·차트(남는 높이, 장세 뱃지 `#marketStateBadge` = 엔진 `marketState`)·시세 7행(아이콘 + 적중률, 섹터·β는 종목명 호버)) / 가운데 행동(유물·행동력·칩·손패·장 시작) / 오른쪽 포지션(2줄 행 — 종목·배지·손익·매도 / 평단→현재가·원금·보유일·태그 아이콘·증거금률 미니 막대, 노출액은 행 툴팁 — 목록 스크롤·전량 매도). `.play-right`를 `display:contents`로 풀어 자식들을 `#screen-play` 그리드 영역(relic·turn·chips·ht·hand·open / pt·pos·sell)에 놓는다. 그보다 좁으면 **2단** `.play-left` | `.play-right`(포지션 최소 35vh, 모자라면 이 칸만 스크롤, 장 시작·전량 매도는 sticky). 시세표는 자동 배율에서 7행이 스크롤 없이 보여야 한다 (차트가 먼저 줄어든다). 새 UI는 이 구역 중 하나에 넣는다.
 - 뉴스 배너는 한 줄에 안 들어가면 `fitNews`가 전광판(`.marquee`)으로 흘리고, 흔들림 끔·동작 줄이기면 `.wrap`(줄바꿈). 유물 없음 안내는 `fitRelicEmpty`가 좁으면 '유물 없음'.
+- 화면 전환은 탭 없이 `switchTab()`을 게임 흐름·메뉴에서만 부른다: 타이틀 '영끌 출격'/'이어하기'(`#continueBtn`, 진행 중인 판) → TR룸, 결산 → 보상 → 암시장 자동, '다음 주 개장' → TR룸. TR룸 HUD 왼쪽 ≡ 메뉴(`#menuBtn` · `#menuPanel`: 타이틀로 · 찌라시 기록 `showTipLog` · 덱 확인 · 환경 설정(`settingsReturn`으로 돌아옴)), Esc = 대상 지정 취소가 먼저, 그다음 메뉴 열기/닫기. 미확인 찌라시 결과(`tipSeen`)는 메뉴 점 `#menuDot` (`renderNav`).
 - **900px 이하**: 데스크톱 CSS(`@media (min-width: 901px)`)가 꺼지고 기존 세로 스택(최대 520px), `--ui` 1. 글자 최소 크기 규칙은 똑같다.
 - 레이아웃을 건드렸으면 1615×900, 1366×768, 1920×1080, 2560×1440, 1280×1024(2단), 모바일 폭(예: 390×844)에서 스크린샷으로 카드 잘림·겹침·시세 7행을 확인한다.
 
@@ -126,5 +127,5 @@
 - 게임 루프가 800ms마다 돌며 손패·포지션을 다시 그릴 수 있으므로, 요소 핸들을 오래 들고 있지 말고 locator로 매번 새로 찾는다.
 - 손패는 무작위이므로 `run.hand = ['stk_semi', 'credit'].map(newCard); handSig = ''; renderAll();`처럼 고정해서 시나리오를 재현한다.
 - 반대매매·장 마감·주간 결산처럼 기다리기 어려운 상황은 `page.evaluate`로 상태를 만들어 확인한다 (예: `assets.meme.price *= 0.7; checkMarginCalls();`, `run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll();`).
-- 시장은 TR룸 탭에서, 장중(`run.phase === 'market'`)이고 찌라시·오버레이가 없을 때만 움직인다.
+- 시장은 TR룸 화면(`currentTab === 'play'`)에서, 장중(`run.phase === 'market'`)이고 찌라시·오버레이가 없을 때만 움직인다.
 - 찌라시가 오면 선택 전까지 `tick()`이 멈추므로, 장을 끝까지 돌리는 반복문은 위 예시처럼 `resolveTip`으로 처리한다. 실시간으로 장을 돌려 보는 테스트에서 찌라시가 끼면 안 되면 `window.tipChance = () => 0;`으로 끈다.
