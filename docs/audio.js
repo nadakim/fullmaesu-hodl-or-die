@@ -33,6 +33,9 @@
    | flatShrug   | 찌라시 결과 알림: 횡보                                      | 살짝 올라갔다 내려오는 김빠진 "음~음"   |
    | crashDown   | 찌라시 결과 알림: 하락                                      | 긴 하강 글리산도 + 저음 쿵             |
    | crowdScream | 찌라시 결과 알림: 하락 — 합성음 없음, 파일(scream.*)이 있을 때만 | (파일 전용)                      |
+   | relicTick   | 유물 소발동 (매 틱·매일 발동, 성장형 +스택). opts.stacks: 1 = 기본음, 10스택마다 한 옥타브 위 (최대 3옥타브) | 짧은 "칭" |
+   | relicLevelUp| 유물 대발동 (성장형 5·10·25·50스택, 저금통 지급, 큰 금액). opts.rarity: 끝음이 등급마다 다름, 신화는 반짝 아르페지오 추가 | 상승 아르페지오 + 반짝 |
+   | relicShatter| 성장형 유물 초기화 (relicReset)                             | 유리 깨지는 노이즈 + 하강음           |
 
    파일 덮어쓰기: docs/assets/sfx/<이름>.ogg|mp3|wav 를 docs/assets/sfx/files.js의 SFX_FILES 목록에 적으면 합성음 대신 그 파일을 튼다
    (fetch + decodeAudioData, 실패하면 조용히 합성음). crowdScream은 'scream' 파일명도 받는다 (SFX_FILE_ALIAS). 목록이 비어 있으면 요청 0번.
@@ -56,6 +59,8 @@ const SFX_MERGE_GAIN  = 1.2;   //   합칠 때마다 앞 소리 볼륨 × 이만
 const SFX_MERGE_MAX   = 1.8;   //   최대 배율
 const SFX_MAX_VOICES  = 8;     // 동시 발음 수
 const SFX_MASTER_GAIN = 0.6;
+const RELIC_TICK_OCTAVE_STACKS = 10;   // relicTick: 이 스택마다 한 옥타브 위
+const RELIC_TICK_MAX_OCTAVES   = 3;    //   상한
 const SFX_FILE_DIR    = 'assets/sfx/';            // 덮어쓰기 파일 폴더 (docs/demo 기준)
 const SFX_FILE_ALIAS  = { crowdScream: 'scream' }; // SFX 이름 → 다른 파일명도 허용   // 마스터 게인 = 이 값 × 설정 볼륨(0~1). 설정 볼륨 50%면 0.3
 
@@ -255,6 +260,28 @@ const Sound = (() => {
       thud(b, t + 0.84, 1);
       noise(b, t + 0.84, 0.35, 0.35, 'lowpass', 300);
       return 1.3;
+    },
+    relicTick(b, t, p, o){   // 쌓일수록 높아지는 "칭"
+      const oct = Math.min(RELIC_TICK_MAX_OCTAVES, Math.max(0, ((o.stacks || 1) - 1) / RELIC_TICK_OCTAVE_STACKS));
+      const q = p * Math.pow(2, oct);
+      tone(b, 'square', midi(84) * q, t, 0.05, 0.07);
+      tone(b, 'sine', midi(91) * q, t + 0.02, 0.16, 0.08);
+      return 0.2;
+    },
+    relicLevelUp(b, t, p, o){   // 대발동: 상승 아르페지오 + 반짝, 등급별 끝음
+      const END = { common: 79, uncommon: 81, rare: 84, legendary: 86, mythic: 91 };
+      const x = seq(b, 'square', [67, 71, 74, 79], t, 0.06, 0.06, 0.09, p);
+      bell(b, END[o.rarity] || 84, t + 0.26, 0.7, 0.2, p);
+      seq(b, 'triangle', [96, 100, 103], t + 0.3, 0.04, 0.04, 0.05, p);
+      if(o.rarity === 'mythic' || o.rarity === 'legendary') seq(b, 'square', [91, 95, 98, 103, 107], t + 0.5, 0.045, 0.04, 0.045, p);
+      return Math.max(x, 1.0);
+    },
+    relicShatter(b, t, p){   // 초기화: 유리 깨짐 + 슬픈 하강
+      noise(b, t, 0.18, 0.5, 'highpass', 4000, 0, 0.8);
+      for(let i = 0; i < 7; i++) tone(b, 'sine', (2500 + Math.random() * 3500) * p, t + 0.01 + Math.random() * 0.12, 0.08, 0.035);
+      noise(b, t + 0.05, 0.3, 0.2, 'bandpass', 2500, 900, 2);
+      seq(b, 'triangle', [72, 68, 65, 60], t + 0.22, 0.13, 0.12, 0.14, p);
+      return 1.1;
     },
     gapAlarm(b, t, p){   // 강 단계 갭 경보: 사이렌만 (반대매매의 저음 쿵은 뺀다)
       const s = ctx.createOscillator(), g = ctx.createGain();

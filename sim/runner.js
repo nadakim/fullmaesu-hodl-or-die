@@ -29,7 +29,7 @@ const ALL_CAUSES = [].concat(END_CAUSES.win, END_CAUSES.bust, END_CAUSES.miss);
 const MAX_STEPS = 200000;   // 무한 루프 방지 (한 판은 보통 수백 걸음)
 
 function parseArgs(argv){
-  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES), out: '', targets: null, set: {}, engine: undefined };
+  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES).filter(k => STRATEGIES[k].premarket), out: '', targets: null, set: {}, engine: undefined };
   for(let i = 0; i < argv.length; i += 2){
     const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
     if(k === 'n' || k === 'seed') o[k] = parseInt(v, 10);
@@ -40,7 +40,7 @@ function parseArgs(argv){
     else if(k === 'targets') o.targets = v.split(',').map(Number);
     else throw new Error('알 수 없는 옵션: ' + argv[i]);
   }
-  o.strategies.forEach(s => { if(!STRATEGIES[s]) throw new Error('알 수 없는 전략: ' + s); });
+  o.strategies.forEach(s => { if(!STRATEGIES[s] || !STRATEGIES[s].premarket) throw new Error('알 수 없는 전략: ' + s); });
   return o;
 }
 
@@ -70,6 +70,7 @@ function playGame(E, strat, seed){
   const rng = mulberry32(seed ^ 0x9E3779B9);
   E.setSeed(seed);
   E.startNewRun();
+  if(strat.onStart) strat.onStart(E);   // 실험용 (예: 유물 강제 지급). rand()를 부르지 않는다
   const run = () => E.run;
   let steps = 0;
   while(run().phase !== 'over'){
@@ -86,7 +87,8 @@ function playGame(E, strat, seed){
         const id = pickReward(strat, run().rewardChoices, strat.cardPick || [], rng, false);
         E.chooseReward(id ? 'take' : 'skip', id);
       } else {
-        E.chooseRelicReward(pickReward(strat, run().relicChoices, strat.relicPick || [], rng, true));
+        const first = (strat.relicFirst || []).find(id => run().relicChoices.indexOf(id) >= 0);   // 성장 유물 우선 전략
+        E.chooseRelicReward(first || pickReward(strat, run().relicChoices, strat.relicPick || [], rng, true));
       }
     } else if(phase === 'shop'){
       strat.shop(E, rng);
@@ -98,6 +100,7 @@ function playGame(E, strat, seed){
     seed, round: r.round, day: r.day, endReason: r.endReason, endCause: r.endCause,
     endEquity: Math.round(r.endEquity), peakEquity: Math.round(r.peakEquity), liquidations: r.liquidations,
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
+    growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
     weekEq: weekEquities(E, r)   // 주마다 결산 순자산 (그 주 중간에 파산했으면 그 주는 없음)
   };
 }

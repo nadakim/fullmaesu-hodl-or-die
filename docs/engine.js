@@ -248,6 +248,24 @@ const RELIC_THEME_BONUS          = 0.15;  // 테마주 헌터: 평가이익 +15%
 const RELIC_COMMUNITY_BONUS      = 0.10;  // 개미 커뮤니티: 찌라시 A 선택의 대박 확률 +10%p
 const RELIC_DAYTRADER_CUT        = 1;     // 단타의 신: 하루 첫 매도 카드 행동력 −1
 const RELIC_FSS_CONNECT_CUT      = 0.5;   // 금감원 인맥: 게이지 상승량 50% 감소
+/* 성장형 유물 (docs/design/GROWTH_RELICS.md) — 판이 진행될수록 스택이 쌓이고, 조건에 걸리면 초기화된다.
+   상태 run.relicState[id] = { stacks, best, bank }. 평가이익 보정(떡상 적금·반대매매 생존자)은 %p를 합산한 뒤 한 번만 곱한다 */
+const MOON_COMBO_STEP        = 3;     // 떡상 적금: 상승 콤보 3·6·9…마다 +1스택
+const MOON_PNL_PER_STACK     = 0.01;  //   스택당 평가이익 +1%
+const MOON_RESET_DOWN        = 10;    //   하락 콤보가 이 값이 되는 순간 0스택
+const TEARJAR_RATE           = 0.10;  // 개미의 눈물 저금통: 손실 청산액의 10% 적립
+const TEARJAR_PAYOUT_COMBO   = 5;     //   상승 콤보가 이 값이 되면 전액 현금 지급
+const TEARJAR_MARGIN_KEEP    = 0.5;   //   반대매매 당하면 이만큼만 남는다 (절반 증발)
+const TRAUMA_PNL_PER_STACK   = 0.03;  // 반대매매 생존자: 스택당 레버리지·숏 포지션 평가이익 +3%
+const TIPCOL_PER_STACK       = 0.02;  // 찌라시 수집가: 스택당 A 대박 확률 +2%p
+const TIPCOL_MAX_BONUS       = 0.20;  //   최대 +20%p
+const TIP_JACKPOT_CAP        = 0.95;  // 찌라시 A 대박 확률 상한 (개미 커뮤니티와 합산 후)
+const DTREE_DAYS             = 3;     // 존버 나무: 장 마감을 이만큼 넘긴 포지션 1개당 +1스택
+const DTREE_CUT_PER_STACK    = 0.01;  //   스택당 이자 −1%
+const DTREE_MAX_CUT          = 0.60;  //   최대 −60%
+const DTREE_SELL_KEEP        = 0.5;   //   그런 포지션을 직접 팔면 스택 절반
+const COMPOUND_EXCESS        = 0.10;  // 복리 괴물: 결산에서 목표 대비 +10% 이상이면 +1스택, 아니면(통과는 했을 때) −1
+const COMPOUND_CASH_PER_STACK = 0.01; //   주 첫날 현금 = 순자산 × 1% × 스택
 
 const RELICS = [
   { id:'gukbap',   icon:'🍲', name:'국밥 정신',       rarity:'rare',
@@ -300,7 +318,32 @@ const RELICS = [
     flavor:'"고등학교 동창이 거기 다녀." 동창은 인사팀이다.' },
   { id:'timemachine', icon:'🕰️', name:'타임머신',    rarity:'mythic',
     desc:'매일 장전에 시장 카드(비둘기·매파·CEO 트윗) 판정과 리딩방 결과를 미리 본다.',
-    flavor:'정보가 곧 실력이다. 그 정보가 미래에서 왔을 뿐.' }
+    flavor:'정보가 곧 실력이다. 그 정보가 미래에서 왔을 뿐.' },
+  // ── 성장형 (growth: 'count' = 스택 개수 · 'money' = 적립금 만원) ──
+  { id:'moonSavings', icon:'📈', name:'떡상 적금', rarity:'rare', growth:'count',
+    desc:`상승 콤보 ${MOON_COMBO_STEP}·${MOON_COMBO_STEP * 2}·${MOON_COMBO_STEP * 3}…마다 +1스택. 스택당 모든 포지션 평가이익 +${Math.round(MOON_PNL_PER_STACK * 100)}%. 하락 콤보 ${MOON_RESET_DOWN}이면 강제 해지(0스택).`,
+    reset:`하락 콤보 ${MOON_RESET_DOWN} → 0스택`,
+    flavor:'"적금은 복리래." 이율은 차트가 정한다.' },
+  { id:'tearJar', icon:'🐷', name:'개미의 눈물 저금통', rarity:'uncommon', growth:'money',
+    desc:`손실로 청산할 때마다 손실액의 ${Math.round(TEARJAR_RATE * 100)}% 적립. 상승 콤보 ${TEARJAR_PAYOUT_COMBO}에 전액 현금 지급. 반대매매 당하면 절반 증발.`,
+    reset:`반대매매 → 적립금 ${Math.round((1 - TEARJAR_MARGIN_KEEP) * 100)}% 증발`,
+    flavor:'눈물 젖은 돼지. 배를 가르면 조금 덜 슬프다.' },
+  { id:'traumaSurvivor', icon:'🩹', name:'반대매매 생존자', rarity:'legendary', growth:'count',
+    desc:`반대매매를 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 평가이익 +${Math.round(TRAUMA_PNL_PER_STACK * 100)}%.`,
+    reset:'초기화 없음 — 대신 반대매매 자체가 고통',
+    flavor:'"한 번 털려 봐야 안다." 세 번 털린 사람이 말했다.' },
+  { id:'tipCollector', icon:'📂', name:'찌라시 수집가', rarity:'rare', growth:'count',
+    desc:`찌라시 A(고위험)를 고를 때마다 +1스택 (결과 무관). 스택당 A 대박 확률 +${Math.round(TIPCOL_PER_STACK * 100)}%p (최대 +${Math.round(TIPCOL_MAX_BONUS * 100)}%p). B를 고르면 초기화.`,
+    reset:'찌라시 B 선택 → 0스택',
+    flavor:'단톡방 캡처 폴더 128GB. 출처는 전부 "아는 형".' },
+  { id:'diamondTree', icon:'🌳', name:'존버 나무', rarity:'uncommon', growth:'count',
+    desc:`장 마감마다 ${DTREE_DAYS}일 이상 보유한 포지션 수만큼 +스택. 스택당 매일 이자 −${Math.round(DTREE_CUT_PER_STACK * 100)}% (최대 −${Math.round(DTREE_MAX_CUT * 100)}%). 그 포지션을 직접 팔면 절반 벌목.`,
+    reset:`${DTREE_DAYS}일 이상 보유 포지션 수동 매도 → 스택 절반`,
+    flavor:'물 대신 물린 만큼 자란다.' },
+  { id:'compoundMonster', icon:'👹', name:'복리 괴물', rarity:'mythic', growth:'count',
+    desc:`결산에서 목표를 ${Math.round(COMPOUND_EXCESS * 100)}% 이상 넘기면 +1스택, 겨우 통과하면 −1. 매주 첫날 현금 +순자산 × ${Math.round(COMPOUND_CASH_PER_STACK * 100)}% × 스택.`,
+    reset:`목표 +${Math.round(COMPOUND_EXCESS * 100)}% 미만으로 통과 → −1스택`,
+    flavor:'아인슈타인이 말했다던 그것. 말한 적은 없다.' }
 ];
 
 /* 찌라시 — 장중 무작위 선택 이벤트. 도착하면 선택할 때까지 시장이 멈춘다.
@@ -546,10 +589,64 @@ const hasRelic = id => !!run && run.relics.indexOf(id) >= 0;
 function gainRelic(id, source){
   if(!RELIC_BY_ID[id] || hasRelic(id)) return false;
   run.relics.push(id);
+  run.relicState[id] = { stacks: 0, best: 0 };
   emit('relicGained', {id, source});
   return true;
 }
 function loseRelic(id){ run.relics = run.relics.filter(x => x !== id); }
+
+/* ── 성장형 유물: 스택 (적립형 tearJar는 만원 단위 적립금) ── */
+const relicStacks = id => hasRelic(id) && run.relicState[id] ? run.relicState[id].stacks : 0;
+function growRelic(id, n){
+  if(!hasRelic(id) || !(n > 0)) return;
+  const st = run.relicState[id];
+  st.stacks += n;
+  st.best = Math.max(st.best, st.stacks);
+  emit('relicGrew', {id, stacks: st.stacks, delta: n});
+}
+/* keep = 남기는 비율 (0 = 전부 초기화). 잃은 양이 있을 때만 알린다 */
+function resetRelic(id, reason, keep){
+  if(!hasRelic(id)) return;
+  const st = run.relicState[id], before = st.stacks;
+  st.stacks = RELIC_BY_ID[id].growth === 'count' ? Math.floor(before * (keep || 0)) : before * (keep || 0);
+  if(before - st.stacks > 0) emit('relicReset', {id, lost: before - st.stacks, stacks: st.stacks, reason});
+}
+function shrinkRelic(id, n, reason){   // 복리 괴물: −1
+  if(!hasRelic(id) || relicStacks(id) <= 0) return;
+  const st = run.relicState[id], lost = Math.min(n, st.stacks);
+  st.stacks -= lost;
+  emit('relicReset', {id, lost, stacks: st.stacks, reason});
+}
+/* 존버 나무: 3일 이상 보유 포지션을 직접 팔면 (한 번의 매도 행동에 한 번) 스택 절반 */
+function noteManualSell(ps){
+  if(ps.some(p => p.daysHeld >= DTREE_DAYS)) resetRelic('diamondTree', 'sell', DTREE_SELL_KEEP);
+}
+/* 성장형 평가이익 보정 %p (합산 후 relicAdjustedPnl에서 한 번 곱한다) */
+const moonPct   = () => relicStacks('moonSavings') * MOON_PNL_PER_STACK;
+const traumaPct = p => (p.lev > 1 || p.dir < 0) ? relicStacks('traumaSurvivor') * TRAUMA_PNL_PER_STACK : 0;
+
+/* ── 콤보 (엔진): 매 틱 끝, 직전 틱에도 있던 포지션들의 평가손익 합이 오르면 up+1·down=0, 내리면 반대. 없거나 0이면 유지 ── */
+function updateCombo(){
+  let delta = 0, any = false;
+  const now = {};
+  run.positions.forEach(p => {
+    const v = posPnl(p);
+    now[p.id] = v;
+    if(run.comboPnl[p.id] !== undefined){ delta += v - run.comboPnl[p.id]; any = true; }
+  });
+  run.comboPnl = now;
+  if(!any || delta === 0) return;
+  if(delta > 0){ run.combo.up++; run.combo.down = 0; } else { run.combo.down++; run.combo.up = 0; }
+  emit('comboChanged', {up: run.combo.up, down: run.combo.down});
+  if(run.combo.up > 0 && run.combo.up % MOON_COMBO_STEP === 0) growRelic('moonSavings', 1);
+  if(run.combo.down === MOON_RESET_DOWN) resetRelic('moonSavings', 'downCombo', 0);
+  if(run.combo.up === TEARJAR_PAYOUT_COMBO && relicStacks('tearJar') >= 1){   // 저금통 지급
+    const pay = relicStacks('tearJar');
+    run.cash += pay;
+    run.relicState.tearJar.stacks = 0;
+    emit('relicTriggered', {id: 'tearJar', amount: pay, big: true});
+  }
+}
 
 /* 아직 없는 유물 n개 (희귀도 가중치, 중복 없음) */
 function rollRelics(n){   // 등급을 먼저 뽑고(RELIC_RARITY_WEIGHTS), 그 등급 안에서 균등. 없는 유물만
@@ -574,8 +671,9 @@ function dailyInterest(){
   if(run.interestFree) return 0;
   const credit = run.positions.filter(p => p.dir > 0).reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
   const shorts = hasRelic('shortpro') ? 0 : run.positions.filter(p => p.dir < 0).reduce((s, p) => s + posBorrowed(p), 0);
-  return credit * interestRate() + shorts * shortBorrowRate();
+  return (credit * interestRate() + shorts * shortBorrowRate()) * (1 - dtreeCut());
 }
+const dtreeCut = () => Math.min(DTREE_MAX_CUT, relicStacks('diamondTree') * DTREE_CUT_PER_STACK);   // 존버 나무
 const gukbapApplies = p => hasRelic('gukbap') && RELIC_GUKBAP_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0;
 const sealApplies   = p => hasRelic('seal') && p.daysHeld >= RELIC_SEAL_DAYS;
 
@@ -586,6 +684,7 @@ function relicAdjustedPnl(p, pnl){
   let out = pnl;
   if(pnl > 0 && sealApplies(p))   out *= 1 + RELIC_SEAL_BONUS;
   if(pnl > 0 && hasRelic('theme') && RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0) out *= 1 + RELIC_THEME_BONUS;
+  if(pnl > 0) out *= 1 + moonPct() + traumaPct(p);   // 성장형: %p 합산 후 한 번
   return out;
 }
 const posEquity    = p => p.principal + relicAdjustedPnl(p, rawPnl(p));
@@ -611,6 +710,12 @@ function buildSettlementSteps(p){
   if(pnl > 0 && hasRelic('theme') && RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0){
     out *= 1 + RELIC_THEME_BONUS;
     steps.push({ label: relicStepLabel('theme'), kind: 'mult', value: 1 + RELIC_THEME_BONUS, runningTotal: out, source: 'theme' });
+  }
+  if(pnl > 0){   // 성장형: relicAdjustedPnl과 같은 값(합산 %p × 한 번) — 표시만 유물별 add 단계로 나눈다
+    const base = out, mp = moonPct(), tp = traumaPct(p);
+    if(mp > 0){ out = out + base * mp; steps.push({ label: `${relicStepLabel('moonSavings')} ×${relicStacks('moonSavings')}스택 +${Math.round(mp * 100)}%`, kind: 'add', value: base * mp, runningTotal: out, source: 'moonSavings' }); }
+    if(tp > 0){ out = out + base * tp; steps.push({ label: `${relicStepLabel('traumaSurvivor')} ×${relicStacks('traumaSurvivor')}스택 +${Math.round(tp * 100)}%`, kind: 'add', value: base * tp, runningTotal: out, source: 'traumaSurvivor' }); }
+    if(mp > 0 || tp > 0) steps[steps.length - 1].runningTotal = base * (1 + mp + tp);   // 마지막 값은 relicAdjustedPnl과 같은 식으로 (부동소수까지 일치)
   }
   return steps;
 }
@@ -688,6 +793,7 @@ function closePosition(p, penalty){
   run.cash += proceeds;
   run.realized += pnl;
   run.positions = run.positions.filter(x => x !== p);
+  if(pnl < 0) growRelic('tearJar', -pnl * TEARJAR_RATE);   // 개미의 눈물 저금통
   return pnl;
 }
 
@@ -709,12 +815,14 @@ function sellPosition(id){
   const p = run.positions.find(x => x.id === id);
   if(!p) return false;
   if(!canSell(p)){ emit('cardRejected', {reason: 'locked'}); return false; }
+  noteManualSell([p]);
   emit('sold', {pos: p, pnl: closePosition(p, 0)});
   return true;
 }
 
 function closeAllSellable(){
   const targets = run.positions.filter(canSell);
+  noteManualSell(targets);
   let total = 0;
   targets.forEach(p => { total += closePosition(p, 0); });
   return { count: targets.length, pnl: total };
@@ -783,6 +891,8 @@ function checkMarginCalls(){
       if(deficit) run.misuDefault = true;
       run.discard.push(newCard('trauma'));   // 반대매매 트라우마: 덱 오염
       emit('marginCall', {pos: p, pnl, penalty, saved, refund, deficit});
+      resetRelic('tearJar', 'marginCall', TEARJAR_MARGIN_KEEP);
+      growRelic('traumaSurvivor', 1);
       if(saved > 0) emit('relicTriggered', {id: 'hotline', amount: saved, posId: p.id});   // 연출용 (이미 계산된 값)
     });
 }
@@ -908,6 +1018,7 @@ defCard('cutLoss', '손절은 과학', 'sell', 0, 'uncommon', 'position', false,
   `손실 중인 포지션을 즉시 매도, 손실의 ${pct(CUT_LOSS_REFUND)}를 멘탈 보상금으로.`,
   p => isLosing(p) && canSell(p),
   p => {
+    noteManualSell([p]);
     const pnl = closePosition(p, 0);
     run.cash += -pnl * CUT_LOSS_REFUND;
     emit('sold', {pos: p, pnl});
@@ -916,6 +1027,7 @@ defCard('takeWin', '익절은 항상 옳다', 'sell', 1, 'rare', 'position', fal
   `수익 중인 포지션을 즉시 매도, 수익의 ${pct(TAKE_PROFIT_BONUS)}를 보너스로.`,
   p => isWinning(p) && canSell(p),
   p => {
+    noteManualSell([p]);
     const pnl = closePosition(p, 0);
     run.cash += pnl * TAKE_PROFIT_BONUS;
     emit('sold', {pos: p, pnl});
@@ -1200,6 +1312,8 @@ function newRun(){
     newsToday: '', newsTomorrow: '', newsActive: false, newsResolved: false,   // 뉴스: 오늘(개장에 판정) / 내일 예고
     rewardChoices: [], endReason: '', endEquity: 0,
     relics: [], relicChoices: [], rewardStep: '',
+    relicState: {},                          // 성장형 유물 { id: {stacks, best} }
+    combo: { up: 0, down: 0 }, comboPnl: {}, // 장중 콤보 (updateCombo) · 직전 틱 포지션별 평가손익
     shop: { singles: [], singlesBought: [], removed: 0, relics: [] }
   };
 }
@@ -1227,6 +1341,11 @@ function startDay(){
   run.lossGuardToday = false;
   run.sellDiscountUsed = false;
   run.dayRoll = rand();                    // 오늘 시장 카드 판정용 난수 (타임머신이면 장전에 결과를 보여준다)
+  if(run.day === 1 && relicStacks('compoundMonster') > 0){   // 복리 괴물
+    const pay = Math.max(0, netEquity()) * COMPOUND_CASH_PER_STACK * relicStacks('compoundMonster');
+    run.cash += pay;
+    emit('relicTriggered', {id: 'compoundMonster', amount: pay, big: true});
+  }
   if(run.day === 1 && hasRelic('payday')){ const pay = RELIC_PAYDAY_BASE * run.round; run.cash += pay; emit('relicTriggered', {id: 'payday', amount: pay}); }
   run.circuitToday = false;
   run.circuitTripped = false;
@@ -1565,10 +1684,12 @@ function applyTipEffect(tip, ef){
 
 /* 선택 → 확률 판정 → 효과 적용. 결과(순자산 변화 포함)를 기록하고 알린다 */
 /* 결과 확률. 개미 커뮤니티: A(0번)의 대박(첫 결과) +10%p, 나머지는 비율대로 줄인다 */
+const tipCollectorBonus = () => Math.min(TIPCOL_MAX_BONUS, relicStacks('tipCollector') * TIPCOL_PER_STACK);
 function tipChances(choiceIdx, choice){
   const base = choice.outcomes.map(o => o.chance);
-  if(choiceIdx !== 0 || !hasRelic('community') || base.length < 2) return base;
-  const first = Math.min(1, base[0] + RELIC_COMMUNITY_BONUS), rest = 1 - base[0];
+  const bonus = (hasRelic('community') ? RELIC_COMMUNITY_BONUS : 0) + tipCollectorBonus();   // 개미 커뮤니티 + 찌라시 수집가
+  if(choiceIdx !== 0 || bonus <= 0 || base.length < 2) return base;
+  const first = Math.min(TIP_JACKPOT_CAP, base[0] + bonus), rest = 1 - base[0];
   return base.map((c, i) => i === 0 ? first : rest > 0 ? c * (1 - first) / rest : 0);
 }
 
@@ -1592,6 +1713,7 @@ function resolveTip(choiceIdx){
   if(run.tipLog.length > TIP_LOG_SIZE) run.tipLog.pop();
   run.pendingTip = null;
   emit('tipResolved', result);
+  if(choiceIdx === 0) growRelic('tipCollector', 1); else resetRelic('tipCollector', 'safeTip', 0);   // 결과 판정 뒤에 쌓는다
   checkBankruptcy();
   return result;
 }
@@ -1605,6 +1727,7 @@ function tick(){
   updateMarketEvent();
   checkOrders();
   checkMarginCalls();
+  updateCombo();
   notePeak(netEquity());
   if(checkBankruptcy()) return;
   if(run.circuitToday && !run.circuitTripped && netEquity() <= run.marketOpenEquity * (1 - CIRCUIT_DROP)){
@@ -1625,6 +1748,7 @@ function endOfDay(){
   const interest = dailyInterest();
   run.cash -= interest;
   run.interestPaid += interest;
+  growRelic('diamondTree', run.positions.filter(p => p.daysHeld >= DTREE_DAYS).length);   // 존버 나무 (오늘 이자 계산 뒤)
   if(run.cardMarket && (run.forcedState === 'BULL' || run.forcedState === 'BEAR')){   // 카드로 만든 방향 장세 → 내일 개장 초반 되돌림
     run.revertDir = run.forcedState === 'BULL' ? -1 : 1;
     run.revertTicksLeft = REVERSION_TICKS;
@@ -1647,7 +1771,7 @@ function endOfDay(){
     run.positions.forEach(p => buildSettlementSteps(p).forEach((st, k, steps) => {
       if(k > 0) bySource[st.source] = (bySource[st.source] || 0) + (st.runningTotal - steps[k - 1].runningTotal);
     }));
-    ['gukbap', 'seal', 'theme'].forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
+    ['gukbap', 'seal', 'theme', 'moonSavings', 'traumaSurvivor'].forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
   }
   emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital'), newsTomorrow: run.newsTomorrow});
   if(checkBankruptcy()) return;
@@ -1681,6 +1805,8 @@ function endOfRound(){
   run.lastWeek = weekSummary(eq, target, diamondBonus, bailout);
   run.lastWeek.settlementChain = buildSettlementChain(diamondPaid);   // 연출용 기록 (값은 위에서 이미 확정)
   if(eq < target) return endRun('MISSED');
+  if(eq >= target * (1 + COMPOUND_EXCESS)) growRelic('compoundMonster', 1);   // 복리 괴물
+  else shrinkRelic('compoundMonster', 1, 'weakWeek');
   run.lastWeek.slush = slushEarned(eq, target);
   run.slush += run.lastWeek.slush;
   run.weeksCleared = run.round;

@@ -226,4 +226,15 @@ const signalFollower = {
   shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
 };
 
-module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, nothing };
+/* ── growthFirst: 성장형 유물 폭주 확인용. 플레이는 random과 같고, 유물 보상·암시장에서 성장형 유물을 최우선으로 ── */
+const GROWTH_RELICS = ['compoundMonster', 'traumaSurvivor', 'moonSavings', 'tipCollector', 'tearJar', 'diamondTree'];
+const growthFirst = {
+  premarket: random.premarket, tip: random.tip, randomPicks: true, relicFirst: GROWTH_RELICS,
+  shop(E, rng){
+    const s = E.run.shop;
+    GROWTH_RELICS.forEach(id => { if(s.relics.indexOf(id) >= 0) E.buyRelic(id); });
+    random.shop(E, rng);
+  }
+};
+
+module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, nothing, GROWTH_RELICS };
