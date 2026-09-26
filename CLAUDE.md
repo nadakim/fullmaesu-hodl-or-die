@@ -34,6 +34,7 @@
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 21개, 실행법·주의점은 `tools/tests/README.md`)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
