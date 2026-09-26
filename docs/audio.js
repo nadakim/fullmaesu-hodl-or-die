@@ -36,6 +36,7 @@
    | relicTick   | 유물 소발동 (매 틱·매일 발동, 성장형 +스택). opts.stacks: 1 = 기본음, 10스택마다 한 옥타브 위 (최대 3옥타브) | 짧은 "칭" |
    | relicLevelUp| 유물 대발동 (성장형 5·10·25·50스택, 저금통 지급, 큰 금액). opts.rarity: 끝음이 등급마다 다름, 신화는 반짝 아르페지오 추가 | 상승 아르페지오 + 반짝 |
    | relicShatter| 성장형 유물 초기화 (relicReset)                             | 유리 깨지는 노이즈 + 하강음           |
+   | shopShuffle | shopRerolled (암시장 진열 새로고침)                         | 카드 섞는 "촤르륵" 노이즈 연타 + 끝 "탁" |
 
    파일 덮어쓰기: docs/assets/sfx/<이름>.ogg|mp3|wav 를 docs/assets/sfx/files.js의 SFX_FILES 목록에 적으면 합성음 대신 그 파일을 튼다
    (fetch + decodeAudioData, 실패하면 조용히 합성음). crowdScream은 'scream' 파일명도 받는다 (SFX_FILE_ALIAS). 목록이 비어 있으면 요청 0번.
@@ -260,6 +261,13 @@ const Sound = (() => {
       thud(b, t + 0.84, 1);
       noise(b, t + 0.84, 0.35, 0.35, 'lowpass', 300);
       return 1.3;
+    },
+    shopShuffle(b, t, p){   // 카드 섞기: 짧은 대역 노이즈를 점점 빠르게 → 마지막에 탁 내려놓기
+      let x = t;
+      for(let i = 0; i < 9; i++){ noise(b, x, 0.02, 0.22, 'bandpass', 2600 + i * 180, 0, 1.5); x += 0.045 - i * 0.003; }
+      noise(b, x + 0.02, 0.06, 0.45, 'lowpass', 900);
+      tone(b, 'square', 330 * p, x + 0.02, 0.05, 0.05, { f1: 220 * p });
+      return x - t + 0.12;
     },
     relicTick(b, t, p, o){   // 쌓일수록 높아지는 "칭"
       const oct = Math.min(RELIC_TICK_MAX_OCTAVES, Math.max(0, ((o.stacks || 1) - 1) / RELIC_TICK_OCTAVE_STACKS));

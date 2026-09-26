@@ -31,10 +31,24 @@ const betaOf      = (E, c) => stockOf(E, c).beta;
 const canAfford   = (E, c) => E.run.cash >= E.stockCost(stockOf(E, c));
 const LEVER = ['yolo', 'fullBuy', 'credit'];
 
-/* 암시장 공통: 원하는 유물 → 원하는 낱장 순으로 비자금이 되는 만큼 산다 */
+/* 유물 새로고침 (엔진에 rerollShop이 있을 때만): 진열에 선호 유물이 없고, 새로고침 + 가장 싼 미보유 선호 유물 값을 낼 수 있으면 새로고침 → 나오면 산다 */
+const hasFn = (E, name) => { try { return typeof E[name] === 'function'; } catch(e){ return false; } };
+function rerollForRelics(E, relics){
+  if(!hasFn(E, 'rerollShop')) return;
+  for(let guard = 0; guard < 30; guard++){
+    const want = relics.filter(id => !E.hasRelic(id));
+    if(!want.length || E.run.shop.relics.some(id => want.indexOf(id) >= 0) || !E.rerollAvailable('relic')) return;
+    const cheapest = Math.min.apply(null, want.map(id => E.relicPrice(id)));
+    if(E.run.slush < E.shopRerollCost('relic') + cheapest || !E.rerollShop('relic')) return;
+    want.forEach(id => { if(E.run.shop.relics.indexOf(id) >= 0) E.buyRelic(id); });
+  }
+}
+
+/* 암시장 공통: 원하는 유물 → (없으면 새로고침) → 원하는 낱장 순으로 비자금이 되는 만큼 산다 */
 function shopByPriority(E, relics, cards){
   const s = E.run.shop;
   relics.forEach(id => { if(s.relics.indexOf(id) >= 0 && !E.hasRelic(id)) E.buyRelic(id); });
+  rerollForRelics(E, relics);
   cards.forEach(id => { const i = s.singles.indexOf(id); if(i >= 0) E.buySingle(i); });
 }
 
@@ -236,6 +250,7 @@ const growthFirst = {
   shop(E, rng){
     const s = E.run.shop;
     GROWTH_RELICS.forEach(id => { if(s.relics.indexOf(id) >= 0) E.buyRelic(id); });
+    rerollForRelics(E, GROWTH_RELICS);
     random.shop(E, rng);
   }
 };

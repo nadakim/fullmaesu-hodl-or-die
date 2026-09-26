@@ -108,7 +108,9 @@ function playGame(E, strat, seed){
       strat.shop(E, rng);
       const buys = E.eventLog.slice(ev0).filter(e => SHOP_BUY_EVENTS.indexOf(e.type) >= 0 || (e.type === 'relicGained' && e.data.source === 'shop')).length;
       const removes = E.eventLog.slice(ev0).filter(e => e.type === 'shopRemoved').length;
-      shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest });
+      const rer = E.eventLog.slice(ev0).filter(e => e.type === 'shopRerolled');
+      shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest,
+                     rerolls: rer.length, rerollSpent: rer.reduce((s2, e) => s2 + e.data.cost, 0) });
       lastExit = run().slush;
       E.leaveShop();
     } else throw new Error('알 수 없는 phase: ' + phase);
@@ -124,7 +126,8 @@ function playGame(E, strat, seed){
   };
 }
 
-function summarize(games, maxRound){
+const GROWTH_IDS = ['moonSavings', 'tearJar', 'traumaSurvivor', 'tipCollector', 'diamondTree', 'compoundMonster'];
+function summarize(games, maxRound, strat){
   const n = games.length;
   const count = f => games.filter(f).length;
   const avg = f => games.reduce((s, g) => s + f(g), 0) / n;
@@ -140,10 +143,22 @@ function summarize(games, maxRound){
   for(let w = 1; w < maxRound; w++){
     const xs = games.map(g => (g.shop || []).find(x => x.week === w)).filter(Boolean);
     const av = k => xs.length ? xs.reduce((s2, x) => s2 + x[k], 0) / xs.length : 0;
-    shopByWeek[w] = { n: xs.length, income: av('income'), entry: av('entry'), spent: av('spent'), exit: av('exit'), buys: av('buys'), removes: av('removes'), deck: av('deck'), cheapest: av('cheapest') };
+    shopByWeek[w] = { n: xs.length, income: av('income'), entry: av('entry'), spent: av('spent'), exit: av('exit'), buys: av('buys'), removes: av('removes'), deck: av('deck'), cheapest: av('cheapest'),
+                      rerolls: av('rerolls'), rerollSpent: av('rerollSpent') };
   }
+  // 유물: 전략의 선호 유물(relicPick 또는 relicFirst) 보유 수 · 1순위 보유율 · 성장형 보유율 · 암시장 지출 중 새로고침 비율
+  const pref = (strat && (strat.relicFirst || strat.relicPick)) || [];
+  const allShop = [].concat.apply([], games.map(g => g.shop || []));
+  const spentAll = allShop.reduce((s2, x) => s2 + x.spent, 0), rerollAll = allShop.reduce((s2, x) => s2 + (x.rerollSpent || 0), 0);
+  const relicStats = {
+    prefOwned: pref.length ? games.reduce((s2, g) => s2 + g.relics.filter(id => pref.indexOf(id) >= 0).length, 0) / n : 0,
+    prefTop: pref.length ? games.filter(g => g.relics.indexOf(pref[0]) >= 0).length / n : 0,
+    growthOwned: games.reduce((s2, g) => s2 + g.relics.filter(id => GROWTH_IDS.indexOf(id) >= 0).length, 0) / n,
+    rerollsPerShop: allShop.length ? allShop.reduce((s2, x) => s2 + (x.rerolls || 0), 0) / allShop.length : 0,
+    rerollShare: spentAll > 0 ? rerollAll / spentAll : 0
+  };
   return {
-    n, shopByWeek,
+    n, shopByWeek, relicStats,
     clearRate: count(g => g.endCause === 'VICTORY') / n,
     bustRate: count(g => END_CAUSES.bust.indexOf(g.endCause) >= 0) / n,
     missRate: count(g => END_CAUSES.miss.indexOf(g.endCause) >= 0) / n,
@@ -172,7 +187,7 @@ function main(){
   const t0 = Date.now();
   for(const name of opt.strategies){
     games[name] = seeds.map(s => playGame(E, STRATEGIES[name], s));
-    results[name] = summarize(games[name], maxRound);
+    results[name] = summarize(games[name], maxRound, STRATEGIES[name]);
     process.stderr.write(`  ${name}: ${opt.n}판 (${((Date.now() - t0) / 1000).toFixed(1)}s)\n`);
   }
 
@@ -196,6 +211,11 @@ function main(){
     console.table(Object.fromEntries(Object.keys(results[s].shopByWeek).map(w => { const x = results[s].shopByWeek[w];
       return [w + '주', { '판': x.n, '적립': Math.round(x.income), '입장 잔액': Math.round(x.entry), '지출': Math.round(x.spent), '퇴장 잔액': Math.round(x.exit), '구매': x.buys.toFixed(2), '제거': (x.removes || 0).toFixed(2), '덱': (x.deck || 0).toFixed(1), '최저가': Math.round(x.cheapest) }]; })));
   });
+
+  console.log('== 유물 · 새로고침 (선호 유물 = 전략의 relicPick/relicFirst, 1순위 = 목록 맨 앞) ==');
+  console.table(Object.fromEntries(opt.strategies.map(s => { const r = results[s].relicStats; return [s, {
+    '선호 유물 보유/판': r.prefOwned.toFixed(2), '1순위 보유율': pct(r.prefTop), '성장형 보유/판': r.growthOwned.toFixed(2),
+    '새로고침/암시장': r.rerollsPerShop.toFixed(2), '지출 중 새로고침': pct(r.rerollShare) }]; })));
 
   console.log('== 주차별 탈락 수 (그 주에 파산하거나 결산 미달) ==');
   console.table(Object.fromEntries(Object.keys(results[opt.strategies[0]].deathsByWeek).map(w =>

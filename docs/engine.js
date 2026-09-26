@@ -213,6 +213,9 @@ const SHOP_SINGLE_MAX     = 5;     // 낱장 진열 최대 장수
 const SHOP_SINGLE_PRICE   = { common:300, uncommon:500, rare:750, legendary:1100, mythic:1800 }; // 낱장 정가 (비자금)
 const SHOP_REMOVE_BASE    = 400;   // 카드 제거 기본 비용 (비자금)
 const SHOP_REMOVE_PER_WEEK = 200;  // 주차가 지날 때마다 제거 비용 증가
+const SHOP_REROLL_BASE        = { single: 100, relic: 250 };   // 진열 새로고침 기본가 (비자금). 낱장·유물 따로 센다
+const SHOP_REROLL_WEEK_GROWTH = 0.15;  // 주차마다 기본가 +15%
+const SHOP_REROLL_ESCALATION  = 1.5;   // 같은 주에 같은 종류를 새로고침할 때마다 × 이만큼 (1주차 낱장 100 → 150 → 230 → 340)
 const SHOP_REMOVE_ESCALATION = 1.6; // 같은 주에 제거할 때마다 비용 × 이만큼 (횟수 제한 없음, 덱 MIN_DECK_SIZE장까지). 1주차 400 → 640 → 1,020 → 1,640
 
 /* 종목. 인버스 종목은 beta가 음수 → 같은 가격 공식으로 지수와 반대로 움직인다. */
@@ -652,10 +655,10 @@ function updateCombo(){
 }
 
 /* 아직 없는 유물 n개 (희귀도 가중치, 중복 없음) */
-function rollRelics(n){   // 등급을 먼저 뽑고(RELIC_RARITY_WEIGHTS), 그 등급 안에서 균등. 없는 유물만
+function rollRelics(n, exclude = []){   // 등급을 먼저 뽑고(RELIC_RARITY_WEIGHTS), 그 등급 안에서 균등. 없는 유물만 (exclude: 더 뺄 유물 — 새로고침 때 지금 진열)
   const picks = [];
   while(picks.length < n){
-    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0);
+    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0);
     const rarity = rollRarity(RELIC_RARITY_WEIGHTS, cands);
     if(!rarity) break;
     const tier = cands.filter(r => r.rarity === rarity);
@@ -1994,12 +1997,26 @@ const relicPrice     = id => shopPrice(RELIC_PRICE[RELIC_BY_ID[id].rarity], 'rel
 /* 카드 제거 n번째(이번 주 이미 n번 제거) 비용 = (기본 + 주차당 증가) × 누진^n, 10만 단위 — 제거 비용 공식은 여기 한 곳 */
 const removeCost     = n => shopPrice((SHOP_REMOVE_BASE + SHOP_REMOVE_PER_WEEK * (run.round - 1)) * Math.pow(SHOP_REMOVE_ESCALATION, n), 'remove');
 const shopRemoveCost = () => removeCost(run.shop.removed);   // 다음 제거 비용 (run.shop.removed는 openShop에서 0)
+/* 진열 새로고침 n번째(이번 주 그 종류를 이미 n번) 비용 — 새로고침 비용 공식은 여기 한 곳 */
+const rerollCost     = (kind, n) => shopPrice(SHOP_REROLL_BASE[kind] * (1 + SHOP_REROLL_WEEK_GROWTH * (run.round - 1)) * Math.pow(SHOP_REROLL_ESCALATION, n), 'reroll');
+const shopRerollCost = kind => rerollCost(kind, run.shop.rerolls[kind]);
+/* 새로고침할 거리가 있는지 (순수 판정, rand 없음): 낱장 = 안 산 칸이 있고 새로 뽑을 카드가 있음 / 유물 = 진열에 없는 미보유 유물이 있음 */
+function rerollAvailable(kind){
+  const sh = run.shop;
+  if(kind === 'single'){
+    const bought = sh.singlesBought.map(i => sh.singles[i]);
+    const open = sh.singles.length - sh.singlesBought.length;
+    return open > 0 && CARDS.some(c => c.type !== 'status' && run.masterDeck.indexOf(c.id) < 0 && bought.indexOf(c.id) < 0 && cardAllowed(c.id));
+  }
+  return RELICS.some(r => !hasRelic(r.id) && sh.relics.indexOf(r.id) < 0);
+}
 const shopOpenNow    = () => !!run && run.phase === 'shop';
 
 function openShop(){
   run.phase = 'shop';
   const count = SHOP_SINGLE_MIN + randInt(SHOP_SINGLE_MAX - SHOP_SINGLE_MIN + 1);
-  run.shop = { singles: rollRewards(count, run.masterDeck), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT) };   // 덱에 없는 카드만 진열
+  run.shop = { singles: rollRewards(count, run.masterDeck), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT),   // 덱에 없는 카드만 진열
+               rerolls: { single: 0, relic: 0 } };   // 이번 주 새로고침 횟수 (다음 주 암시장에서 0)
   emit('shopOpen', {round: run.round});
 }
 
@@ -2055,6 +2072,27 @@ function buyRelic(id){
   if(run.slush < price) return shopReject('slush');
   run.slush -= price;
   gainRelic(id, 'shop');
+  return true;
+}
+
+/* 진열 새로고침 (kind: 'single' | 'relic'). 낱장은 안 산 칸만 새로 뽑는다(산 칸은 앞으로 모아 '구매 완료' 유지),
+   유물은 진열 전체를 지금 진열·보유 유물을 빼고 다시 뽑는다. 무작위는 여기서만 */
+function rerollShop(kind){
+  if(!shopOpenNow()) return shopReject('phase');
+  if(kind !== 'single' && kind !== 'relic') return shopReject('none');
+  if(!rerollAvailable(kind)) return shopReject('empty');
+  const cost = shopRerollCost(kind);
+  if(run.slush < cost) return shopReject('slush');
+  run.slush -= cost;
+  run.shop.rerolls[kind]++;
+  const sh = run.shop;
+  if(kind === 'single'){
+    const bought = sh.singlesBought.map(i => sh.singles[i]);
+    const fresh = rollRewards(sh.singles.length - bought.length, run.masterDeck.concat(bought));
+    sh.singles = bought.concat(fresh);
+    sh.singlesBought = bought.map((_, i) => i);
+  } else sh.relics = rollRelics(RELIC_SHOP_COUNT, sh.relics);
+  emit('shopRerolled', {kind, cost, n: sh.rerolls[kind]});
   return true;
 }
 

@@ -759,6 +759,23 @@ body::after{
   font-family:'Press Start 2P','Galmuri-22px',monospace;font-size:22px;color:var(--purple);
 }
 @media (prefers-reduced-motion: reduce){ .flip-card{animation:none;} }
+/* 암시장 새로고침 */
+.shop-sec-head{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;margin:18px 0 10px;}
+.shop-sec-head .section-label{margin:0;}
+.reroll-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.reroll-btn{
+  border:none;cursor:pointer;padding:6px 9px 5px;font-family:'Press Start 2P','Galmuri-7_5px',monospace;font-size:7.5px;line-height:1.4;
+  background:#000;color:var(--cyan);box-shadow:0 0 0 2px var(--cyan),2px 2px 0 #000;
+}
+.reroll-btn:hover:not(:disabled){transform:translate(-1px,-1px);box-shadow:0 0 0 2px var(--text),3px 3px 0 #000;}
+.reroll-btn:disabled{opacity:.4;cursor:not-allowed;}
+.reroll-btn b{display:inline-block;color:var(--gold);font-weight:normal;}
+.reroll-next{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;color:var(--muted);}
+.rr-out{animation:rrOut .22s steps(4) forwards;}
+@keyframes rrOut{to{transform:rotateY(90deg);opacity:.2;}}
+.rr-in{animation:rrIn .5s steps(6) both;}
+@keyframes rrIn{from{transform:rotateY(90deg);}to{transform:rotateY(0);}}
+.shop-item .flip-card{animation-delay:0s;}
 
 /* ═══════════════════════════════════════════════════════════
    04 EVENT
@@ -2602,6 +2619,7 @@ function onGameEvent(type, d){
     case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
     case 'packOpened':   showPackResult(d); juicePack(d); break;
     case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
+    case 'shopRerolled': Sound.play('shopShuffle'); break;
     case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver':
       overPending = true;
@@ -3596,6 +3614,30 @@ function showPackInfo(packId){
     </div>`);
 }
 
+/* 진열 새로고침 버튼: 지금 가격 + 다음 두 단계 (엔진 rerollCost 그대로). 비자금 부족·새로 뽑을 게 없으면 비활성 */
+let shopFlipIn = '';   // 방금 새로고침한 종류 — 그 진열만 뒤집히며 나타난다 (한 번 그리면 지운다)
+function rerollBoxHtml(kind){
+  const n = run.shop.rerolls[kind], cost = rerollCost(kind, n), can = rerollAvailable(kind);
+  return `<span class="reroll-box"><button class="reroll-btn" data-reroll="${kind}" ${can && run.slush >= cost ? '' : 'disabled'}
+      title="${can ? '' : kind === 'relic' ? '새로 들여올 유물이 없습니다' : '새로 뽑을 칸·카드가 없습니다'}">🔄 새로고침 <b id="rrCost-${kind}">${fmtSlush(cost)}</b></button>
+    <span class="reroll-next">다음 ${rerollCost(kind, n + 1).toLocaleString()} → ${rerollCost(kind, n + 2).toLocaleString()}</span></span>`;
+}
+function doReroll(kind){
+  if(!rerollAvailable(kind) || run.slush < shopRerollCost(kind)) return;
+  const before = shopRerollCost(kind);
+  const olds = kind === 'single'   // 안 산 칸만 뒤집혀 사라지고 (산 칸은 그대로)
+    ? [...document.querySelectorAll('#shopBox .shop-singles .shop-item')].filter((_, i) => run.shop.singlesBought.indexOf(i) < 0).map(it => it.firstElementChild)
+    : [...document.querySelectorAll('#shopBox .relic-row .relic-tile')];
+  olds.forEach(el => el && el.classList.add('rr-out'));
+  setTimeout(() => {
+    if(!rerollShop(kind)) { renderShop(); return; }
+    shopFlipIn = kind;
+    renderShop(); renderTabs();
+    shopFlipIn = '';
+    Fx.punch($('rrCost-' + kind), -(shopRerollCost(kind) - before), 0.7);   // 다음 가격이 튀어 오르며 갱신
+  }, 220);
+}
+
 function renderShop(){
   const box = $('shopBox');
   if(!shopOpenNow()){
@@ -3618,18 +3660,19 @@ function renderShop(){
     <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
     <div class="pack-row">${SHOP_PACKS.map(packHtml).join('')}</div>
 
-    <span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 구매 한도 없음</span>
+    <div class="shop-sec-head"><span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 구매 한도 없음</span>${rerollBoxHtml('single')}</div>
     <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
       const bought = sh.singlesBought.indexOf(i) >= 0, owned = !bought && inDeck(id), price = singlePrice(id);
       const label = bought ? '구매 완료' : owned ? '덱에 있음' : `${fmtPrice2(price, 'single')} 구매`;
-      return `<div class="shop-item">${cardHtml(CARD_BY_ID[id], {})}
+      const fresh = shopFlipIn === 'single' && !bought;   // 방금 새로 뽑은 칸: 뒤집히며 나타난다 (팩 개봉 flip-card 재사용)
+      return `<div class="shop-item">${fresh ? `<div class="flip-card"><div class="flip-face flip-back">?</div><div class="flip-face flip-front">${cardHtml(CARD_BY_ID[id], {})}</div></div>` : cardHtml(CARD_BY_ID[id], {})}
         <button class="buy-btn" data-single="${i}" ${bought || owned || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
-    <span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>
+    <div class="shop-sec-head"><span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>${rerollBoxHtml('relic')}</div>
     <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
       const r = RELIC_BY_ID[id], price = relicPrice(id), owned = hasRelic(id);
-      return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
+      return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : '', extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
     <span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
@@ -3674,6 +3717,8 @@ $('shopBox').addEventListener('click', e => {
   const single = e.target.closest('[data-single]');
   const rm = e.target.closest('[data-shop-remove]');
   const relic = e.target.closest('[data-buy-relic]');
+  const rr = e.target.closest('[data-reroll]');
+  if(rr){ if(!rr.disabled) doReroll(rr.dataset.reroll); return; }
   if(relic) buyRelic(relic.dataset.buyRelic);
   else if(pk) buyPack(pk.dataset.pack);
   else if(single) buySingle(+single.dataset.single);

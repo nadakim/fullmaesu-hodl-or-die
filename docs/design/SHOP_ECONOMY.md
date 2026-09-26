@@ -37,6 +37,19 @@ n = 이번 주에 이미 제거한 횟수 (run.shop.removed, openShop에서 0) �
 - 주 1회 제한일 땐 판 끝까지 이 두께에 닿기 어려웠지만, 무제한 제거로 몇 주 만에 도달 가능. 극단 압축 봇은 7주차 평균 덱 9.2장, 500판 중 60판이 8장 이하로 끝났다.
 - 시뮬레이터 random 계열 봇은 하루 `SIM_MAX_PLAYS_PER_DAY`(60)장에서 멈춘다 (안전장치, 보통 판엔 닿지 않음).
 
+## 진열 새로고침 (리롤)
+```
+rerollCost(kind, n) = round10( SHOP_REROLL_BASE[kind] × (1 + SHOP_REROLL_WEEK_GROWTH × (round − 1)) × SHOP_REROLL_ESCALATION ^ n )
+SHOP_REROLL_BASE = { single: 100, relic: 250 }, SHOP_REROLL_WEEK_GROWTH = 0.15, SHOP_REROLL_ESCALATION = 1.5
+n = 이번 주 그 종류 새로고침 횟수 (run.shop.rerolls[kind], openShop에서 0) · 다음 비용 = shopRerollCost(kind)
+```
+- 엔진 `rerollShop(kind)` (무작위는 이 안에서만) → `emit('shopRerolled', {kind, cost, n})`. 판정 `rerollAvailable(kind)`는 순수 함수.
+- 낱장: 안 산 칸만 `rollRewards`로 다시 뽑는다 (덱에 있는 카드·산 카드 제외, 신화 한도 그대로). 산 칸은 앞으로 모이고 '구매 완료' 유지.
+- 유물: `rollRelics(RELIC_SHOP_COUNT, 지금 진열)` — 보유·지금 진열을 빼고 다시. 새로 들여올 유물이 없으면 비활성.
+- 1주차 낱장 100 → 150 → 230 → 340, 유물 250 → 380 → 560 · 4주차 낱장 150, 유물 360 · 7주차 낱장 190, 유물 480.
+- 화면: 섹션 제목 오른쪽 "🔄 새로고침 💼 …" + "다음 A → B", 뒤집혀 사라지고 새 진열이 뒤집히며 등장(flip-card), `shopShuffle` 효과음, 가격 숫자 펀치.
+- 도입 결과(2026-09-26): 선호 유물을 노리는 봇이 암시장 지출의 50~81%를 새로고침에 쓰고, 선호 유물 보유 +0.04~0.43개/판, 1순위 보유율 최대 +10%p(manipSpam 25.8 → 35.8%), 클리어 +0~1.6%p. 쌓이기만 하던 비자금의 주요 소비처가 됐다.
+
 ## 낱장
 - 주당 구매 한도(`SHOP_SINGLE_LIMIT`)를 없앴다. 진열(`SHOP_SINGLE_MIN`~`MAX`장)에 있고 덱에 없으면 비자금이 되는 만큼 산다.
 
