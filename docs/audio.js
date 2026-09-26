@@ -12,6 +12,8 @@
    | 이름        | 언제 (docs/demo)                                            | 소리                                   |
    |-------------|-------------------------------------------------------------|----------------------------------------|
    | uiClick     | 버튼·탭 클릭                                                | 짧은 틱                                |
+   | uiMove      | 타이틀 메뉴 선택 이동 (호버·↑↓)                             | 아주 짧은 높은 틱                      |
+   | uiConfirm   | 타이틀 메뉴 확정 (클릭·Enter)                              | 2음 상승 "띡-딩"                        |
    | cardPlay    | cardPlayed                                                  | 노이즈 "탁" + 저음 펀치                |
    | cardReject  | cardRejected · shopRejected                                 | 낮은 버저 2음 하강                     |
    | buy         | bought (opts.lev: 2x 이상 한 옥타브 위 + 디스토션, opts.dir −1 = 숏은 하강) | 2음 "띠링"             |
@@ -153,6 +155,8 @@ const Sound = (() => {
   /* ── 효과음 사전: fn(bus, t 시작 시각, p 피치 배율, opts) → 길이(초) ── */
   const SFX = {
     uiClick(b, t, p){ tone(b, 'square', 2200 * p, t, 0.025, 0.08); return 0.03; },
+    uiMove(b, t, p){ tone(b, 'square', 3000 * p, t, 0.015, 0.05); return 0.02; },
+    uiConfirm(b, t, p){ tone(b, 'square', 1320 * p, t, 0.05, 0.1); tone(b, 'square', 1980 * p, t + 0.055, 0.08, 0.1); return 0.14; },
     cardPlay(b, t, p){
       noise(b, t, 0.05, 0.45, 'bandpass', 1800 * p, 0, 0.9);
       tone(b, 'triangle', 160 * p, t, 0.13, 0.6, { f1: 55 * p });
