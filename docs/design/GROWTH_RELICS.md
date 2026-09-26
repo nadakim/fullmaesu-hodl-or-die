@@ -27,7 +27,7 @@ UI: `docs/demo` `enqueueRelicGrow`·`enqueueRelicBig`·`enqueueRelicShatter`·`g
 - 평가이익 보정(떡상 적금·반대매매 생존자)은 `relicAdjustedPnl`에서 기존 곱(존버의 인장·테마주 헌터) 뒤에 **%p를 합산해 한 번만** 곱한다
   (`out *= 1 + moonPct + traumaPct`) — 곱의 곱으로 폭주하지 않게. 평가손실엔 적용하지 않는다.
 - 결산 체인 `buildSettlementSteps`에 유물별 `add` 단계("📈 떡상 적금 ×12스택 +12%")로 나오고, 마지막 값은 `relicAdjustedPnl`과 부동소수까지 같다 (3,564건 확인).
-- 보상·암시장 풀에 그대로 포함 (`RELIC_RARITY_WEIGHTS`).
+- 보상·암시장 풀에 그대로 포함 (보상 `RELIC_RARITY_WEIGHTS`, 암시장 `RELIC_SHOP_RARITY_WEIGHTS`).
 
 ## 연출 (UI)
 - 유물 바: 스택 배지(0이면 숨김), 발광 1~4 기본 · 5~9 초록 · 10~24 금색 · 25+ 무지개 (저금통은 금액 배지, 발광 없음). 툴팁에 현재 스택·효과·초기화·이번 판 최고.

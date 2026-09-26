@@ -62,7 +62,8 @@ const REWARD_RARITY_BY_WEEK = [
   { upTo: 8, weights: { common:36, uncommon:34, rare:18,   legendary:9,   mythic:3 } }
 ];
 const MYTHIC_DECK_LIMIT = 1;       // 덱 전체 신화 카드 수 한도 (전설·신화는 원래 카드별 1장 — 덱에 있는 카드는 후보에서 빠진다)
-const RELIC_RARITY_WEIGHTS = { common:30, uncommon:35, rare:22, legendary:10, mythic:3 };   // 유물 후보 등급 확률 (결산 보상·암시장 공통, 등급 먼저 → 등급 안 균등)
+const RELIC_RARITY_WEIGHTS = { common:30, uncommon:35, rare:22, legendary:10, mythic:3 };   // 결산 보상 유물 후보 등급 확률 (등급 먼저 → 등급 안 균등)
+const RELIC_SHOP_RARITY_WEIGHTS = { common:40, uncommon:32, rare:18, legendary:8, mythic:2 };   // 암시장 유물 진열 등급 확률 (칸마다 등급 먼저 → 등급 안 균등). 3칸이라 보상보다 흔한 쪽으로
 const MIN_DECK_SIZE     = 5;       // 카드 제거로 이 아래로는 줄일 수 없다
 
 // 카드 수치
@@ -243,7 +244,7 @@ const RELIC_CAPITAL_INTEREST_CUT = 0.5;   // 캐피탈 VVIP: 이자 할인
 const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동력 +1
 const RELIC_LAWYER_DECAY_MULT    = 2;     // 전관 변호사: 금감원 게이지 자연 감소(매일·매주) 배수
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
-const RELIC_SHOP_COUNT           = 1;     // 암시장 유물 진열 수
+const RELIC_SHOP_COUNT           = 3;     // 암시장 유물 진열 수 (남은 유물이 모자라면 그만큼만)
 const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legendary:2200, mythic:3000 }; // 암시장 유물 가격 (비자금)
 const RELIC_PAYDAY_BASE          = 60;    // 월급날: 매주 첫날 현금 +이만큼 × 주차. 200 → 60: 완만한 목표에서 카드 없이도 통과시키던 불로소득 (2~8주 합계 원금의 +70% → +21%)
 const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목을 살 때마다 드로우
@@ -655,16 +656,24 @@ function updateCombo(){
 }
 
 /* 아직 없는 유물 n개 (희귀도 가중치, 중복 없음) */
-function rollRelics(n, exclude = []){   // 등급을 먼저 뽑고(RELIC_RARITY_WEIGHTS), 그 등급 안에서 균등. 없는 유물만 (exclude: 더 뺄 유물 — 새로고침 때 지금 진열)
+function rollRelics(n, exclude = [], weights = RELIC_RARITY_WEIGHTS){   // 등급을 먼저 뽑고(weights), 그 등급 안에서 균등. 없는 유물만 (exclude: 더 뺄 유물 — 새로고침 때 지금 진열)
   const picks = [];
   while(picks.length < n){
     const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0);
-    const rarity = rollRarity(RELIC_RARITY_WEIGHTS, cands);
+    const rarity = rollRarity(weights, cands);
     if(!rarity) break;
     const tier = cands.filter(r => r.rarity === rarity);
     picks.push(tier[randInt(tier.length)].id);
   }
   return picks;
+}
+
+/* 암시장 유물 한 칸의 등급별 확률 (순수 함수, UI 표시용 — rollRarity와 같은 계산). 보유한 유물을 뺀 뒤 남은 등급만으로 다시 나눈다 */
+function relicShopOdds(exclude = []){
+  const cands = RELICS.filter(r => !hasRelic(r.id) && exclude.indexOf(r.id) < 0);
+  const tiers = RARITIES.filter(r => RELIC_SHOP_RARITY_WEIGHTS[r] > 0 && cands.some(c => c.rarity === r));
+  const total = tiers.reduce((sum, r) => sum + RELIC_SHOP_RARITY_WEIGHTS[r], 0);
+  return tiers.map(r => ({ rarity: r, chance: RELIC_SHOP_RARITY_WEIGHTS[r] / total, count: cands.filter(c => c.rarity === r).length }));
 }
 
 const pumpUpChance = () => hasRelic('vip') ? RELIC_VIP_PUMP_CHANCE : PUMP_UP_CHANCE;
@@ -2015,7 +2024,7 @@ const shopOpenNow    = () => !!run && run.phase === 'shop';
 function openShop(){
   run.phase = 'shop';
   const count = SHOP_SINGLE_MIN + randInt(SHOP_SINGLE_MAX - SHOP_SINGLE_MIN + 1);
-  run.shop = { singles: rollRewards(count, run.masterDeck), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT),   // 덱에 없는 카드만 진열
+  run.shop = { singles: rollRewards(count, run.masterDeck), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT, [], RELIC_SHOP_RARITY_WEIGHTS),   // 덱에 없는 카드만 진열
                rerolls: { single: 0, relic: 0 } };   // 이번 주 새로고침 횟수 (다음 주 암시장에서 0)
   emit('shopOpen', {round: run.round});
 }
@@ -2091,7 +2100,7 @@ function rerollShop(kind){
     const fresh = rollRewards(sh.singles.length - bought.length, run.masterDeck.concat(bought));
     sh.singles = bought.concat(fresh);
     sh.singlesBought = bought.map((_, i) => i);
-  } else sh.relics = rollRelics(RELIC_SHOP_COUNT, sh.relics);
+  } else sh.relics = rollRelics(RELIC_SHOP_COUNT, sh.relics, RELIC_SHOP_RARITY_WEIGHTS);
   emit('shopRerolled', {kind, cost, n: sh.rerolls[kind]});
   return true;
 }

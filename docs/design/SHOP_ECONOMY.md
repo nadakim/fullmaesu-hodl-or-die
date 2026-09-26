@@ -45,7 +45,8 @@ n = 이번 주 그 종류 새로고침 횟수 (run.shop.rerolls[kind], openShop�
 ```
 - 엔진 `rerollShop(kind)` (무작위는 이 안에서만) → `emit('shopRerolled', {kind, cost, n})`. 판정 `rerollAvailable(kind)`는 순수 함수.
 - 낱장: 안 산 칸만 `rollRewards`로 다시 뽑는다 (덱에 있는 카드·산 카드 제외, 신화 한도 그대로). 산 칸은 앞으로 모이고 '구매 완료' 유지.
-- 유물: `rollRelics(RELIC_SHOP_COUNT, 지금 진열)` — 보유·지금 진열을 빼고 다시. 새로 들여올 유물이 없으면 비활성.
+- 유물: `rollRelics(RELIC_SHOP_COUNT, 지금 진열, RELIC_SHOP_RARITY_WEIGHTS)` — 보유·지금 진열을 빼고 다시. 새로 들여올 유물이 없으면 비활성.
+- 유물 진열은 3칸(`RELIC_SHOP_COUNT`). 칸마다 등급을 `RELIC_SHOP_RARITY_WEIGHTS`(일반 40 · 고급 32 · 희귀 18 · 전설 8 · 신화 2, 결산 보상 `RELIC_RARITY_WEIGHTS`와 별도)로 먼저 뽑고 그 등급 안에서 균등, 한 진열 안 중복 없음. 보유 유물을 빼고 남은 등급만으로 다시 나눈 확률을 `relicShopOdds()`가 돌려주고 암시장 화면에 그대로 표시.
 - 1주차 낱장 100 → 150 → 230 → 340, 유물 250 → 380 → 560 · 4주차 낱장 150, 유물 360 · 7주차 낱장 190, 유물 480.
 - 화면: 섹션 제목 오른쪽 "🔄 새로고침 💼 …" + "다음 A → B", 뒤집혀 사라지고 새 진열이 뒤집히며 등장(flip-card), `shopShuffle` 효과음, 가격 숫자 펀치.
 - 도입 결과(2026-09-26): 선호 유물을 노리는 봇이 암시장 지출의 50~81%를 새로고침에 쓰고, 선호 유물 보유 +0.04~0.43개/판, 1순위 보유율 최대 +10%p(manipSpam 25.8 → 35.8%), 클리어 +0~1.6%p. 쌓이기만 하던 비자금의 주요 소비처가 됐다.

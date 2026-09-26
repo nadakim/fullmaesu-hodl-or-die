@@ -3567,6 +3567,11 @@ function showPackInfo(packId){
 
 /* 진열 새로고침 버튼: 지금 가격 + 다음 두 단계 (엔진 rerollCost 그대로). 비자금 부족·새로 뽑을 게 없으면 비활성 */
 let shopFlipIn = '';   // 방금 새로고침한 종류 — 그 진열만 뒤집히며 나타난다 (한 번 그리면 지운다)
+/* 암시장 유물 칸마다 등급 확률 — 엔진 relicShopOdds() 값을 그대로 (보유 유물을 뺀 남은 등급으로 다시 나눈 값) */
+function relicOddsHtml(){
+  const odds = relicShopOdds();
+  return odds.length ? `<div class="shop-note relic-odds">칸마다 등급 확률: ${odds.map(o => `<span class="c-rar ${o.rarity}" title="남은 ${RARITY_LABEL[o.rarity]} 유물 ${o.count}개 중 균등">${RARITY_LABEL[o.rarity]} ${fmtChance(o.chance)}</span>`).join(' · ')}</div>` : '';
+}
 function rerollBoxHtml(kind){
   const n = run.shop.rerolls[kind], cost = rerollCost(kind, n), can = rerollAvailable(kind);
   return `<span class="reroll-box"><button class="reroll-btn" data-reroll="${kind}" ${can && run.slush >= cost ? '' : 'disabled'}
@@ -3620,7 +3625,8 @@ function renderShop(){
         <button class="buy-btn" data-single="${i}" ${bought || owned || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
-    <div class="shop-sec-head"><span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>${rerollBoxHtml('relic')}</div>
+    <div class="shop-sec-head"><span class="section-label">▌ 유물 — 한 판 동안 상시 발동 · ${RELIC_SHOP_COUNT}칸</span>${rerollBoxHtml('relic')}</div>
+    ${relicOddsHtml()}
     <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
       const r = RELIC_BY_ID[id], price = relicPrice(id), owned = hasRelic(id);
       return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : '', extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
