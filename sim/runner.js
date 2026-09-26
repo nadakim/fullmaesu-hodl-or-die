@@ -66,6 +66,17 @@ function weekEquities(E, r){
   return eq;
 }
 
+/* 지금 암시장 진열 중 가장 싼 구매 항목 가격 (팩·낱장·유물, 제거 제외). 가격 함수가 있으면 그걸 쓴다 (변경 전 엔진과도 호환) */
+const engineHas = (E, name) => { try { return typeof E[name] === 'function'; } catch(e){ return false; } };
+function cheapestOffer(E){
+  const r = E.run, sh = r.shop, prices = [], newPrices = engineHas(E, 'packPrice');
+  E.SHOP_PACKS.forEach(pk => { if(E.packPool(pk).length) prices.push(newPrices ? E.packPrice(pk) : pk.price); });
+  sh.singles.forEach((id, i) => { if(sh.singlesBought.indexOf(i) < 0 && !E.inDeck(id)) prices.push(E.singlePrice(id)); });
+  sh.relics.forEach(id => { if(!E.hasRelic(id)) prices.push(newPrices ? E.relicPrice(id) : E.RELIC_PRICE[E.RELIC_BY_ID[id].rarity]); });
+  return prices.length ? Math.min.apply(null, prices) : 0;
+}
+const SHOP_BUY_EVENTS = ['packOpened', 'singleBought', 'shopRemoved'];
+
 function playGame(E, strat, seed){
   const rng = mulberry32(seed ^ 0x9E3779B9);
   E.setSeed(seed);
@@ -73,6 +84,8 @@ function playGame(E, strat, seed){
   if(strat.onStart) strat.onStart(E);   // 실험용 (예: 유물 강제 지급). rand()를 부르지 않는다
   const run = () => E.run;
   let steps = 0;
+  const shopLog = [];   // 주마다 암시장: { week, income(지난 암시장 이후 적립), entry(들어갈 때 잔액), spent, exit, buys, cheapest }
+  let lastExit = E.run.slush;
   while(run().phase !== 'over'){
     if(++steps > MAX_STEPS) throw new Error(`시드 ${seed}: ${MAX_STEPS}걸음 안에 끝나지 않음 (phase ${run().phase})`);
     const phase = run().phase;
@@ -91,7 +104,11 @@ function playGame(E, strat, seed){
         E.chooseRelicReward(first || pickReward(strat, run().relicChoices, strat.relicPick || [], rng, true));
       }
     } else if(phase === 'shop'){
+      const entry = run().slush, ev0 = E.eventLog.length, cheapest = cheapestOffer(E);
       strat.shop(E, rng);
+      const buys = E.eventLog.slice(ev0).filter(e => SHOP_BUY_EVENTS.indexOf(e.type) >= 0 || (e.type === 'relicGained' && e.data.source === 'shop')).length;
+      shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, cheapest });
+      lastExit = run().slush;
       E.leaveShop();
     } else throw new Error('알 수 없는 phase: ' + phase);
   }
@@ -101,6 +118,7 @@ function playGame(E, strat, seed){
     endEquity: Math.round(r.endEquity), peakEquity: Math.round(r.peakEquity), liquidations: r.liquidations,
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
     growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
+    shop: shopLog,
     weekEq: weekEquities(E, r)   // 주마다 결산 순자산 (그 주 중간에 파산했으면 그 주는 없음)
   };
 }
@@ -117,8 +135,14 @@ function summarize(games, maxRound){
   const deathsByWeek = {};   // 몇 주차 결산·장중에 끝났는지 (승리 제외)
   for(let w = 1; w <= maxRound; w++) deathsByWeek[w] = 0;
   games.filter(g => g.endReason !== 'VICTORY').forEach(g => { deathsByWeek[g.round]++; });
+  const shopByWeek = {};   // w주 암시장에 들른 판들의 평균
+  for(let w = 1; w < maxRound; w++){
+    const xs = games.map(g => (g.shop || []).find(x => x.week === w)).filter(Boolean);
+    const av = k => xs.length ? xs.reduce((s2, x) => s2 + x[k], 0) / xs.length : 0;
+    shopByWeek[w] = { n: xs.length, income: av('income'), entry: av('entry'), spent: av('spent'), exit: av('exit'), buys: av('buys'), cheapest: av('cheapest') };
+  }
   return {
-    n,
+    n, shopByWeek,
     clearRate: count(g => g.endCause === 'VICTORY') / n,
     bustRate: count(g => END_CAUSES.bust.indexOf(g.endCause) >= 0) / n,
     missRate: count(g => END_CAUSES.miss.indexOf(g.endCause) >= 0) / n,
@@ -164,6 +188,13 @@ function main(){
   console.log('== 주차별 결산 통과율 (w주까지 살아남은 비율) ==');
   console.table(Object.fromEntries(Object.keys(results[opt.strategies[0]].passByWeek).map(w =>
     [w + '주', Object.fromEntries(opt.strategies.map(s => [s, pct(results[s].passByWeek[w])]))])));
+
+  console.log('== 주차별 암시장 비자금 (그 주 암시장에 들른 판 평균: 적립 · 들어갈 때 잔액 · 지출 · 나갈 때 잔액 · 구매 수 · 가장 싼 항목) ==');
+  opt.strategies.forEach(s => {
+    console.log('  ' + s);
+    console.table(Object.fromEntries(Object.keys(results[s].shopByWeek).map(w => { const x = results[s].shopByWeek[w];
+      return [w + '주', { '판': x.n, '적립': Math.round(x.income), '입장 잔액': Math.round(x.entry), '지출': Math.round(x.spent), '퇴장 잔액': Math.round(x.exit), '구매': x.buys.toFixed(2), '최저가': Math.round(x.cheapest) }]; })));
+  });
 
   console.log('== 주차별 탈락 수 (그 주에 파산하거나 결산 미달) ==');
   console.table(Object.fromEntries(Object.keys(results[opt.strategies[0]].deathsByWeek).map(w =>

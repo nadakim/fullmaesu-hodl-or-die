@@ -196,7 +196,7 @@ function installBots(){
       if(idx >= 0 && shopRemoveCard(idx)) bought++;
     }
     for(const id of run.shop.relics){
-      if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= RELIC_PRICE[RELIC_BY_ID[id].rarity] && buyRelic(id)) bought++;
+      if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= relicPrice(id) && buyRelic(id)) bought++;
     }
     const singles = run.shop.singles.map((id, i) => ({ id, i }))
       .filter(x => run.shop.singlesBought.indexOf(x.i) < 0 && !inDeck(x.id) && SHOP_BAD.indexOf(x.id) < 0 && RARITY_RANK[CARD_BY_ID[x.id].rarity] >= RARITY_RANK.rare)
@@ -204,7 +204,7 @@ function installBots(){
     for(const x of singles){ if(wallet() >= singlePrice(x.id) && buySingle(x.i)){ bought++; break; } }
     if(!bought){
       for(const pk of SHOP_PACKS){
-        if(packPool(pk).length && wallet() >= pk.price && buyPack(pk.id)){ bought++; break; }
+        if(packPool(pk).length && wallet() >= packPrice(pk) && buyPack(pk.id)){ bought++; break; }
       }
     }
     return bought > 0;

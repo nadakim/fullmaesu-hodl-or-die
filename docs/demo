@@ -694,6 +694,7 @@ body::after{
 .pack-col{display:flex;flex-direction:column;gap:8px;width:170px;}
 .pack{width:100%;height:auto;min-height:150px;gap:7px;padding:12px 8px;border:none;color:var(--text);}
 .pack .pk-icon{font-size:24px;font-family:'VT323','GalmuriV-24px',monospace;}
+.infl{color:var(--red);font-size:.8em;}
 .pack .pk-price{color:var(--gold);font-size:9px;font-family:'Press Start 2P','Galmuri-9px',monospace;}
 .pack .pk-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:7.5px;font-family:'Press Start 2P','Galmuri-7_5px',monospace;color:var(--muted);}
 .pack .pk-desc{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;color:var(--muted);}
@@ -3536,10 +3537,13 @@ function renderTabs(){
 }
 
 const fmtChance = c => (Math.round(c * 1000) / 10) + '%';
+/* 암시장 가격 + 이번 주 인상률 (엔진 shopPrice·shopInflation 그대로). 1주차엔 인상률 표시 없음 */
+const inflTag   = category => shopInflation(category) > 0 ? ` <span class="infl">(▲${Math.round(shopInflation(category) * 100)}%)</span>` : '';
+const fmtPrice2 = (price, category) => fmtSlush(price) + inflTag(category);
 
 function packHtml(pk){
   const empty = packPool(pk).length === 0;
-  const afford = run.slush >= pk.price && !empty;
+  const price = packPrice(pk), afford = run.slush >= price && !empty;
   const odds = packRarityOdds(pk).map(o => `<span class="c-rar ${o.rarity}">${RARITY_LABEL[o.rarity]} ${fmtChance(o.chance)}</span>`).join('');
   return `
     <div class="pack-col">
@@ -3547,7 +3551,7 @@ function packHtml(pk){
       <button class="pack ${afford ? '' : 'disabled'}" data-pack="${pk.id}">
         <div class="pk-icon">${pk.icon}</div>
         <div>${pk.name}</div>
-        <div class="pk-price">${fmtSlush(pk.price)}</div>
+        <div class="pk-price">${fmtPrice2(price, 'pack')}</div>
         <div class="pk-odds">${empty ? '덱에 없는 카드가 남지 않음' : odds}</div>
         <div class="pk-desc">${pk.desc}</div>
       </button>
@@ -3563,7 +3567,7 @@ function showPackInfo(packId){
   const cands = (pk.pool.length ? pk.pool : CARDS.map(c => c.id))
     .filter(id => CARD_BY_ID[id] && CARD_BY_ID[id].type !== 'status' && pk.weights[CARD_BY_ID[id].rarity] > 0);
   const out = cands.filter(id => pool.indexOf(id) < 0);
-  const affordable = run.slush >= pk.price && pool.length > 0;
+  const price = packPrice(pk), affordable = run.slush >= price && pool.length > 0;
   const bars = RARITIES.map(r => `<div class="pki-bar ${r} ${rChance(r) > 0 ? '' : 'zero'}"><span class="c-rar ${r}">${RARITY_LABEL[r]}</span>
       <span class="track"><i style="width:${(rChance(r) * 100).toFixed(2)}%"></i></span><span class="pct">${fmtChance(rChance(r))}</span></div>`).join('');
   const groups = RARITIES.map(r => {
@@ -3576,14 +3580,14 @@ function showPackInfo(packId){
   }).join('');
   const total = cOdds.reduce((sum, o) => sum + o.chance, 0);
   showOverlay(`
-    <div class="pki-head"><span class="pk-icon">${pk.icon}</span><div><div class="pki-name">${pk.name}</div><div class="pki-price">${fmtSlush(pk.price)}</div><div class="pki-desc">${pk.desc}</div></div></div>
+    <div class="pki-head"><span class="pk-icon">${pk.icon}</span><div><div class="pki-name">${pk.name}</div><div class="pki-price">${fmtPrice2(price, 'pack')}</div><div class="pki-desc">${pk.desc}</div></div></div>
     <span class="pki-sec">▌ 등급별 확률 (등급 먼저 → 등급 안에서 균등)</span>
     <div class="pki-bars">${bars}</div>
     <span class="pki-sec">▌ 구성 카드 ${cOdds.length}종 · 확률 합 ${fmtChance(total)}</span>
     ${out.length ? `<div class="pki-note">흐린 카드 ${out.length}장은 덱에 이미 있거나(신화는 덱에 ${MYTHIC_DECK_LIMIT}장까지) 이번엔 나오지 않아 확률 계산에서 빠져 있습니다.</div>` : ''}
     ${pool.length ? groups : '<div class="pki-note">덱에 없는 카드가 남지 않아 지금은 살 수 없습니다.</div>'}
     <div class="pki-btns">
-      <button class="ov-btn" data-pack-buy="${pk.id}" ${affordable ? '' : 'disabled'}>${pool.length ? (run.slush >= pk.price ? `구매 ${fmtSlush(pk.price)}` : `비자금 부족 (${fmtSlush(pk.price)})`) : '살 수 없음'}</button>
+      <button class="ov-btn" data-pack-buy="${pk.id}" ${affordable ? '' : 'disabled'}>${pool.length ? (run.slush >= price ? `구매 ${fmtSlush(price)}` : `비자금 부족 (${fmtSlush(price)})`) : '살 수 없음'}</button>
       <button class="ov-btn alt" data-act="close">닫기</button>
     </div>`);
 }
@@ -3602,7 +3606,8 @@ function renderShop(){
   box.innerHTML = `
     <div class="shop-bar">
       <span>WEEK ${run.round} 결산 완료 · 비자금 <b class="slush-amt" id="shopSlush">${fmtSlush(run.slush)}</b> · 덱 <b>${run.masterDeck.length}장</b><br>
-        다음 주 목표 <b>${fmtMoney(ROUND_TARGETS[run.round])}</b> · 순자산 <b>${fmtMoney(netEquity())}</b></span>
+        다음 주 목표 <b>${fmtMoney(ROUND_TARGETS[run.round])}</b> · 순자산 <b>${fmtMoney(netEquity())}</b><br>
+        물가 상승률: 1주차 대비 <b class="infl">+${Math.round(shopInflation('pack') * 100)}%</b> (팩·낱장 · 유물 +${Math.round(shopInflation('relic') * 100)}%)</span>
       <button class="open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
     </div>
     <div class="shop-note">암시장은 비자금만 받습니다. 계좌 돈(순자산)은 그대로 — 비자금은 주간 목표를 넘긴 만큼 더 쌓입니다 (기본 ${fmtSlush(SLUSH_WEEKLY_BASE)} + 초과분의 ${Math.round(SLUSH_EXCESS_RATE * 100)}%).</div>
@@ -3613,15 +3618,15 @@ function renderShop(){
     <span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 주 ${SHOP_SINGLE_LIMIT}장 (남은 ${singlesLeft})</span>
     <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
       const bought = sh.singlesBought.indexOf(i) >= 0, owned = !bought && inDeck(id), price = singlePrice(id);
-      const label = bought ? '구매 완료' : owned ? '덱에 있음' : singlesLeft <= 0 ? '이번 주 마감' : `${fmtSlush(price)} 구매`;
+      const label = bought ? '구매 완료' : owned ? '덱에 있음' : singlesLeft <= 0 ? '이번 주 마감' : `${fmtPrice2(price, 'single')} 구매`;
       return `<div class="shop-item">${cardHtml(CARD_BY_ID[id], {})}
         <button class="buy-btn" data-single="${i}" ${bought || owned || singlesLeft <= 0 || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
     <span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>
     <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
-      const r = RELIC_BY_ID[id], price = RELIC_PRICE[r.rarity], owned = hasRelic(id);
-      return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtSlush(price)} 구매`}</button>` });
+      const r = RELIC_BY_ID[id], price = relicPrice(id), owned = hasRelic(id);
+      return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
     <span class="section-label">▌ 카드 제거 (덱 압축) — 주 ${SHOP_REMOVE_LIMIT}회 · 이번 주 ${fmtSlush(removeCost)} (주차마다 +${SHOP_REMOVE_PER_WEEK}만)</span>

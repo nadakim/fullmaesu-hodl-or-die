@@ -204,6 +204,10 @@ const SHOP_PACKS = [
           'stk_coin', 'stk_inv2', 'stk_sc', 'stk_meme', 'chaseLimit', 'yolo', 'fullBuy', 'hodlWins',
           'lossGuard', 'antArmy', 'manip'] }
 ];
+/* 암시장 물가 (docs/design/SHOP_ECONOMY.md): 가격 = 기본가 × (1 + 계수 × (주차 − 1)), 10만 단위 반올림 → shopPrice()
+   7주차(마지막 암시장)엔 팩·낱장 ×1.72, 유물 ×1.6. remove·reroll은 따로 공식을 쓰므로 0 (헬퍼만 공유) */
+const SHOP_INFLATION      = { pack: 0.12, single: 0.12, relic: 0.10, remove: 0.0, reroll: 0.0 };
+const SHOP_PRICE_ROUND    = 10;    // 가격 반올림 단위 (만원)
 const SHOP_SINGLE_MIN     = 3;     // 낱장 진열 최소 장수
 const SHOP_SINGLE_MAX     = 5;     // 낱장 진열 최대 장수
 const SHOP_SINGLE_LIMIT   = 1;     // 주당 낱장 구매 가능 수
@@ -1982,8 +1986,13 @@ function rollPack(pk){
   return ids[randInt(ids.length)];
 }
 
-const shopRemoveCost = () => SHOP_REMOVE_BASE + SHOP_REMOVE_PER_WEEK * (run.round - 1);
-const singlePrice    = id => SHOP_SINGLE_PRICE[CARD_BY_ID[id].rarity];
+/* 암시장 가격은 전부 여기서 (구매·화면 표시·시뮬레이터 공용) */
+const shopInflation  = category => SHOP_INFLATION[category] * (run.round - 1);   // 1주차 대비 인상률 (0.12 = +12%)
+const shopPrice      = (basePrice, category) => Math.round(basePrice * (1 + shopInflation(category)) / SHOP_PRICE_ROUND) * SHOP_PRICE_ROUND;
+const packPrice      = pk => shopPrice(pk.price, 'pack');
+const singlePrice    = id => shopPrice(SHOP_SINGLE_PRICE[CARD_BY_ID[id].rarity], 'single');
+const relicPrice     = id => shopPrice(RELIC_PRICE[RELIC_BY_ID[id].rarity], 'relic');
+const shopRemoveCost = () => shopPrice(SHOP_REMOVE_BASE + SHOP_REMOVE_PER_WEEK * (run.round - 1), 'remove');   // 제거는 주차당 +고정액 (인플레이션 0)
 const shopOpenNow    = () => !!run && run.phase === 'shop';
 
 function openShop(){
@@ -1999,11 +2008,12 @@ function buyPack(packId){
   const pk = SHOP_PACK_BY_ID[packId];
   if(!shopOpenNow() || !pk) return shopReject('phase');
   if(packPool(pk).length === 0) return shopReject('empty');
-  if(run.slush < pk.price) return shopReject('slush');
-  run.slush -= pk.price;
+  const price = packPrice(pk);
+  if(run.slush < price) return shopReject('slush');
+  run.slush -= price;
   const cardId = rollPack(pk);
   run.masterDeck.push(cardId);
-  emit('packOpened', {packId, cardId, deckSize: run.masterDeck.length});
+  emit('packOpened', {packId, cardId, price, deckSize: run.masterDeck.length});
   return cardId;
 }
 
@@ -2042,7 +2052,7 @@ function buyRelic(id){
   if(!shopOpenNow()) return shopReject('phase');
   if(run.shop.relics.indexOf(id) < 0) return shopReject('none');
   if(hasRelic(id)) return shopReject('sold');
-  const price = RELIC_PRICE[RELIC_BY_ID[id].rarity];
+  const price = relicPrice(id);
   if(run.slush < price) return shopReject('slush');
   run.slush -= price;
   gainRelic(id, 'shop');
