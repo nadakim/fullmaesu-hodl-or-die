@@ -22,7 +22,8 @@
    | dayEnd      | dayEnd · circuitBreak                                       | 장 마감 종 2음                         |
    | gapUp       | gap · gapOpen (pct > 0)                                     | 로켓 상승 스윕                         |
    | gapDown     | gap · gapOpen (pct < 0)                                     | 급하강 스윕 + 노이즈                   |
-   | marginCall  | marginCall                                                  | 사이렌 2회 + 저음 쿵 + 글리치 노이즈   |
+   | marginCall  | marginCall (연쇄 큐 · 체인 피치)                            | 사이렌 2회 + 저음 쿵 + 글리치 노이즈   |
+   | gapAlarm    | 강 단계 갭 경보 · 파산 직전 경고                            | 경보 사이렌 2회 (쿵 없음)              |
    | tipArrive   | tipEvent                                                    | 휴대폰 진동 "지잉 지잉"                |
    | tipJackpot  | tipResolved (delta > 0)                                     | 짧은 팡파레                            |
    | tipBust     | tipResolved (delta < 0)                                     | 트롬본 하강 "뿌와와와"                 |
@@ -198,6 +199,19 @@ const Sound = (() => {
       // 짧은 글리치: 끊어진 노이즈 조각
       for(let i = 0; i < 6; i++) noise(b, t + 0.8 + i * 0.045 + Math.random() * 0.015, 0.02, 0.22, 'bandpass', 800 + Math.random() * 3000, 0, 3);
       return 1.3;
+    },
+    gapAlarm(b, t, p){   // 강 단계 갭 경보: 사이렌만 (반대매매의 저음 쿵은 뺀다)
+      const s = ctx.createOscillator(), g = ctx.createGain();
+      s.type = 'square';
+      s.frequency.setValueAtTime(700 * p, t);
+      for(let k = 0; k < 2; k++){
+        s.frequency.linearRampToValueAtTime(1100 * p, t + k * 0.3 + 0.15);
+        s.frequency.linearRampToValueAtTime(700 * p, t + k * 0.3 + 0.3);
+      }
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.11, t + 0.02);
+      g.gain.setValueAtTime(0.11, t + 0.55); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.62);
+      s.connect(g); g.connect(filter(b, 'lowpass', 3000)); s.start(t); s.stop(t + 0.64);
+      return 0.65;
     },
     tipArrive(b, t, p){
       [0, 0.4].forEach(dt => {   // "지잉 지잉": 저주파 사각파를 22Hz로 떨게 한다

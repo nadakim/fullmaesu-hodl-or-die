@@ -16,6 +16,8 @@ const FX_PUNCH_MIN     = 0.0025; // 순자산 변화가 이 비율 미만이면 
 const FX_COMBO_MS      = 1500;   // 같은 방향 변화가 이 안에 이어지면 콤보
 const FX_GLITCH_MS     = 380;
 const FX_STAMP_MS      = 950;
+// 연출 큐: 한 틱에 여러 이벤트가 나면 하나씩 이어서 재생 (간격 ms · 길이 배율). '최소'는 간격 0.1초
+const FX_QUEUE_SPEED   = { normal: { gap: 450, dur: 1 }, fast: { gap: 250, dur: 0.65 }, min: { gap: 100, dur: 0.45 } };
 
 const Fx = (() => {
   let motion = true, hitStopOn = true;
@@ -73,11 +75,11 @@ const Fx = (() => {
     document.body.appendChild(scan);
     setTimeout(() => scan.remove(), FX_GLITCH_MS);
   }
-  function stamp(text, tone){   // 화면 가운데 큰 도장 (tone: '' 빨강 · 'up' 초록)
+  function stamp(text, tone, size){   // 화면 가운데 큰 도장 (tone: '' 빨강 · 'up' 초록 · 'gold' / size: '' 대 · 'sm' 소)
     if(now() - lastStampAt < 250) return;   // 한 틱에 반대매매가 여러 건이어도 도장은 한 번
     lastStampAt = now();
     const el = document.createElement('div');
-    el.className = 'fx-stamp ' + (tone || '');
+    el.className = 'fx-stamp ' + (tone || '') + (size ? ' ' + size : '');
     el.textContent = text;
     document.body.appendChild(el);
     setTimeout(() => el.remove(), FX_STAMP_MS);
@@ -116,7 +118,16 @@ const Fx = (() => {
   }
 
   /* ── 카드 사용: 살짝 눌렸다 늘어나며(스쿼시&스트레치) 대상 쪽으로 날아가 사라진다 ── */
-  function cardFly(ghost, fromRect, targetEl, onHit){
+  function cardFly(ghost, fromRect, targetEl, onHit, trail){   // trail: 잔상 수 (카드 연쇄 2장째부터)
+    for(let k = 1; k <= (trail || 0); k++){
+      const g2 = ghost.cloneNode(true);
+      g2.classList.add('fx-afterimage');
+      g2.style.opacity = String(0.45 / k);
+      setTimeout(() => cardFlyOne(g2, fromRect, targetEl, null), k * 45);
+    }
+    cardFlyOne(ghost, fromRect, targetEl, onHit, true);
+  }
+  function cardFlyOne(ghost, fromRect, targetEl, onHit, main){
     if(!ghost.animate || !shown(fromRect)){ if(onHit) onHit(); return; }
     Object.assign(ghost.style, { left: fromRect.left + 'px', top: fromRect.top + 'px', width: fromRect.width + 'px', height: fromRect.height + 'px' });
     ghost.classList.add('fx-card-ghost');
@@ -133,6 +144,7 @@ const Fx = (() => {
     ], { duration: 420, easing: 'steps(9)' });
     a.onfinish = () => {
       ghost.remove();
+      if(!main) return;
       if(targetEl) flash(targetEl, 'fx-hit');
       else burst(tx, ty, 10, ['--gold', '--cyan']);
       if(onHit) onHit();
@@ -213,6 +225,29 @@ const Fx = (() => {
             dur: rnd(0.45, 0.8), age: 0, life: 99, delay: i * 0.018, size: 5, color: color('--gold'), edge: color('--gold2') });
     }
   }
+  // 유물 조명: 아이콘에서 픽셀이 튀어나와 영향을 받는 숫자 쪽으로 날아간다
+  function streak(fromRect, toRect, n, colorNames){
+    if(!shown(fromRect) || !shown(toRect)) return;
+    const a = center(fromRect), to = center(toRect), cols = colorNames.map(color);
+    for(let i = 0; i < n; i++){
+      add({ seek: true, x: a.x, y: a.y, x0: a.x, y0: a.y, cx: a.x + rnd(-80, 80), cy: a.y + rnd(-60, 60), tx: to.x + rnd(-14, 14), ty: to.y + rnd(-5, 5),
+            dur: rnd(0.35, 0.6), age: 0, life: 99, delay: i * 0.02, size: 3, color: pick(cols) });
+    }
+  }
+  // 도착 지점에 튀어 오르는 효과 칩 ("+₩230만 🔏")
+  function chip(text, rect, tone, delayMs){
+    if(!shown(rect)) return;
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'fx-chip ' + (tone || '');
+      el.textContent = text;
+      el.style.left = Math.round(rect.left + rect.width / 2) + 'px';
+      el.style.top = Math.round(rect.top) + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1100);
+    }, delayMs || 0);
+  }
+
   // 반대매매: 포지션 행이 픽셀 조각으로 부서져 떨어진다
   function shatter(rect, n){
     if(!shown(rect)) return;
@@ -242,7 +277,73 @@ const Fx = (() => {
     }
   }
 
-  return { setOptions, intensity, level, hitStop, frozenFor, afterStop, shake, glitch, stamp, flash, jiggle, punch, cardFly,
+  /* ── 연출 큐: enqueue({ kind, tier 1~4, blocking, duration(ms), play(ctx), stop(), skip() }) ──
+     한 틱에 몰린 이벤트를 발생 순서대로 하나씩. 두 번째부터 'CHAIN ×n'. blocking 항목이 남아 있는 동안 시장 정지(busy)
+     + 투명 차단막(클릭 = 스킵). 스킵하면 남은 항목을 전부 버리고 각 항목의 skip()으로 최종 상태만 남긴다. */
+  let queue = [], playing = null, chainN = 0, qTimer = null, gapTimer = null, startTimer = null, speed = 'normal', blocker = null, chainEl = null;
+  const onSkipHooks = [];
+  function setSpeed(v){ speed = FX_QUEUE_SPEED[v] ? v : 'normal'; }
+  const speedCfg = () => FX_QUEUE_SPEED[speed];
+  function ensureBlocker(){
+    if(blocker) return;
+    blocker = document.createElement('div');
+    blocker.className = 'fx-blocker';
+    blocker.addEventListener('click', e => { e.stopPropagation(); skipQueue(); });
+    document.body.appendChild(blocker);
+    chainEl = document.createElement('div');
+    chainEl.className = 'fx-chainctr';
+    document.body.appendChild(chainEl);
+  }
+  const busy = () => !!((playing && playing.blocking) || queue.some(i => i.blocking));
+  function syncBlocker(){ ensureBlocker(); blocker.classList.toggle('on', busy()); }
+  function enqueue(item){
+    item.duration = item.duration || 600;
+    queue.push(item);
+    syncBlocker();
+    // 재생은 한 박자 뒤에 시작: 같은 틱에 몰린 이벤트가 전부 줄을 선 다음 발생 순서대로 (약 경보 묶기도 이때)
+    if(!playing && !gapTimer && !startTimer) startTimer = setTimeout(() => { startTimer = null; nextItem(); }, 0);
+    return item;
+  }
+  const pending = () => queue.slice();   // 아직 시작 안 한 항목 (약 경보 묶기용)
+  function nextItem(){
+    gapTimer = null;
+    playing = queue.shift() || null;
+    if(!playing){ chainN = 0; showChain(0); syncBlocker(); return; }
+    chainN++;
+    showChain(chainN);
+    syncBlocker();
+    const dur = Math.round(playing.duration * speedCfg().dur);
+    try { playing.play({ chain: chainN, duration: dur, speed }); } catch(e) { console.error(e); }
+    qTimer = setTimeout(() => {
+      const it = playing;
+      playing = null;
+      if(it && it.stop) try { it.stop(); } catch(e) {}
+      if(queue.length){ syncBlocker(); gapTimer = setTimeout(nextItem, speedCfg().gap); }
+      else nextItem();
+    }, dur);
+  }
+  function showChain(n){
+    ensureBlocker();
+    if(n < 2){ chainEl.classList.remove('on'); return; }
+    chainEl.textContent = 'CHAIN ×' + n;
+    chainEl.style.setProperty('--chain-scale', String(Math.min(2, 1 + (n - 2) * 0.18)));
+    chainEl.classList.remove('on'); void chainEl.offsetWidth; chainEl.classList.add('on');
+  }
+  function skipQueue(){
+    if(!playing && !queue.length) return false;
+    clearTimeout(qTimer); clearTimeout(gapTimer); clearTimeout(startTimer); gapTimer = null; startTimer = null;
+    const all = (playing ? [playing] : []).concat(queue);
+    playing = null; queue = [];
+    all.forEach(it => { try { if(it.stop) it.stop(); if(it.skip) it.skip(); } catch(e) {} });
+    chainN = 0; showChain(0); release(); syncBlocker();
+    onSkipHooks.forEach(fn => fn());
+    return true;
+  }
+  const onSkip = fn => onSkipHooks.push(fn);
+
+  return { setOptions, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, streak, chip,
+           get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
+           get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, shatter, sparks, burst,
            get particleCount(){ return parts.length; }, get running(){ return raf !== 0; },
            get motion(){ return motion; }, get hitStopOn(){ return hitStopOn; } };

@@ -690,7 +690,7 @@ function buyStock(stockId){
   return p;
 }
 function inverseMasterDraw(stockId){   // 인버스 장인
-  if(hasRelic('inverse') && STOCK_BY_ID[stockId].beta < 0) drawCards(RELIC_INVERSE_DRAW);
+  if(hasRelic('inverse') && STOCK_BY_ID[stockId].beta < 0){ drawCards(RELIC_INVERSE_DRAW); emit('relicTriggered', {id: 'inverse', amount: RELIC_INVERSE_DRAW}); }
 }
 
 /* ── 예약주문 · 반대매매 (장중 매 틱) ── */
@@ -712,6 +712,10 @@ function checkOrders(){
 }
 
 function checkMarginCalls(){
+  // 연출용 알림만 (상태·난수 변화 없음): 콜드월렛 덕분에 기본 기준이었으면 반대매매됐을 포지션
+  run.positions
+    .filter(p => isMarginable(p) && !isProtected(p) && marginCallRatio(p) < MARGIN_CALL_RATIO && marginRatio(p) < MARGIN_CALL_RATIO && marginRatio(p) >= marginCallRatio(p))
+    .forEach(p => emit('relicTriggered', {id: 'coldwallet', amount: 0, posId: p.id}));
   run.positions
     .filter(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < marginCallRatio(p))
     .forEach(p => {
@@ -728,6 +732,7 @@ function checkMarginCalls(){
       if(deficit) run.misuDefault = true;
       run.discard.push(newCard('trauma'));   // 반대매매 트라우마: 덱 오염
       emit('marginCall', {pos: p, pnl, penalty, saved, refund, deficit});
+      if(saved > 0) emit('relicTriggered', {id: 'hotline', amount: saved, posId: p.id});   // 연출용 (이미 계산된 값)
     });
 }
 
@@ -1061,6 +1066,7 @@ function playCard(handIdx, targetId){
   const card = CARD_BY_ID[inst.id];
   const t = resolveTarget(card, targetId);
   run.ap -= cardCost(card);
+  if(card.type === 'sell' && hasRelic('daytrader') && !run.sellDiscountUsed && cardCost(card) < card.ap) emit('relicTriggered', {id: 'daytrader', amount: card.ap - cardCost(card)});   // 연출용
   if(card.type === 'sell') run.sellDiscountUsed = true;   // 단타의 신: 하루 첫 매도 카드만
   run.hand.splice(handIdx, 1);
   if(card.exhaust) run.exhausted.push(inst); else run.discard.push(inst);
@@ -1201,7 +1207,9 @@ function rollMarketCard(cardId){   // 오늘의 난수(run.dayRoll)로 판정 �
 
 /* 금감원 감시 게이지 */
 function raiseFss(gain){
+  const rawGain = gain;   // 연출용: 유물이 덜어준 양
   if(hasRelic('fssconnect')) gain = Math.round(gain * (1 - RELIC_FSS_CONNECT_CUT));   // 금감원 인맥
+  if(gain < rawGain) emit('relicTriggered', {id: 'fssconnect', amount: rawGain - gain});
   const before = run.fss;
   run.fss = Math.min(FSS_MAX, run.fss + gain);
   run.fssPeak = Math.max(run.fssPeak, run.fss);
@@ -1210,7 +1218,10 @@ function raiseFss(gain){
 }
 /* 자연 감소 (장 마감·새 주). 전관 변호사는 배수 */
 function decayFss(amount){
+  const before = run.fss;
   run.fss = Math.max(0, run.fss - amount * (hasRelic('lawyer') ? RELIC_LAWYER_DECAY_MULT : 1));
+  const extra = (before - run.fss) - Math.min(before, amount);   // 연출용: 전관 변호사가 더 줄여준 양
+  if(extra > 0) emit('relicTriggered', {id: 'lawyer', amount: extra});
 }
 function sanctionFss(){
   run.fss = 0;
@@ -1408,6 +1419,14 @@ function endOfDay(){
   run.gapNext = run.gapNext.concat(run.gapToday);
   run.gapToday = [];
   decayFss(FSS_DAILY_DECAY);
+  if(interest > 0 && hasRelic('capital')) emit('relicTriggered', {id: 'capital', amount: interest / capitalCut() - interest});   // 연출용: 할인된 이자
+  if(run.day < DAYS_PER_ROUND){   // 연출용: 평가손익 보정 유물 (결산 체인과 같은 계산을 읽기만)
+    const bySource = {};
+    run.positions.forEach(p => buildSettlementSteps(p).forEach((st, k, steps) => {
+      if(k > 0) bySource[st.source] = (bySource[st.source] || 0) + (st.runningTotal - steps[k - 1].runningTotal);
+    }));
+    ['gukbap', 'seal', 'theme'].forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
+  }
   emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital')});
   if(checkBankruptcy()) return;
   if(run.day >= DAYS_PER_ROUND){ endOfRound(); return; }

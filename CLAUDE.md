@@ -28,7 +28,7 @@
 - `docs/engine.js` — CONFIG + ENGINE (DOM 없음). 브라우저와 Node(`sim/load-engine.js`, vm) 양쪽에서 같은 파일을 쓴다.
 - `docs/audio.js` — 효과음 (UI 전용). Web Audio API 합성 칩튠, 음원 파일 없음. `Sound.play(이름, {pitch, volume})`, 사전 `Sound.SFX`, 파일 상단에 이름 → 이벤트 표.
 - `docs/music.js` — 배경음악 (UI 전용). 곡은 코드가 아니라 데이터 `SONGS`(파일 맨 위, 트래커 형식 `{bpm, stepsPerBeat, patterns, order}`, 칸 = 'C4'·'-'·'.'·드럼 K/S/H/O). 패미컴 4채널 + market 적응형 레이어, look-ahead 스케줄러. `Music.setTrack`·`setMood`·`stinger`·`duck`. `Sound.mixBus`(같은 컴프레서)로 섞는다.
-- `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`, 캔버스 한 장).
+- `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`·`streak`, 캔버스 한 장)·`chip`, **연출 큐** `Fx.enqueue({kind, tier, blocking, duration, play, stop, skip})` — 한 틱에 몰린 이벤트를 발생 순서대로 하나씩(두 번째부터 CHAIN ×n, 효과음 반음씩), blocking 항목이 있으면 `Fx.queueBusy` → 게임 루프가 tick을 미룬다, 클릭·Space·Enter = `Fx.skipQueue`.
 - `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
@@ -72,6 +72,7 @@
   - 환경 설정(타이틀 > `#settingsBtn` → `#screen-settings`, `buildSettings`): UI 전용 `settings`(장중 속도 `speed` 1·2·4 = 게임 루프 간격 `TICK_MS / speed`, 흔들림·번쩍임 `shake` → `flashLiquidation`, CRT `crt` off·weak·strong → `body[data-crt]`, 배경 연출 `bgFx` → `ambientBg.stop()`·배경 격자 정지, 결산 연출 `chainFx` → `playSettlementChain`, 배경음악 `bgm`·`bgmVol`(기본 40) → `Music.setEnabled(sound && bgm)`·`setVolume`, 트랙은 `updateMusic`(`renderAll`·`switchTab`에서 화면·`run.phase`·장세·증거금률·금감원 게이지를 읽어 `Music.setTrack`·`setMood`), 사운드 `sound`·효과음 볼륨 `sfxVol` 0~100(기본 50) → `Sound.setEnabled`·`setVolume`, 장중 틱 소리 `tickSound`(기본 끔), 히트스톱 `hitStop` → `Fx.setOptions`. `prefers-reduced-motion`이면 `shake` 기본값이 끔). localStorage `hodl.settings`, 읽기·쓰기 전부 try/catch — 허용된 값이 아니면 기본값. 기록 초기화는 화면 안에서 두 번 눌러 확인(`confirm()` 쓰지 않음). 엔진 규칙(확률·결과)은 설정의 영향을 받지 않는다. **문구는 재정적 파산 소재(반대매매·깡통계좌·존버 실패·영끌 실패 등)로만** 쓰고, 한강·투신 등 자해를 연상시키는 표현은 쓰지 않는다 (등급 심사·평판 리스크).
 - 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
+- 연쇄 연출(demo `enqueueGap`·`enqueueLiquidation`·`enqueueRelic`·`juiceMilestones`·`juiceStreak`): tier 1~4 = `FX_TIER`(히트스톱·흔들림·파티클), 갭 경보 강도는 약(미보유, 시장 안 멈춤)·중(보유+유리)·강(보유+불리), 밈 문구는 `GAP_MEMES`에만 추가 (금지 소재 규칙 그대로). 유물 연출은 엔진 `emit('relicTriggered', {id, amount})` — 엔진에 넣어도 되는 건 이미 계산된 값을 담는 emit 추가뿐(`rand()`·상태 변경 금지). 결산 체인·게임오버 화면은 `whenFxIdle`로 큐가 끝난 뒤. 설정 `fxSpeed` 보통·빠름·최소(간격 0.1초, 갭 경보 전부 약).
 - 소리·타격감은 엔진에 한 줄도 넣지 않는다. `onGameEvent`와 UI 연출 함수에서만 `Sound.play`·`Fx.*`를 부른다 (새 효과음은 `audio.js` 사전 + 상단 표에 추가). 세기는 `Fx.intensity(금액, 순자산)`(순자산의 `FX_MONEY_FULL` = 1)로 정하고 '강'은 대략 10번 중 1번. 히트스톱은 게임 루프가 `Fx.frozenFor()`만큼 다음 tick을 미루는 것뿐 — tick 순서·횟수·결과는 그대로여야 한다 (`sim/runner.js` 전후 결과 JSON 동일로 확인). 설정 '화면 흔들림'을 끄면 흔들림·글리치·히트스톱이 모두 꺼지고, 파티클·소리는 남는다.
 - 엔진 안의 시간 흐름은 틱 카운트(`tickInDay`, `eventTicksLeft`)로 처리한다. `setTimeout`/`setInterval`은 UI 쪽 게임 루프(`window.onload`)에만 둔다.
 - C#으로 옮기기 쉬운 형태를 선호: 명확한 필드를 가진 평범한 객체, 순수 함수, 숫자 상수는 이름 있는 상수로. JS 전용 트릭(동적 프로퍼티 추가, 암묵적 형변환, 프로토타입 조작)은 피한다.
