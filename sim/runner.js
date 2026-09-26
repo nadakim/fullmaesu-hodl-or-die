@@ -107,7 +107,8 @@ function playGame(E, strat, seed){
       const entry = run().slush, ev0 = E.eventLog.length, cheapest = cheapestOffer(E);
       strat.shop(E, rng);
       const buys = E.eventLog.slice(ev0).filter(e => SHOP_BUY_EVENTS.indexOf(e.type) >= 0 || (e.type === 'relicGained' && e.data.source === 'shop')).length;
-      shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, cheapest });
+      const removes = E.eventLog.slice(ev0).filter(e => e.type === 'shopRemoved').length;
+      shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest });
       lastExit = run().slush;
       E.leaveShop();
     } else throw new Error('알 수 없는 phase: ' + phase);
@@ -139,7 +140,7 @@ function summarize(games, maxRound){
   for(let w = 1; w < maxRound; w++){
     const xs = games.map(g => (g.shop || []).find(x => x.week === w)).filter(Boolean);
     const av = k => xs.length ? xs.reduce((s2, x) => s2 + x[k], 0) / xs.length : 0;
-    shopByWeek[w] = { n: xs.length, income: av('income'), entry: av('entry'), spent: av('spent'), exit: av('exit'), buys: av('buys'), cheapest: av('cheapest') };
+    shopByWeek[w] = { n: xs.length, income: av('income'), entry: av('entry'), spent: av('spent'), exit: av('exit'), buys: av('buys'), removes: av('removes'), deck: av('deck'), cheapest: av('cheapest') };
   }
   return {
     n, shopByWeek,
@@ -193,7 +194,7 @@ function main(){
   opt.strategies.forEach(s => {
     console.log('  ' + s);
     console.table(Object.fromEntries(Object.keys(results[s].shopByWeek).map(w => { const x = results[s].shopByWeek[w];
-      return [w + '주', { '판': x.n, '적립': Math.round(x.income), '입장 잔액': Math.round(x.entry), '지출': Math.round(x.spent), '퇴장 잔액': Math.round(x.exit), '구매': x.buys.toFixed(2), '최저가': Math.round(x.cheapest) }]; })));
+      return [w + '주', { '판': x.n, '적립': Math.round(x.income), '입장 잔액': Math.round(x.entry), '지출': Math.round(x.spent), '퇴장 잔액': Math.round(x.exit), '구매': x.buys.toFixed(2), '제거': (x.removes || 0).toFixed(2), '덱': (x.deck || 0).toFixed(1), '최저가': Math.round(x.cheapest) }]; })));
   });
 
   console.log('== 주차별 탈락 수 (그 주에 파산하거나 결산 미달) ==');

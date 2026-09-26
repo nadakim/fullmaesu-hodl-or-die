@@ -695,6 +695,10 @@ body::after{
 .pack{width:100%;height:auto;min-height:150px;gap:7px;padding:12px 8px;border:none;color:var(--text);}
 .pack .pk-icon{font-size:24px;font-family:'VT323','GalmuriV-24px',monospace;}
 .infl{color:var(--red);font-size:.8em;}
+.rm-next{color:var(--gold);display:inline-block;}
+.rm-next.rm-up{animation:rmUp .6s steps(6);}
+@keyframes rmUp{0%,50%{color:var(--red);text-shadow:0 0 0 var(--red),2px 2px 0 var(--red-dim);}}
+.rm-ladder span{color:var(--muted);} .rm-ladder span.now{color:var(--gold);}
 .pack .pk-price{color:var(--gold);font-size:9px;font-family:'Press Start 2P','Galmuri-9px',monospace;}
 .pack .pk-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;font-size:7.5px;font-family:'Press Start 2P','Galmuri-7_5px',monospace;color:var(--muted);}
 .pack .pk-desc{font-family:'VT323','GalmuriV-15px',monospace;font-size:15px;color:var(--muted);}
@@ -3599,9 +3603,8 @@ function renderShop(){
       <small>주간 결산에서 목표를 달성하고 보상을 고르면, 다음 주 개장 전까지 열립니다.</small></div>`;
     return;
   }
-  const sh = run.shop, removeCost = shopRemoveCost();
-  const singlesLeft = SHOP_SINGLE_LIMIT - sh.singlesBought.length;
-  const canRemove = sh.removed < SHOP_REMOVE_LIMIT && run.masterDeck.length > MIN_DECK_SIZE;
+  const sh = run.shop, nextRemove = shopRemoveCost();
+  const canRemove = run.masterDeck.length > MIN_DECK_SIZE;   // 횟수 제한 없음 — 누진 비용 + 덱 최소 장수만
   if(shopPickIdx >= run.masterDeck.length) shopPickIdx = -1;
   box.innerHTML = `
     <div class="shop-bar">
@@ -3615,12 +3618,12 @@ function renderShop(){
     <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
     <div class="pack-row">${SHOP_PACKS.map(packHtml).join('')}</div>
 
-    <span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 주 ${SHOP_SINGLE_LIMIT}장 (남은 ${singlesLeft})</span>
+    <span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 구매 한도 없음</span>
     <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
       const bought = sh.singlesBought.indexOf(i) >= 0, owned = !bought && inDeck(id), price = singlePrice(id);
-      const label = bought ? '구매 완료' : owned ? '덱에 있음' : singlesLeft <= 0 ? '이번 주 마감' : `${fmtPrice2(price, 'single')} 구매`;
+      const label = bought ? '구매 완료' : owned ? '덱에 있음' : `${fmtPrice2(price, 'single')} 구매`;
       return `<div class="shop-item">${cardHtml(CARD_BY_ID[id], {})}
-        <button class="buy-btn" data-single="${i}" ${bought || owned || singlesLeft <= 0 || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
+        <button class="buy-btn" data-single="${i}" ${bought || owned || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
     <span class="section-label">▌ 유물 — 한 판 동안 상시 발동</span>
@@ -3629,12 +3632,14 @@ function renderShop(){
       return relicTile(r, { extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
-    <span class="section-label">▌ 카드 제거 (덱 압축) — 주 ${SHOP_REMOVE_LIMIT}회 · 이번 주 ${fmtSlush(removeCost)} (주차마다 +${SHOP_REMOVE_PER_WEEK}만)</span>
+    <span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
+    <div class="shop-note rm-ladder">다음: ${[0, 1, 2].map(k => `<span class="${k ? '' : 'now'}">${removeCost(sh.removed + k).toLocaleString()}</span>`).join(' → ')} · 같은 주에 제거할 때마다 ×${SHOP_REMOVE_ESCALATION}, 다음 주엔 처음 가격으로 (주차마다 기본가 +${SHOP_REMOVE_PER_WEEK}만) · 덱 ${MIN_DECK_SIZE}장까지</div>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
       cardHtml(CARD_BY_ID[id], { attrs: canRemove ? `data-shop-remove="${i}"` : '', cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
-    <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.slush >= removeCost ? '' : 'disabled'}>
-      ${!canRemove ? (sh.removed >= SHOP_REMOVE_LIMIT ? '이번 주 제거 완료' : `덱 ${MIN_DECK_SIZE}장 이하 — 제거 불가`)
-        : shopPickIdx < 0 ? '제거할 카드를 고르세요' : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (${fmtSlush(removeCost)})`}
+    <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.slush >= nextRemove ? '' : 'disabled'}>
+      ${!canRemove ? `덱이 ${MIN_DECK_SIZE}장 — 더 줄일 수 없음`
+        : shopPickIdx < 0 ? '제거할 카드를 고르세요' : run.slush < nextRemove ? `비자금 부족 (${fmtSlush(nextRemove)})`
+        : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (${fmtSlush(nextRemove)})`}
     </button>`;
 }
 
@@ -3673,7 +3678,16 @@ $('shopBox').addEventListener('click', e => {
   else if(pk) buyPack(pk.dataset.pack);
   else if(single) buySingle(+single.dataset.single);
   else if(rm){ const i = +rm.dataset.shopRemove; shopPickIdx = shopPickIdx === i ? -1 : i; }
-  else if(e.target.closest('#shopRemoveBtn')){ if(shopRemoveCard(shopPickIdx)) shopPickIdx = -1; }
+  else if(e.target.closest('#shopRemoveBtn')){
+    const before = shopRemoveCost();
+    if(shopRemoveCard(shopPickIdx)){   // 바로 제거 → 다음 가격이 튀어 오르며 빨갛게 (올랐다는 걸 체감)
+      shopPickIdx = -1;
+      renderShop(); renderTabs();
+      Fx.punch($('rmNext'), -(shopRemoveCost() - before), 0.8);
+      Fx.flash($('rmNext'), 'rm-up');
+      return;
+    }
+  }
   else if(e.target.closest('#shopLeaveBtn')){
     if(shopOpenNow()){ switchTab('play'); leaveShop(); renderAll(); return; }   // 화면을 먼저 옮겨야 개장 알림이 남는다
   }

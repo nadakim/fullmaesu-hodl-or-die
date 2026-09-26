@@ -210,11 +210,10 @@ const SHOP_INFLATION      = { pack: 0.12, single: 0.12, relic: 0.10, remove: 0.0
 const SHOP_PRICE_ROUND    = 10;    // 가격 반올림 단위 (만원)
 const SHOP_SINGLE_MIN     = 3;     // 낱장 진열 최소 장수
 const SHOP_SINGLE_MAX     = 5;     // 낱장 진열 최대 장수
-const SHOP_SINGLE_LIMIT   = 1;     // 주당 낱장 구매 가능 수
 const SHOP_SINGLE_PRICE   = { common:300, uncommon:500, rare:750, legendary:1100, mythic:1800 }; // 낱장 정가 (비자금)
 const SHOP_REMOVE_BASE    = 400;   // 카드 제거 기본 비용 (비자금)
 const SHOP_REMOVE_PER_WEEK = 200;  // 주차가 지날 때마다 제거 비용 증가
-const SHOP_REMOVE_LIMIT   = 1;     // 주당 제거 가능 수
+const SHOP_REMOVE_ESCALATION = 1.6; // 같은 주에 제거할 때마다 비용 × 이만큼 (횟수 제한 없음, 덱 MIN_DECK_SIZE장까지). 1주차 400 → 640 → 1,020 → 1,640
 
 /* 종목. 인버스 종목은 beta가 음수 → 같은 가격 공식으로 지수와 반대로 움직인다. */
 const STOCKS = [
@@ -1992,7 +1991,9 @@ const shopPrice      = (basePrice, category) => Math.round(basePrice * (1 + shop
 const packPrice      = pk => shopPrice(pk.price, 'pack');
 const singlePrice    = id => shopPrice(SHOP_SINGLE_PRICE[CARD_BY_ID[id].rarity], 'single');
 const relicPrice     = id => shopPrice(RELIC_PRICE[RELIC_BY_ID[id].rarity], 'relic');
-const shopRemoveCost = () => shopPrice(SHOP_REMOVE_BASE + SHOP_REMOVE_PER_WEEK * (run.round - 1), 'remove');   // 제거는 주차당 +고정액 (인플레이션 0)
+/* 카드 제거 n번째(이번 주 이미 n번 제거) 비용 = (기본 + 주차당 증가) × 누진^n, 10만 단위 — 제거 비용 공식은 여기 한 곳 */
+const removeCost     = n => shopPrice((SHOP_REMOVE_BASE + SHOP_REMOVE_PER_WEEK * (run.round - 1)) * Math.pow(SHOP_REMOVE_ESCALATION, n), 'remove');
+const shopRemoveCost = () => removeCost(run.shop.removed);   // 다음 제거 비용 (run.shop.removed는 openShop에서 0)
 const shopOpenNow    = () => !!run && run.phase === 'shop';
 
 function openShop(){
@@ -2023,7 +2024,6 @@ function buySingle(idx){
   if(!cardId || run.shop.singlesBought.indexOf(idx) >= 0) return shopReject('sold');
   if(inDeck(cardId)) return shopReject('owned');   // 팩 등으로 이미 덱에 들어온 카드
   if(!cardAllowed(cardId)) return shopReject('mythic');   // 신화는 덱 전체 1장
-  if(run.shop.singlesBought.length >= SHOP_SINGLE_LIMIT) return shopReject('limit');
   const price = singlePrice(cardId);
   if(run.slush < price) return shopReject('slush');
   run.slush -= price;
@@ -2035,7 +2035,6 @@ function buySingle(idx){
 
 function shopRemoveCard(deckIdx){
   if(!shopOpenNow()) return shopReject('phase');
-  if(run.shop.removed >= SHOP_REMOVE_LIMIT) return shopReject('limit');
   if(run.masterDeck.length <= MIN_DECK_SIZE) return shopReject('deckMin');
   if(deckIdx < 0 || deckIdx >= run.masterDeck.length) return shopReject('none');
   const price = shopRemoveCost();

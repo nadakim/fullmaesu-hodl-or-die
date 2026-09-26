@@ -142,9 +142,12 @@ const gukbapDefense = {
 
 /* ── random: 대조군. 쓸 수 있는 (카드, 대상) 중 무작위로 행동력이 남는 동안. 찌라시·보상·암시장도 무작위 ── */
 const pickRand = (rng, xs) => xs[Math.floor(rng() * xs.length)];
+/* 시뮬레이터 안전장치: 덱이 아주 얇으면 0 행동력 드로우 카드(보조지표 42개·테마 순환매)가 계속 손패로 돌아와 무한히 쓸 수 있다
+   (게임 규칙상 가능한 무한 루프 — docs/design/SHOP_ECONOMY.md). 봇이 멈추도록 하루 사용 수를 자른다. 보통 판은 10장 안팎이라 닿지 않는다 */
+const SIM_MAX_PLAYS_PER_DAY = 60;
 const random = {
   premarket(E, rng){
-    for(;;){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
       const moves = [];
       E.run.hand.forEach((_, i) => {
         const c = card(E, i);
@@ -237,4 +240,19 @@ const growthFirst = {
   }
 };
 
-module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, nothing, GROWTH_RELICS };
+/* ── deckThinner: 덱 압축 극단 확인용. 플레이는 random과 같고, 암시장에서 비자금이 되는 만큼(규칙이 허락하는 만큼) 약한 카드부터 제거 ──
+   제거 순서: 트라우마(상태) → 쓸모가 적은 시작 카드. 남는 비자금으로 낱장·유물 무작위 */
+const THIN_ORDER = ['trauma', 'stk_inv', 'stk_inv2', 'marginTopup', 'short', 'indicators', 'takeProfit', 'stopLoss', 'hodl', 'stk_gukbap'];
+const deckThinner = {
+  premarket: random.premarket, tip: random.tip, randomPicks: true,
+  shop(E, rng){
+    for(let guard = 0; guard < 40; guard++){
+      if(E.run.slush < E.shopRemoveCost()) break;
+      const idx = THIN_ORDER.map(id => E.run.masterDeck.indexOf(id)).find(i => i >= 0);
+      if(idx === undefined || !E.shopRemoveCard(idx)) break;
+    }
+    random.shop(E, rng);
+  }
+};
+
+module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS };

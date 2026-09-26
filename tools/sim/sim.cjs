@@ -190,10 +190,11 @@ function installBots(){
   // 암시장 한 번 방문: 덱 압축(상태·손해 카드 제거) → 유물 → 희귀 이상 낱장 → (아무것도 못 샀으면) 팩. 매주 뭔가 하나는 산다
   function shopOnce(){
     let bought = 0;
-    if(run.shop.removed < SHOP_REMOVE_LIMIT && wallet() >= shopRemoveCost()){
+    while(wallet() >= shopRemoveCost()){   // 누진 비용: 비자금이 되는 만큼 여러 번 (제한은 MIN_DECK_SIZE뿐)
       let idx = run.masterDeck.findIndex(id => CARD_BY_ID[id].type === 'status');
       if(idx < 0) idx = run.masterDeck.findIndex(id => SHOP_BAD.indexOf(id) >= 0);
-      if(idx >= 0 && shopRemoveCard(idx)) bought++;
+      if(idx < 0 || !shopRemoveCard(idx)) break;
+      bought++;
     }
     for(const id of run.shop.relics){
       if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= relicPrice(id) && buyRelic(id)) bought++;
