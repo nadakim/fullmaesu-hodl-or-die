@@ -122,6 +122,54 @@ const MARKET_CARD_ODDS = {
 };
 const REVERSION_TICKS     = 3;     // 카드로 만든 강세·약세장 다음 날, 개장 후 이만큼 틱 동안
 const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세장 12의 절반) — 차익실현 매물
+// 지수 장세별 캔들 (generateNextCandle): 틱당 드리프트(지수 포인트)와 변동 배수. 시장 카드 기대값(marketCardEv)도 같은 값을 읽는다
+const INDEX_STATE = { NORMAL:{ drift:0, vol:1.0 }, BULL:{ drift:12, vol:1.2 }, BEAR:{ drift:-12, vol:1.2 }, VOLATILE:{ drift:0, vol:2.8 } };
+const INDEX_TICK_RANGE = 40;       // 지수 캔들 변화 = (난수 − INDEX_TICK_CENTER) × 이 값 × 변동 배수
+
+/* ── 읽을 수 있는 시장 (docs/design/READABLE_MARKET.md) ──
+   종목 추세(regime): 인버스가 아닌 종목마다 숨은 상태 하나. 틱당 추가 드리프트로 가격에 실제로 반영되고, 장 마감마다 전이 행렬로 바뀐다.
+   HOT(과열)은 조금 오르지만 갭하락 확률이 GAP_HOT_MULT배. 인버스(beta < 0)는 추세 없이 지수를 따른다 (기존 로직). */
+const REGIMES = ['UP', 'FLAT', 'DOWN', 'HOT'];
+const REGIME_DRIFT = { UP:0.004, FLAT:0, DOWN:-0.004, HOT:0.002 };   // 틱당 로그수익률 (STOCK_DRIFT에 더함). UP 하루 ≈ +4.9%
+const GAP_HOT_MULT = 2.5;          // 과열 종목의 갭'하락' 확률 배수
+const REGIME_UP_LONG_DAYS = 2;     // UP이 이만큼 이어지면 전이 행을 UP_LONG으로 (과열 확률 ↑)
+/* 전이 행렬 (장 마감마다, 행 = 오늘 상태 → 내일 상태 확률, 합 1). 유지 50~60% → 평균 지속 2~2.5일 (1 / (1 − 유지))
+   정상 상태 분포(π) 계산 — UP을 첫날(UP1)·이틀 이상(UP2)으로 나눈 5상태 마르코프 체인, πT = π를 반복으로 풀면:
+     π(FLAT) = 0.3125, π(UP1) = 0.1250, π(UP2) = 0.1500 → π(UP) = 0.2750, π(DOWN) = 0.3125, π(HOT) = 0.1000
+   가중평균 드리프트 = 0.004 × 0.2750 − 0.004 × 0.3125 + 0.002 × 0.1000 = −0.00015 + 0.0002 = +0.00005 /틱
+     → STOCK_DRIFT(0.001)의 5%. 종목 기대수익은 이전과 거의 같다 (HOT의 추가 갭하락은 별도 — 고변동 종목에서만 크다) */
+const REGIME_TRANSITION = {
+  FLAT:    [ { state:'FLAT', chance:0.60 }, { state:'UP', chance:0.20 }, { state:'DOWN', chance:0.20 } ],
+  UP:      [ { state:'UP', chance:0.60 }, { state:'FLAT', chance:0.20 }, { state:'DOWN', chance:0.10 }, { state:'HOT', chance:0.10 } ],
+  UP_LONG: [ { state:'UP', chance:0.50 }, { state:'HOT', chance:0.25 }, { state:'FLAT', chance:0.15 }, { state:'DOWN', chance:0.10 } ],
+  DOWN:    [ { state:'DOWN', chance:0.60 }, { state:'FLAT', chance:0.20 }, { state:'UP', chance:0.20 } ],
+  HOT:     [ { state:'HOT', chance:0.50 }, { state:'DOWN', chance:0.35 }, { state:'FLAT', chance:0.15 } ]
+};
+const REGIME_START = [ { state:'UP', chance:0.275 }, { state:'FLAT', chance:0.3125 }, { state:'DOWN', chance:0.3125 }, { state:'HOT', chance:0.10 } ];   // 판 시작 = 정상 상태 분포
+// 시그널: 장전마다 종목별로 한 번 굴려 그날 고정. 정확도 확률로 실제 추세, 아니면 나머지 셋 중 하나(균등)
+const SIGNAL_ACCURACY        = 0.65;
+const SIGNAL_INDICATOR_BONUS = 0.20;   // '보조지표 42개': 오늘 시그널 정확도 +20%p (다시 굴림)
+// 다음 날 뉴스 (장 마감에 예고 → 다음 개장에 판정). 루머는 이 확률로만 사실
+const NEWS_RUMOR_CHANCE = 0.6;
+/* target: 'stock:<id>' | 'sector:<섹터>' | 'market'(전 종목, drift는 beta 부호를 따른다)
+   effect: volMult = 종목 고유 변동 배수, drift = 틱당 로그수익률 추가, gapMult = 갭 확률 배수 */
+const NEWS_EVENTS = [
+  { id:'semiEarn',   text:'반도체전자 실적 발표 — 어닝 서프라이즈냐 쇼크냐', target:'stock:semi', effect:{ volMult:2, drift:0, gapMult:1 }, reliability:'confirmed' },
+  { id:'scPaper',    text:'초전도체 재현 논문 공개 "임박" (업로드 예정일만 3번째)', target:'stock:sc', effect:{ volMult:2.5, drift:0, gapMult:2 }, reliability:'rumor' },
+  { id:'coinEtf',    text:'대장코인 현물 ETF 승인 발표 임박설', target:'stock:coin', effect:{ volMult:1, drift:0.004, gapMult:1 }, reliability:'rumor' },
+  { id:'gukbapP3',   text:'국밥제약 임상 3상 결과 발표 — 국밥이냐 맹물이냐', target:'stock:gukbap', effect:{ volMult:3, drift:0, gapMult:1 }, reliability:'confirmed' },
+  { id:'cpi',        text:'미국 CPI 발표 — 전 종목 변동성 확대', target:'market', effect:{ volMult:1.5, drift:0, gapMult:1 }, reliability:'confirmed' },
+  { id:'memeWallet', text:'밈코인 개발자 지갑에서 물량 이동 포착', target:'stock:meme', effect:{ volMult:1, drift:-0.004, gapMult:2 }, reliability:'rumor' },
+  { id:'semiBuyback',text:'반도체전자 자사주 매입 공시 예정', target:'stock:semi', effect:{ volMult:1, drift:0.002, gapMult:1 }, reliability:'confirmed' },
+  { id:'coinDelist', text:'대장코인 거래소 상장폐지 검토설 — "사실무근" 공지 준비 중', target:'stock:coin', effect:{ volMult:1, drift:-0.004, gapMult:1.5 }, reliability:'rumor' },
+  { id:'themeRaid',  text:'테마주 단톡방 "내일 9시 동시 매수" 공지', target:'sector:테마주', effect:{ volMult:1.5, drift:0.004, gapMult:1 }, reliability:'rumor' },
+  { id:'fomc',       text:'FOMC 의사록 공개 — 해석은 100명이 100개', target:'market', effect:{ volMult:1.3, drift:0, gapMult:1.3 }, reliability:'confirmed' },
+  { id:'defensive',  text:'경기 둔화 우려 — 방어주로 수급 이동', target:'sector:방어주', effect:{ volMult:1, drift:0.002, gapMult:1 }, reliability:'confirmed' },
+  { id:'memeCeleb',  text:'해외 인플루언서 밈코인 언급 예고 (프로필 사진이 개)', target:'stock:meme', effect:{ volMult:1.5, drift:0.005, gapMult:1 }, reliability:'rumor' },
+  { id:'shortReport',text:'해외 공매도 리포트 "반도체전자 회계 의혹" 발간 예고', target:'stock:semi', effect:{ volMult:1, drift:-0.003, gapMult:2 }, reliability:'rumor' },
+  { id:'holiday',    text:'연휴 앞 관망세 — 거래량 실종, 전 종목 변동성 축소', target:'market', effect:{ volMult:0.6, drift:0, gapMult:0.5 }, reliability:'confirmed' },
+  { id:'cryptoTax',  text:'가상자산 과세 유예 법안 통과 기대감', target:'sector:암호화폐', effect:{ volMult:1, drift:0.003, gapMult:1 }, reliability:'rumor' }
+];
 
 // 금감원 감시 게이지 — 시장 카드를 쓸 때마다 쌓이고, 주가 바뀌면 조금 줄고, 가득 차면 제재
 const FSS_MAX             = 100;
@@ -365,12 +413,10 @@ function initChartData(){
 }
 
 function generateNextCandle(openPrice, extraDrift = 0){
-  let drift = extraDrift, volMult = 1.0;
-  if(marketState==='BULL'){drift+=12;volMult=1.2;}
-  else if(marketState==='BEAR'){drift-=12;volMult=1.2;}
-  else if(marketState==='VOLATILE'){volMult=2.8;}
+  const st = INDEX_STATE[marketState] || INDEX_STATE.NORMAL;
+  const drift = extraDrift + st.drift, volMult = st.vol;
 
-  const change = drift + (rand()-INDEX_TICK_CENTER)*40*volMult;
+  const change = drift + (rand()-INDEX_TICK_CENTER)*INDEX_TICK_RANGE*volMult;
   const closePrice = Math.max(100, Math.round(openPrice+change));
   const highExtra = rand()*20*volMult;
   const lowExtra  = rand()*20*volMult;
@@ -451,25 +497,30 @@ function shuffle(arr){
 function initAssets(){
   assets = {};
   STOCKS.forEach(s => {
-    assets[s.id] = { price: s.basePrice, dayOpen: s.basePrice, lastDayChg: 0, history: Array(ASSET_HISTORY).fill(s.basePrice), candles: [] };
+    assets[s.id] = { price: s.basePrice, dayOpen: s.basePrice, lastDayChg: 0, history: Array(ASSET_HISTORY).fill(s.basePrice), candles: [],
+                     regime: '', regimeDays: 0 };   // 숨은 추세 (인버스는 '' = 지수를 따른다). initRegimes에서 정한다
   });
   // 시작 시 차트가 비어 보이지 않도록 과거 시세를 미리 만들어 둔다
   for(let i = 0; i < ASSET_HISTORY; i++) updateAssetPrices(gauss() * 0.01, {});
   STOCKS.forEach(s => { assets[s.id].dayOpen = assets[s.id].price; });
 }
 
-/* 종목 수익률 = 지수 수익률 × beta × 전달비율 + 고유 변동 + 작전 드리프트(찌라시)
+/* 종목 수익률 = 지수 수익률 × beta × 전달비율 + 고유 변동 × 뉴스 변동 배수 + 작전 드리프트(찌라시) + 추세·뉴스 드리프트
+   live = 장중 틱 (판 시작 전 과거 시세를 만들 때는 추세·뉴스를 쓰지 않는다)
    틱 하나 = 종목 캔들 하나 (시가 = 직전가, 종가 = 새 가격, 꼬리는 고유 변동 크기에 비례) */
-function updateAssetPrices(idxLogRet, pumps){
+function updateAssetPrices(idxLogRet, pumps, live){
   STOCKS.forEach(s => {
     const a = assets[s.id];
     const move = STOCK_MOVE_MULT[marketState] || 1;
-    let r = STOCK_DRIFT + move * (s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * gauss());
+    const nf = live ? newsEffectFor(s.id) : NEWS_NEUTRAL;
+    let r = STOCK_DRIFT + move * (s.beta * idxLogRet * IDX_SENS + s.volatility * IDIO_SCALE * nf.volMult * gauss());
     if(s.beta < 0) r -= INVERSE_DECAY;
+    if(live && a.regime) r += REGIME_DRIFT[a.regime];
+    r += nf.drift;
     if(pumps[s.id]) r += pumps[s.id] === PUMP_MANIP ? MANIP_DRIFT : pumps[s.id] > 0 ? PUMP_UP_DRIFT : PUMP_DOWN_DRIFT;
     const open = a.price;
     a.price *= Math.exp(r);
-    const wick = move * s.volatility * IDIO_SCALE * CANDLE_WICK_SCALE;
+    const wick = move * s.volatility * IDIO_SCALE * nf.volMult * CANDLE_WICK_SCALE;
     a.candles.push({
       open, close: a.price,
       high: Math.max(open, a.price) * (1 + Math.abs(gauss()) * wick),
@@ -950,9 +1001,16 @@ defCard('ceoTweet', 'CEO 밈 트윗', 'action', 0, 'uncommon', null, false,
   () => run.marketCard !== 'ceoTweet',
   () => { run.marketCard = 'ceoTweet'; });
 defCard('indicators', '보조지표 42개', 'action', 0, 'common', null, false,
-  `카드 ${INDICATOR_DRAW}장을 뽑는다. 지표를 볼수록 확신이 사라진다.`,
+  `카드 ${INDICATOR_DRAW}장 + 오늘 시그널 적중률 +${pct(SIGNAL_INDICATOR_BONUS)}p(다시 판독). 지표 42개가 전부 다른 말을 한다.`,
   () => true,
-  () => { drawCards(INDICATOR_DRAW); });
+  () => {
+    drawCards(INDICATOR_DRAW);
+    STOCKS.filter(hasRegime).forEach(s => { const sg = run.signals[s.id]; if(sg && !sg.revealed) rollSignal(s.id, Math.min(1, sg.acc + SIGNAL_INDICATOR_BONUS)); });
+  });
+defCard('analyst', '애널리스트 리포트', 'action', 1, 'rare', 'asset', false,
+  '이 종목의 오늘 실제 추세 100% 공개. 목표주가 3배, 발행 다음 날 매도 의견.',
+  s => hasRegime(s) && !!run.signals[s.id] && !run.signals[s.id].revealed,
+  s => { run.signals[s.id] = { shown: assets[s.id].regime, acc: 1, revealed: true }; });
 defCard('coffee', '아아 수혈', 'action', 0, 'uncommon', null, true,
   `행동력 +${COFFEE_AP}.`,
   () => true,
@@ -1028,6 +1086,13 @@ function resolveTarget(card, targetId){
 }
 
 /* 이 카드를 지금 쓰는 데 드는 행동력 (이번 주 효과 반영) */
+/* 표시용 카드 설명 — 유물로 확률이 바뀌는 카드는 지금 실제 값으로 (리딩방 VIP) */
+function cardDesc(card){
+  if(card.id === 'pump' && run && pumpUpChance() !== PUMP_UP_CHANCE)
+    return `오늘 작전: ${pct(pumpUpChance())} 급등(+${pct(PUMP_UP_PCT)}) / ${pct(1 - pumpUpChance())} 설거지(−${pct(PUMP_DOWN_PCT)}). 개장 때 공개. 금감원 +${FSS_GAIN.pump}.`;
+  return card.desc;
+}
+
 function cardCost(card){
   if(card.type === 'stock' && run.week.antArmy) return 0;
   if(run.week.topSpotter && (card.id === 'takeProfit' || card.id === 'trailing')) return 0;
@@ -1131,6 +1196,8 @@ function newRun(){
     fss: 0, fssSanctions: 0, fssFines: 0, fssPeak: 0, buyBanNext: false, buyBanToday: false,   // 금감원 감시 게이지 · 제재
     pendingTip: null, tipsToday: 0, ticksSinceTip: 0, lastTipId: '', tipLog: [],
     eventTicksLeft: 0, ticksSinceEvent: 0,
+    signals: {}, signalResults: {},          // 오늘 시그널 {shown, acc, revealed} / 어제 시그널 채점 {shown, actual, acc, hit}
+    newsToday: '', newsTomorrow: '', newsActive: false, newsResolved: false,   // 뉴스: 오늘(개장에 판정) / 내일 예고
     rewardChoices: [], endReason: '', endEquity: 0,
     relics: [], relicChoices: [], rewardStep: '',
     shop: { singles: [], singlesBought: [], removed: 0, relics: [] }
@@ -1144,6 +1211,8 @@ function startNewRun(){
   initChartData();
   initAssets();
   run = newRun();
+  initRegimes();
+  run.newsTomorrow = pickNews();
   buildWeekPiles();
   startDay();
 }
@@ -1169,6 +1238,11 @@ function startDay(){
   run.interestFree = false;
   run.tipsToday = 0;
   run.positions.forEach(p => { p.protectedToday = false; });
+  run.newsToday = run.newsTomorrow;   // 어제 예고한 뉴스 → 오늘 (개장 때 사실·루머 판정)
+  run.newsTomorrow = '';
+  run.newsActive = false;
+  run.newsResolved = false;
+  rollSignals();
   drawCards(DRAW_PER_DAY);
   emit('dayStart', {round: run.round, day: run.day, buyBan: run.buyBanToday});
 }
@@ -1183,6 +1257,12 @@ function startMarket(){
     if(outcome !== 'NORMAL'){ run.forcedState = outcome; run.cardMarket = true; }
   }
   run.marketOpenEquity = netEquity();
+  if(run.newsToday){   // 뉴스 판정: 확정은 항상, 루머는 NEWS_RUMOR_CHANCE
+    const n = NEWS_BY_ID[run.newsToday];
+    run.newsActive = n.reliability === 'confirmed' || rand() < NEWS_RUMOR_CHANCE;
+    run.newsResolved = true;
+    emit('newsResolved', {id: n.id, active: run.newsActive});
+  }
   const gaps = run.gapNext;                         // 작전 세력 이탈: 개장 직후 갭
   run.gapNext = [];
   gaps.forEach(g => { shockStock(g.stockId, g.pct); emit('gapOpen', {stockId: g.stockId, pct: g.pct}); });
@@ -1203,6 +1283,139 @@ function rollMarketCard(cardId){   // 오늘의 난수(run.dayRoll)로 판정 �
     if(roll < 0) return odds[i].state;
   }
   return odds[odds.length - 1].state;
+}
+
+
+/* ══ 읽을 수 있는 시장: 종목 추세(regime) · 시그널 · 다음 날 뉴스 · 기대값 ══
+   보여주는 확률은 전부 여기서 실제로 쓰는 값이다 (SIGNAL_ACCURACY·NEWS_RUMOR_CHANCE·REGIME_*). */
+function pickWeighted(list){   // [{state, chance}] 중 하나 (chance 합 1)
+  let roll = rand();
+  for(let i = 0; i < list.length; i++){
+    roll -= list[i].chance;
+    if(roll < 0) return list[i].state;
+  }
+  return list[list.length - 1].state;
+}
+const hasRegime = s => s.beta > 0;   // 인버스는 추세 없음 (지수를 따른다)
+function initRegimes(){
+  STOCKS.forEach(s => {
+    const a = assets[s.id];
+    a.regime = hasRegime(s) ? pickWeighted(REGIME_START) : '';
+    a.regimeDays = a.regime ? 1 : 0;
+  });
+}
+/* 장 마감: 전이 행렬로 내일 추세. UP이 REGIME_UP_LONG_DAYS일 이상이면 UP_LONG 행(과열 확률 ↑) */
+function nextRegimes(){
+  STOCKS.forEach(s => {
+    const a = assets[s.id];
+    if(!a.regime) return;
+    const row = a.regime === 'UP' && a.regimeDays >= REGIME_UP_LONG_DAYS ? 'UP_LONG' : a.regime;
+    const next = pickWeighted(REGIME_TRANSITION[row]);
+    a.regimeDays = next === a.regime ? a.regimeDays + 1 : 1;
+    a.regime = next;
+  });
+}
+/* 시그널 한 개: acc 확률로 실제 추세, 아니면 나머지 셋 중 하나(균등). 그날 고정 (run.signals) */
+function rollSignal(stockId, acc){
+  const actual = assets[stockId].regime;
+  let shown = actual;
+  if(rand() >= acc){
+    const others = REGIMES.filter(r => r !== actual);
+    shown = others[randInt(others.length)];
+  }
+  run.signals[stockId] = { shown, acc, revealed: acc >= 1 };
+}
+function rollSignals(){ STOCKS.filter(hasRegime).forEach(s => rollSignal(s.id, SIGNAL_ACCURACY)); }
+/* 장 마감: 오늘 시그널이 맞았는지 (시세판 ✓/✗, 시뮬레이터 적중률 실측) — 추세가 바뀌기 전에 */
+function resolveSignals(){
+  run.signalResults = {};
+  STOCKS.filter(hasRegime).forEach(s => {
+    const sg = run.signals[s.id];
+    if(!sg) return;
+    const actual = assets[s.id].regime;
+    run.signalResults[s.id] = { shown: sg.shown, actual, acc: sg.acc, hit: sg.shown === actual };
+  });
+  emit('signalsResolved', {results: run.signalResults});
+}
+
+const NEWS_BY_ID = {};
+NEWS_EVENTS.forEach(n => { NEWS_BY_ID[n.id] = n; });
+const NEWS_NEUTRAL = { volMult: 1, drift: 0, gapMult: 1 };
+function newsTargetIds(n){
+  if(n.target === 'market') return STOCKS.map(s => s.id);
+  const i = n.target.indexOf(':'), kind = n.target.slice(0, i), v = n.target.slice(i + 1);
+  if(kind === 'stock') return [v];
+  return STOCKS.filter(s => s.sector === v).map(s => s.id);
+}
+/* 오늘 이 종목에 걸린 뉴스 효과 (개장 판정에서 사실로 확인된 경우만) */
+function newsEffectFor(stockId){
+  if(!run || !run.newsToday || !run.newsActive) return NEWS_NEUTRAL;
+  const n = NEWS_BY_ID[run.newsToday];
+  if(newsTargetIds(n).indexOf(stockId) < 0) return NEWS_NEUTRAL;
+  const drift = n.target === 'market' ? n.effect.drift * Math.sign(STOCK_BY_ID[stockId].beta) : n.effect.drift;
+  return { volMult: n.effect.volMult, drift, gapMult: n.effect.gapMult };
+}
+const newsChance = n => n.reliability === 'confirmed' ? 1 : NEWS_RUMOR_CHANCE;   // 표시·판정 같은 값
+function pickNews(){   // 같은 뉴스 연속 금지
+  const cands = NEWS_EVENTS.filter(n => n.id !== run.newsToday);
+  return cands[randInt(cands.length)].id;
+}
+
+/* ── 기대값 (순수 함수: rand() 없음, 상태 안 바꿈). 만원 단위 ──
+   expectedValue(card, target) → { ev, rate, note } | null   (rate = 보유 노출액 대비 기대 수익률, 대상이 없으면 ev 0)
+   tipExpectedValue(choiceIdx) → { ev, slush, outcomes:[{chance, delta}] } — 지금 도착한 찌라시 선택지
+   근사: 시장 카드·찌라시 장세 효과는 지수 기대 드리프트의 1차 전달(beta × IDX_SENS × 장세 배수)만 본다 (갭·되돌림·유물 손익 보정 제외) */
+const heldExposure = stockId => run.positions.filter(p => p.assetId === stockId).reduce((sum, p) => sum + p.dir * exposure(p), 0);
+function stateIndexRet(state, ticks){   // 장세별 지수 기대 로그수익률 (generateNextCandle과 같은 식의 평균)
+  const st = INDEX_STATE[state] || INDEX_STATE.NORMAL;
+  return ticks * (st.drift + (0.5 - INDEX_TICK_CENTER) * INDEX_TICK_RANGE * st.vol) / marketPrice;
+}
+function stateImpact(state, ticks){   // 그 장세가 ticks 동안 이어질 때 보유 포지션 기대 손익
+  const idx = stateIndexRet(state, ticks), move = STOCK_MOVE_MULT[state] || 1;
+  return run.positions.reduce((sum, p) => sum + p.dir * exposure(p) * (Math.exp(STOCK_BY_ID[p.assetId].beta * IDX_SENS * move * idx) - 1), 0);
+}
+function marketCardEv(cardId){   // 지금 대기 중인 시장 카드(없으면 평상시) 대비
+  const avg = odds => odds.reduce((sum, o) => sum + o.chance * stateImpact(o.state, TICKS_PER_DAY), 0);
+  return avg(MARKET_CARD_ODDS[cardId]) - avg(run.marketCard ? MARKET_CARD_ODDS[run.marketCard] : [{ state: 'NORMAL', chance: 1 }]);
+}
+const pumpEvRate = () => pumpUpChance() * PUMP_UP_PCT - (1 - pumpUpChance()) * PUMP_DOWN_PCT;
+const manipEvRate = () => (1 + MANIP_PCT) * (1 + MANIP_GAP) - 1;   // 오늘 +20% 확정 → 내일 개장 −12% (이틀 보유)
+function expectedValue(card, target){
+  if(card.id === 'pump' || card.id === 'manip'){
+    const rate = card.id === 'pump' ? pumpEvRate() : manipEvRate();
+    const note = card.id === 'pump'
+      ? `급등 ${pct(pumpUpChance())} × +${pct(PUMP_UP_PCT)} − 설거지 ${pct(1 - pumpUpChance())} × −${pct(PUMP_DOWN_PCT)}`
+      : `오늘 +${pct(MANIP_PCT)} → 내일 −${pct(MANIP_GAP)} (이틀 보유)`;
+    return { ev: target ? heldExposure(target.id) * rate : 0, rate, note };
+  }
+  if(MARKET_CARD_ODDS[card.id]) return { ev: marketCardEv(card.id), rate: 0, note: '보유 포지션 기준 오늘 예상 영향' };
+  return null;
+}
+function tipExpectedValue(choiceIdx){
+  const tip = run.pendingTip;
+  if(!tip) return null;
+  const choice = TIP_BY_ID[tip.eventId].choices[choiceIdx];
+  const chances = tipChances(choiceIdx, choice);
+  const remain = TICKS_PER_DAY - run.tickInDay;
+  let ev = 0, slush = 0;
+  const outcomes = choice.outcomes.map((o, k) => {
+    let cash = run.cash, delta = 0;
+    const held = {};   // 종목별 방향 × 노출액 (효과 순서대로 갱신)
+    const h = id => (id in held ? held[id] : (held[id] = heldExposure(id)));
+    o.effects.forEach(ef => {
+      const st = tipStockId(tip, ef.stock || '');
+      if(ef.kind === 'cash'){ delta += ef.amount * tipScale(); cash += ef.amount * tipScale(); }
+      else if(ef.kind === 'slush') slush += chances[k] * ef.amount;
+      else if(ef.kind === 'buy'){ const amt = Math.min(ef.amount * tipScale(), Math.max(0, cash)); if(amt >= 1){ cash -= amt; held[st] = h(st) + amt; } }
+      else if(ef.kind === 'shock'){ delta += h(st) * ef.pct; held[st] = h(st) * (1 + ef.pct); }
+      else if(ef.kind === 'pump') delta += h(st) * (Math.exp((ef.dir > 0 ? PUMP_UP_DRIFT : PUMP_DOWN_DRIFT) * remain) - 1);
+      else if(ef.kind === 'market') delta += stateImpact(ef.state, remain) - stateImpact(marketState, remain);
+      else if(ef.kind === 'sellStock') held[st] = 0;
+    });
+    ev += chances[k] * delta;
+    return { chance: chances[k], delta };
+  });
+  return { ev, slush, outcomes };
 }
 
 /* 금감원 감시 게이지 */
@@ -1296,11 +1509,17 @@ function openTip(eventId){
 /* 갭: 종목마다 틱당 확률로 가격이 크게 튄다. 이번 틱 캔들에 합쳐 기록(candle.gap = ±1) */
 const gapRisk   = s => s.volatility + Math.abs(s.beta) * GAP_BETA_WEIGHT;
 const gapChance = s => gapRisk(s) * GAP_CHANCE_PER_RISK * (GAP_STATE_MULT[marketState] || 1);
+/* 이번 틱 갭 확률 (상승·하락 따로): 뉴스 gapMult는 양쪽, 과열(HOT)은 하락 쪽만 GAP_HOT_MULT배 */
+function gapOdds(s){
+  const base = gapChance(s) * newsEffectFor(s.id).gapMult;
+  return { up: base * GAP_UP_SHARE, down: base * (1 - GAP_UP_SHARE) * (assets[s.id].regime === 'HOT' ? GAP_HOT_MULT : 1) };
+}
 function rollGaps(){
   STOCKS.forEach(s => {
-    if(rand() >= gapChance(s)) return;
+    const odds = gapOdds(s), total = odds.up + odds.down;
+    if(rand() >= total) return;
     const size = Math.min(GAP_SIZE_MAX, gapRisk(s) * GAP_SIZE_PER_RISK * (1 + rand()));
-    const dir = rand() < GAP_UP_SHARE ? 1 : -1;
+    const dir = rand() < odds.up / total ? 1 : -1;
     const a = assets[s.id], c = a.candles[a.candles.length - 1];
     a.price *= 1 + dir * size;
     c.close = a.price;
@@ -1381,7 +1600,7 @@ function tick(){
   if(!run || run.phase !== 'market' || run.pendingTip) return;   // 찌라시 대기 중엔 시장 정지
   let revert = 0;
   if(run.revertTicksLeft > 0){ revert = run.revertDir * REVERSION_DRIFT; run.revertTicksLeft--; }   // 차익실현 매물
-  updateAssetPrices(pushNewCandle(revert), run.pumps);
+  updateAssetPrices(pushNewCandle(revert), run.pumps, true);
   rollGaps();   // 반대매매·예약주문은 갭 이후 가격으로 체결
   updateMarketEvent();
   checkOrders();
@@ -1412,6 +1631,9 @@ function endOfDay(){
   }
   if(run.forcedState){ marketState = 'NORMAL'; emit('eventEnd'); }
   STOCKS.forEach(s => { const a = assets[s.id]; a.lastDayChg = a.price / a.dayOpen - 1; a.dayOpen = a.price; });
+  resolveSignals();   // 오늘 시그널 채점 → 추세 전이 → 내일 뉴스 예고
+  nextRegimes();
+  run.newsTomorrow = pickNews();
   if(run.week.valueGod){   // 가치투자의 신
     const pay = run.positions.filter(p => p.dir > 0 && p.daysHeld >= VALUE_GOD_DAYS).reduce((sum, p) => sum + p.principal * VALUE_GOD_PCT, 0);
     if(pay > 0){ run.cash += pay; emit('valueGodPaid', {amount: pay}); }
@@ -1427,7 +1649,7 @@ function endOfDay(){
     }));
     ['gukbap', 'seal', 'theme'].forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
   }
-  emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital')});
+  emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital'), newsTomorrow: run.newsTomorrow});
   if(checkBankruptcy()) return;
   if(run.day >= DAYS_PER_ROUND){ endOfRound(); return; }
   run.day++;

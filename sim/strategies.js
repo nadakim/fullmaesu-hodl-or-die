@@ -179,4 +179,51 @@ const nothing = {
   shop(){}
 };
 
-module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, random, nothing };
+/* ── signalFollower: 읽을 수 있는 시장 검증용. 시그널(📈 매수세·🔥 과열 = 롱, 📉 매도세 = 숏)과 오늘 뉴스 드리프트를 점수로 합쳐
+      보조지표(적중률 +20%p)·애널리스트 리포트(100% 공개)를 먼저 쓰고, 점수와 반대인 포지션은 팔고, 점수 방향으로 산다.
+      찌라시는 tipExpectedValue가 높은 쪽. 레버리지는 추세가 100% 공개된 매수세 종목에만 ── */
+const SIGNAL_SCORE = { UP: 1, HOT: 0.5, FLAT: 0, DOWN: -1 };
+function signalScore(E, id){
+  const sg = E.run.signals[id];
+  let sc = sg ? SIGNAL_SCORE[sg.shown] * (sg.revealed ? 2 : 1) : 0;
+  if(E.run.newsToday){
+    const n = E.NEWS_BY_ID[E.run.newsToday];
+    if(n.target !== 'market' && E.newsTargetIds(n).indexOf(id) >= 0 && n.effect.drift) sc += Math.sign(n.effect.drift) * E.newsChance(n);
+  }
+  return sc;
+}
+const signalFollower = {
+  premarket(E){
+    const score = id => signalScore(E, id);
+    const inHand = id => E.run.hand.some(h => h.id === id);
+    // 0) 정보부터: 보조지표 → 손패에 카드가 있는 종목 중 가장 애매한 것에 리포트
+    while(playOne(E, c => c.id === 'indicators'));
+    playOne(E, c => c.id === 'analyst', () => 0, ids => ids.filter(id => inHand('stk_' + id)).sort((a, b) => Math.abs(score(a)) - Math.abs(score(b)))[0]);
+    // 1) 점수와 반대 방향 포지션 정리 (인버스는 지수용이라 둔다)
+    E.run.positions.slice().forEach(p => {
+      if(E.STOCK_BY_ID[p.assetId].beta < 0) return;
+      const sc = score(p.assetId);
+      if(sc * p.dir < 0) E.sellPosition(p.id);
+    });
+    // 2) 점수 방향으로 매수 (강한 신호부터)
+    const stockIds = E.run.hand.map(h => E.CARD_BY_ID[h.id]).filter(c => isLongStock(E, c)).map(c => c.id.slice(4))
+      .filter((id, i, a) => a.indexOf(id) === i).sort((a, b) => Math.abs(score(b)) - Math.abs(score(a)));
+    stockIds.forEach(id => {
+      const sc = score(id);
+      if(sc === 0 || !inHand('stk_' + id)) return;
+      if(sc < 0 && !inHand('short')) return;
+      if(sc < 0) playOne(E, c => c.id === 'short');
+      else if(sc >= 2 && E.run.pending.lev === 1) playOne(E, c => c.id === 'credit');
+      if(!playOne(E, c => c.id === 'stk_' + id)) E.resetPending();
+    });
+    // 3) 리딩방 찌라시는 매수세로 보유한 종목에 (기대값 +)
+    playOne(E, c => c.id === 'pump', () => 0, ids => ids.filter(id => score(id) > 0).sort((a, b) => E.heldExposure(b) - E.heldExposure(a))[0]);
+    while(playOne(E, c => c.id === 'stopLoss'));
+  },
+  tip(E){ const a = E.tipExpectedValue(0), b = E.tipExpectedValue(1); return a.ev > b.ev ? 0 : 1; },
+  cardPick: ['analyst', 'indicators', 'short', 'credit', 'stk_semi', 'stk_coin', 'stk_sc', 'stk_gukbap', 'pump', 'stk_meme'],
+  relicPick: ['talisman', 'capital', 'shortpro', 'hotline', 'seal'],
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
+};
+
+module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, nothing };

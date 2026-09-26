@@ -842,6 +842,14 @@ body::after{
 .q-tag.up{color:var(--green);}
 .q-tag.down{color:var(--red);}
 .q-tag.gap{color:var(--bg);background:var(--gold);padding:1px 2px;}
+/* 읽을 수 있는 시장: 시그널 · 어제 채점 · 기대값 */
+.q-sig{display:block;font-size:6px;font-family:'Press Start 2P','Galmuri-6px',monospace;color:var(--muted);margin-top:3px;line-height:1.4;white-space:nowrap;}
+.q-sig .s-UP{color:var(--green);} .q-sig .s-DOWN{color:var(--red);} .q-sig .s-HOT{color:var(--gold);} .q-sig .s-FLAT{color:var(--text);}
+.q-sig .s-rev{color:var(--cyan);}
+.q-sig .hit{color:var(--green);} .q-sig .miss{color:var(--red);}
+.c-ev{font-size:6px;font-family:'Press Start 2P','Galmuri-6px',monospace;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
+.c-ev.pos,.ch-ev.pos{color:var(--green);} .c-ev.neg,.ch-ev.neg{color:var(--red);} .c-ev.zero,.ch-ev.zero{color:var(--muted);}
+.choice .ch-ev{display:block;margin-top:3px;font-family:'VT323','GalmuriV-16px',monospace;font-size:16px;}
 
 /* 대상 지정 가능 */
 .quote-row.targetable,.pos-item.targetable{
@@ -2222,7 +2230,7 @@ function hudJuice(eq, target){
 }
 
 function resetNews(){
-  $('newsText').textContent = '시장이 평온한 흐름을 유지 중입니다.';
+  $('newsText').textContent = newsLine() || '시장이 평온한 흐름을 유지 중입니다.';
   $('marketStateTag').textContent = '■ NORMAL';
 }
 
@@ -2279,6 +2287,7 @@ function onGameEvent(type, d){
       break;
     case 'reshuffle': toast('버린 카드를 섞어 새 덱으로', 'info'); break;
     case 'dayStart':
+      $('newsText').textContent = newsLine() || '시장이 평온한 흐름을 유지 중입니다.';
       if(d.day > 1) toast(`WEEK ${d.round} · DAY ${d.day} 장전 — 카드를 쓰고 장을 여세요`, 'info');
       if(d.buyBan) toast('☎ 오늘은 "투자주의 계좌" — 신규 매수 금지', 'bad');
       break;
@@ -2297,8 +2306,15 @@ function onGameEvent(type, d){
       }
       d.pumps.forEach(pm => toast(pm.dir > 0 ? `📈 ${pm.name} 작전 성공! 급등 중` : `📉 ${pm.name} 설거지 당함! 급락 중`, pm.dir > 0 ? 'good' : 'bad'));
       break;
+    case 'newsResolved': {
+      const n = NEWS_BY_ID[d.id];
+      $('newsText').textContent = newsLine();
+      toast(d.active ? `📰 사실로 확인: ${newsEffectText(n)}` : `📰 루머로 판명 — ${n.text.split(' — ')[0]} 효과 없음`, d.active ? 'warn' : 'info');
+      break;
+    }
     case 'dayEnd':
       Sound.play('dayEnd');
+      $('newsText').textContent = newsTomorrowLine();
       if(d.waived) toast('장 마감 · 오늘 이자 면제', 'good');
       else if(d.interest > 0.5) toast(`장 마감 · 이자 −${Math.round(d.interest).toLocaleString()}만` + (d.discounted ? ' (🏦 VVIP 할인)' : ''), 'warn');
       break;
@@ -2399,7 +2415,8 @@ function cardHtml(card, o){
       <div class="sym">${card.name}</div>
       ${stock ? `<div class="c-cost">₩${(o.cost || stock.cost).toLocaleString()}만</div>` : ''}
       ${stock && o.live ? `<div class="c-price" data-p="${stock.id}"></div>` : ''}
-      <div class="c-desc">${card.desc}</div>
+      <div class="c-desc">${cardDesc(card)}</div>
+      ${o.ev ? `<div class="c-ev ${o.ev.cls}" title="${o.ev.title}">${o.ev.text}</div>` : ''}
       <div class="c-foot"><span>${foot}</span><span class="c-rar ${card.rarity}">${card.type === 'status' ? '' : RARITY_LABEL[card.rarity]}</span></div>
     </div>`;
 }
@@ -2463,7 +2480,7 @@ function showChart(target){
 function buildQuotes(){
   $('quoteBox').innerHTML = STOCKS.map(s => `
     <div class="quote-row" data-q="${s.id}">
-      <div class="q-name">${s.name}<span class="q-tag"></span><small>${s.sector} · β${s.beta}</small></div>
+      <div class="q-name">${s.name}<span class="q-tag"></span><small>${s.sector} · β${s.beta}</small><span class="q-sig"></span></div>
       <canvas width="64" height="18"></canvas>
       <div class="q-price"></div>
       <div class="q-chg"></div>
@@ -2482,6 +2499,47 @@ function drawSpark(cv, hist, up){
     ctx.fillRect(x, y, 2, 2);
   });
 }
+
+/* 시그널: 엔진 run.signals(오늘, 장전에 고정)·run.signalResults(어제 채점). 적중률은 엔진 값(sg.acc)을 그대로 */
+const SIGNAL_LABEL = { UP: '📈 매수세', FLAT: '➖ 보합', DOWN: '📉 매도세', HOT: '🔥 과열' };
+const perDay = drift => Math.exp(drift * TICKS_PER_DAY) - 1;   // 틱당 드리프트 → 하루 등락률
+function signalHtml(s){
+  if(!hasRegime(s)) return '지수 연동 · 시그널 없음';
+  const sg = run.signals[s.id], y = run.signalResults[s.id];
+  const now = sg ? `<span class="s-${sg.shown}">${SIGNAL_LABEL[sg.shown]}</span> ` + (sg.revealed ? '<span class="s-rev">확정 100%</span>' : `적중률 ${Math.round(sg.acc * 100)}%`) : '';
+  const past = y ? ` · 어제 <span class="${y.hit ? 'hit' : 'miss'}">${y.hit ? '✓' : '✗'}</span>` : '';
+  return now + past;
+}
+function signalHelp(s){
+  if(!hasRegime(s)) return '인버스는 추세가 따로 없고 지수를 반대로 따라간다';
+  const y = run.signalResults[s.id];
+  return `시그널은 ${Math.round(SIGNAL_ACCURACY * 100)}% 확률로 실제 추세, 아니면 나머지 셋 중 하나.\n` +
+    `추세별 하루 추가 등락: 매수세 ${fmtPct(perDay(REGIME_DRIFT.UP))} · 보합 0% · 매도세 ${fmtPct(perDay(REGIME_DRIFT.DOWN))} · 과열 ${fmtPct(perDay(REGIME_DRIFT.HOT))} (갭하락 확률 ×${GAP_HOT_MULT})` +
+    (y ? `\n어제: ${SIGNAL_LABEL[y.shown]} 표시 → 실제 ${SIGNAL_LABEL[y.actual]} ${y.hit ? '✓' : '✗'}` : '');
+}
+
+/* 뉴스: 엔진 run.newsToday(개장 때 판정)·run.newsTomorrow(장 마감에 예고) */
+function newsEffectText(n){
+  const ids = newsTargetIds(n);
+  const who = n.target === 'market' ? '전 종목' : ids.length === 1 && n.target.indexOf('stock:') === 0 ? STOCK_BY_ID[ids[0]].name : n.target.slice(7) + ' 섹터';
+  const e = n.effect, parts = [];
+  if(e.volMult !== 1) parts.push(`변동성 ×${e.volMult}`);
+  if(e.drift) parts.push(`추세 ${fmtPct(perDay(e.drift))}/일`);
+  if(e.gapMult !== 1) parts.push(`갭 확률 ×${e.gapMult}`);
+  return `${who} ${parts.join(' · ')}`;
+}
+const newsRelText = n => n.reliability === 'confirmed' ? '확정' : `루머 ${Math.round(newsChance(n) * 100)}%`;
+function newsLine(){
+  if(!run) return '';
+  if(run.phase === 'premarket' || !run.newsResolved){
+    const n = NEWS_BY_ID[run.newsToday];
+    return n ? `📰 오늘 개장: ${n.text} — ${newsEffectText(n)} · ${newsRelText(n)}` : '';
+  }
+  const n = NEWS_BY_ID[run.newsToday];
+  if(!n) return '';
+  return run.newsActive ? `📰 사실로 확인: ${n.text} — ${newsEffectText(n)}` : `📰 루머로 판명: ${n.text} — 오늘 효과 없음`;
+}
+const newsTomorrowLine = () => { const n = run && NEWS_BY_ID[run.newsTomorrow]; return n ? `📰 내일: ${n.text} — ${newsEffectText(n)} · ${newsRelText(n)}` : ''; };
 
 function renderQuotes(){
   const targets = selectedTargets('asset');
@@ -2502,6 +2560,9 @@ function renderQuotes(){
     tag.className = 'q-tag ' + (gap ? 'gap' : !pm ? '' : run.phase !== 'market' ? 'hidden' : pm > 0 ? 'up' : 'down');
     row.classList.toggle('targetable', targets.indexOf(s.id) >= 0);
     row.classList.toggle('charted', chartTarget === s.id);
+    const sigEl = row.querySelector('.q-sig'), sigHtml = signalHtml(s);
+    if(sigEl.innerHTML !== sigHtml) sigEl.innerHTML = sigHtml;
+    sigEl.title = signalHelp(s);
   });
 }
 
@@ -2522,6 +2583,9 @@ function renderTurn(){
   if(parts.length) chips.push(`<span class="chip ${pd.dir < 0 ? 'short' : 'buy'}">다음 매수: ${parts.join(' · ')}</span>`);
   if(run.marketCard && run.phase === 'premarket') chips.push(`<span class="chip mod">${CARD_BY_ID[run.marketCard].name} 대기 — ${marketOddsText(run.marketCard)}</span>`);
   if(run.forcedState) chips.push(`<span class="chip mod">오늘 장: ${STATE_LABEL[run.forcedState]}</span>`);
+  const nw = run.newsToday && run.phase !== 'shop' ? NEWS_BY_ID[run.newsToday] : null;   // 뉴스 칩: 판정 전 / 사실 / 불발
+  if(nw) chips.push(`<span class="chip">${!run.newsResolved ? `📰 오늘: ${newsEffectText(nw)} · ${newsRelText(nw)}`
+    : run.newsActive ? `📰 사실로 확인: ${newsEffectText(nw)}` : '📰 루머로 판명: 오늘 효과 없음'}</span>`);
   if(run.revertTicksLeft > 0) chips.push(`<span class="chip">차익실현 매물 대기 (개장 후 ${run.revertTicksLeft}틱)</span>`);
   if(run.buyBanToday) chips.push('<span class="chip short">☎ 금감원 제재: 오늘 신규 매수 금지</span>');
   if(run.interestFree) chips.push('<span class="chip">오늘 이자 면제</span>');
@@ -2560,7 +2624,8 @@ function cardUsable(idx){
 function renderHand(){
   const box = $('handBox');
   const usable = run.hand.map((_, i) => cardUsable(i) ? '1' : '0').join('');
-  const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + selectedIdx + '|' + run.pending.principalMult;
+  const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + selectedIdx + '|' + run.pending.principalMult
+    + '|' + run.marketCard + '|' + run.positions.map(p => p.id + ':' + Math.round(exposure(p))).join();   // 기대값이 포지션·대기 시장 카드에 따라 바뀐다
   if(sig !== handSig){
     handSig = sig;
     box.innerHTML = run.hand.length === 0
@@ -2569,10 +2634,24 @@ function renderHand(){
           const card = CARD_BY_ID[inst.id];
           const cls = (usable[i] === '1' ? '' : 'disabled') + (i === selectedIdx ? ' selected' : '');
           const cost = card.stock ? stockCost(STOCK_BY_ID[card.stock]) : 0;
-          return cardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, live: true, ap: cardCost(card) });
+          return cardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, live: true, ap: cardCost(card), ev: cardEvView(card) });
         }).join('');
   }
   box.querySelectorAll('[data-p]').forEach(el => { el.textContent = '@' + fmtPrice(assets[el.dataset.p].price); });
+}
+
+/* 카드 기대값 표시 (엔진 expectedValue). 대상 카드(리딩방·작전 세력)는 수익률 + 보유 종목별 금액을 툴팁으로 */
+const fmtEv = v => (v >= 0.5 ? '+' : v <= -0.5 ? '−' : '±') + '₩' + Math.abs(Math.round(v)).toLocaleString() + '만';
+const evCls = v => v >= 0.5 ? 'pos' : v <= -0.5 ? 'neg' : 'zero';
+function cardEvView(card){
+  const e = expectedValue(card, null);
+  if(!e) return null;
+  if(card.target === 'asset'){
+    const held = STOCKS.filter(s => heldExposure(s.id) !== 0).map(s => `${s.name} ${fmtEv(expectedValue(card, s).ev)}`);
+    return { text: `EV ${e.rate >= 0 ? '+' : '−'}${Math.abs(e.rate * 100).toFixed(1)}%`, cls: e.rate >= 0 ? 'pos' : 'neg',
+             title: `${e.note} = 보유분의 ${fmtPct(e.rate)}` + (held.length ? '\n' + held.join('\n') : '\n(보유 종목 없음 — 대상 종목 보유분에만 적용)') };
+  }
+  return { text: 'EV ' + fmtEv(e.ev), cls: evCls(e.ev), title: `${e.note} (장세 확률 × 지수 기대 드리프트 → 보유 포지션, 갭·되돌림 제외)` };
 }
 
 /* ── 보유 포지션 ── */
@@ -3039,7 +3118,7 @@ function showRoundResult(w){
 /* ── 찌라시 ── */
 const fillTip = (text, stockId) => text.split('{stock}').join(stockId ? STOCK_BY_ID[stockId].name : '');
 
-function tipChoiceMeta(tip, choice){
+function tipChoiceMeta(tip, choice, idx){
   const parts = [];
   const buy = choice.outcomes[0].effects.find(ef => ef.kind === 'buy');
   if(buy){
@@ -3048,8 +3127,14 @@ function tipChoiceMeta(tip, choice){
   }
   const slush = choice.outcomes[0].effects.find(ef => ef.kind === 'slush');
   if(slush) parts.push(`비자금 +${fmtSlush(slush.amount)}`);
-  parts.push(choice.outcomes.map(o => `${o.tag} ${Math.round(o.chance * 100)}%`).join(' · '));
+  const chances = tipChances(idx, choice);   // 표시 확률 = 판정 확률 (개미 커뮤니티 반영)
+  parts.push(choice.outcomes.map((o, k) => `${o.tag} ${Math.round(chances[k] * 100)}%`).join(' · '));
   return parts.join(' · ');
+}
+function tipEvHtml(idx){
+  const e = run.pendingTip ? tipExpectedValue(idx) : null;
+  if(!e) return '';
+  return `<span class="ch-ev ${evCls(e.ev)}">EV 순자산 ${fmtEv(e.ev)}${e.slush >= 1 ? ` · 비자금 +${fmtSlush(e.slush)}` : ''}</span>`;
 }
 
 function tipCardHtml(tip, wrap){
@@ -3060,7 +3145,8 @@ function tipCardHtml(tip, wrap){
     ${ev.choices.map((c, i) => `
       <button class="choice ${i === 0 ? 'risky' : 'safe'}" data-tip-choice="${i}">
         <span class="ch-label">${'AB'[i]}. ${fillTip(c.label, tip.stockId)}</span>
-        <span class="ch-meta">${tipChoiceMeta(tip, c)}</span>
+        <span class="ch-meta">${tipChoiceMeta(tip, c, i)}</span>
+        ${tipEvHtml(i)}
       </button>`).join('')}`;
   return wrap ? `<div class="phone-noti">${body}</div>` : body;
 }
