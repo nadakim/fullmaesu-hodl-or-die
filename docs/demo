@@ -1021,6 +1021,13 @@ body::after{
 .chain-stamp.down{color:var(--red);box-shadow:0 0 0 2px var(--red2),3px 3px 0 #000;}
 .chain-rest{font-family:'Press Start 2P','Galmuri-7px',monospace;font-size:7px;line-height:1.8;color:var(--muted);text-align:left;animation:chainIn .24s steps(4) both;}
 .chain-sum{font-family:'Press Start 2P','Galmuri-8px',monospace;font-size:8px;line-height:1.8;color:var(--gold);text-align:right;animation:chainIn .24s steps(4) both;}
+.chain-next{   /* 결산이 끝나면 멈춰서 이 버튼(또는 엔터)을 기다린다. 박스 바닥에 붙어 모바일에서도 늘 보인다 */
+  position:sticky;bottom:0;display:block;width:auto;min-width:180px;margin:14px auto 2px;padding:12px 26px;
+  animation:nextIn .36s steps(6) both,nextBlink 1s steps(2) .4s infinite;
+}
+.chain-next.wait{cursor:default;}
+@keyframes nextIn{0%{opacity:0;transform:translateY(18px);}60%{opacity:1;transform:translateY(-5px);}100%{transform:none;}}
+@keyframes nextBlink{50%{box-shadow:0 0 0 2px var(--green),0 0 0 4px var(--green-dim),4px 4px 0 #000;color:var(--text);}}
 .chain-skip{font-family:'Press Start 2P','Galmuri-6_5px',monospace;font-size:6.5px;color:var(--muted);margin-top:6px;animation:blink 1.2s steps(2) infinite;}
 @keyframes chainIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:none;}}
 @keyframes chipDrop{0%{opacity:0;transform:translateY(-16px);}50%{opacity:1;transform:translateY(3px);}75%{transform:translateY(-1px);}100%{opacity:1;transform:none;}}
@@ -3170,36 +3177,41 @@ const CHAIN_MS = { row: 280, base: 360, chip: 480, hitstop: 60, stamp: 520, plai
 const CHAIN_ROW_SEMIS  = 2;      // 소리: 두 번째 포지션부터 체인 시작음을 이만큼(반음)씩 높여 결산 전체가 고조된다
 const CHAIN_MULT_SEMIS = 2;      //   곱연산(×) 스텝은 덧셈 스텝보다 이만큼 더 높게 + 약한 흔들림 + 큰 숫자 펀치
 const CHAIN_SKIP_GUARD_MS = 300; // 건너뛴 직후 연타가 결산 화면 버튼을 누르지 않게
-let chainPlay = null;            // 재생 중: { run, timers, onDone }
+const CHAIN_NEXT_GUARD_MS = 500; // 최종 결과가 뜬 뒤 이 시간 동안은 '▶ 다음'·엔터를 무시 (스페이스 연타로 결과를 건너뛰지 않게)
+let chainPlay = null;            // 재생 중: { run, timers, onDone, sum }
+let chainHold = null;            // 최종 결과에서 멈춤: { run, onDone, skipped, readyAt } — '▶ 다음'·엔터만 onDone을 부른다
 let chainSkippedAt = 0;
 
 const chainHasMods = c => c.steps.length > 1;
 const chainChipText = st => st.kind === 'mult' ? `${st.label} ×${st.value.toFixed(2)}` : `${st.label} +${fmtMoney(st.value)}`;
 const chainChipCls  = st => st.kind === 'add' ? 'add' : st.value < 1 ? 'cut' : '';
 
+/* 재생이 없어도(설정 끔·보정 없음) 같은 틀로 최종 손익 요약을 보여주고 '▶ 다음'을 기다린다 */
 function playSettlementChain(chain, onDone){
-  if(!settings.chainFx || !chain || !chain.some(chainHasMods)){ onDone(); return; }   // 보정이 하나도 없으면 바로 결산 화면
+  chain = chain || [];
   let rows = chain, rest = [];
   if(chain.length > CHAIN_MAX_ROWS){
     const sorted = chain.slice().sort((a, b) => Math.abs(b.finalPnl) - Math.abs(a.finalPnl));
     rows = sorted.slice(0, CHAIN_TOP_ROWS);
     rest = sorted.slice(CHAIN_TOP_ROWS);
   }
-  if(!rows.some(chainHasMods)){ onDone(); return; }
+  const animate = settings.chainFx && rows.some(chainHasMods);
   const restSum = rest.reduce((sum, c) => sum + c.finalPnl, 0);
   const sum = chain.reduce((s2, c) => s2 + c.finalPnl, 0);
   showOverlay(`
-    <div class="result-kicker">WEEK ${run.round} / ${MAX_ROUND} 결산 · 정산 중</div>
-    <div class="ov-title" style="color:var(--gold)">결산 체인</div>
+    <div class="result-kicker">WEEK ${run.round} / ${MAX_ROUND} 결산 · ${animate ? '정산 중' : '최종 손익'}</div>
+    <div class="ov-title" style="color:var(--gold)">${animate ? '결산 체인' : '결산 요약'}</div>
     <div class="chain-list" id="chainList">
       ${rows.map((c, i) => `<div class="chain-row pending" id="chainRow${i}">
         <div class="chain-head"><span class="chain-name">${c.posName} <small>${posLabel(c)}</small></span><span class="chain-total" id="chainTotal${i}"></span></div>
         <div class="chain-chips ${chainHasMods(c) ? '' : 'none'}"></div></div>`).join('')}
       ${rest.length ? `<div class="chain-rest pending">▌ 외 포지션 ${rest.length}개 · 합계 <span class="${signCls(restSum)}">${fmtSigned(restSum)}</span></div>` : ''}
+      ${chain.length ? '' : '<div class="chain-rest">▌ 보유 포지션 없음 — 이번 주 손익은 모두 확정됨</div>'}
       <div class="chain-sum pending">정산 합계 <span class="${signCls(sum)}">${fmtSigned(sum)}</span></div>
     </div>
-    <div class="chain-skip">클릭 · SPACE = 건너뛰기</div>`);
-  chainPlay = { run, timers: [], onDone, sum };
+    ${animate ? '<div class="chain-skip">클릭 · SPACE = 건너뛰기</div>' : ''}`);
+  chainPlay = { run, timers: [], onDone, sum, rows };
+  if(!animate){ enterChainHold(false); return; }
   Music.duck('chain', 0.2);   // 결산 체인 효과음이 주인공
   const list = $('chainList');
   let t = 0;
@@ -3263,17 +3275,47 @@ function playSettlementChain(chain, onDone){
     list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
     list.querySelectorAll('.chain-rest, .chain-sum').forEach(e => e.classList.remove('pending'));
   });
-  chainPlay.timers.push(setTimeout(() => finishSettlementChain(false), t + CHAIN_MS.end));   // 끝내기는 조건 없이 (재생 상태가 남지 않게)
+  chainPlay.timers.push(setTimeout(() => enterChainHold(false), t));   // 다 보여주면 그대로 멈춘다 (자동으로 넘어가지 않음)
 }
-function finishSettlementChain(skipped){
+/* 최종 프레임: 모든 행의 칩·최종 손익·도장을 채운다 (스킵했을 때 여기로 점프) */
+function renderChainFinal(rows){
+  const list = $('chainList');
+  if(!list) return;
+  rows.forEach((c, i) => {
+    const row = $('chainRow' + i);
+    if(!row) return;
+    row.classList.remove('pending', 'playing');
+    const chips = row.querySelector('.chain-chips');
+    if(chainHasMods(c) && chips.children.length < c.steps.length - 1)
+      chips.innerHTML = c.steps.slice(1).map(st => `<span class="chain-chip ${chainChipCls(st)}">${chainChipText(st)}</span>`).join('');
+    const tot = row.querySelector('.chain-total');
+    tot.textContent = fmtSigned(c.finalPnl);
+    tot.className = 'chain-total final ' + (c.finalPnl >= 0 ? 'up' : 'down');
+    if(chainHasMods(c) && !row.querySelector('.chain-stamp'))
+      row.insertAdjacentHTML('beforeend', `<span class="chain-stamp ${c.finalPnl >= 0 ? '' : 'down'}">${c.finalPnl >= 0 ? '떡상!' : '물림'}</span>`);
+  });
+  list.querySelectorAll('.pending').forEach(e => e.classList.remove('pending'));
+}
+function enterChainHold(skipped){
   if(!chainPlay) return;
   const cp = chainPlay;
   chainPlay = null;
   cp.timers.forEach(clearTimeout);
   Music.unduck('chain');
-  if(cp.run === run) cp.onDone(!!skipped);   // 그 사이 새 판을 시작했으면 옛 결산 화면은 띄우지 않는다
+  renderChainFinal(cp.rows);
+  const hint = $('overlayBox').querySelector('.chain-skip');
+  if(hint) hint.remove();
+  $('overlayBox').insertAdjacentHTML('beforeend', '<button class="ov-btn chain-next" data-act="chainNext">▶ 다음</button>');
+  chainHold = { run: cp.run, onDone: cp.onDone, skipped: !!skipped, readyAt: performance.now() + CHAIN_NEXT_GUARD_MS };
 }
-function cancelSettlementChain(){   // 결과 화면 없이 재생만 멈춘다 (새 판 시작)
+function chainNext(){   // '▶ 다음' · 엔터
+  if(!chainHold || performance.now() < chainHold.readyAt) return;
+  const h = chainHold;
+  chainHold = null;
+  if(h.run === run) h.onDone(h.skipped);   // 그 사이 새 판을 시작했으면 옛 결산 화면은 띄우지 않는다
+}
+function cancelSettlementChain(){   // 결과 화면 없이 재생·대기만 멈춘다 (새 판 시작)
+  chainHold = null;
   if(!chainPlay) return;
   chainPlay.timers.forEach(clearTimeout);
   chainPlay = null;
@@ -3285,7 +3327,7 @@ function skipSettlementChain(){
   const win = chainPlay.sum >= 0;
   Sound.stopAll();                              // 남은 소리는 즉시 끊고
   Sound.play(win ? 'stampWin' : 'stampLoss');   // 최종 도장 소리 1번만
-  finishSettlementChain(true);
+  enterChainHold(true);                         // 최종 결과로 점프해서 멈춘다 (다음 화면은 '▶ 다음')
 }
 
 function showRoundResult(w){
@@ -3882,11 +3924,13 @@ document.addEventListener('click', e => { if(e.target.closest('button, [data-s]'
 document.addEventListener('keydown', e => {
   if(Fx.queueLength && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); Fx.skipQueue(); return; }   // 연쇄 연출 스킵
   if(chainPlay && (e.code === 'Space' || e.key === ' ')){ e.preventDefault(); skipSettlementChain(); return; }
+  if(chainHold && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); if(e.key === 'Enter') chainNext(); return; }   // 스페이스는 결과를 넘기지 않는다
   if(e.key === 'Escape' && selectedIdx >= 0){ selectedIdx = -1; renderAll(); }
 });
 
 $('overlay').addEventListener('click', e => {
   if(chainPlay){ skipSettlementChain(); return; }
+  if(chainHold){ if(e.target.closest('[data-act="chainNext"]')) chainNext(); return; }   // 결과 화면에선 '▶ 다음'만
   if(performance.now() - chainSkippedAt < CHAIN_SKIP_GUARD_MS) return;
   const tc = e.target.closest('[data-tip-choice]');
   if(tc){ chooseTip(+tc.dataset.tipChoice); return; }
