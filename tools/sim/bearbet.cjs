@@ -14,7 +14,7 @@ function loadPlaywright(){
 const { chromium } = loadPlaywright();
 (async () => {
   const file = process.argv[2] || path.join(__dirname, '../../docs/demo'), n = +(process.argv[3] || 2000);
-  const html = fs.readFileSync(file, 'utf8');
+  const html = require('./demo-html.cjs')(file);
   const browser = await chromium.launch(); const page = await browser.newPage();
   await page.route('**/*', r => r.request().url() === 'http://sim.local/demo.html' ? r.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html }) : r.abort());
   await page.goto('http://sim.local/demo.html');

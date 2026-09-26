@@ -190,13 +190,14 @@ function installBots(){
   // 암시장 한 번 방문: 덱 압축(상태·손해 카드 제거) → 유물 → 희귀 이상 낱장 → (아무것도 못 샀으면) 팩. 매주 뭔가 하나는 산다
   function shopOnce(){
     let bought = 0;
-    if(run.shop.removed < SHOP_REMOVE_LIMIT && wallet() >= shopRemoveCost()){
+    while(wallet() >= shopRemoveCost()){   // 누진 비용: 비자금이 되는 만큼 여러 번 (제한은 MIN_DECK_SIZE뿐)
       let idx = run.masterDeck.findIndex(id => CARD_BY_ID[id].type === 'status');
       if(idx < 0) idx = run.masterDeck.findIndex(id => SHOP_BAD.indexOf(id) >= 0);
-      if(idx >= 0 && shopRemoveCard(idx)) bought++;
+      if(idx < 0 || !shopRemoveCard(idx)) break;
+      bought++;
     }
     for(const id of run.shop.relics){
-      if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= RELIC_PRICE[RELIC_BY_ID[id].rarity] && buyRelic(id)) bought++;
+      if(!hasRelic(id) && SHOP_SKIP_RELICS.indexOf(id) < 0 && wallet() >= relicPrice(id) && buyRelic(id)) bought++;
     }
     const singles = run.shop.singles.map((id, i) => ({ id, i }))
       .filter(x => run.shop.singlesBought.indexOf(x.i) < 0 && !inDeck(x.id) && SHOP_BAD.indexOf(x.id) < 0 && RARITY_RANK[CARD_BY_ID[x.id].rarity] >= RARITY_RANK.rare)
@@ -204,7 +205,7 @@ function installBots(){
     for(const x of singles){ if(wallet() >= singlePrice(x.id) && buySingle(x.i)){ bought++; break; } }
     if(!bought){
       for(const pk of SHOP_PACKS){
-        if(packPool(pk).length && wallet() >= pk.price && buyPack(pk.id)){ bought++; break; }
+        if(packPool(pk).length && wallet() >= packPrice(pk) && buyPack(pk.id)){ bought++; break; }
       }
     }
     return bought > 0;
@@ -299,7 +300,7 @@ function toMarkdown(meta, rows, causes){
 
 async function main(){
   const opt = parseArgs(process.argv.slice(2));
-  const html = fs.readFileSync(opt.file, 'utf8');
+  const html = require('./demo-html.cjs')(opt.file);
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch();
   const page = await browser.newPage();
