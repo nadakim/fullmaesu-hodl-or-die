@@ -29,9 +29,11 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     ok(/680만 \(▲36%\)/.test(pop[0]) && /구매 💼 680만/.test(pop[1]), W + ' 팩 팝업 가격 = 인상가', pop);
     await page.locator('[data-act="close"]').click(); await page.waitForTimeout(100);
     // 실제 차감
-    const spent = await page.evaluate(() => { const s0 = run.slush; buyPack('leader'); const a = s0 - run.slush; hideOverlay();
-      const s1 = run.slush; buyRelic('capital'); const r = s1 - run.slush; const s2 = run.slush; buySingle(0); const si = s2 - run.slush;
-      return { pack: a, relic: r, single: si, singleP: singlePrice(run.shop.singles[0]) }; });
+    // 낱장을 먼저 산다 (팩이 먼저면 같은 카드가 나와 낱장이 '덱에 있음'이 될 수 있다)
+    const spent = await page.evaluate(() => { const singleP = singlePrice(run.shop.singles[0]); const s2 = run.slush; buySingle(0); const si = s2 - run.slush;
+      const s0 = run.slush; buyPack('leader'); const a = s0 - run.slush; hideOverlay();
+      const s1 = run.slush; buyRelic('capital'); const r = s1 - run.slush;
+      return { pack: a, relic: r, single: si, singleP }; });
     ok(spent.pack === 680 && spent.relic === 1170 && spent.single === spent.singleP, W + ' 구매 차감 = 인상가', spent);
     if (W !== 390) { await page.evaluate(() => { hideOverlay(); run.slush = 5000; run.shop.singlesBought = []; renderShop(); }); await page.screenshot({ path: `${S}/infl-${W}.png`, clip: { x: 0, y: 0, width: W, height: Math.min(H, 720) } }); }
     else { await page.evaluate(() => { hideOverlay(); renderShop(); }); await page.screenshot({ path: `${S}/infl-390.png` }); }

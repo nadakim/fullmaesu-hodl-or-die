@@ -670,6 +670,28 @@ body::after{
 .fx-lost{position:fixed;z-index:96;pointer-events:none;font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);line-height:1.2;color:var(--red);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;animation:lostFall 1.1s steps(11) forwards;}
 @keyframes lostFall{to{transform:translate(var(--dx),calc(160 * var(--u))) rotate(var(--rot));opacity:0;}}
 .relic-empty{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);}
+/* 유물 칸 (RELIC_SLOTS): 빈 칸 점선 · 종류 표시(+ 합산 배수 / × 곱 배수 / ＋ 칩) · 끌어서 순서 바꾸기 (장전·암시장) */
+.relic-slot{width:calc(30 * var(--u));height:calc(30 * var(--u));flex:none;box-sizing:border-box;border:calc(2 * var(--u)) dashed var(--line);}
+.relic[draggable="true"]{cursor:grab;}
+.relic.dragging{opacity:.4;}
+.relic.drop-to{box-shadow:0 0 0 calc(3 * var(--u)) var(--gold),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.rl-kind{position:absolute;left:calc(-5 * var(--u));top:calc(-6 * var(--u));min-width:calc(11 * var(--u));padding:calc(1 * var(--u)) calc(2 * var(--u)) 0;
+  font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1.3;color:#000;background:var(--cyan);box-shadow:0 0 0 calc(1 * var(--u)) #000;pointer-events:none;}
+.rl-kind.xmult{background:var(--gold);}
+.relic-tip .rt-move{display:flex;gap:calc(6 * var(--u));margin-top:calc(6 * var(--u));flex-wrap:wrap;align-items:center;}
+.relic-tip .rt-move button{border:none;cursor:pointer;padding:calc(4 * var(--u)) calc(8 * var(--u));background:var(--panel2);color:var(--cyan);
+  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
+.relic-tip .rt-move button:disabled{opacity:.35;cursor:not-allowed;}
+.relic-tip .rt-move span{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);}
+/* 유물 교체 오버레이 · 암시장 보유 유물 */
+.swap-new{display:flex;justify-content:center;margin:calc(4 * var(--u)) 0 calc(10 * var(--u));}
+.relic-tile[data-swap-pick]{cursor:pointer;}
+.relic-tile[data-swap-pick]:hover{transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--red),0 0 0 calc(4 * var(--u)) #000,calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+.rt-slot{font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--muted);}
+.own-relic-btns{display:flex;gap:calc(6 * var(--u));flex-wrap:wrap;justify-content:center;}
+.own-relic-btns .buy-btn{min-width:0;}
+.buy-btn.sell{background:var(--red-dim);color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.buy-btn.sell.armed{background:var(--red);color:#000;}
 .relic-tip{
   margin:0 0 calc(8 * var(--u));padding:calc(8 * var(--u)) calc(10 * var(--u));background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
   font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.2;color:var(--text);
@@ -1871,7 +1893,8 @@ const SHOP_REJECT_TEXT = {
   limit:'이번 주에는 더 이상 할 수 없습니다', sold:'이미 산 카드입니다',
   deckMin:`덱은 ${MIN_DECK_SIZE}장 아래로 줄일 수 없습니다`, none:'카드를 고르세요',
   empty:'이 팩에서 나올 새 카드가 없습니다 (전부 덱에 있음)', owned:'이미 덱에 있는 카드입니다',
-  mythic:'신화 카드는 덱에 1장만 넣을 수 있습니다'
+  mythic:'신화 카드는 덱에 1장만 넣을 수 있습니다',
+  slots:`유물 칸(${RELIC_SLOTS}칸)이 가득 찼습니다 — 교체할 유물을 고르세요`
 };
 const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
@@ -2574,6 +2597,9 @@ function onGameEvent(type, d){
       else enqueueRelic(d);
       break;
     case 'relicGrew': enqueueRelicGrow(d); break;
+    case 'relicReplaced': toast(`${RELIC_BY_ID[d.id].icon} ${RELIC_BY_ID[d.id].name} 버림 → ${RELIC_BY_ID[d.by].icon} ${RELIC_BY_ID[d.by].name}`, 'warn'); break;
+    case 'relicSold': toast(`${RELIC_BY_ID[d.id].icon} ${RELIC_BY_ID[d.id].name} 판매 +${fmtSlush(d.price)}`, 'good'); Sound.play('sellWin'); break;
+    case 'relicMoved': Sound.play('uiMove'); break;
     case 'relicReset': enqueueRelicShatter(d); break;
     case 'comboChanged': juiceStreak(d); break;
       break;
@@ -3077,9 +3103,24 @@ function showReward(d){
 function showRelicReward(){
   showOverlay(`
     <div class="ov-title" style="color:var(--gold)">WEEK ${run.round} 결산 — 유물</div>
-    <div class="ov-sub">아직 없는 유물 ${run.relicChoices.length}개 중 1개. 한 판 동안 상시 발동합니다.</div>
+    <div class="ov-sub">아직 없는 유물 ${run.relicChoices.length}개 중 1개. 한 판 동안 상시 발동합니다. 유물 칸 ${run.relics.length}/${RELIC_SLOTS}${relicSlotsFull() ? ' — 가득 차서 하나를 교체해야 합니다' : ''}.</div>
     <div class="ov-cards">${run.relicChoices.map(id => relicTile(RELIC_BY_ID[id], { attrs: `data-relic-reward="${id}"` })).join('')}</div>
     <button class="ov-btn alt" data-act="skipRelic">▷ 유물 건너뛰기</button>`);
+}
+
+/* 유물 칸이 가득 찼을 때: 새 유물 대신 버릴 보유 유물 고르기 (또는 포기). mode 'reward' | 'shop' */
+let relicSwapCtx = null;
+function showRelicSwap(mode, id){
+  relicSwapCtx = { mode, id };
+  const r = RELIC_BY_ID[id];
+  showOverlay(`
+    <div class="ov-title" style="color:var(--gold)">유물 칸이 가득 찼습니다 (${RELIC_SLOTS}/${RELIC_SLOTS})</div>
+    <div class="ov-sub">${r.icon} ${r.name}을(를) 넣을 칸을 고르세요. 고른 유물은 사라집니다${mode === 'shop' ? ` (구매가 ${fmtSlush(relicPrice(id))})` : ''}.</div>
+    <div class="swap-new">${relicTile(r, {})}</div>
+    <div class="pile-title">▌ 버릴 유물 — 새 유물이 그 칸에 들어간다</div>
+    <div class="ov-cards">${run.relics.map((x, i) => relicTile(RELIC_BY_ID[x], { attrs: `data-swap-pick="${x}"`, extra: `<span class="rt-slot">${i + 1}번 칸</span>` })).join('')}</div>
+    ${mode === 'reward' ? '<button class="ov-btn alt" data-act="swapBack">◀ 다른 유물 보기</button>' : ''}
+    <button class="ov-btn alt" data-act="swapGiveUp">${mode === 'reward' ? '▷ 유물 포기 (건너뛰기)' : '✕ 사지 않기'}</button>`);
 }
 
 function showRemove(){
@@ -3548,25 +3589,42 @@ function relicTile(r, o){
     ${o.extra || ''}</div>`;
 }
 
+/* 정산 종류 배지: 합산 배수 + / 곱 배수 × / 칩 +. 정산에 안 쓰는 유물은 없음 */
+const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'] };
+const relicKind = id => SETTLE_EFFECTS[id] ? SETTLE_EFFECTS[id].kind : '';
 function renderRelics(){
   if(relicTipId && !hasRelic(relicTipId)) relicTipId = '';
-  const sig = run.relics.join() + '|' + relicTipId + '|' + run.relics.map(id => Math.round(relicStacks(id))).join();
+  const arrange = canArrangeRelics();
+  const sig = run.relics.join() + '|' + relicTipId + '|' + arrange + '|' + run.relics.map(id => Math.round(relicStacks(id))).join();
   if(sig === relicSig) return;
   relicSig = sig;
-  $('relicBar').innerHTML = '<span class="relic-label">▌ 유물</span>' + (run.relics.length
-    ? run.relics.map(id => { const r = RELIC_BY_ID[id];
-        const st = relicStacks(id), money = r.growth === 'money';
-        const badge = r.growth && st >= (money ? 1 : 1) ? `<span class="rl-stk">${money ? Math.round(st) : st}</span>` : '';
-        const glow = !r.growth || money ? '' : st >= 25 ? 'g4' : st >= 10 ? 'g3' : st >= 5 ? 'g2' : '';
-        return `<button class="relic ${r.rarity} ${glow} ${id === relicTipId ? 'on' : ''}" data-relic="${id}" title="${r.name}" aria-label="${r.name}">${r.icon}${badge}</button>`; }).join('')
-    : `<span class="relic-empty">${RELIC_EMPTY_TEXT}</span>`);
+  const slots = run.relics.map((id, i) => { const r = RELIC_BY_ID[id];
+      const st = relicStacks(id), money = r.growth === 'money';
+      const badge = r.growth && st >= 1 ? `<span class="rl-stk">${money ? Math.round(st) : st}</span>` : '';
+      const kb = RELIC_KIND_BADGE[relicKind(id)], kind = kb ? `<span class="rl-kind ${kb[1]}">${kb[0]}</span>` : '';
+      const glow = !r.growth || money ? '' : st >= 25 ? 'g4' : st >= 10 ? 'g3' : st >= 5 ? 'g2' : '';
+      return `<button class="relic ${r.rarity} ${glow} ${id === relicTipId ? 'on' : ''}" data-relic="${id}" data-slot="${i}" ${arrange ? 'draggable="true"' : ''} title="${i + 1}번 칸 · ${r.name}" aria-label="${i + 1}번 칸 ${r.name}">${r.icon}${kind}${badge}</button>`; }).join('')
+    + '<span class="relic-slot" title="빈 칸 — 매주 결산 보상이나 암시장에서 얻는다"></span>'.repeat(Math.max(0, RELIC_SLOTS - run.relics.length));
+  $('relicBar').innerHTML = `<span class="relic-label" title="정산은 왼쪽 칸부터 차례로 발동 — 더하기(+)를 앞에, 곱하기(×)를 뒤에 둘수록 커진다">▌ 유물 ${run.relics.length}/${RELIC_SLOTS}</span>` + slots;
   fitRelicEmpty();
   const tip = $('relicTip');
   if(relicTipId){
-    const r = RELIC_BY_ID[relicTipId];
-    tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${r.desc}${r.growth ? growthTipHtml(r) : ''}<i>${r.flavor}</i>`;
+    const r = RELIC_BY_ID[relicTipId], i = run.relics.indexOf(relicTipId), kb = RELIC_KIND_BADGE[relicKind(relicTipId)];
+    const move = `<span class="rt-move"><span>${i + 1}번 칸${kb ? ` · 정산 ${i + 1}번째 · ${kb[2]}` : ''}</span>${arrange
+      ? `<button data-relic-move="-1" ${i > 0 ? '' : 'disabled'}>◀ 앞으로</button><button data-relic-move="1" ${i < run.relics.length - 1 ? '' : 'disabled'}>뒤로 ▶</button><span>끌어서 옮기기 · ←→</span>`
+      : '<span>순서는 장전·암시장에서 바꿀 수 있다</span>'}</span>`;
+    tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${r.desc}${r.growth ? growthTipHtml(r) : ''}<i>${r.flavor}</i>${move}`;
     tip.hidden = false;
   } else tip.hidden = true;
+}
+/* 유물 칸 옮기기 (엔진 moveRelic). 선택(툴팁)은 옮긴 유물을 따라간다 */
+function shiftRelic(id, d){
+  const i = run.relics.indexOf(id);
+  if(i < 0 || !moveRelic(i, i + d)) return false;
+  relicSig = '';
+  renderRelics();
+  if(currentTab === 'shop') renderShop();
+  return true;
 }
 
 /* 성장형 유물 툴팁: 현재 스택 · 지금 효과 · 초기화 조건 · 이번 판 최고 */
@@ -3583,6 +3641,36 @@ function growthTipHtml(r){
   return `<span class="rt-grow">현재 ${growText(r.id, r.growth === 'money' ? st : st)} · ${eff ? eff() : ''}<br>초기화: ${r.reset}<br>이번 판 최고 ${growText(r.id, best)}</span>`;
 }
 
+$('relicTip').addEventListener('click', e => {
+  const b = e.target.closest('[data-relic-move]');
+  if(b && !b.disabled && relicTipId) shiftRelic(relicTipId, +b.dataset.relicMove);
+});
+/* 끌어서 순서 바꾸기 (장전·암시장). 놓은 유물의 칸으로 들어가고 사이 유물이 한 칸씩 밀린다 */
+let relicDragFrom = -1;
+$('relicBar').addEventListener('dragstart', e => {
+  const b = e.target.closest('[data-slot]');
+  if(!b || !canArrangeRelics()) return;
+  relicDragFrom = +b.dataset.slot;
+  b.classList.add('dragging');
+  if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', b.dataset.relic); } catch(err) {} }
+});
+$('relicBar').addEventListener('dragover', e => {
+  if(relicDragFrom < 0) return;
+  e.preventDefault();
+  const b = e.target.closest('[data-slot]');
+  $('relicBar').querySelectorAll('.drop-to').forEach(x => x.classList.remove('drop-to'));
+  if(b) b.classList.add('drop-to');
+});
+$('relicBar').addEventListener('drop', e => {
+  if(relicDragFrom < 0) return;
+  e.preventDefault();
+  const b = e.target.closest('[data-slot]');
+  const to = b ? +b.dataset.slot : run.relics.length - 1;
+  const from = relicDragFrom;
+  relicDragFrom = -1;
+  if(moveRelic(from, to)){ relicSig = ''; renderRelics(); }
+});
+$('relicBar').addEventListener('dragend', () => { relicDragFrom = -1; relicSig = ''; renderRelics(); });
 $('relicBar').addEventListener('click', e => {
   const b = e.target.closest('[data-relic]');
   if(!b) return;
@@ -3722,6 +3810,15 @@ function renderShop(){
       return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : '', extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
+    <span class="section-label">▌ 보유 유물 ${run.relics.length}/${RELIC_SLOTS}칸 — 정산은 왼쪽(1번 칸)부터 차례로 · 더하기(+)는 앞, 곱하기(×)는 뒤가 유리 · 판매 = 얻을 때 값의 ${Math.round(RELIC_SELL_RATE * 100)}%</span>
+    <div class="relic-row own-relics">${run.relics.length ? run.relics.map((id, i) => {
+      const kb = RELIC_KIND_BADGE[relicKind(id)];
+      return relicTile(RELIC_BY_ID[id], { extra: `<span class="rt-slot">${i + 1}번 칸${kb ? ' · ' + kb[2] : ''}</span>
+        <div class="own-relic-btns"><button class="buy-btn" data-own-move="-1" data-own-relic="${id}" ${i > 0 ? '' : 'disabled'} aria-label="앞 칸으로">◀</button>
+        <button class="buy-btn" data-own-move="1" data-own-relic="${id}" ${i < run.relics.length - 1 ? '' : 'disabled'} aria-label="뒤 칸으로">▶</button>
+        <button class="buy-btn sell" data-own-sell="${id}">판매 +${fmtSlush(relicSellPrice(id))}</button></div>` });
+    }).join('') : '<div class="shop-note">보유 유물 없음</div>'}</div>
+
     <span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
     <div class="shop-note rm-ladder">다음: ${[0, 1, 2].map(k => `<span class="${k ? '' : 'now'}">${removeCost(sh.removed + k).toLocaleString()}</span>`).join(' → ')} · 같은 주에 제거할 때마다 ×${SHOP_REMOVE_ESCALATION}, 다음 주엔 처음 가격으로 (주차마다 기본가 +${SHOP_REMOVE_PER_WEEK}만) · 덱 ${MIN_DECK_SIZE}장까지</div>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
@@ -3766,7 +3863,16 @@ $('shopBox').addEventListener('click', e => {
   const relic = e.target.closest('[data-buy-relic]');
   const rr = e.target.closest('[data-reroll]');
   if(rr){ if(!rr.disabled) doReroll(rr.dataset.reroll); return; }
-  if(relic) buyRelic(relic.dataset.buyRelic);
+  const own = e.target.closest('[data-own-move]'), sell = e.target.closest('[data-own-sell]');
+  if(own){ shiftRelic(own.dataset.ownRelic, +own.dataset.ownMove); return; }
+  if(sell){
+    if(!sell.classList.contains('armed')){ sell.classList.add('armed'); sell.textContent = '정말 팔까요? 한 번 더'; return; }   // 두 번 눌러 확인
+    sellRelic(sell.dataset.ownSell);
+  }
+  else if(relic){
+    if(relicSlotsFull() && run.slush >= relicPrice(relic.dataset.buyRelic)){ showRelicSwap('shop', relic.dataset.buyRelic); return; }
+    buyRelic(relic.dataset.buyRelic);
+  }
   else if(pk) buyPack(pk.dataset.pack);
   else if(single) buySingle(+single.dataset.single);
   else if(rm){ const i = +rm.dataset.shopRemove; shopPickIdx = shopPickIdx === i ? -1 : i; }
@@ -4113,6 +4219,9 @@ document.addEventListener('keydown', e => {
   if(Fx.queueLength && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); Fx.skipQueue(); return; }   // 연쇄 연출 스킵
   if(chainPlay && (e.code === 'Space' || e.key === ' ')){ e.preventDefault(); skipSettlementChain(); return; }
   if(chainHold && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); if(e.key === 'Enter') chainNext(); return; }   // 스페이스는 결과를 넘기지 않는다
+  if((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && relicTipId && currentTab === 'play' && !overlayOpen && run && canArrangeRelics()){   // 선택한 유물 칸 옮기기
+    e.preventDefault(); shiftRelic(relicTipId, e.key === 'ArrowLeft' ? -1 : 1); return;
+  }
   if(e.key === 'Escape'){
     if(selectedIdx >= 0){ selectedIdx = -1; renderAll(); return; }   // 대상 지정 취소가 먼저
     if(menuOpen()){ closeMenu(); return; }
@@ -4129,7 +4238,18 @@ $('overlay').addEventListener('click', e => {
   const pb = e.target.closest('[data-pack-buy]');
   if(pb){ if(!pb.disabled){ buyPack(pb.dataset.packBuy); renderShop(); renderNav(); } return; }   // 성공하면 packOpened가 개봉 화면으로 바꾼다
   const rr = e.target.closest('[data-relic-reward]');
-  if(rr){ hideOverlay(); chooseRelicReward(rr.dataset.relicReward); renderAll(); return; }
+  if(rr){
+    if(relicSlotsFull()){ showRelicSwap('reward', rr.dataset.relicReward); return; }   // 칸이 가득 → 교체할 유물 고르기
+    hideOverlay(); chooseRelicReward(rr.dataset.relicReward); renderAll(); return;
+  }
+  const sw = e.target.closest('[data-swap-pick]');
+  if(sw && relicSwapCtx){
+    const c = relicSwapCtx; relicSwapCtx = null;
+    hideOverlay();
+    if(c.mode === 'reward') chooseRelicReward(c.id, sw.dataset.swapPick);
+    else { buyRelic(c.id, sw.dataset.swapPick); renderShop(); }
+    renderAll(); return;
+  }
   const r = e.target.closest('[data-reward]');
   if(r){ hideOverlay(); chooseReward('take', r.dataset.reward); renderAll(); return; }
   const rm = e.target.closest('[data-remove]');
@@ -4139,6 +4259,12 @@ $('overlay').addEventListener('click', e => {
   const act = b.dataset.act;
   if(act === 'skip'){ hideOverlay(); chooseReward('skip'); renderAll(); }
   else if(act === 'skipRelic'){ hideOverlay(); chooseRelicReward(''); renderAll(); }
+  else if(act === 'swapBack'){ relicSwapCtx = null; showRelicReward(); }
+  else if(act === 'swapGiveUp'){
+    const c = relicSwapCtx; relicSwapCtx = null;
+    hideOverlay();
+    if(c && c.mode === 'reward'){ chooseRelicReward(''); renderAll(); }
+  }
   else if(act === 'removeMode') showRemove();
   else if(act === 'backReward') showReward(lastRoundClear);
   else if(act === 'close') hideOverlay();

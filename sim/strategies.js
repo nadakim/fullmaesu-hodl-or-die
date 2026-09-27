@@ -31,6 +31,33 @@ const betaOf      = (E, c) => stockOf(E, c).beta;
 const canAfford   = (E, c) => E.run.cash >= E.stockCost(stockOf(E, c));
 const LEVER = ['yolo', 'fullBuy', 'credit'];
 
+/* 유물 칸이 가득 찼을 때 (엔진에 RELIC_SLOTS가 있을 때만): 새 유물 id를 얻으려면 무엇을 교체할지.
+   undefined = 칸 여유 있음(교체 없이 얻는다) · 보유 유물 id = 그걸 교체 · null = 포기.
+   prio(우선순위 목록)가 있으면 보유 중 순위가 가장 낮은 것보다 새 유물이 높을 때만 교체. 없으면(무작위 전략) rng로 반반 */
+function relicSwap(E, id, prio, rng){
+  if(!hasFn(E, 'relicSlotsFull') || !E.relicSlotsFull()) return undefined;
+  if(prio && prio.length){
+    const rank = x => { const i = prio.indexOf(x); return i < 0 ? 999 : i; };
+    const worst = E.run.relics.slice().sort((a, b) => rank(b) - rank(a))[0];
+    return rank(id) < rank(worst) ? worst : null;
+  }
+  if(rng) return rng() < 0.5 ? pickRand(rng, E.run.relics) : null;
+  return null;
+}
+function buyRelicFor(E, id, prio, rng){
+  const r = relicSwap(E, id, prio, rng);
+  return r === null ? false : E.buyRelic(id, r);
+}
+/* 칸 순서 정리 (엔진에 moveRelic이 있을 때만, 암시장에서): 칩 더하기 → 합산 배수 → 곱 배수 → 정산과 무관한 유물.
+   정산 배수는 칸 순서대로 차례로 적용되므로 더하기를 앞에 둘수록 커진다 — 봇은 늘 최선의 순서로 둔다 */
+const KIND_ORDER = { add: 0, mult: 1, xmult: 2 };
+function arrangeRelics(E){
+  if(!hasFn(E, 'moveRelic') || !E.SETTLE_EFFECTS) return;
+  const key = id => { const fx = E.SETTLE_EFFECTS[id]; return fx ? KIND_ORDER[fx.kind] : 3; };
+  const target = E.run.relics.map((id, i) => ({ id, i })).sort((a, b) => key(a.id) - key(b.id) || a.i - b.i).map(x => x.id);
+  target.forEach((id, i) => { const from = E.run.relics.indexOf(id); if(from !== i) E.moveRelic(from, i); });
+}
+
 /* 유물 새로고침 (엔진에 rerollShop이 있을 때만): 진열에 선호 유물이 없고, 새로고침 + 가장 싼 미보유 선호 유물 값을 낼 수 있으면 새로고침 → 나오면 산다 */
 const hasFn = (E, name) => { try { return typeof E[name] === 'function'; } catch(e){ return false; } };
 function rerollForRelics(E, relics){
@@ -40,14 +67,14 @@ function rerollForRelics(E, relics){
     if(!want.length || E.run.shop.relics.some(id => want.indexOf(id) >= 0) || !E.rerollAvailable('relic')) return;
     const cheapest = Math.min.apply(null, want.map(id => E.relicPrice(id)));
     if(E.run.slush < E.shopRerollCost('relic') + cheapest || !E.rerollShop('relic')) return;
-    want.forEach(id => { if(E.run.shop.relics.indexOf(id) >= 0) E.buyRelic(id); });
+    want.forEach(id => { if(E.run.shop.relics.indexOf(id) >= 0) buyRelicFor(E, id, relics); });
   }
 }
 
 /* 암시장 공통: 원하는 유물 → (없으면 새로고침) → 원하는 낱장 순으로 비자금이 되는 만큼 산다 */
 function shopByPriority(E, relics, cards){
   const s = E.run.shop;
-  relics.forEach(id => { if(s.relics.indexOf(id) >= 0 && !E.hasRelic(id)) E.buyRelic(id); });
+  relics.forEach(id => { if(s.relics.indexOf(id) >= 0 && !E.hasRelic(id)) buyRelicFor(E, id, relics); });
   rerollForRelics(E, relics);
   cards.forEach(id => { const i = s.singles.indexOf(id); if(i >= 0) E.buySingle(i); });
 }
@@ -180,7 +207,7 @@ const random = {
     for(let tries = 0; tries < 6; tries++){
       const r = rng();
       if(r < 0.3) E.buySingle(Math.floor(rng() * s.singles.length));
-      else if(r < 0.5 && s.relics.length) E.buyRelic(pickRand(rng, s.relics));
+      else if(r < 0.5 && s.relics.length) buyRelicFor(E, pickRand(rng, s.relics), null, rng);
       else if(r < 0.7) E.buyPack(pickRand(rng, E.SHOP_PACKS).id);
       else break;
     }
@@ -249,7 +276,7 @@ const growthFirst = {
   premarket: random.premarket, tip: random.tip, randomPicks: true, relicFirst: GROWTH_RELICS,
   shop(E, rng){
     const s = E.run.shop;
-    GROWTH_RELICS.forEach(id => { if(s.relics.indexOf(id) >= 0) E.buyRelic(id); });
+    GROWTH_RELICS.forEach(id => { if(s.relics.indexOf(id) >= 0) buyRelicFor(E, id, GROWTH_RELICS); });
     rerollForRelics(E, GROWTH_RELICS);
     random.shop(E, rng);
   }
@@ -270,4 +297,5 @@ const deckThinner = {
   }
 };
 
-module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS };
+module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
+                   relicSwap, arrangeRelics };

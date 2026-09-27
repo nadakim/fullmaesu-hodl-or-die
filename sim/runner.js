@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const loadEngine = require('./load-engine.js');
 const STRATEGIES = require('./strategies.js');
+const { relicSwap, arrangeRelics } = STRATEGIES;
 
 // classifyEnd가 내는 엔딩 16종 (UI의 ENDINGS와 같은 키)
 const END_CAUSES = {
@@ -101,7 +102,10 @@ function playGame(E, strat, seed){
         E.chooseReward(id ? 'take' : 'skip', id);
       } else {
         const first = (strat.relicFirst || []).find(id => run().relicChoices.indexOf(id) >= 0);   // 성장 유물 우선 전략
-        E.chooseRelicReward(first || pickReward(strat, run().relicChoices, strat.relicPick || [], rng, true));
+        const id = first || pickReward(strat, run().relicChoices, strat.relicPick || [], rng, true);
+        const swap = id ? relicSwap(E, id, strat.relicFirst || strat.relicPick, strat.randomPicks ? rng : null) : undefined;   // 칸이 가득 찼으면 교체할 것 (null = 포기)
+        if(swap === null) E.chooseRelicReward('');
+        else E.chooseRelicReward(id, swap);
       }
     } else if(phase === 'shop'){
       const entry = run().slush, ev0 = E.eventLog.length, cheapest = cheapestOffer(E);
@@ -112,6 +116,7 @@ function playGame(E, strat, seed){
       shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest,
                      rerolls: rer.length, rerollSpent: rer.reduce((s2, e) => s2 + e.data.cost, 0) });
       lastExit = run().slush;
+      arrangeRelics(E);   // 유물 칸 순서: 더하기 → 곱하기 (봇은 최선의 순서)
       E.leaveShop();
     } else throw new Error('알 수 없는 phase: ' + phase);
   }
