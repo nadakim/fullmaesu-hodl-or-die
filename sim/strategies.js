@@ -303,7 +303,7 @@ const MULT_ALWAYS = ['futures', 'timeLoop'];   // 대상 없는 정산 배수 �
 const levTowerBuild = {
   premarket(E){
     const biggest = ids => ids.slice().sort((a, b) => E.exposure(posById(E, b)) - E.exposure(posById(E, a)))[0];
-    for(;;){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){   // 무한 루프 안전장치 (위와 같음)
       const buyable = () => E.run.hand.some((_, i) => isLongStock(E, card(E, i)) && canAfford(E, card(E, i)));
       if(E.run.pending.lev === 1 && buyable()) playOne(E, c => LEVER.indexOf(c.base || c.id) >= 0, c => -LEVER.indexOf(c.base || c.id));
       if(playOne(E, c => isLongStock(E, c), c => betaOf(E, c))) continue;
@@ -322,7 +322,7 @@ const levTowerBuild = {
 const antFlagBuild = {
   premarket(E){
     const held = id => E.run.positions.some(p => p.assetId === id);
-    for(;;){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){   // 드로우 카드 + 행동력 0 카드가 손패를 계속 채우면 끝나지 않으므로 하루 사용 수를 자른다 (random과 같은 안전장치)
       if(playOne(E, c => isLongStock(E, c) && !held(stockOf(E, c).id), c => -betaOf(E, c))) continue;
       if(playOne(E, c => (c.base || c.id) === 'split', () => 0, ids => ids.slice().sort((a, b) => E.exposure(posById(E, b)) - E.exposure(posById(E, a)))[0])) continue;
       if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || ['antArmy', 'rotation', 'dividend', 'ipo', 'fullBuy'].indexOf(c.base || c.id) >= 0)) continue;
