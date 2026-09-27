@@ -46,7 +46,7 @@ const MARGIN_CALL_RATIO   = 0.25;  // 증거금률(포지션순자산 ÷ 노출�
 const MARGIN_WARN_RATIO   = 0.40;  // 이 아래부터 위험 표시
 /* (S7-14) 담보유지비율 반대매매 — 한국 신용거래 방식. 담보비율 = 포지션 평가액 ÷ 빌린 돈(롱) / (원금 + 공매도 대금) ÷ 갚을 주식 평가액(숏).
    유지비율 미만이면 반대매매 → 2x는 약 −30%, 3x는 약 −7% 하락에서 (레버리지가 높을수록 빨리 온다). 🛑 수치는 시뮬 보고 후 사용자 확정 — 그때까지 꺼 둔다 */
-const MAINTENANCE_MARGIN_ON     = false; // true = 담보유지비율 방식 / false = 기존 증거금률(MARGIN_CALL_RATIO) 방식
+const MAINTENANCE_MARGIN_ON     = true;  // true = 담보유지비율 방식 / false = 기존 증거금률(MARGIN_CALL_RATIO) 방식 — 2026-09-27 사용자 확정 (140%·130%)
 const MAINTENANCE_RATIO         = 1.4;   // 롱(신용): 담보비율 140% 미만 → 반대매매
 const SHORT_MAINTENANCE_RATIO   = 1.3;   // 숏(대차): 130% 미만 → 반대매매 (1x 숏 약 +54% 상승에서)
 const MAINT_WARN_HEALTH         = 1.15;  // 위험 표시: 담보비율 ÷ 유지비율이 이 아래
