@@ -1106,6 +1106,20 @@ body::after{
 .stat-caption{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--gold);text-align:left;margin-top:calc(12 * var(--u));}
 
 /* 결산 체인: 주간 결산 통과 때 유물·보너스가 포지션 손익을 불린 순서를 재생 (연출 전용) */
+.stage-mult{font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);color:var(--text);margin-left:auto;white-space:nowrap;}
+.stage-mult.f1{color:var(--gold);text-shadow:0 0 calc(4 * var(--u)) var(--gold2);}
+.stage-mult.f2{color:var(--cyan);text-shadow:0 0 calc(6 * var(--u)) var(--cyan);}
+.stage-mult.f3{color:var(--purple);text-shadow:0 0 calc(8 * var(--u)) var(--purple);animation:stageJitter .12s steps(2) infinite;}
+.stage-mult.f4{color:var(--gold);font-size:var(--fs-p3);text-shadow:0 0 calc(10 * var(--u)) var(--red),0 0 calc(18 * var(--u)) var(--gold);animation:stageJitter .08s steps(2) infinite;}
+@keyframes stageJitter{50%{transform:translate(calc(1 * var(--u)), calc(-1 * var(--u)));}}
+.overlay-box.stage-f3{box-shadow:0 0 0 calc(3 * var(--u)) var(--purple),0 0 calc(24 * var(--u)) var(--purple),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
+.overlay-box.stage-f4{box-shadow:0 0 0 calc(4 * var(--u)) var(--gold),0 0 calc(40 * var(--u)) var(--red),0 0 calc(80 * var(--u)) var(--gold2);}
+.stage-reel{display:inline-block;min-width:calc(46 * var(--u));text-align:center;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--bg);background:var(--gold);padding:calc(3 * var(--u)) calc(6 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
+.stage-reel.spin{animation:stageJitter .06s steps(2) infinite;}
+.stage-pay{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);margin-top:calc(6 * var(--u));}
+.stage-pay b{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);font-weight:normal;}
+@media (prefers-reduced-motion: reduce){.stage-mult.f3,.stage-mult.f4,.stage-reel.spin{animation:none;}}
+body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stage-reel.spin{animation:none;}
 .chain-list{display:flex;flex-direction:column;gap:calc(12 * var(--u));margin:calc(12 * var(--u)) 0;text-align:left;}
 .chain-row{position:relative;background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--line);padding:calc(9 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));animation:chainIn .24s steps(4) both;}
 .chain-row.playing{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
@@ -2557,7 +2571,12 @@ function onGameEvent(type, d){
     case 'allIn': toast(`🃏 몰빵: ${d.sold}개 정리 — ${d.pos.name} 오늘 정산 ×${d.sold + 1}`, 'warn'); break;
     case 'coinFlip': toast(d.win ? `🎲 모! ${d.pos.name} 오늘 정산 ×${COIN_FLIP_MULT}` : `🎲 도… ${d.pos.name} 가치 0 (원금 증발)`, d.win ? 'good' : 'bad'); break;
     case 'relisted': toast(`📈 재상장: ${d.pos.name} ${d.pos.lev}x 부활`, 'good'); break;
-    case 'daySettled':   // 장 마감 정산 (큰 연출은 S6 — 지금은 알림만)
+    case 'daySettled':   // 장 마감 정산 → 정산 무대 (S6). 무대를 안 여는 날(보정 없음·주 마지막 날·연출 끔)은 알림만
+      if(stageEligible(d)){
+        stageSources = new Set(d.settlement.reduce((a, r) => a.concat(r.sources.map(x => x.source)), []));   // 바로 뒤 relicTriggered(같은 틱) 건너뛰기
+        setTimeout(() => { stageSources = null; }, 0);
+        queueDayStage(d); break;
+      }
       if(Math.abs(d.payout) >= 0.5){
         const best = d.settlement.reduce((m, r) => r.payout > 0 ? Math.max(m, r.mult) : m, 1);
         toast(`💰 장 마감 정산 보너스 ${fmtSigned(d.payout)}` + (best > 1 ? ` (최고 ${fmtMult(best)})` : ''), d.payout > 0 ? 'good' : 'bad');
@@ -2653,6 +2672,7 @@ function onGameEvent(type, d){
       if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
       break;
     case 'relicTriggered':
+      if(stageSources && stageSources.has(d.id)) break;   // 오늘 정산 무대가 이 유물을 차례대로 보여준다 (따로 연출하면 중복)
       if(d.id === 'payday') toast(`🪙 월급날: +₩${formatKrw(d.amount)} (벌써 반은 카드값)`, 'good');
       if(d.id === 'parents') toast(`💌 부모님 카드 발동: +₩${formatKrw(d.amount)}. 이번이 진짜 마지막이란다.`, 'warn');
       if(RELIC_BIG_TRIGGER.indexOf(d.id) >= 0) enqueueRelicBig(d.id, `${RELIC_BY_ID[d.id].name} +₩${formatKrw(d.amount)}!`);
@@ -3452,6 +3472,185 @@ function showRunOver(reason){
   if(reason === 'VICTORY') cashRain();
 }
 
+/* ══ 장 마감 정산 무대 (S6, docs/design/JUICE_BIBLE.md §2) ══
+   엔진이 이미 확정한 run.lastDay(= daySettled 기록)를 재생만 한다 — 계산·rand·상태 변경 없음.
+   포지션 하나씩 → 유물·카드 단계가 왼쪽부터 차례로(더하기 "딩" / 곱하기 "슈욱—펑", 5음계로 한 칸씩 위) → 배수 불타기(×10·×100·×1,000·×10,000)
+   → 크리티컬 릴 → 정산금 카운트업 → 동전이 순자산으로 → 순자산 "쾅" → 저음 "둥" → '▶ 다음 날'.
+   세기는 이번 판 최고 정산 대비 비율(stageRatio), 작은 정산은 2배속 자동. 클릭·SPACE 한 번 = 빨리 감기, 두 번 = 결과로 */
+const JUICE_CONFIG = {
+  stageMs: { intro: 420, row: 300, step: 480, crit: 1100, count: 800, sum: 500, coins: 700, end: 420 },   // 1배속 기준 (ms)
+  countSteps: 10,                // 카운트업 칸 수
+  fireTiers: [[10000, 4], [1000, 3], [100, 2], [10, 1]],   // 누적 배수 → 불타기 단계
+  smallRatio: 0.25,              // 이번 판 최고 정산의 이 비율 미만이면 '작은 정산' → 자동 배속
+  smallSpeed: 2,                 // 작은 정산 배속
+  ffSpeed: 5,                    // 한 번 클릭 = 빨리 감기 배속
+  maxRows: 4,                    // 포지션이 많으면 정산금 절댓값 상위 이만큼만 재생 (나머지는 합계 한 줄)
+  pentatonic: [0, 2, 4, 7, 9],   // 장조 5음계 (반음) — 단계마다 한 칸씩 위
+  maxOctaves: 2,                 // 2옥타브를 넘으면 한 옥타브 내려 다시 (셰퍼드 톤 흉내)
+  coins: [6, 40],                // 동전 파티클 수 (최소, 최대 — 세기 비례)
+  nextGuardMs: 400,              // 결과가 뜬 뒤 이 시간 동안 '▶ 다음 날'·엔터 무시
+  fireShake: { 1: 0, 2: 1, 3: 2, 4: 3 },   // 불타기 단계별 흔들림
+  fireHitStop: 90                // ×10,000 도달 히트스톱 (ms)
+};
+let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
+let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
+let stageBest = { run: null, payout: 0 };   // 이번 판 최고 정산금 (세기 기준, UI 전용)
+const stageSteps = r => r.steps.slice(1);
+/* 무대를 여는 날: 보정 단계(유물·카드·크리티컬)가 붙은 포지션이 있고, 주 마지막 날이 아니며(주간 체인이 요약), 연출이 켜져 있을 때 */
+const stageEligible = d => settings.chainFx && d.day < DAYS_PER_ROUND && d.settlement.some(r => r.steps.length > 1 && Math.abs(r.payout) >= 0.5);
+function stageRatio(payout){   // (28) 세기 = 이번 판 최고 정산 대비 비율 (처음이면 1)
+  if(stageBest.run !== run) stageBest = { run, payout: 0 };
+  const best = stageBest.payout;
+  stageBest.payout = Math.max(best, Math.abs(payout));
+  return best > 0 ? Math.min(1, Math.abs(payout) / best) : 1;
+}
+const fireTier = m => { for(const [lim, t] of JUICE_CONFIG.fireTiers) if(m >= lim) return t; return 0; };
+function stagePitch(n){   // n번째 단계의 음높이 (5음계, maxOctaves 넘으면 한 옥타브 아래로 감아 올림)
+  const P = JUICE_CONFIG.pentatonic, oct = Math.floor(n / P.length) % (JUICE_CONFIG.maxOctaves + 1);
+  return Sound.semis(P[n % P.length] + 12 * oct);
+}
+const stageChipText = st => st.kind === 'add' ? `${st.label} +${fmtMoney(st.value)}` : st.kind === 'mult' ? `${st.label} +${(+st.value).toFixed(2)}` : `${st.label} ×${fmtMultNum(st.value)}`;
+const stageChipCls  = st => st.kind === 'add' ? 'add' : st.value < 1 ? 'cut' : '';
+const fmtMultNum    = v => v >= 1e6 ? (+v).toExponential(2) : v >= 100 ? Math.round(v).toLocaleString() : (+v).toFixed(v >= 10 ? 1 : 2);
+function queueDayStage(d){
+  const r = run;
+  setTimeout(() => whenFxIdle(() => { if(run === r && run.phase === 'premarket' && currentTab === 'play') playDayStage(d); }), 0);   // endOfDay가 끝나 다음 날 장전이 된 뒤
+}
+function playDayStage(d){
+  let rows = d.settlement.filter(r => Math.abs(r.payout) >= 0.5), rest = [];   // 보너스가 붙은 포지션만 (가격 손익만 있는 포지션은 이미 평가손익에 있다)
+  if(rows.length > JUICE_CONFIG.maxRows){
+    const sorted = rows.slice().sort((a, b) => Math.abs(b.payout) - Math.abs(a.payout));
+    rows = sorted.slice(0, JUICE_CONFIG.maxRows); rest = sorted.slice(JUICE_CONFIG.maxRows);
+  }
+  const ratio = stageRatio(d.payout), small = ratio < JUICE_CONFIG.smallRatio;
+  const restSum = rest.reduce((a, r) => a + r.payout, 0);
+  showOverlay(`
+    <div class="result-kicker">WEEK ${d.round} · DAY ${d.day} 장 마감</div>
+    <div class="ov-title" style="color:var(--gold)">장 마감 정산</div>
+    <div class="chain-list" id="stageList">
+      ${rows.map((r, i) => `<div class="chain-row pending" id="stageRow${i}">
+        <div class="chain-head"><span class="chain-name">${r.posName} <small>${posLabel(r)}</small></span><span class="stage-mult" id="stageMult${i}">×1</span></div>
+        <div class="chain-chips"></div>
+        <div class="stage-pay pending" id="stagePay${i}">정산 보너스 <b class="chain-total" id="stagePayV${i}"></b></div></div>`).join('')}
+      ${rest.length ? `<div class="chain-rest pending">▌ 외 포지션 ${rest.length}개 · 보너스 <span class="${signCls(restSum)}">${fmtSigned(restSum)}</span></div>` : ''}
+      <div class="chain-sum pending" id="stageSum">오늘 정산 보너스 <span class="${signCls(d.payout)}" id="stageSumV">${fmtSigned(0)}</span></div>
+    </div>
+    <div class="chain-skip" id="stageHint">클릭 · SPACE = 빨리 감기 · 두 번 = 결과로${small ? ' · 작은 정산 ×' + JUICE_CONFIG.smallSpeed : ''}</div>`);
+  const M = JUICE_CONFIG.stageMs, ev = [];
+  let t = M.intro, n = 0;
+  const on = (dt, fn, quiet) => ev.push({ t, fn, quiet });   // quiet = 결과로 점프할 때도 실행 (최종 상태를 만드는 것)
+  Music.duck('stage', 0.25);
+  Sound.play('dayEnd');
+  rows.forEach((r, i) => {
+    const row = () => $('stageRow' + i);
+    on(0, () => { document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); row().classList.remove('pending'); row().classList.add('playing'); }, true);
+    t += M.row;
+    on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip add">오늘 손익 <span class="${signCls(r.base)}">${fmtSigned(r.base)}</span></span>`); }, true);
+    on(0, () => Sound.play('countTick', { pitch: stagePitch(n) }));
+    t += M.row;
+    stageSteps(r).forEach(st => {
+      const k = n++;
+      const isCrit = st.source === 'crit';
+      if(isCrit){   // 크리티컬 릴: ×2·×3·×5를 돌다가 멈춘다
+        on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="stage-reel spin" id="stageReel${i}">×2</span>`); });
+        const spins = 8;
+        for(let q = 1; q < spins; q++){ const qq = q; ev.push({ t: t + M.crit * q / spins, fn: () => { const el = $('stageReel' + i); if(el) el.textContent = '×' + CRIT_TABLE[qq % CRIT_TABLE.length].mult; Sound.play('uiMove', { pitch: stagePitch(k + qq) }); } }); }
+        t += M.crit;
+        on(0, () => { const el = $('stageReel' + i); if(el){ el.classList.remove('spin'); el.textContent = '💥 ×' + st.value; } }, true);
+      } else {
+        on(0, () => row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip ${stageChipCls(st)}">${stageChipText(st)}</span>`), true);
+      }
+      on(0, () => {   // 누적 배수 갱신 + 불타기
+        const el = $('stageMult' + i), tier = fireTier(st.runningMult);
+        el.textContent = '×' + fmtMultNum(st.runningMult);
+        el.className = 'stage-mult' + (tier ? ' f' + tier : '');
+        const box = $('overlayBox');
+        box.classList.toggle('stage-f3', tier === 3); box.classList.toggle('stage-f4', tier === 4);
+      }, true);
+      on(0, () => {
+        const x = st.kind === 'xmult';
+        Sound.play(x ? 'settleMult' : 'settleAdd', { pitch: stagePitch(k), big: fireTier(st.runningMult) >= 1 });
+        const tier = fireTier(st.runningMult);
+        if(x) Fx.shake(Math.max(1, JUICE_CONFIG.fireShake[tier] || 0));
+        const el = $('stageMult' + i);
+        Fx.punch(el, 1, x ? 0.5 + 0.1 * tier : 0.25);
+        if(tier >= 2){ const rc = rectOf(el); if(rc) Fx.burst(rc.left + rc.width / 2, rc.top + rc.height / 2, 8 * tier, tier >= 3 ? ['--purple', '--gold', '--red'] : ['--cyan', '--gold']); }
+        if(tier >= 4) Fx.hitStop(JUICE_CONFIG.fireHitStop);
+      });
+      t += isCrit ? M.step / 2 : M.step;
+    });
+    // 정산 보너스 카운트업 (동전 소리가 빨라진다)
+    on(0, () => { $('stagePay' + i).classList.remove('pending'); }, true);
+    const steps = JUICE_CONFIG.countSteps, dur = M.count * (0.5 + ratio / 2);
+    for(let q = 1; q <= steps; q++){
+      const qq = q, v = r.payout * q / steps;
+      ev.push({ t: t + dur * (1 - Math.pow(1 - q / steps, 1.6)), fn: () => {
+        const el = $('stagePayV' + i); el.textContent = fmtSigned(v); el.className = 'chain-total ' + (r.payout >= 0 ? 'up' : 'down');
+        Sound.play('billFlip', { count: 2 + Math.round(qq / 3), pitch: Sound.semis(qq / 2) });
+      } });
+    }
+    t += dur;
+    on(0, () => { const el = $('stagePayV' + i); el.textContent = fmtSigned(r.payout); el.className = 'chain-total final ' + (r.payout >= 0 ? 'up' : 'down'); }, true);
+  });
+  on(0, () => { document.querySelectorAll('#stageList .pending').forEach(e => e.classList.remove('pending')); document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); }, true);
+  t += M.sum;
+  on(0, () => { $('stageSumV').textContent = fmtSigned(d.payout); }, true);
+  on(0, () => {   // 동전이 순자산으로 → "쾅"
+    const from = rectOf($('stageSum')), to = rectOf($('totalAssets'));
+    const C = JUICE_CONFIG.coins;
+    if(d.payout > 0 && from && to) Fx.coinsTo(from, to, Math.round(C[0] + (C[1] - C[0]) * ratio));
+    Sound.play(d.payout > 0 ? 'coinDrop' : 'sellLoss', { count: Math.round(3 + 6 * ratio) });
+  });
+  t += M.coins;
+  on(0, () => { Fx.punch($('totalAssets'), d.payout || 1, ratio); if(d.payout > 0) Sound.play('cashRegister', { volume: 0.5 + 0.5 * ratio }); });
+  t += M.end;
+  on(0, () => Sound.play('settleThud'));
+  ev.sort((a, b) => a.t - b.t);
+  stage = { run, d, rows, events: ev, idx: 0, vt: 0, speed: small ? JUICE_CONFIG.smallSpeed : 1, clicks: 0, raf: 0, last: performance.now(), hold: false, readyAt: 0, end: t };
+  stage.raf = requestAnimationFrame(stageFrame);
+}
+function stageFrame(now){
+  const s = stage;
+  if(!s || s.hold) return;
+  if(!$('stageList')){ stageClose(); return; }   // 다른 오버레이가 덮었으면 그만
+  s.vt += (now - s.last) * s.speed; s.last = now;
+  while(s.idx < s.events.length && s.events[s.idx].t <= s.vt) s.events[s.idx++].fn();
+  if(s.idx >= s.events.length){ stageHold(); return; }
+  s.raf = requestAnimationFrame(stageFrame);
+}
+function stageSkip(){   // 한 번 = 빨리 감기, 두 번 = 결과로 (소리·흔들림 없이 최종 상태만)
+  const s = stage;
+  if(!s || s.hold) return;
+  s.clicks++;
+  if(s.clicks === 1){ s.speed = Math.max(s.speed, JUICE_CONFIG.ffSpeed); return; }
+  while(s.idx < s.events.length){ const e = s.events[s.idx++]; if(e.quiet) e.fn(); }
+  Sound.play('settleThud');
+  stageHold();
+}
+function stageHold(){
+  const s = stage;
+  if(!s) return;
+  cancelAnimationFrame(s.raf);
+  s.hold = true;
+  s.readyAt = performance.now() + JUICE_CONFIG.nextGuardMs;
+  Music.unduck('stage');
+  const hint = $('stageHint'); if(hint) hint.remove();
+  if($('stageList')) $('overlayBox').insertAdjacentHTML('beforeend', '<button class="ov-btn chain-next" data-act="stageNext">▶ 다음 날</button>');
+}
+function stageNext(){
+  if(!stage || !stage.hold || performance.now() < stage.readyAt) return;
+  stageClose();
+  hideOverlay();
+  renderAll();
+}
+function stageClose(){
+  if(!stage) return;
+  cancelAnimationFrame(stage.raf);
+  $('overlayBox').classList.remove('stage-f3', 'stage-f4');
+  Music.unduck('stage');
+  stage = null;
+}
+
 /* 주간 결산 결과 → 보상 → 암시장 */
 function roundResultLine(w){
   if(w.bailout > 0) return '부모님 카드로 겨우 통과. 다음 주엔 기댈 곳이 없습니다.';
@@ -4124,6 +4323,7 @@ function applySettings(){
   Music.setEnabled(settings.sound && settings.bgm);   // 사운드를 끄면 배경음악도 꺼진다
   Music.setVolume(settings.bgmVol / 100);
   Fx.setOptions({ motion: settings.shake, hitStop: settings.hitStop });
+  document.body.classList.toggle('no-motion', !settings.shake);   // 흔들림 끔 → 정산 무대 숫자 떨림도 끔 (숫자·소리는 그대로)
   Fx.setSpeed(settings.fxSpeed);   // 흔들림을 끄면 글리치·히트스톱도 꺼진다
   document.documentElement.dataset.font = settings.fontSize;   // 글자 크기: --fs-* 한 단계 위 (CSS html[data-font="large"])
   layoutUi();
@@ -4438,6 +4638,8 @@ document.addEventListener('click', e => { if(e.target.closest('button') && !e.ta
 
 document.addEventListener('keydown', e => {
   if(Fx.queueLength && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); Fx.skipQueue(); return; }   // 연쇄 연출 스킵
+  if(stage && !stage.hold && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); stageSkip(); return; }
+  if(stage && stage.hold && (e.key === 'Enter' || e.code === 'Space' || e.key === ' ')){ e.preventDefault(); if(e.key === 'Enter') stageNext(); return; }
   if(chainPlay && (e.code === 'Space' || e.key === ' ')){ e.preventDefault(); skipSettlementChain(); return; }
   if(chainHold && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); if(e.key === 'Enter') chainNext(); return; }   // 스페이스는 결과를 넘기지 않는다
   if((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && relicTipId && currentTab === 'play' && !overlayOpen && run && canArrangeRelics()){   // 선택한 유물 칸 옮기기
@@ -4456,6 +4658,8 @@ document.addEventListener('keydown', e => {
 });
 
 $('overlay').addEventListener('click', e => {
+  if(stage && !stage.hold){ stageSkip(); return; }
+  if(stage && stage.hold){ if(e.target.closest('[data-act="stageNext"]')) stageNext(); return; }   // 결과 화면에선 '▶ 다음 날'만
   if(chainPlay){ skipSettlementChain(); return; }
   if(chainHold){ if(e.target.closest('[data-act="chainNext"]')) chainNext(); return; }   // 결과 화면에선 '▶ 다음'만
   if(performance.now() - chainSkippedAt < CHAIN_SKIP_GUARD_MS) return;
