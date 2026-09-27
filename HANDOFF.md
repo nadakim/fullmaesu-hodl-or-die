@@ -1,7 +1,16 @@
 # Session Handoff
 
-**Date:** 2026-09-26
-**Branch:** `claude/affectionate-mendel-w5hwvt` → 이 세션 끝에 PR로 `main`에 머지함. 다음 세션은 **최신 `main`에서 새 브랜치**로 시작.
+**Date:** 2026-09-27
+**Branch:** `claude/handoff-review-status-lw9aio` (MASTER_PLAN S0 — 세션 지정 브랜치라 계획서의 `claude/s0-housekeeping` 대신 사용) → PR 올림, 사용자 승인 대기.
+
+## 지금 진행 방식 (2026-09-27~)
+
+`docs/design/MASTER_PLAN.md` §5대로 S0부터 단계별 진행. **한 단계 = 한 PR, 끝나면 멈추고 요약.** 🛑 결정 지점은 질문으로 정리해 묻는다.
+사용자 지시: **S11에서는 (42) 중간 저장만** 하고 (43) 웹 데모 패키징·(45) 릴리스 문서는 하지 않는다.
+
+- S0 완료: (44) 로드맵 문구를 Electron 포장·스팀 출시로 (CLAUDE.md·README·DEVELOPMENT_LOG, Vite 안 함)
+- S0 결정: D1 게임 이름 = **BULL TRAP** (`GAME_TITLE.en`, 한국어 '풀매수 기원단' 유지), D2 Open Questions 1~4 = 전부 뒤 단계 이후 재측정 (Q1·Q2 → S3 후, Q3 → S2 후, Q4 → S1 예상 정산으로 대체 검토)
+- 다음: S1 정산 스코어링 엔진 (`claude/s1-settlement-engine`)
 
 ## Summary
 
@@ -38,7 +47,7 @@
 
 엔진 전략 성적(`sim/runner.js`, 전략당 500판, 8주 클리어): allIn3x 15.0% · inverseHedge 25.6% · shortSeller 21.6% · manipSpam 30.8% · gukbapDefense 17.8% · signalFollower 29.4% · random 28.4% · growthFirst 26.4% · deckThinner 26.6% · **nothing 7.0%**
 
-## Open Questions (사용자 답 대기 — 다음 세션에서 먼저 물어볼 것)
+## Open Questions (사용자 결정: 뒤 단계 구조 변경 후 재측정 — Q1·Q2 S3 후, Q3 S2 후, Q4 S1 후)
 
 1. **얇은 덱 무한 루프**: 덱 6~11장이면 보조지표 + 배당주 마인드로 현금 무한. 제안: 보조지표 소멸·하루 드로우 상한 / `MIN_DECK_SIZE` 10 / 제거 누진 2.0 — 선택 대기
 2. **`SHOP_SINGLE_LIMIT`(주당 낱장 구매 한도)**: 지운 상태 — 되살릴지

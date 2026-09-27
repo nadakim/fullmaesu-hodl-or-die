@@ -5,7 +5,7 @@
 <title></title>
 <script>
 /* 게임 이름·메타 — 이름이 나오는 곳(탭 제목·타이틀 로고·전광판 등)은 전부 여기를 읽는다. 이름을 바꿀 땐 이 값만 */
-const GAME_TITLE = { ko: '풀매수 기원단', en: 'HODL or Die', sub: '' };
+const GAME_TITLE = { ko: '풀매수 기원단', en: 'BULL TRAP', sub: '' };
 const GAME_META  = {
   version: 'Version 0.1 (DEMO)',
   author: '',                       // 제작자명 — 빈 문자열이면 타이틀의 'GAME BY' 줄을 숨긴다

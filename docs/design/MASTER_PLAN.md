@@ -309,9 +309,9 @@ S1 → S2 → S3 → S4는 **반드시 이 순서** (앞 단계가 뒤 단계의
 - [x] 새 타이틀 화면
 
 ### S0 정리
-- [ ] 44 CLAUDE.md·README 로드맵 수정 (Electron, Vite 안 함)
-- [ ] 41 게임 이름 (D1)
-- [ ] Open Q 1~4 재질문 (D2)
+- [x] 44 CLAUDE.md·README 로드맵 수정 (Electron, Vite 안 함)
+- [x] 41 게임 이름 (D1) → BULL TRAP
+- [x] Open Q 1~4 재질문 (D2) → 전부 뒤 단계 이후 재측정 (Q1·Q2 S3 후, Q3 S2 후, Q4 S1 예상 정산으로 대체 검토)
 
 ### S1 정산 스코어링
 - [ ] 1 `settleDay` 정산 엔진 + 기존 유물 보정 이관
