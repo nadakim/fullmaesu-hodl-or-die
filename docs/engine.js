@@ -278,8 +278,18 @@ const STOCKS = [
   { id:'gukbap', name:'국밥제약',   sector:'방어주',   cost:800,  beta: 0.4, volatility:0.01,  basePrice:8500,  rarity:'common' },
   { id:'meme',   name:'밈코인',     sector:'동전주',   cost:300,  beta: 5.0, volatility:0.20,  basePrice:420,   rarity:'common' },
   { id:'inv',    name:'지수 인버스', sector:'인버스',  cost:800,  beta:-1.0, volatility:0.004, basePrice:5000,  rarity:'common' },
-  { id:'inv2',   name:'곱버스',     sector:'인버스',   cost:600,  beta:-2.0, volatility:0.008, basePrice:3000,  rarity:'common' }
+  { id:'inv2',   name:'곱버스',     sector:'인버스',   cost:600,  beta:-2.0, volatility:0.008, basePrice:3000,  rarity:'common' },
+  // S7 추가 (D10 사용자 선택 — 실존 기업·티커를 흉내 내지 않은 '업종 + 밈' 이름)
+  { id:'ev',     name:'전기차모터스', sector:'전기차', cost:1200, beta: 1.8, volatility:0.05,  basePrice:38000, rarity:'common' },
+  { id:'bio',    name:'떡상바이오', sector:'바이오',   cost:700,  beta: 1.5, volatility:0.07,  basePrice:21000, rarity:'common' },
+  { id:'build',  name:'존버건설',   sector:'건설',     cost:900,  beta: 0.7, volatility:0.02,  basePrice:15000, rarity:'common' },
+  { id:'game',   name:'치킨게임즈', sector:'게임',     cost:600,  beta: 1.2, volatility:0.04,  basePrice:26000, rarity:'common' },
+  // (S7-19) 초고변동 작전주: 하루 ±30% 상·하한가(PRICE_LIMIT)까지 튄다
+  { id:'delist', name:'상폐직전테크', sector:'작전주', cost:200, beta: 2.0, volatility:0.28,  basePrice:900,   rarity:'common', limit:true },
+  { id:'ailab',  name:'급등AI랩',   sector:'작전주',   cost:400,  beta: 3.0, volatility:0.25,  basePrice:3300,  rarity:'common', limit:true }
 ];
+const PRICE_LIMIT  = 0.30;   // (S7-19) limit 종목의 하루 가격 제한폭 ±30% (전일 종가 기준 — 상한가·하한가)
+const DAILY_KEEP   = 40;     // (S7-15) 일봉 기록 개수 (큰 차트 '일봉' 탭)
 const STOCK_BY_ID = {};
 STOCKS.forEach(s => { STOCK_BY_ID[s.id] = s; });
 
@@ -304,7 +314,7 @@ const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목�
 const RELIC_COLD_WALLET_RATIO    = 0.20;  // 콜드월렛: 코인 종목 반대매매 기준 (기본 25%)
 const RELIC_COLD_WALLET_MAINT_CUT = 0.15;  //   담보유지비율 방식이면 유지비율 −15%p (140% → 125%)
 const RELIC_COLD_WALLET_STOCKS   = ['coin', 'meme'];
-const RELIC_THEME_SECTORS        = ['테마주', '동전주'];   // 테마주 헌터 적용 섹터
+const RELIC_THEME_SECTORS        = ['테마주', '동전주', '작전주'];   // 테마주 헌터 적용 섹터
 const RELIC_THEME_BONUS          = 0.15;  // 테마주 헌터: 평가이익 +15%
 const RELIC_COMMUNITY_BONUS      = 0.10;  // 개미 커뮤니티: 찌라시 A 선택의 대박 확률 +10%p
 const RELIC_DAYTRADER_CUT        = 1;     // 단타의 신: 하루 첫 매도 카드 행동력 −1
@@ -567,7 +577,7 @@ const TAGS = {
 };
 const TAG_BIAS = 0.3;
 const CARD_TAGS = {
-  stk_inv:['short'], stk_inv2:['short'],
+  stk_inv:['short'], stk_inv2:['short'], stk_delist:['manip'], stk_ailab:['manip'],
   credit:['lev'], yolo:['lev'], short:['short'], avgDown:['hodl'], ipo:['spread'], fullBuy:['spread'], chaseLimit:['scalp'], antArmy:['spread'],
   stopLoss:['scalp'], takeProfit:['scalp'], trailing:['scalp'], cutLoss:['scalp'], takeWin:['scalp'], escape:['scalp'], splitSell:['scalp'], topSpotter:['scalp'],
   hodl:['lev', 'hodl'], diamond:['hodl'], forcedLong:['hodl'], dividend:['spread'], forgotPw:['lev'], hodlWins:['hodl'], compound:['hodl'], valueGod:['hodl'],
@@ -599,6 +609,8 @@ let marketState = 'NORMAL';
 ══════════════════════════════════════════════════════════ */
 const MAX_CANDLES = 22;
 let candleData = [];
+/* (S7-15) 하루 차트: 오늘 장 캔들만(개장 때 비움) · 전일 종가 · 일봉 기록 — 표시용 (난수·판정에 쓰지 않는다) */
+let idxDay = { prevClose: 0, candles: [], daily: [] };
 
 function initChartData(){
   candleData = [];
@@ -629,6 +641,7 @@ function pushNewCandle(extraDrift = 0){
   const newCandle = generateNextCandle(lastClose, extraDrift);
   marketPrice = newCandle.close;
   candleData.push(newCandle);
+  idxDay.candles.push(newCandle);
   if(candleData.length > MAX_CANDLES) candleData.shift();
   return Math.log(newCandle.close / lastClose); // 지수 로그수익률 → 개별 종목에 전달
 }
@@ -697,11 +710,43 @@ function initAssets(){
   assets = {};
   STOCKS.forEach(s => {
     assets[s.id] = { price: s.basePrice, dayOpen: s.basePrice, lastDayChg: 0, history: Array(ASSET_HISTORY).fill(s.basePrice), candles: [],
+                     dayCandles: [], daily: [], limitHit: 0,   // (S7) 오늘 캔들 · 일봉 · 오늘 상·하한가(+1/−1/0)
                      regime: '', regimeDays: 0 };   // 숨은 추세 (인버스는 '' = 지수를 따른다). initRegimes에서 정한다
   });
   // 시작 시 차트가 비어 보이지 않도록 과거 시세를 미리 만들어 둔다
   for(let i = 0; i < ASSET_HISTORY; i++) updateAssetPrices(gauss() * 0.01, {});
-  STOCKS.forEach(s => { assets[s.id].dayOpen = assets[s.id].price; });
+  STOCKS.forEach(s => { const a = assets[s.id]; a.dayOpen = a.price; a.dayCandles = a.candles.slice(-TICKS_PER_DAY); });
+}
+/* 판 시작: 지수 하루 차트도 과거 캔들 마지막 하루치로 채워 둔다 (첫 장전에 빈 차트가 안 보이게) */
+function initDayCharts(){
+  idxDay = { prevClose: candleData.length ? candleData[0].open : marketPrice, candles: candleData.slice(-TICKS_PER_DAY), daily: [] };
+  STOCKS.forEach(s => { const a = assets[s.id]; a.prevClose = a.dayCandles.length ? a.dayCandles[0].open : a.price; });
+}
+/* 개장: 오늘 캔들을 비우고 전일 종가를 기억한다 */
+function openDayCharts(){
+  idxDay.prevClose = marketPrice; idxDay.candles = [];
+  STOCKS.forEach(s => { const a = assets[s.id]; a.prevClose = a.price; a.dayCandles = []; a.limitHit = 0; });
+}
+/* 장 마감: 오늘 하루를 일봉 하나로 */
+function closeDayCharts(){
+  const toDaily = (open, cs, close) => ({ open, close, high: Math.max(open, close, ...cs.map(c => c.high)), low: Math.min(open, close, ...cs.map(c => c.low)), gap: 0 });
+  idxDay.daily.push(toDaily(idxDay.prevClose, idxDay.candles, marketPrice));
+  if(idxDay.daily.length > DAILY_KEEP) idxDay.daily.shift();
+  STOCKS.forEach(s => { const a = assets[s.id]; a.daily.push(toDaily(a.prevClose, a.dayCandles, a.price)); if(a.daily.length > DAILY_KEEP) a.daily.shift(); });
+}
+/* (S7-19) 상·하한가: limit 종목은 전일 종가(dayOpen) ±PRICE_LIMIT를 넘지 못한다. 처음 닿으면 emit('priceLimit') */
+function applyPriceLimits(){
+  STOCKS.forEach(s => {
+    if(!s.limit) return;
+    const a = assets[s.id], hi = a.dayOpen * (1 + PRICE_LIMIT), lo = a.dayOpen * (1 - PRICE_LIMIT);
+    const dir = a.price >= hi ? 1 : a.price <= lo ? -1 : 0;
+    if(!dir){ a.limitHit = 0; return; }   // 제한폭 안으로 돌아오면 표시도 끈다
+    a.price = dir > 0 ? hi : lo;
+    const c = a.candles[a.candles.length - 1];
+    if(c){ c.close = a.price; c.high = Math.min(c.high, hi); c.low = Math.max(c.low, lo); }
+    a.history[a.history.length - 1] = a.price;
+    if(a.limitHit !== dir){ a.limitHit = dir; emit('priceLimit', { stockId: s.id, dir }); }
+  });
 }
 
 /* 종목 수익률 = 지수 수익률 × beta × 전달비율 + 고유 변동 × 뉴스 변동 배수 + 작전 드리프트(찌라시) + 추세·뉴스 드리프트
@@ -720,12 +765,14 @@ function updateAssetPrices(idxLogRet, pumps, live){
     const open = a.price;
     a.price *= Math.exp(r);
     const wick = move * s.volatility * IDIO_SCALE * nf.volMult * CANDLE_WICK_SCALE;
-    a.candles.push({
+    const cd = {
       open, close: a.price,
       high: Math.max(open, a.price) * (1 + Math.abs(gauss()) * wick),
       low:  Math.min(open, a.price) * (1 - Math.abs(gauss()) * wick),
       gap: 0
-    });
+    };
+    a.candles.push(cd);
+    if(live) a.dayCandles.push(cd);
     if(a.candles.length > MAX_CANDLES) a.candles.shift();
     a.history.push(a.price);
     if(a.history.length > ASSET_HISTORY) a.history.shift();
@@ -1831,6 +1878,7 @@ function startNewRun(){
   marketPrice = 1000;
   initChartData();
   initAssets();
+  initDayCharts();
   run = newRun();
   initRegimes();
   run.newsTomorrow = pickNews();
@@ -1892,9 +1940,11 @@ function startMarket(){
     run.newsResolved = true;
     emit('newsResolved', {id: n.id, active: run.newsActive});
   }
+  openDayCharts();
   const gaps = run.gapNext;                         // 작전 세력 이탈: 개장 직후 갭
   run.gapNext = [];
   gaps.forEach(g => { shockStock(g.stockId, g.pct); emit('gapOpen', {stockId: g.stockId, pct: g.pct}); });
+  applyPriceLimits();
   if(run.forcedState){
     marketState = run.forcedState;
     run.eventTicksLeft = 0;
@@ -2166,7 +2216,9 @@ function rollGaps(){
 function shockStock(stockId, pct){
   const a = assets[stockId], open = a.price;
   a.price *= 1 + pct;
-  a.candles.push({ open, close: a.price, high: Math.max(open, a.price), low: Math.min(open, a.price), gap: 0 });
+  const cd = { open, close: a.price, high: Math.max(open, a.price), low: Math.min(open, a.price), gap: 0 };
+  a.candles.push(cd);
+  a.dayCandles.push(cd);
   if(a.candles.length > MAX_CANDLES) a.candles.shift();
   a.history.push(a.price);
   if(a.history.length > ASSET_HISTORY) a.history.shift();
@@ -2236,6 +2288,7 @@ function tick(){
   if(run.revertTicksLeft > 0){ revert = run.revertDir * REVERSION_DRIFT; run.revertTicksLeft--; }   // 차익실현 매물
   updateAssetPrices(pushNewCandle(revert), run.pumps, true);
   rollGaps();   // 반대매매·예약주문은 갭 이후 가격으로 체결
+  applyPriceLimits();
   updateMarketEvent();
   checkOrders();
   checkMarginCalls();
@@ -2267,6 +2320,7 @@ function endOfDay(){
     run.revertTicksLeft = REVERSION_TICKS;
   }
   if(run.forcedState){ marketState = 'NORMAL'; emit('eventEnd'); }
+  closeDayCharts();
   STOCKS.forEach(s => { const a = assets[s.id]; a.lastDayChg = a.price / a.dayOpen - 1; a.dayOpen = a.price; });
   resolveSignals();   // 오늘 시그널 채점 → 추세 전이 → 내일 뉴스 예고
   nextRegimes();
