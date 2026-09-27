@@ -42,6 +42,11 @@
    | rareDraw    | 장전 드로우: 희귀 이상 카드 (opts.rarity)                   | 맑은 종 1음 (등급이 높을수록 높게)      |
    | drumRoll    | 장 시작 카운트다운 3·2·1 (opts.last = 마지막 박)            | 스네어 연타 "두르르" / 마지막은 탕       |
    | heartbeat   | 장중 반대매매 위험 (증거금 건강도가 낮을수록 자주)          | 저음 "쿵-쿵"                           |
+   | comboUp     | 수익 콤보 +1 (opts.pitch = 5음계 한 칸씩 위, 셰퍼드 톤 감아 올림)  | 짧은 "띵"                               |
+   | comboBreak  | 수익 콤보 끊김 ('최대 ×N')                                 | 내려가는 "뚜둥"                          |
+   | multSlam    | 수익 콤보 단계 오름 (3·5·8)                               | "쾅" + 반짝                             |
+   | jackpot     | 수익 콤보 12+ JACKPOT                                     | 슬롯머신 잭팟 팡파르                     |
+   | coin        | 동전 한 닢 (파일 교체용 기본음)                            | "짤랑"                                  |
    | shopPad     | 암시장 입장: 긴 리버브 몽환 패드 (Am9 화음, 느린 어택)      | "우우웅~" 물속 화음                      |
    | shopHover   | 암시장 카드·팩·유물에 마우스를 올릴 때                     | 떨리며 올라가는 "띠잉~"                  |
    | packShake   | 팩 개봉: 공중에서 흔들림                                   | 달그락달그락                            |
@@ -239,6 +244,10 @@ const Sound = (() => {
     coinDrop(b, t, p, o){   // 동전 "짤랑": 고음 3개를 몇 ms씩 어긋나게, 짧은 감쇠. count번 무작위 간격으로
       const n = o.count || 5;
       let x = t;
+      if(buffers.coin){   // (S8-34) coin 파일이 있으면 그 한 닢을 count번, 한 닢마다 반음씩 위로 (playbackRate)
+        for(let i = 0; i < n; i++){ playBuffer(b, x, p * Math.pow(2, i / 12), buffers.coin); x += 0.05 + Math.random() * 0.11; }
+        return x - t + buffers.coin.duration;
+      }
       for(let i = 0; i < n; i++){
         const f = (2400 + Math.random() * 900) * p, v = 0.05 + Math.random() * 0.03;
         tone(b, 'square', f, x, 0.09, v);
@@ -260,6 +269,33 @@ const Sound = (() => {
       bell(b, 100, t + 0.13, 0.9, 0.22, p);
       bell(b, 107, t + 0.13, 0.5, 0.08, p);
       return 1.05;
+    },
+    comboUp(b, t, p){   // 수익 콤보 +1: 짧고 밝은 "띵" (음높이는 호출 측 5음계)
+      tone(b, 'square', midi(76) * p, t, 0.05, 0.07);
+      tone(b, 'triangle', midi(88) * p, t + 0.01, 0.16, 0.1);
+      return 0.17;
+    },
+    comboBreak(b, t, p){   // 끊김: 두 음이 내려가며 식는다
+      tone(b, 'triangle', midi(72) * p, t, 0.12, 0.14, { f1: midi(67) * p });
+      tone(b, 'triangle', midi(64) * p, t + 0.13, 0.3, 0.14, { f1: midi(55) * p });
+      return 0.45;
+    },
+    multSlam(b, t, p){   // 단계 오름: 저음 쾅 + 금속성 반짝
+      thud(b, t, 0.5);
+      noise(b, t, 0.2, 0.25, 'highpass', 5000, 0, 0.7);
+      bell(b, 91, t + 0.04, 0.5, 0.1, p);
+      return 0.55;
+    },
+    jackpot(b, t, p){   // JACKPOT: 딩딩딩 올라가는 팡파르 + 동전 비
+      const d = seq(b, 'square', [72, 76, 79, 84, 88, 91, 96], t, 0.06, 0.08, 0.1, p);
+      for(let i = 0; i < 10; i++) tone(b, 'square', midi(96 + (i % 3) * 4) * p, t + d * 0.6 + i * 0.045, 0.04, 0.05);
+      bell(b, 96, t + d, 1, 0.12, p);
+      return d + 1;
+    },
+    coin(b, t, p){   // 동전 한 닢 "짤랑" (coinDrop보다 짧은 기본음 — 파일 교체용 이름)
+      tone(b, 'square', midi(88) * p, t, 0.04, 0.06);
+      tone(b, 'square', midi(95) * p, t + 0.045, 0.12, 0.06);
+      return 0.17;
     },
     shopPad(b, t, p){   // 암시장 몽환 패드: 살짝 어긋난 두 겹 사인·삼각파 화음 + 피드백 딜레이(리버브 흉내)
       const wet = ctx.createGain(), dl = ctx.createDelay(1), fb = ctx.createGain(), lp = filter(wet, 'lowpass', 1400);

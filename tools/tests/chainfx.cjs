@@ -59,16 +59,17 @@ const FIND = `(want) => {
     ok(W + ' 스페이스 스킵 → 큐 즉시 비움, 경보·깜빡임 제거, 시장 재개', sk.q === 0 && !sk.busy && !sk.alert && !sk.blink && tick1 > tick0, { sk, tick0, tick1 });
 
     if(W === 1920){
-      // 2) 갭 → 반대매매 같은 틱: CHAIN ×2
+      // 2) 갭 → 반대매매 같은 틱: 연쇄 2번째 (S8-46부터 'CHAIN ×n' 표시는 끄고 수는 음높이용으로만 센다)
       const gl = await page.evaluate(`(${FIND})('gap+liq')`);
       await sleep(80);
       const kinds = await page.evaluate(() => Fx.pending().map(i => i.kind));
       let chainTxt = '', t0 = Date.now();
-      while(Date.now() - t0 < 5000){ chainTxt = await page.evaluate(() => { const c = document.querySelector('.fx-chainctr'); return c.classList.contains('on') ? c.textContent : ''; }); if(chainTxt) break; await sleep(50); }
+      let chainShown = false;
+      while(Date.now() - t0 < 5000){ const c = await page.evaluate(() => [Fx.chain, document.querySelector('.fx-chainctr').classList.contains('on')]); chainShown = chainShown || c[1]; if(c[0] >= 2){ chainTxt = 'chain ' + c[0]; break; } await sleep(50); }
       await sleep(250);
       await page.screenshot({ path: `${S}/gap-chain2-${W}.png` });
       const stampTxt = await page.evaluate(() => (document.querySelector('.fx-stamp') || {}).textContent);
-      ok('갭 → 반대매매 같은 틱: 큐에 순서대로, CHAIN ×2', gl && chainTxt === 'CHAIN ×2', { seed: gl && gl.seed, ev: gl && gl.ev, pending: kinds, chainTxt, stampTxt });
+      ok('갭 → 반대매매 같은 틱: 큐에 순서대로 연쇄 2번째 (CHAIN 표시 없음 — 콤보 숫자 하나만)', gl && chainTxt === 'chain 2' && !chainShown, { seed: gl && gl.seed, ev: gl && gl.ev, pending: kinds, chainTxt, chainShown, stampTxt });
       await sleep(1600);
       const trauma = await page.evaluate(() => [...document.querySelectorAll('.fx-chip')].map(e => e.textContent));
       await page.keyboard.press('Space'); await sleep(200);
@@ -113,13 +114,13 @@ const FIND = `(want) => {
         const ms = Math.round(performance.now() - t0); settings.fxSpeed = 'normal'; applySettings(); return { cls, busy, ms }; });
       ok("속도 '최소': 강 갭도 약 경보(시장 안 멈춤), 경보+유물 2개가 1.6초 안에 끝", /t1/.test(mn.cls) && !mn.busy && mn.ms < 1600, mn);
 
-      // 6) 장중 콤보 ×5 → 끊김
+      // 6) 수익 콤보 ×6 (5~7 단계 금색) → 끊기면 '최대 ×6' → 하락 콤보 ×5 (S8-46)
       const sk5 = await page.evaluate(() => { Fx.skipQueue(); startRun(); openPosition('semi', 1000, 1, 1, true); startMarket(); renderAll(); updateCombo();
         const out = []; for(let k = 0; k < 6; k++){ assets.semi.price *= 1.01; updateCombo(); out.push($('fxStreak').textContent); }
-        const before = $('fxStreak').className; assets.semi.price *= 0.97; updateCombo(); const broke = $('fxStreak').className;
+        const before = $('fxStreak').className; assets.semi.price *= 0.97; updateCombo(); const broke = [$('fxStreak').className, $('fxStreak').textContent];
         for(let k = 0; k < 4; k++){ assets.semi.price *= 0.99; updateCombo(); }
         return { out, before, broke, down: $('fxStreak').textContent, vig: $('fxVignette').style.opacity }; });
-      ok('상승 콤보 ×5 (금색) → 끊기면 부서짐 → 하락 콤보 ×5 + 가장자리 어두워짐', /×6/.test(sk5.out[5]) && /u2/.test(sk5.before) && /broken/.test(sk5.broke) && /하락 콤보 ×5/.test(sk5.down) && +sk5.vig > 0, sk5);
+      ok('수익 콤보 ×6 (금색 c3) → 끊기면 최대 ×6 → 하락 콤보 ×5 + 가장자리 어두워짐', sk5.out[5] === 'COMBO ×6' && /c3/.test(sk5.before) && /cool/.test(sk5.broke[0]) && sk5.broke[1] === '최대 ×6' && /하락 콤보 ×5/.test(sk5.down) && +sk5.vig > 0, sk5);
       await page.screenshot({ path: `${S}/streak-${W}.png` });
 
       // 7) 풀매수: 종목마다 buy 효과음이 순서대로 반음씩
@@ -127,11 +128,11 @@ const FIND = `(want) => {
         __sfx.length = 0; playCardFx(0, null); await new Promise(r => setTimeout(r, 500)); return __sfx.filter(x => x[0] === 'buy').map(x => [x[1], x[2]]); });
       ok('풀매수 3종목 → buy 효과음 3번, 반음씩 상승 · 순차', fb.length === 3 && fb[1][0] === 1 && fb[2][0] === 2 && fb[2][1] - fb[0][1] >= 180, fb);
 
-      // 8) 카드 연쇄: 2장째 잔상, 3장째 COMBO
+      // 8) 카드 연쇄: 2장째 잔상, 3장째 '3연속' (COMBO는 수익 콤보 전용)
       const cc = await page.evaluate(async () => { Fx.skipQueue(); startRun(); run.cash += 9000; run.hand = ['stk_semi', 'stk_gukbap', 'stk_coin'].map(newCard); run.ap = 3; handSig = ''; renderAll();
         const res = []; for(let k = 0; k < 3; k++){ playCardFx(0, null); await new Promise(r => setTimeout(r, 70)); res.push(document.querySelectorAll('.fx-afterimage').length); }
         return { after: res, combo: [...document.querySelectorAll('.fx-chip')].map(e => e.textContent) }; });
-      ok('카드 연쇄: 1장째 잔상 0, 2장째부터 잔상, 3장째 COMBO ×3', cc.after[0] === 0 && cc.after[1] > 0 && cc.combo.includes('COMBO ×3'), cc);
+      ok('카드 연쇄: 1장째 잔상 0, 2장째부터 잔상, 3장째 3연속', cc.after[0] === 0 && cc.after[1] > 0 && cc.combo.includes('3연속'), cc);
 
       // 9) 마일스톤: 2배 달성 (tier 3)
       const ms2 = await page.evaluate(async () => { Fx.skipQueue(); startRun(); renderAll(); run.cash += START_CASH; renderAll(); await new Promise(r => setTimeout(r, 20));

@@ -294,6 +294,8 @@ const Fx = (() => {
   /* ── 연출 큐: enqueue({ kind, tier 1~4, blocking, duration(ms), play(ctx), stop(), skip() }) ──
      한 틱에 몰린 이벤트를 발생 순서대로 하나씩. 두 번째부터 'CHAIN ×n'. blocking 항목이 남아 있는 동안 시장 정지(busy)
      + 투명 차단막(클릭 = 스킵). 스킵하면 남은 항목을 전부 버리고 각 항목의 skip()으로 최종 상태만 남긴다. */
+  let chainCounterOn = true;   // false = 'CHAIN ×n' 표시를 끈다 (수는 그대로 센다 — 효과음 음높이용). 수익 콤보가 숫자를 대신 보여준다
+  const setChainCounter = on => { chainCounterOn = !!on; };
   let queue = [], playing = null, chainN = 0, qTimer = null, gapTimer = null, startTimer = null, speed = 'normal', blocker = null, chainEl = null;
   const onSkipHooks = [];
   function setSpeed(v){ speed = FX_QUEUE_SPEED[v] ? v : 'normal'; }
@@ -338,7 +340,7 @@ const Fx = (() => {
   }
   function showChain(n){
     ensureBlocker();
-    if(n < 2){ chainEl.classList.remove('on'); return; }
+    if(n < 2 || !chainCounterOn){ chainEl.classList.remove('on'); return; }
     chainEl.textContent = 'CHAIN ×' + n;
     chainEl.style.setProperty('--chain-scale', String(Math.min(2, 1 + (n - 2) * 0.18)));
     chainEl.classList.remove('on'); void chainEl.offsetWidth; chainEl.classList.add('on');
@@ -355,7 +357,7 @@ const Fx = (() => {
   }
   const onSkip = fn => onSkipHooks.push(fn);
 
-  return { setOptions, setUiScale, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, streak, chip,
+  return { setOptions, setUiScale, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
            get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, billRain, shatter, sparks, burst,
