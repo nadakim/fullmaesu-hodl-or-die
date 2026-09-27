@@ -24,15 +24,17 @@ async function setupWeek(page, opt){
     endOfDay();   // 5일째 장 마감 → 주간 결산 (엔진 그대로)
     renderAll();
     const w = run.lastWeek;
-    return { phase: run.phase, before, w: { eq: w.eq, unrealized: w.unrealized, diamondBonus: w.diamondBonus, target: w.target },
+    return { phase: run.phase, before, w: { eq: w.eq, unrealized: w.unrealized, diamondBonus: w.diamondBonus, target: w.target, settled: w.settled },
              chain: w.settlementChain.map(c => ({ name: c.posName, steps: c.steps.map(s => s.label + ':' + s.kind + ':' + s.value.toFixed(3)), finalPnl: c.finalPnl })),
              netEq: netEquity(), cash: run.cash, realized: run.realized };
   }, opt);
 }
 // 결산 결과에서 멈춘 뒤 '▶ 다음' (0.5초 가드 뒤)
 const passNext = async page => { for(let i = 0; i < 60 && !(await page.evaluate(() => !!chainHold)); i++) await sleep(100); await sleep(560); await page.locator('[data-act="chainNext"]').click(); await sleep(150); };
-const fmtSigned = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString() + '만';
-const fmtMoney = v => '₩ ' + Math.round(v).toLocaleString() + '만';
+// 금액 문구는 페이지의 formatKrw 그대로 (큰 수 단위 표기)
+let fmtSigned, fmtMoney;
+const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.toString(), fmtMoney.toString(), formatKrw.toString(), 'const KRW_UNITS = ' + JSON.stringify(KRW_UNITS) + ', KRW_SIG_FROM = ' + KRW_SIG_FROM]);
+  [fmtSigned, fmtMoney] = new Function(f[3] + ';' + f[2] + '; return [' + f[0] + ', ' + f[1] + '];')(); };
 
 (async () => {
   const b = await chromium.launch(); const errs = [];
@@ -43,6 +45,7 @@ const fmtMoney = v => '₩ ' + Math.round(v).toLocaleString() + '만';
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await sleep(200);
+    await bindFmt(page);
 
     // 1) 유물 3개 + 다이아몬드: 체인 재생, 숫자 일치
     const s1 = await setupWeek(page, { seed: 7, relics: ['seal', 'theme', 'gukbap'], extraCash: 3000,
@@ -69,7 +72,9 @@ const fmtMoney = v => '₩ ' + Math.round(v).toLocaleString() + '만';
       ok(W + ` ${nm} 칩 수 = 보정 단계 수`, chips.length === c.steps.length - 1, chips.join(' | '));
       ok(W + ` ${nm} 스탬프 (보정 있을 때만)`, stamp === (c.steps.length > 1));
     });
-    ok(W + ' 정산 합계 = 평가손익 + 다이아 보너스', snap.sum.endsWith(fmtSigned(s1.w.unrealized + s1.w.diamondBonus)), snap.sum);
+    // 한 날짜만 돈 주: 이번 주 장 마감 손익 = 평가손익, 유물 칩 합 = 정산 보너스 (이미 현금)
+    ok(W + ' 정산 합계 = 평가손익 + 정산 보너스 + 다이아 보너스', snap.sum.endsWith(fmtSigned(s1.w.unrealized + s1.w.settled + s1.w.diamondBonus)), snap.sum + ' / settled ' + s1.w.settled);
+    ok(W + ' 유물 칩 합 = 정산 보너스', Math.abs(s1.chain.reduce((a, c) => a + c.finalPnl, 0) - (s1.w.unrealized + s1.w.settled + s1.w.diamondBonus)) < 1e-6);
     await passNext(page);
     const res = await page.evaluate(() => ({ hero: (document.querySelector('.result-hero') || {}).textContent, cash: run.cash, realized: run.realized, eq: netEquity(), liq: run.liquidations }));
     ok(W + ' 연출 끝 → 결산 요약 화면', !!res.hero, res.hero);

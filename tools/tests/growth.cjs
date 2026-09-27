@@ -37,7 +37,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     // 툴팁
     await page.locator('[data-relic="moonSavings"]').click(); await page.waitForTimeout(100);
     const tip = await page.evaluate(() => $('relicTip').textContent);
-    ok(/현재 5스택/.test(tip) && /평가이익 \+5%/.test(tip) && /초기화: 하락 콤보 10/.test(tip) && /최고 5스택/.test(tip), `${w} 툴팁: 스택·효과·초기화·최고`, tip.slice(0, 160));
+    ok(/현재 5스택/.test(tip) && /정산 배수 \+0\.05/.test(tip) && /초기화: 하락 콤보 10/.test(tip) && /최고 5스택/.test(tip), `${w} 툴팁: 스택·효과·초기화·최고`, tip.slice(0, 160));
     await page.locator('[data-relic="moonSavings"]').click();
     // 하락 콤보 10 → 초기화
     await page.evaluate(() => { Sound.stats.played = {}; const p = run.positions[0]; run.combo = { up: 0, down: 9 }; run.comboPnl = { [p.id]: posPnl(p) + 100 }; updateCombo(); renderAll(); });

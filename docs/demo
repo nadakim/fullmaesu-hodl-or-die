@@ -487,6 +487,7 @@ body::after{
 .card-tip b{display:block;margin-bottom:calc(4 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;color:var(--gold);font-weight:normal;}
 .card-tip .ct-meta{display:block;margin-bottom:calc(4 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;color:var(--muted);}
 .card-tip .ct-ev{display:block;margin-top:calc(5 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;}
+.card-tip .ct-ev.pos{color:var(--green);} .card-tip .ct-ev.neg{color:var(--red);} .card-tip .ct-ev.zero{color:var(--muted);}
 .c-foot{display:flex;justify-content:space-between;gap:calc(4 * var(--u));font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;color:var(--muted);}
 .card.r-common{--rc:var(--muted);}
 .card.r-uncommon{--rc:var(--green2);}
@@ -935,6 +936,10 @@ body::after{
 .ap-pip{width:calc(10 * var(--u));height:calc(10 * var(--u));background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 .ap-pip.on{background:var(--gold);}
 .ap-text{color:var(--gold);}
+.mult-preview{display:inline-block;padding:0 calc(6 * var(--u));white-space:nowrap;cursor:help;
+  font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.1;color:var(--gold);
+  box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
+.mult-preview .mp-label{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--text2);margin-right:calc(4 * var(--u));}
 .pile-text{flex:1;text-align:right;}
 .deck-btn,.back-btn{
   border:none;cursor:pointer;background:var(--panel);color:var(--cyan);
@@ -1586,6 +1591,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
         <span>행동력</span>
         <span class="ap-pips" id="apPips"></span>
         <span class="ap-text" id="apText">3/3</span>
+        <span class="mult-preview" id="multPreview"><span class="mp-label">정산</span><span id="multText">×1.00</span></span>
         <span class="pile-text" id="pileText">덱 0 · 버림 0 · 소멸 0</span>
         <button class="deck-btn" id="deckBtn">덱 확인</button>
       </div>
@@ -1877,9 +1883,33 @@ const REJECT_TEXT  = {
 const CARD_ORDER = {};
 CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; });
 
-const fmtMoney  = v => '₩ ' + Math.round(v).toLocaleString() + '만';
-const fmtSlush  = v => '💼 ' + Math.round(v).toLocaleString() + '만';   // 비자금 (계좌 돈 ₩와 구분)
-const fmtSigned = v => (v >= 0 ? '+' : '−') + Math.abs(Math.round(v)).toLocaleString() + '만';
+/* 금액 표시는 전부 formatKrw 하나로 (게임 금액 단위 = 만 원). 한국 큰 수 단위 만 → 무량대수(10⁶⁸원), 상위 두 단위까지.
+   1억 원 미만은 정확히 ("2,345만"), 1조 원 미만은 두 단위 그대로 ("1,234억 5,678만"), 1조 원 이상은 유효숫자 4자리로 반올림 ("3조 2,420억").
+   무량대수 초과는 원 단위 지수 표기 ("1.2e+72"). 금액 변수는 Number 그대로 — 큰 수에서 정밀도가 무의미해지는 건 반올림 표기로 가린다 (SETTLEMENT.md) */
+const KRW_UNITS = ['만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항하사', '아승기', '나유타', '불가사의', '무량대수'];
+const KRW_SIG_FROM = 2;   // 이 단위(조)부터 유효숫자 4자리
+function formatKrw(n){
+  if(!isFinite(n)) return n > 0 ? '∞' : n < 0 ? '−∞' : '0만';
+  if(n < 0) return '−' + formatKrw(-n);
+  let v = Math.round(n);
+  if(v < 10000) return v.toLocaleString() + '만';
+  let k = Math.floor(Math.log10(v) / 4);                 // 가장 큰 단위 (0 = 만)
+  if(k >= KRW_UNITS.length) return (n * 10000).toExponential(1);
+  if(k >= KRW_SIG_FROM){                                  // 유효숫자 4자리 반올림
+    const f = Math.pow(10, Math.floor(Math.log10(v)) - 3);
+    v = Math.round(v / f) * f;
+    k = Math.floor(Math.log10(v) / 4 + 1e-12);
+    if(k >= KRW_UNITS.length) return (v * 10000).toExponential(1);
+  }
+  const unit = Math.pow(10000, k);
+  const top = Math.floor(v / unit + 1e-9);
+  const sec = Math.round((v / unit - top) * 10000);
+  const topStr = top.toLocaleString() + KRW_UNITS[k];
+  return sec > 0 && sec < 10000 ? topStr + ' ' + sec.toLocaleString() + KRW_UNITS[k - 1] : topStr;
+}
+const fmtMoney  = v => '₩ ' + formatKrw(v);
+const fmtSlush  = v => '💼 ' + formatKrw(v);   // 비자금 (계좌 돈 ₩와 구분)
+const fmtSigned = v => (v >= 0 ? '+' : '−') + formatKrw(Math.abs(v));
 const fmtPct    = r => (r >= 0 ? '+' : '') + (r * 100).toFixed(1) + '%';
 const posLabel  = p => (p.dir < 0 ? '숏 ' : '') + p.lev + 'x';
 function fmtPrice(p){
@@ -2002,7 +2032,7 @@ const TIP_RESULT_MEMES = {   // 연출용 무작위 (Math.random). 여기에만 
   flat: ['본전이면 승리', '아무 일도 없었다', '관망도 실력이다'],
   down: ['리딩방 탈퇴합니다', '아는 형 연락 두절', "출처는 늘 '아는 형'"]
 };
-const fmtTipMoney = v => Math.abs(v) < 0.5 ? '±0만' : (v > 0 ? '+' : '−') + '₩' + Math.abs(Math.round(v)).toLocaleString() + '만';
+const fmtTipMoney = v => Math.abs(v) < 0.5 ? '±0만' : (v > 0 ? '+' : '−') + '₩' + formatKrw(Math.abs(v));
 function tipResultKind(d){
   const eq = Math.max(1, Math.abs(netEquity()));
   const kind = d.delta > eq * TIP_RESULT_FLAT_PCT ? 'up' : d.delta < -eq * TIP_RESULT_FLAT_PCT ? 'down' : 'flat';
@@ -2038,7 +2068,7 @@ function showTipResult(item, ctx){
       <div class="ga-tape"><span>${TIP_RESULT_TAPE[kind]}</span></div>
       <div class="ga-name">${fillTip(outcome.text, d.stockId)}</div>
       <div class="ga-pct">${fmtTipMoney(0)}</div>
-      ${d.slushDelta > 0 ? `<div class="ga-slush">💼 비자금 +${Math.round(d.slushDelta).toLocaleString()}만</div>` : ''}
+      ${d.slushDelta > 0 ? `<div class="ga-slush">💼 비자금 +${formatKrw(d.slushDelta)}</div>` : ''}
       <div class="ga-meme">${meme}</div>
     </div>`;
   document.body.appendChild(el);
@@ -2103,20 +2133,20 @@ function maybeBrink(){
 
 /* 유물 조명: 아이콘이 번쩍 → 픽셀이 영향받는 숫자로 → 도착 지점에 효과 칩. 여러 개면 큐로 하나씩 */
 const RELIC_FX = {   // 유물 → [도착 요소, 칩 문구]
-  payday:     [() => $('availableCash'), a => `+₩${Math.round(a).toLocaleString()}만`],
-  parents:    [() => $('totalAssets'),   a => `+₩${Math.round(a).toLocaleString()}만`],
-  hotline:    [() => $('totalAssets'),   a => `투매 손실 −${Math.round(a).toLocaleString()}만 면제`],
+  payday:     [() => $('availableCash'), a => `+₩${formatKrw(a)}`],
+  parents:    [() => $('totalAssets'),   a => `+₩${formatKrw(a)}`],
+  hotline:    [() => $('totalAssets'),   a => `투매 손실 −${formatKrw(a)} 면제`],
   coldwallet: [() => $('positionsBox'),  () => '반대매매 회피'],
   inverse:    [() => $('handBox'),       a => `카드 +${a}장`],
   daytrader:  [() => $('apText'),        a => `행동력 −${a}`],
   fssconnect: [() => $('fssBox'),        a => `감시 −${Math.round(a)}`],
   lawyer:     [() => $('fssBox'),        a => `감시 −${Math.round(a)}`],
-  capital:    [() => $('availableCash'), a => `이자 −₩${Math.round(a).toLocaleString()}만`],
-  gukbap:     [() => $('positionsBox'),  a => `손실 ${fmtSigned(a)}`],
-  seal:       [() => $('positionsBox'),  a => fmtSigned(a)],
-  theme:      [() => $('positionsBox'),  a => fmtSigned(a)],
-  moonSavings:    [() => $('positionsBox'), a => fmtSigned(a)],
-  traumaSurvivor: [() => $('positionsBox'), a => fmtSigned(a)]
+  capital:    [() => $('availableCash'), a => `이자 −₩${formatKrw(a)}`],
+  gukbap:     [() => $('availableCash'), a => `손실 환급 ${fmtSigned(a)}`],   // 장 마감 정산 보너스 → 현금
+  seal:       [() => $('availableCash'), a => fmtSigned(a)],
+  theme:      [() => $('availableCash'), a => fmtSigned(a)],
+  moonSavings:    [() => $('availableCash'), a => fmtSigned(a)],
+  traumaSurvivor: [() => $('availableCash'), a => fmtSigned(a)]
 };
 let relicSeen = {};   // 콜드월렛: 같은 포지션은 하루 한 번만 조명
 function enqueueRelic(d){
@@ -2133,7 +2163,7 @@ function enqueueRelic(d){
     Fx.flash(icon, 'fx-relic-on');
     const target = fx[0]();
     Fx.streak(rectOf(icon), rectOf(target), 12, ['--text', '--gold', '--cyan']);
-    Fx.chip(fx[1](d.amount) + ' ' + RELIC_BY_ID[d.id].icon, rectOf(target), d.id === 'gukbap' ? '' : 'up', 380);
+    Fx.chip(fx[1](d.amount) + ' ' + RELIC_BY_ID[d.id].icon, rectOf(target), 'up', 380);
     Sound.play('relicTick', { stacks: Math.max(1, relicStacks(d.id)), pitch: chainPitch(ctx) });
   };
   Fx.enqueue(item);
@@ -2144,7 +2174,7 @@ const RELIC_LEVELS = [5, 10, 25, 50];          // 대발동 스택
 const RELIC_GROW_MERGE_MS = 1000;
 const RELIC_BIG_TRIGGER = ['payday', 'parents', 'tearJar', 'compoundMonster'];   // relicTriggered 중 큰 금액 = 대발동
 const relicIconEl = id => $('relicBar').querySelector(`[data-relic="${id}"]`);
-const growText = (id, v) => RELIC_BY_ID[id].growth === 'money' ? `₩${Math.round(v).toLocaleString()}만` : `${v}스택`;
+const growText = (id, v) => RELIC_BY_ID[id].growth === 'money' ? `₩${formatKrw(v)}` : `${v}스택`;
 let growPending = {};
 function enqueueRelicGrow(d){
   const r = RELIC_BY_ID[d.id], money = r.growth === 'money';
@@ -2158,7 +2188,7 @@ function enqueueRelicGrow(d){
       pay.started = true;
       const icon = relicIconEl(d.id);
       if(icon) Fx.flash(icon, 'fx-relic-on');
-      Fx.chip(money ? '+₩' + Math.round(pay.delta).toLocaleString() + '만' : '+' + pay.delta, rectOf(icon), 'gold', 0);
+      Fx.chip(money ? '+₩' + formatKrw(pay.delta) : '+' + pay.delta, rectOf(icon), 'gold', 0);
       Sound.play('relicTick', { stacks: money ? 1 : pay.stacks, pitch: chainPitch(ctx) });
     };
     Fx.enqueue(item);
@@ -2375,7 +2405,7 @@ function onGameEvent(type, d){
     case 'bought':
       lastBoughtPosId = d.pos.id;
       juiceBought(d);   // 풀매수처럼 한 번에 여러 종목이면 하나씩, 효과음 반음씩 상승
-      if(d.merged) toast(`${d.pos.name} ${posLabel(d.pos)} 추가 매수 +${Math.round(d.added).toLocaleString()}만 → 평단 ${fmtPrice(avgPrice(d.pos))}`, 'info');
+      if(d.merged) toast(`${d.pos.name} ${posLabel(d.pos)} 추가 매수 +${formatKrw(d.added)} → 평단 ${fmtPrice(avgPrice(d.pos))}`, 'info');
       break;
     case 'cardPlayed':   if(d.card.type !== 'stock') toast('▶ ' + d.card.name, 'info'); Sound.play('cardPlay'); break;
     case 'sold':
@@ -2389,15 +2419,15 @@ function onGameEvent(type, d){
       if(d.pnl > 1000) cashRain();
       break;
     case 'orderFilled':
-      toast(`${ORDER_LABEL[d.kind]} 체결 · ${d.pos.name} ${fmtSigned(d.pnl)}` + (d.bonus > 0 ? ` (상투 감별사 +${Math.round(d.bonus)}만)` : ''), d.pnl >= 0 ? 'good' : 'bad');
+      toast(`${ORDER_LABEL[d.kind]} 체결 · ${d.pos.name} ${fmtSigned(d.pnl)}` + (d.bonus > 0 ? ` (상투 감별사 +${formatKrw(d.bonus)})` : ''), d.pnl >= 0 ? 'good' : 'bad');
       showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
       juiceSell(d.pnl, rectOf(posRowEl(d.pos.id)));
       break;
     case 'marginCall':
       toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (` +
-        (d.saved > 0 ? `📞 투매 손실 ${Math.round(d.saved)}만 면제` : `투매 −${Math.round(d.penalty)}만`) + ' · 트라우마 +1)', 'bad');
+        (d.saved > 0 ? `📞 투매 손실 ${formatKrw(d.saved)} 면제` : `투매 −${formatKrw(d.penalty)}`) + ' · 트라우마 +1)', 'bad');
       if(d.deficit) toast('🧾 미수 발생! 현금으로 못 갚아 계좌 동결', 'bad');
-      if(d.refund > 0) toast(`🤝 손실 보전 약정: +${Math.round(d.refund)}만 환급 (※ 실제로는 불법)`, 'warn');
+      if(d.refund > 0) toast(`🤝 손실 보전 약정: +${formatKrw(d.refund)} 환급 (※ 실제로는 불법)`, 'warn');
       enqueueLiquidation(d);   // 큐: 히트스톱 → 섬광 → 부서짐 → 도장 → 트라우마 카드 (소리는 큐에서)
       maybeBrink();
       break;
@@ -2417,7 +2447,7 @@ function onGameEvent(type, d){
       enqueueGap(d.stockId, d.pct);
       break;
     case 'valueGodPaid':
-      toast(`📜 가치투자의 신: 장기 보유 배당 +${Math.round(d.amount)}만`, 'good');
+      toast(`📜 가치투자의 신: 장기 보유 배당 +${formatKrw(d.amount)}`, 'good');
       break;
     case 'reshuffle': toast('버린 카드를 섞어 새 덱으로', 'info'); break;
     case 'dayStart':
@@ -2446,11 +2476,17 @@ function onGameEvent(type, d){
       toast(d.active ? `📰 사실로 확인: ${newsEffectText(n)}` : `📰 루머로 판명 — ${n.text.split(' — ')[0]} 효과 없음`, d.active ? 'warn' : 'info');
       break;
     }
+    case 'daySettled':   // 장 마감 정산 (큰 연출은 S6 — 지금은 알림만)
+      if(Math.abs(d.payout) >= 0.5){
+        const best = d.settlement.reduce((m, r) => r.payout > 0 ? Math.max(m, r.mult) : m, 1);
+        toast(`💰 장 마감 정산 보너스 ${fmtSigned(d.payout)}` + (best > 1 ? ` (최고 ${fmtMult(best)})` : ''), d.payout > 0 ? 'good' : 'bad');
+      }
+      break;
     case 'dayEnd':
       Sound.play('dayEnd');
       $('newsText').textContent = newsTomorrowLine();
       if(d.waived) toast('장 마감 · 오늘 이자 면제', 'good');
-      else if(d.interest > 0.5) toast(`장 마감 · 이자 −${Math.round(d.interest).toLocaleString()}만` + (d.discounted ? ' (🏦 VVIP 할인)' : ''), 'warn');
+      else if(d.interest > 0.5) toast(`장 마감 · 이자 −${formatKrw(d.interest)}` + (d.discounted ? ' (🏦 VVIP 할인)' : ''), 'warn');
       break;
     case 'event':
       $('newsText').textContent = d.text;
@@ -2532,9 +2568,9 @@ function onGameEvent(type, d){
       if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
       break;
     case 'relicTriggered':
-      if(d.id === 'payday') toast(`🪙 월급날: +₩${d.amount.toLocaleString()}만 (벌써 반은 카드값)`, 'good');
-      if(d.id === 'parents') toast(`💌 부모님 카드 발동: +₩${d.amount.toLocaleString()}만. 이번이 진짜 마지막이란다.`, 'warn');
-      if(RELIC_BIG_TRIGGER.indexOf(d.id) >= 0) enqueueRelicBig(d.id, `${RELIC_BY_ID[d.id].name} +₩${Math.round(d.amount).toLocaleString()}만!`);
+      if(d.id === 'payday') toast(`🪙 월급날: +₩${formatKrw(d.amount)} (벌써 반은 카드값)`, 'good');
+      if(d.id === 'parents') toast(`💌 부모님 카드 발동: +₩${formatKrw(d.amount)}. 이번이 진짜 마지막이란다.`, 'warn');
+      if(RELIC_BIG_TRIGGER.indexOf(d.id) >= 0) enqueueRelicBig(d.id, `${RELIC_BY_ID[d.id].name} +₩${formatKrw(d.amount)}!`);
       else enqueueRelic(d);
       break;
     case 'relicGrew': enqueueRelicGrow(d); break;
@@ -2555,7 +2591,7 @@ function handCardHtml(card, o){
     <div class="card gcard t-${card.type} r-${card.rarity} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
       <div class="g-top"><span class="c-ap">${card.type === 'status' ? '✕' : o.ap}</span><span class="g-band"></span><span class="g-rar" title="${card.type === 'status' ? '상태' : RARITY_LABEL[card.rarity]}"></span></div>
       <div class="g-name">${card.name}</div>
-      ${stock ? `<div class="g-line"><span class="c-cost">₩${o.cost.toLocaleString()}만</span></div><div class="g-line"><span class="c-price" data-p="${stock.id}"></span></div>`
+      ${stock ? `<div class="g-line"><span class="c-cost">₩${formatKrw(o.cost)}</span></div><div class="g-line"><span class="c-price" data-p="${stock.id}"></span></div>`
               : `<div class="g-line g-desc">${cardDesc(card)}</div>`}
       <div class="g-foot">${foot}</div>
     </div>`;
@@ -2568,7 +2604,7 @@ function cardHtml(card, o){
     <div class="card t-${card.type} r-${card.rarity} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
       <div class="c-top"><span class="c-ap">${card.type === 'status' ? '✕' : (o.ap !== undefined ? o.ap : card.ap)}</span><span class="c-type">${TYPE_LABEL[card.type]}</span></div>
       <div class="sym">${card.name}</div>
-      ${stock ? `<div class="c-cost">₩${(o.cost || stock.cost).toLocaleString()}만</div>` : ''}
+      ${stock ? `<div class="c-cost">₩${formatKrw(o.cost || stock.cost)}</div>` : ''}
       ${stock && o.live ? `<div class="c-price" data-p="${stock.id}"></div>` : ''}
       <div class="c-desc">${cardDesc(card)}</div>
       ${o.ev ? `<div class="c-ev ${o.ev.cls}" title="${o.ev.title}">${o.ev.text}</div>` : ''}
@@ -2618,8 +2654,8 @@ function showCardTip(el){
   const ap = idx >= 0 && run ? cardCost(card) : card.ap;
   const ev = idx >= 0 && run && run.phase === 'premarket' ? cardEvView(card) : null;
   cardTipEl.innerHTML = `<b>${card.name}</b>
-    <span class="ct-meta">${TYPE_LABEL[card.type]} · ${RARITY_LABEL[card.rarity]} · 행동력 ${card.type === 'status' ? '—' : ap}${card.exhaust ? ' · 소멸' : ''}${card.target ? ' · 대상 ' + TARGET_LABEL[card.target] : ''}${stock ? ` · ₩${(idx >= 0 && run ? stockCost(stock) : stock.cost).toLocaleString()}만${idx >= 0 && run ? ` · 현재가 ${fmtPrice(assets[stock.id].price)}` : ''} · ${stock.sector} · β ${stock.beta} · 변동성 ${stock.volatility}` : ''}</span>
-    ${cardDesc(card)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}`;
+    <span class="ct-meta">${TYPE_LABEL[card.type]} · ${RARITY_LABEL[card.rarity]} · 행동력 ${card.type === 'status' ? '—' : ap}${card.exhaust ? ' · 소멸' : ''}${card.target ? ' · 대상 ' + TARGET_LABEL[card.target] : ''}${stock ? ` · ₩${formatKrw(idx >= 0 && run ? stockCost(stock) : stock.cost)}${idx >= 0 && run ? ` · 현재가 ${fmtPrice(assets[stock.id].price)}` : ''} · ${stock.sector} · β ${stock.beta} · 변동성 ${stock.volatility}` : ''}</span>
+    ${cardDesc(card)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
   cardTipEl.hidden = false;
   const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
   let x = r.left, y = r.top - t.height - 6;
@@ -2812,6 +2848,7 @@ function renderTurn(){
   $('apPips').innerHTML = pips;
   $('apText').textContent = `${run.ap}/${maxAp()}`;
   $('pileText').textContent = `덱 ${run.drawPile.length} · 버림 ${run.discard.length} · 소멸 ${run.exhausted.length}`;
+  renderMultPreview();
 
   const chips = [];
   const pd = run.pending, parts = [];
@@ -2852,6 +2889,27 @@ function renderTurn(){
     : pre ? '카드를 눌러 사용' : '장중에는 카드 사용 불가';
 }
 
+/* 예상 정산 배수 (엔진 previewSettlement — 판정에 쓰는 계산 그대로). 오르면 숫자가 튄다 (큰 연출은 S6) */
+const fmtMult = m => '×' + (m < 10 ? m.toFixed(2) : m < 1000 ? m.toFixed(1) : Math.round(m).toLocaleString());
+let lastMultShown = 0;
+function renderMultPreview(){
+  const pv = previewSettlement();
+  const txt = fmtMult(pv.mult), el = $('multText');
+  if(el.textContent !== txt){
+    el.textContent = txt;
+    if(lastMultShown && pv.mult > lastMultShown + 1e-9) Fx.punch(el, 1, 0.3);
+  }
+  lastMultShown = pv.mult;
+  const tip = '오늘 예상 정산 배수 — 장 마감에 포지션이 그날 번 돈 × 배수만큼 받는다 (보너스분은 현금으로)'
+    + (pv.rows.length ? '\n' + pv.rows.map(r => `${r.name} ${r.dir < 0 ? '숏 ' : ''}${r.lev}x ${fmtMult(r.mult)} · 유리하게 +1%면 ${fmtSigned(r.per1pct)}`).join('\n') : '\n포지션 없음');
+  if($('multPreview').title !== tip) $('multPreview').title = tip;
+}
+/* 종목 카드를 쓰면 배수가 어떻게 바뀌는지 (카드 툴팁) */
+function cardSettleView(stockId){
+  const before = previewSettlement().mult, after = previewSettlement(hypotheticalBuy(stockId)).mult;
+  return `<span class="ct-ev ${after > before + 1e-9 ? 'pos' : 'zero'}">💰 쓰면 정산 배수 ${fmtMult(before)} → ${fmtMult(after)}</span>`;
+}
+
 /* ── 손패 ── */
 function cardUsable(idx){
   if(run.phase !== 'premarket') return false;
@@ -2881,7 +2939,7 @@ function renderHand(){
 }
 
 /* 카드 기대값 표시 (엔진 expectedValue). 대상 카드(리딩방·작전 세력)는 수익률 + 보유 종목별 금액을 툴팁으로 */
-const fmtEv = v => (v >= 0.5 ? '+' : v <= -0.5 ? '−' : '±') + '₩' + Math.abs(Math.round(v)).toLocaleString() + '만';
+const fmtEv = v => (v >= 0.5 ? '+' : v <= -0.5 ? '−' : '±') + '₩' + formatKrw(Math.abs(v));
 const evCls = v => v >= 0.5 ? 'pos' : v <= -0.5 ? 'neg' : 'zero';
 function cardEvView(card){
   const e = expectedValue(card, null);
@@ -2903,8 +2961,8 @@ function orderIcons(p){
   if(p.trailing)       t.push(['〰', `트레일링 스탑 ${Math.round(TRAIL_GAP * 100)}%p`, 'trail']);
   if(p.protectedToday) t.push(['🛡', '존버: 오늘 반대매매 면제', 'hodl']);
   if(p.diamond)        t.push(['💎', `다이아몬드 핸드: 이번 주 매도 불가 · 결산 보너스`, 'diamond']);
-  if(gukbapApplies(p)) t.push(['🍲', `국밥 정신: 손실 −${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%`, 'relic-on']);
-  if(sealApplies(p))   t.push(['🔏', `존버의 인장: 이익 +${Math.round(RELIC_SEAL_BONUS * 100)}%`, 'relic-on']);
+  if(gukbapApplies(p)) t.push(['🍲', `국밥 정신: 그날 손실의 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%를 장 마감 정산에서 환급`, 'relic-on']);
+  if(sealApplies(p))   t.push(['🔏', `존버의 인장: 장 마감 정산 ×${1 + RELIC_SEAL_BONUS}`, 'relic-on']);
   return t.map(([ic, tip, c]) => `<span class="o-ic ${c}" title="${tip}">${ic}</span>`).join('');
 }
 
@@ -2925,7 +2983,7 @@ function renderPositions(){
           </div>
           <div class="p-l2">
             <span class="detail" data-f="price"></span>
-            <span class="detail">원금 ${Math.round(p.principal).toLocaleString()}만 · ${p.daysHeld}일째</span>
+            <span class="detail">원금 ${formatKrw(p.principal)} · ${p.daysHeld}일째</span>
             ${orderIcons(p) ? `<span class="p-icons">${orderIcons(p)}</span>` : ''}
             ${isMarginable(p) ? '<span class="p-margin"><span class="mgauge" data-f="gauge"><i class="mg-fill"></i><i class="mg-call"></i></span></span>' : ''}
           </div>
@@ -2937,7 +2995,7 @@ function renderPositions(){
     if(!el) return;
     el.classList.toggle('targetable', targets.indexOf(p.id) >= 0);
     el.querySelector('[data-f=price]').textContent = `평단 ${fmtPrice(avgPrice(p))} → ${fmtPrice(assets[p.assetId].price)}`;
-    const tip = `${p.name} · 원금 ₩${Math.round(p.principal).toLocaleString()}만 · 노출 ${fmtMoney(exposure(p))} · 보유 ${p.daysHeld}일`
+    const tip = `${p.name} · 원금 ₩${formatKrw(p.principal)} · 노출 ${fmtMoney(exposure(p))} · 보유 ${p.daysHeld}일`
       + (isMarginable(p) ? ` · 증거금률 ${Math.round(marginRatio(p) * 100)}% (반대매매 ${Math.round(MARGIN_CALL_RATIO * 100)}%)${isProtected(p) ? ' · 면제' : ''}` : '');
     if(el.title !== tip) el.title = tip;   // 노출액은 행 툴팁으로
     const pnl = posPnl(p);
@@ -3383,6 +3441,7 @@ function showRoundResult(w){
       ${statTile('이번 주 반대매매', w.liquidations + '회')}
       ${statTile('이번 주 이자', fmtMoney(w.interest))}
       ${statTile('이월 포지션', `${w.positions}개 · 평가 <span class="${signCls(w.unrealized)}">${fmtSigned(w.unrealized)}</span>`, 'wide')}
+      ${Math.abs(w.settled) >= 0.5 ? statTile('💰 장 마감 정산 보너스', `<span class="${signCls(w.settled)}">${fmtSigned(w.settled)}</span>`) : ''}
       ${w.diamondBonus > 0 ? statTile('💎 다이아몬드 보너스', '+' + fmtMoney(w.diamondBonus)) : ''}
       ${w.bailout > 0 ? statTile('💌 부모님 카드', '+' + fmtMoney(w.bailout)) : ''}
       ${statTile('비자금 적립 (암시장 전용)', `<span class="slush-amt">+${fmtSlush(w.slush)}</span> · 잔액 ${fmtSlush(run.slush)}`, 'wide')}
@@ -3406,7 +3465,7 @@ function tipChoiceMeta(tip, choice, idx){
   const buy = choice.outcomes[0].effects.find(ef => ef.kind === 'buy');
   if(buy){
     const amount = Math.min(buy.amount * tipScale(), Math.max(0, run.cash));
-    parts.push(`${STOCK_BY_ID[tipStockId(tip, buy.stock)].name} ₩${Math.round(amount).toLocaleString()}만 매수`);
+    parts.push(`${STOCK_BY_ID[tipStockId(tip, buy.stock)].name} ₩${formatKrw(amount)} 매수`);
   }
   const slush = choice.outcomes[0].effects.find(ef => ef.kind === 'slush');
   if(slush) parts.push(`비자금 +${fmtSlush(slush.amount)}`);
@@ -3514,12 +3573,12 @@ function renderRelics(){
 function growthTipHtml(r){
   const st = relicStacks(r.id), best = run.relicState[r.id] ? run.relicState[r.id].best : 0;
   const eff = {
-    moonSavings: () => `평가이익 +${Math.round(moonPct() * 100)}%`,
-    tearJar: () => `적립금 ₩${Math.round(st).toLocaleString()}만 — 상승 콤보 ${TEARJAR_PAYOUT_COMBO}에 지급`,
-    traumaSurvivor: () => `레버리지·숏 평가이익 +${Math.round(st * TRAUMA_PNL_PER_STACK * 100)}%`,
+    moonSavings: () => `정산 배수 +${moonPct().toFixed(2)}`,
+    tearJar: () => `적립금 ₩${formatKrw(st)} — 상승 콤보 ${TEARJAR_PAYOUT_COMBO}에 지급`,
+    traumaSurvivor: () => `레버리지·숏 정산 배수 +${(st * TRAUMA_PNL_PER_STACK).toFixed(2)}`,
     tipCollector: () => `찌라시 A 대박 +${Math.round(tipCollectorBonus() * 100)}%p`,
     diamondTree: () => `이자 −${Math.round(dtreeCut() * 100)}%`,
-    compoundMonster: () => `다음 주 첫날 현금 +${st}% (지금 ₩${Math.round(Math.max(0, netEquity()) * COMPOUND_CASH_PER_STACK * st).toLocaleString()}만)`
+    compoundMonster: () => `다음 주 첫날 현금 +${st}% (지금 ₩${formatKrw(Math.max(0, netEquity()) * COMPOUND_CASH_PER_STACK * st)})`
   }[r.id];
   return `<span class="rt-grow">현재 ${growText(r.id, r.growth === 'money' ? st : st)} · ${eff ? eff() : ''}<br>초기화: ${r.reset}<br>이번 판 최고 ${growText(r.id, best)}</span>`;
 }

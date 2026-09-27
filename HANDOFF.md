@@ -5,12 +5,14 @@
 
 ## 지금 진행 방식 (2026-09-27~)
 
-`docs/design/MASTER_PLAN.md` §5대로 S0부터 단계별 진행. **한 단계 = 한 PR, 끝나면 멈추고 요약.** 🛑 결정 지점은 질문으로 정리해 묻는다.
+`docs/design/MASTER_PLAN.md` §5대로 단계별 진행. **한 단계 = 한 브랜치 = 한 PR, 끝나면 멈추고 요약.** 🛑 결정 지점은 질문으로 정리해 묻는다.
 사용자 지시: **S11에서는 (42) 중간 저장만** 하고 (43) 웹 데모 패키징·(45) 릴리스 문서는 하지 않는다.
 
-- S0 완료: (44) 로드맵 문구를 Electron 포장·스팀 출시로 (CLAUDE.md·README·DEVELOPMENT_LOG, Vite 안 함)
-- S0 결정: D1 게임 이름 = **BULL TRAP** (`GAME_TITLE.en`, 한국어 '풀매수 기원단' 유지), D2 Open Questions 1~4 = 전부 뒤 단계 이후 재측정 (Q1·Q2 → S3 후, Q3 → S2 후, Q4 → S1 예상 정산으로 대체 검토)
-- 다음: S1 정산 스코어링 엔진 (`claude/s1-settlement-engine`)
+- **S0** (PR #3, 브랜치 `claude/handoff-review-status-lw9aio`): 로드맵 Electron·스팀 출시로, 게임 영문 이름 **BULL TRAP**(D1, 한국어 '풀매수 기원단' 유지), Open Q 1~4는 뒤 단계 후 재측정(D2: Q1·Q2 → S3 후, Q3 → S2 후, Q4 → S1 예상 정산으로 대체 검토)
+- **S1** (브랜치 `claude/s1-settlement-engine`, S0 위에 쌓음 — PR base = S0 브랜치): 장 마감 정산 `settleDay`(유물 보정 → 현금 보너스, add·mult·xmult), 예상 정산 미리보기(행동력 줄 `정산 ×N` + 종목 카드 툴팁), `formatKrw` 큰 수 단위, 주간 체인 = 이번 주 정산 요약, 시뮬 지표(최고 순자산 분포·하루 최대 배수) + `sim/compare.js`. 문서 `docs/design/SETTLEMENT.md`
+- S1 결정: **D3** 주간 결산 체인 = 요약 한 화면 유지(확정), **D4** 목표 금액 그대로 → **S4 이후 재측정**
+- 사용자 요청: PR을 올리거나 수정 작업을 끝낼 때마다 **웹에서 바로 플레이할 수 있는 데모 아티팩트**를 올린다 (아래 Demo 항목)
+- 다음: 승인 후 S2 유물 슬롯(`claude/s2-relic-slots`) — Open Q3(`nothing` 클리어율) 재측정 포함
 
 ## Summary
 

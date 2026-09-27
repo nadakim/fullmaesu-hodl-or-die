@@ -24,9 +24,10 @@ UI: `docs/demo` `enqueueRelicGrow`·`enqueueRelicBig`·`enqueueRelicShatter`·`g
 | diamondTree 🌳 | 존버 나무 | uncommon | 장 마감(이자 계산 뒤)마다 3일(`DTREE_DAYS`) 이상 보유 포지션 수만큼 + | 스택당 매일 이자 −1%, 최대 −60% (`DTREE_*`) | 그런 포지션을 직접 팔면(매도 버튼·전량 매도·탈출·손절/익절 카드) 한 번에 스택 절반 |
 | compoundMonster 👹 | 복리 괴물 | mythic | 결산에서 목표 × 1.10 이상이면 +1 (`COMPOUND_EXCESS`) | 주 첫날(`startDay` day 1) 현금 += 순자산 × 1% × 스택 | 통과했지만 +10% 미만이면 −1 |
 
-- 평가이익 보정(떡상 적금·반대매매 생존자)은 `relicAdjustedPnl`에서 기존 곱(존버의 인장·테마주 헌터) 뒤에 **%p를 합산해 한 번만** 곱한다
-  (`out *= 1 + moonPct + traumaPct`) — 곱의 곱으로 폭주하지 않게. 평가손실엔 적용하지 않는다.
-- 결산 체인 `buildSettlementSteps`에 유물별 `add` 단계("📈 떡상 적금 ×12스택 +12%")로 나오고, 마지막 값은 `relicAdjustedPnl`과 부동소수까지 같다 (3,564건 확인).
+- (2026-09-27, S1) 평가이익 보정은 없어지고 **장 마감 정산**(`SETTLEMENT.md`)으로 옮겼다: 떡상 적금·반대매매 생존자는 `SETTLE_EFFECTS`의 `mult`(합산 배수 +스택×1%·+스택×3%),
+  존버의 인장·테마주 헌터는 `xmult`(×1.2·×1.15). 결과 식은 전과 같다 — mult = (1 + moon + trauma) × 인장 × 테마. 그날 수익이 난 포지션에만, 보너스분은 현금으로.
+  (MASTER_PLAN S4에서 떡상 적금·반대매매 생존자를 `xmult`로 바꿔 폭주를 허용할 예정 — 사용자 결정.)
+- 주간 결산 체인은 이번 주 정산 보너스를 유물별로 합친 요약("📈 떡상 적금 +₩ 12만")으로 나온다.
 - 보상·암시장 풀에 그대로 포함 (보상 `RELIC_RARITY_WEIGHTS`, 암시장 `RELIC_SHOP_RARITY_WEIGHTS`).
 
 ## 연출 (UI)

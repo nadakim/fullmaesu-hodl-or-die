@@ -119,6 +119,7 @@ function playGame(E, strat, seed){
   return {
     seed, round: r.round, day: r.day, endReason: r.endReason, endCause: r.endCause,
     endEquity: Math.round(r.endEquity), peakEquity: Math.round(r.peakEquity), liquidations: r.liquidations,
+    maxSettleMult: r.maxSettleMult || 1, settledTotal: Math.round(r.settledTotal || 0), maxSettlePayout: Math.round(r.maxSettlePayout || 0),   // 장 마감 정산 (없는 엔진이면 1·0)
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
     growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
     shop: shopLog,
@@ -166,6 +167,9 @@ function summarize(games, maxRound, strat){
     avgLiquidations: avg(g => g.liquidations),
     avgEndEquity: avg(g => g.endEquity),
     avgPeakEquity: avg(g => g.peakEquity),
+    peakDist: dist(games.map(g => g.peakEquity)),            // 판당 최고 순자산 분포
+    settleMultDist: dist(games.map(g => g.maxSettleMult)),   // 판당 하루 최대 정산 배수 분포
+    avgSettledTotal: avg(g => g.settledTotal || 0),
     avgRelics: avg(g => g.relics.length),
     avgDeckSize: avg(g => g.deckSize),
     causes, deathsByWeek, passByWeek
@@ -173,6 +177,12 @@ function summarize(games, maxRound, strat){
 }
 
 const pct = x => (100 * x).toFixed(1) + '%';
+/* 분포: 중앙값 · 상위 10% 경계 · 최대 */
+function dist(xs){
+  const a = xs.slice().sort((x, y) => x - y);
+  const q = f => a[Math.min(a.length - 1, Math.floor(a.length * f))];
+  return { median: q(0.5), p90: q(0.9), max: a[a.length - 1] };
+}
 
 function main(){
   const opt = parseArgs(process.argv.slice(2));
@@ -197,6 +207,13 @@ function main(){
     '평균 생존 주': r.avgWeeksCleared.toFixed(2), '반대매매/판': r.avgLiquidations.toFixed(2),
     '최종 순자산': Math.round(r.avgEndEquity), '최고 순자산': Math.round(r.avgPeakEquity),
     '유물': r.avgRelics.toFixed(1), '덱': r.avgDeckSize.toFixed(1) }]; })));
+
+  console.log('== 장 마감 정산 · 고점 (판당 최고 순자산 / 하루 최대 정산 배수: 중앙값 · 상위 10% · 최대) ==');
+  console.table(Object.fromEntries(opt.strategies.map(s => { const r = results[s]; return [s, {
+    '최고 순자산 중앙': Math.round(r.peakDist.median), '상위10%': Math.round(r.peakDist.p90), '최대': Math.round(r.peakDist.max),
+    '상위10%÷중앙': (r.peakDist.p90 / r.peakDist.median).toFixed(2),
+    '최대 배수 중앙': r.settleMultDist.median.toFixed(2), '배수 상위10%': r.settleMultDist.p90.toFixed(2), '배수 최대': r.settleMultDist.max.toFixed(2),
+    '정산 보너스/판': Math.round(r.avgSettledTotal) }]; })));
 
   console.log('== 엔딩(endCause)별 발생 수 ==');
   console.table(Object.fromEntries(ALL_CAUSES.map(c => [c, Object.fromEntries(opt.strategies.map(s => [s, results[s].causes[c]]))])));
