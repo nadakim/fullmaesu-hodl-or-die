@@ -1,5 +1,6 @@
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const S = process.argv[2]; const sleep = ms => new Promise(r => setTimeout(r, ms));
+const TITLE_WAIT = 450;   // 타이틀 메뉴 확정 뒤 전환(TITLE_CONFIRM_MS 200ms)을 넉넉히 기다린다
 (async () => { const b = await chromium.launch(); const errs = []; const res = [];
   const p = await b.newPage({ viewport: { width: 1615, height: 900 } });
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
@@ -57,7 +58,7 @@ const S = process.argv[2]; const sleep = ms => new Promise(r => setTimeout(r, ms
   s = await st(); ok('메뉴 → 타이틀 (판 유지, 이어하기 보임)', s.tab === 'title' && s.cont && s.phase === 'market', s);
   await sleep(1800);
   ok('타이틀에 있는 동안 시장 정지', await p.evaluate(s => run.tickInDay === s[2], snap));
-  await p.click('#continueBtn'); await sleep(200);
+  await p.click('#continueBtn'); await sleep(TITLE_WAIT);   // 타이틀 메뉴는 확정 뒤 TITLE_CONFIRM_MS(0.2초) 후 전환 — 딱 0.2초만 기다리면 가끔 아직 타이틀
   s = await st(); ok('이어하기 → TR룸 복귀, 판 그대로', s.tab === 'play' && await p.evaluate(s => run.round === s[0] && run.day === s[1] && run.positions.length === s[3], snap), s);
   // 결산 → 보상 → 암시장 → 다음 주
   await p.evaluate(() => { run.cash += 5000; run.day = DAYS_PER_ROUND; while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll(); });
