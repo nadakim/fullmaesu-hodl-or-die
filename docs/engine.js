@@ -992,15 +992,20 @@ function settleDay(){
    포지션별 배수 = 오늘 수익이 났을 때의 mult. 전체 배수 = 노출액 가중 평균 (모든 포지션이 유리하게 1% 움직일 때 번 돈 ÷ 기본 손익).
    → { mult, rows: [{posId, name, dir, lev, mult, per1pct}] } — per1pct = 유리하게 +1%면 정산 후 손익(기본 + 보너스) */
 function previewSettlement(extra){
-  const ps = extra ? run.positions.concat([extra]) : run.positions;
-  let expSum = 0, gainSum = 0;
-  const rows = ps.map(p => {
-    const e = exposure(p), m = settleSteps(p, 1).mult;
-    expSum += e;
-    gainSum += e * m;
-    return { posId: p.id, name: p.name, dir: p.dir, lev: p.lev, mult: m, per1pct: e * 0.01 * m };
-  });
-  return { mult: expSum > 0 ? gainSum / expSum : 1, rows };
+  // 포지션 수·섹터·레버리지 곱을 세는 유물(깃발·섹터 풀세트·레버리지 탑)도 가정 포지션을 세도록 잠깐 넣었다가 그대로 뺀다 (결과 상태 불변)
+  if(extra) run.positions.push(extra);
+  try {
+    let expSum = 0, gainSum = 0;
+    const rows = run.positions.map(p => {
+      const e = exposure(p), m = settleSteps(p, 1).mult;
+      expSum += e;
+      gainSum += e * m;
+      return { posId: p.id, name: p.name, dir: p.dir, lev: p.lev, mult: m, per1pct: e * 0.01 * m };
+    });
+    return { mult: expSum > 0 ? gainSum / expSum : 1, rows };
+  } finally {
+    if(extra) run.positions.pop();
+  }
 }
 /* 종목 카드를 쓰면 생길 포지션 (미리보기용, run에 넣지 않음) */
 function hypotheticalBuy(stockId, amount){
