@@ -38,6 +38,10 @@
    | relicTick   | 유물 소발동 (매 틱·매일 발동, 성장형 +스택). opts.stacks: 1 = 기본음, 10스택마다 한 옥타브 위 (최대 3옥타브) | 짧은 "칭" |
    | relicLevelUp| 유물 대발동 (성장형 5·10·25·50스택, 저금통 지급, 큰 금액). opts.rarity: 끝음이 등급마다 다름, 신화는 반짝 아르페지오 추가 | 상승 아르페지오 + 반짝 |
    | relicShatter| 성장형 유물 초기화 (relicReset)                             | 유리 깨지는 노이즈 + 하강음           |
+   | cardDeal    | 장전 아침 드로우: 카드 한 장 펼칠 때마다 (opts.pitch 5음계 위로)  | 짧은 종이 "촥"                          |
+   | rareDraw    | 장전 드로우: 희귀 이상 카드 (opts.rarity)                   | 맑은 종 1음 (등급이 높을수록 높게)      |
+   | drumRoll    | 장 시작 카운트다운 3·2·1 (opts.last = 마지막 박)            | 스네어 연타 "두르르" / 마지막은 탕       |
+   | heartbeat   | 장중 반대매매 위험 (증거금 건강도가 낮을수록 자주)          | 저음 "쿵-쿵"                           |
    | settleAdd   | 장 마감 정산 무대: 칩 더하기 단계 (opts.pitch = 5음계 한 칸씩 위)  | 경쾌한 "딩"                            |
    | settleMult  | 장 마감 정산 무대: 배수 단계 (opts.pitch · opts.big = ×10 이상이면 더 크게) | "슈욱—펑"                    |
    | settleThud  | 장 마감 정산 무대: 끝 마침표 (순자산 "쾅" 뒤)               | 저음 "둥"                              |
@@ -250,6 +254,27 @@ const Sound = (() => {
       bell(b, 100, t + 0.13, 0.9, 0.22, p);
       bell(b, 107, t + 0.13, 0.5, 0.08, p);
       return 1.05;
+    },
+    cardDeal(b, t, p){   // 카드 한 장 펼침: 짧은 하이패스 노이즈 + 아주 짧은 틱
+      noise(b, t, 0.05, 0.22, 'highpass', 2600 * p, 0, 0.8);
+      tone(b, 'square', 1200 * p, t, 0.02, 0.025);
+      return 0.07;
+    },
+    rareDraw(b, t, p, o){   // 희귀 이상: 등급별 종 1음 + 반짝
+      const N = { rare: 88, legendary: 91, mythic: 96 };
+      bell(b, N[o.rarity] || 88, t, 0.8, 0.16, p);
+      tone(b, 'sine', midi((N[o.rarity] || 88) + 12) * p, t + 0.05, 0.3, 0.04);
+      return 0.85;
+    },
+    drumRoll(b, t, p, o){   // 카운트다운 한 박: 스네어 연타(두르르), 마지막 박은 탕 + 저음
+      if(o.last){ noise(b, t, 0.18, 0.5, 'bandpass', 1800, 0, 1.2); tone(b, 'square', 110 * p, t, 0.12, 0.14, { f1: 70 * p }); return 0.3; }
+      for(let i = 0; i < 6; i++) noise(b, t + i * 0.035, 0.03, 0.18 + i * 0.03, 'bandpass', 2200, 0, 1.5);
+      return 0.25;
+    },
+    heartbeat(b, t, p){   // 심장 박동: 저음 두 번 "쿵-쿵"
+      tone(b, 'sine', 62 * p, t, 0.12, 0.3, { f1: 40 * p });
+      tone(b, 'sine', 58 * p, t + 0.18, 0.14, 0.24, { f1: 38 * p });
+      return 0.36;
     },
     settleAdd(b, t, p){   // 정산 칩 더하기: 경쾌한 "딩"
       tone(b, 'square', midi(79) * p, t, 0.05, 0.06);

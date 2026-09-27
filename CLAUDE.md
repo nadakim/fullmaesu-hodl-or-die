@@ -35,7 +35,7 @@
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
-- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 21개, 실행법·주의점은 `tools/tests/README.md`)
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 28개, 실행법·주의점은 `tools/tests/README.md`)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
@@ -82,6 +82,7 @@
 - 새 카드는 `defCard`로 추가하고, 효과 함수는 `run`·`assets`만 바꾼다. 수치는 CONFIG에 상수로.
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
 - 연쇄 연출(demo `enqueueGap`·`enqueueLiquidation`·`enqueueRelic`·`juiceMilestones`·`juiceStreak`): tier 1~4 = `FX_TIER`(히트스톱·흔들림·파티클), 갭 경보 강도는 약(미보유, 시장 안 멈춤)·중(보유+유리)·강(보유+불리), 밈 문구는 `GAP_MEMES`에만 추가 (금지 소재 규칙 그대로). 유물 연출은 엔진 `emit('relicTriggered', {id, amount})` — 엔진에 넣어도 되는 건 이미 계산된 값을 담는 emit 추가뿐(`rand()`·상태 변경 금지). 결산 체인·게임오버 화면은 `whenFxIdle`로 큐가 끝난 뒤. 찌라시 결과는 `enqueueTipResult`(같은 갭 경보 틀, 순자산 변화로 상승·횡보·하락 = `TIP_RESULT_FLAT_PCT`, 5% 이상 tier 3, 밈 `TIP_RESULT_MEMES`) → 끝나거나 스킵하면 `showTipResultOverlay`. 효과음 파일 덮어쓰기: `docs/assets/sfx/<SFX 이름>.ogg` + `assets/sfx/files.js`의 `SFX_FILES` 목록 (README 참고, 라이선스 CC0 권장). 설정 `fxSpeed` 보통·빠름·최소(간격 0.1초, 갭 경보 전부 약).
+- TR룸 연출(S8, 수치 `JUICE_CONFIG`의 `deal*`·`countdownMs`·`flameSteps`·`newHighGapTicks`·`heartMs`): 장전 드로우 — `dayStart`가 `dealPending`, 다음 `renderHand`(`dealReady` = TR룸·장전·정산 무대/큐/오버레이 없음)에서 `playDeal`(부채꼴 `.deal`, `cardDeal` 5음계, 희귀 이상 `.shine`+`rareDraw`), 카드 사용음은 `stagePitch(cardChainCount())`. 장 시작 — '▶ 장 시작' 버튼(`countdownNext`)으로 연 `marketOpen`만 `enqueueCountdown`(막는 큐 항목 → 시장 정지, 클릭·Space 스킵, `fxSpeed` 'min'이면 벨만. 테스트의 `startMarket()` 직접 호출은 벨만). 장중 — 게임 루프가 tick 뒤 `notePosTicks`(연속 상승·포지션 신고가 `.fx-newhigh`), `renderPositions`가 `flameLevel` → `.flame-1~3`·`posInDanger` → `.fx-danger`, `heartLoop`(UI setTimeout)가 위험 포지션 중 가장 낮은 건강도로 `heartInterval` 간격 `heartbeat` + `#fxDangerEdge`. 흔들림 끔(`body.no-motion`)·동작 줄이기면 맥동·불꽃 애니메이션 없음(소리는 남음).
 - 소리·타격감은 엔진에 한 줄도 넣지 않는다. `onGameEvent`와 UI 연출 함수에서만 `Sound.play`·`Fx.*`를 부른다 (새 효과음은 `audio.js` 사전 + 상단 표에 추가). 세기는 `Fx.intensity(금액, 순자산)`(순자산의 `FX_MONEY_FULL` = 1)로 정하고 '강'은 대략 10번 중 1번. 히트스톱은 게임 루프가 `Fx.frozenFor()`만큼 다음 tick을 미루는 것뿐 — tick 순서·횟수·결과는 그대로여야 한다 (`sim/runner.js` 전후 결과 JSON 동일로 확인). 설정 '화면 흔들림'을 끄면 흔들림·글리치·히트스톱이 모두 꺼지고, 파티클·소리는 남는다.
 - 엔진 안의 시간 흐름은 틱 카운트(`tickInDay`, `eventTicksLeft`)로 처리한다. `setTimeout`/`setInterval`은 UI 쪽 게임 루프(`window.onload`)에만 둔다.
 - C#으로 옮기기 쉬운 형태를 선호: 명확한 필드를 가진 평범한 객체, 순수 함수, 숫자 상수는 이름 있는 상수로. JS 전용 트릭(동적 프로퍼티 추가, 암묵적 형변환, 프로토타입 조작)은 피한다.

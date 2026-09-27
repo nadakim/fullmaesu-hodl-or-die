@@ -26,6 +26,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(W + ' 키 4 → 4×', await p.evaluate(() => settings.speed === 4 && document.querySelector('#speedBtns .on').dataset.speed === '4'));
     // 차트 크게 보기: 장중에도 열리고 게임은 계속
     await p.click('#openBtn'); await sleep(100);
+    await p.evaluate(() => Fx.skipQueue());   // S8 장 시작 카운트다운 건너뛰기
     await p.click('#candlestickChart'); await sleep(150);
     await p.locator('[data-cz="meme"]').click(); await sleep(100);
     const t0 = await p.evaluate(() => marketTickN);   // 누적 틱 (tickInDay는 하루가 끝나면 0으로 돌아간다)
@@ -37,6 +38,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(W + ' Esc → 닫힘 (메뉴 안 열림)', await p.evaluate(() => $('chartZoom').hidden && $('menuPanel').hidden));
     // 시그널 칩 + 설명서
     ok(W + ' 시그널 색 칩', await p.evaluate(() => document.querySelectorAll('#quoteBox .sig-chip').length === STOCKS.filter(hasRegime).length));
+    await p.evaluate(() => setSpeed(0.5));   // 4×로 두면 장 마감 정산 무대가 메뉴 클릭과 겹칠 수 있다
     await p.click('#menuBtn'); await sleep(80);
     await p.locator('[data-menu="signalGuide"]').click(); await sleep(150);
     ok(W + ' ≡ → 시그널 설명서', await p.evaluate(() => overlayOpen && $('overlayBox').textContent.includes('시그널 설명서') && $('overlayBox').textContent.includes('적중 65%')));

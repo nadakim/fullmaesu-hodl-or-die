@@ -1295,6 +1295,37 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 @keyframes blinkUp{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--green-dim);}}
 @keyframes blinkDown{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--red-dim);}}
 
+/* ── S8 TR룸 연출 (30·31·32) ── */
+/* (30) 장전 드로우: 손패 밑에서 부채꼴로 한 장씩 펼쳐진다. 희귀 이상은 등급 색으로 반짝 */
+#handBox .card.gcard.deal{animation:dealIn var(--deal-ms) steps(6) both;animation-delay:calc(var(--deal-i) * var(--deal-gap));}
+@keyframes dealIn{0%{opacity:0;transform:translate(calc(var(--deal-x) * var(--u)),calc(70 * var(--u))) rotate(var(--deal-r)) scale(.55);}60%{opacity:1;}100%{opacity:1;transform:none;}}
+#handBox .card.gcard.shine{animation:rareShine .7s steps(4) 2;}
+@keyframes rareShine{50%{filter:brightness(1.7);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc),0 0 0 calc(5 * var(--u)) var(--rc),0 0 0 calc(7 * var(--u)) #000;}}
+/* (31) 장 시작 카운트다운 3·2·1 → OPEN */
+.countdown{position:fixed;inset:0;z-index:93;pointer-events:none;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);}
+.countdown .cd-num{font-family:'Press Start 2P',var(--gp-p3),monospace;font-size:calc(3 * var(--fs-p3));color:var(--gold);text-shadow:calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;animation:cdPop .3s steps(4) both;}
+.countdown .cd-num.open{color:var(--green);font-size:calc(2 * var(--fs-p3));}
+.countdown.flash{background:var(--text);animation:cdFlash .3s steps(3) forwards;}
+@keyframes cdPop{0%{transform:scale(2.2);opacity:0;}50%{opacity:1;}100%{transform:scale(1);opacity:1;}}
+@keyframes cdFlash{0%{background:var(--text);}100%{background:transparent;}}
+/* (32) 장중 포지션: 연속 상승 = 초록 불꽃(단계가 오를수록 테두리가 두껍고 빠르게), 신고가 = 금색 번쩍, 반대매매 위험 = 붉은 맥동 */
+.pos-item.flame-1{box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.pos-item.flame-2{animation:flame2 .5s steps(2) infinite;}
+.pos-item.flame-3{animation:flame3 .3s steps(2) infinite;}
+@keyframes flame2{0%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),0 0 0 calc(4 * var(--u)) var(--green-dim),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}}
+@keyframes flame3{0%{background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(5 * var(--u)) var(--green2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}50%{background:var(--green-dim);box-shadow:0 0 0 calc(3 * var(--u)) var(--green),0 0 0 calc(6 * var(--u)) var(--green-dim),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}}
+.pos-item.fx-newhigh{animation:newHigh .6s steps(4);}
+@keyframes newHigh{0%,50%{background:var(--panel2);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(5 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}}
+.pos-item.fx-danger{animation:dangerPulse var(--beat-ms,900ms) steps(2) infinite;}
+@keyframes dangerPulse{0%{box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}50%{background:var(--red-dim);box-shadow:0 0 0 calc(3 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}}
+.fx-danger-edge{position:fixed;inset:0;z-index:83;pointer-events:none;opacity:0;box-shadow:inset 0 0 0 calc(4 * var(--u)) var(--red),inset 0 0 0 calc(10 * var(--u)) var(--red-dim);}
+.fx-danger-edge.on{opacity:.35;}
+.fx-danger-edge.beat{animation:edgeBeat .36s steps(3);}
+@keyframes edgeBeat{0%{opacity:.9;}100%{opacity:.35;}}
+body.no-motion .pos-item.flame-2,body.no-motion .pos-item.flame-3,body.no-motion .pos-item.fx-danger,body.no-motion .fx-danger-edge.beat,body.no-motion #handBox .card.gcard.shine{animation:none;}
+@media (prefers-reduced-motion: reduce){.pos-item.flame-2,.pos-item.flame-3,.pos-item.fx-danger,.fx-danger-edge.beat,#handBox .card.gcard.shine,#handBox .card.gcard.deal,.countdown .cd-num{animation:none;}}
+body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+
 /* 갭 중앙 경보: 줄무늬 테이프 · 종목명 · 변동률 카운트업 · 밈 문구. t1 약(작게, 시장 안 멈춤) · t2 중 · t3 강 */
 .gap-alert{position:fixed;inset:0;z-index:94;pointer-events:none;display:flex;align-items:center;justify-content:center;padding:calc(16 * var(--u));}
 .ga-flash{position:absolute;inset:0;background:var(--green);opacity:0;animation:gaFlash .45s steps(3) forwards;}
@@ -1764,6 +1795,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 <div class="toast-layer" id="toastLayer"></div>
 <div class="fx-streak" id="fxStreak"></div>
 <div class="fx-vignette" id="fxVignette"></div>
+<div class="fx-danger-edge" id="fxDangerEdge"></div>
 <div class="overlay" id="overlay"><div class="overlay-box" id="overlayBox"></div></div>
 
 <script src="engine.js"></script>
@@ -2462,6 +2494,115 @@ function noteCardChain(){
   if(cardChain.run !== run || cardChain.key !== key) cardChain = { run, key, n: 0 };
   return ++cardChain.n;
 }
+const cardChainCount = () => cardChain.run === run && cardChain.key === run.round + '/' + run.day ? cardChain.n : 0;   // 오늘 이미 쓴 카드 수 (이번 카드 제외)
+
+/* ══ S8 TR룸 연출 (30·31·32) — UI 전용, 엔진 상태를 읽기만 한다 ══ */
+/* (30) 장전 드로우: dayStart에서 표시 → 손패를 다시 그릴 때 부채꼴로 한 장씩 (5음계로 위로), 희귀 이상은 반짝 + 종.
+   정산 무대·연쇄 연출이 끝난 뒤에 펼친다 (소리가 겹치지 않게) */
+let dealPending = false, stageQueued = false;
+const dealReady = () => dealPending && currentTab === 'play' && run && run.phase === 'premarket' && !stage && !stageQueued && !Fx.queueLength && !overlayOpen;
+function playDeal(box){
+  dealPending = false;
+  if(settings.fxSpeed === 'min') return;
+  const cards = [...box.querySelectorAll('.card.gcard')], n = cards.length, J = JUICE_CONFIG;
+  box.style.setProperty('--deal-gap', J.dealGapMs + 'ms');
+  box.style.setProperty('--deal-ms', J.dealMs + 'ms');
+  cards.forEach((el, i) => {
+    const off = n > 1 ? i / (n - 1) - 0.5 : 0;   // −0.5(왼쪽) ~ +0.5(오른쪽)
+    el.style.setProperty('--deal-i', i);
+    el.style.setProperty('--deal-x', Math.round(-off * 160));
+    el.style.setProperty('--deal-r', (off * 2 * J.dealFan) + 'deg');
+    el.classList.add('deal');
+    const at = i * J.dealGapMs, rarity = CARD_BY_ID[el.dataset.cid] ? CARD_BY_ID[el.dataset.cid].rarity : '';
+    setTimeout(() => Sound.play('cardDeal', { pitch: stagePitch(i) }), at);
+    setTimeout(() => {
+      el.classList.remove('deal');
+      if(J.shineRarities.indexOf(rarity) >= 0 && el.isConnected){ el.classList.add('shine'); Sound.play('rareDraw', { rarity }); setTimeout(() => el.classList.remove('shine'), 1400); }
+    }, at + J.dealMs);
+  });
+}
+function scheduleDeal(){   // 정산 무대가 열리면 그 뒤로 (stageNext → renderAll)
+  const r = run;
+  setTimeout(() => whenFxIdle(() => { if(run === r && dealReady()){ handSig = ''; renderHand(); } }), 0);
+}
+
+/* (31) 장 시작 카운트다운: 막는 연출 한 칸 (그동안 시장 정지, 클릭·Space = 스킵). 연쇄 속도 '최소'면 생략.
+   '▶ 장 시작'을 눌렀을 때만 (countdownNext) — 다른 경로의 startMarket(테스트·자동 진행)은 벨만 */
+let countdownNext = false;
+function enqueueCountdown(){
+  const item = { kind: 'countdown', tier: 1, blocking: true, duration: JUICE_CONFIG.countdownMs, payload: {} };
+  item.play = ctx => {
+    const el = document.createElement('div'), beat = ctx.duration / 4;
+    el.className = 'countdown';
+    document.body.appendChild(el);
+    item.el = el; item.timers = [];
+    ['3', '2', '1'].forEach((t, i) => item.timers.push(setTimeout(() => {
+      el.innerHTML = `<div class="cd-num">${t}</div>`;
+      Sound.play('drumRoll', { pitch: Sound.semis(i * 2) });
+    }, i * beat)));
+    item.timers.push(setTimeout(() => {
+      item.rang = true;
+      el.innerHTML = '<div class="cd-num open">OPEN!</div>';
+      if(settings.shake) el.classList.add('flash');
+      Sound.play('drumRoll', { last: true });
+      Sound.play('marketOpen');
+    }, 3 * beat));
+  };
+  item.stop = item.skip = () => {
+    (item.timers || []).forEach(clearTimeout);
+    if(item.el){ item.el.remove(); item.el = null; }
+    if(!item.rang){ item.rang = true; Sound.play('marketOpen'); }
+  };
+  Fx.enqueue(item);
+}
+
+/* (32) 장중 포지션: 틱마다 평가손익을 비교해 연속 상승 수·최고 손익을 센다 (표시만). 불꽃 단계는 renderPositions가 그린다 */
+let posFx = { run: null, map: {} };
+function notePosTicks(){
+  if(posFx.run !== run) posFx = { run, map: {} };
+  const J = JUICE_CONFIG, live = {};
+  run.positions.forEach(p => {
+    const pnl = posPnl(p), s = posFx.map[p.id] || { last: pnl, up: 0, best: pnl, highTick: -99 };
+    s.up = pnl > s.last + 1e-9 ? s.up + 1 : pnl < s.last - 1e-9 ? 0 : s.up;
+    if(pnl > s.best + 1e-9 && pnl > 0 && marketTickN - s.highTick >= J.newHighGapTicks && posFx.map[p.id]){
+      s.highTick = marketTickN;
+      const el = posRowEl(p.id);
+      if(el){ el.classList.remove('fx-newhigh'); void el.offsetWidth; el.classList.add('fx-newhigh'); setTimeout(() => el.classList.remove('fx-newhigh'), 650); }
+    }
+    s.best = Math.max(s.best, pnl);
+    s.last = pnl;
+    live[p.id] = s;
+  });
+  posFx.map = live;
+}
+function flameLevel(p){
+  const s = posFx.run === run && posFx.map[p.id];
+  if(!s || run.phase !== 'market' || posPnl(p) <= 0) return 0;
+  const F = JUICE_CONFIG.flameSteps;
+  return s.up >= F[2] ? 3 : s.up >= F[1] ? 2 : s.up >= F[0] ? 1 : 0;
+}
+const posInDanger = p => run.phase === 'market' && isMarginable(p) && !isProtected(p) && marginWarn(p);
+function heartInterval(p){   // 건강도 경고선 → 1.0 사이를 느림 → 빠름으로
+  const [slow, fast] = JUICE_CONFIG.heartMs, warn = MAINTENANCE_MARGIN_ON ? MAINT_WARN_HEALTH : MARGIN_WARN_RATIO / marginCallRatio(p);
+  const t = Math.max(0, Math.min(1, (marginHealth(p) - 1) / Math.max(1e-6, warn - 1)));
+  return Math.round(fast + (slow - fast) * t);
+}
+/* 심장 박동: 장중 TR룸에서 위험 포지션이 있으면 가장 위험한 건강도로 간격을 정해 "쿵-쿵" + 가장자리 붉은 맥동 */
+function heartLoop(){
+  const edge = $('fxDangerEdge');
+  const active = currentTab === 'play' && run && run.phase === 'market' && !overlayOpen;
+  const danger = active ? run.positions.filter(posInDanger) : [];
+  let wait = 400;
+  if(danger.length){
+    wait = Math.min(...danger.map(heartInterval));   // 가장 위험한 포지션 기준
+    edge.classList.add('on');
+    edge.classList.remove('beat'); void edge.offsetWidth; edge.classList.add('beat');
+    Sound.play('heartbeat');
+    document.documentElement.style.setProperty('--beat-ms', wait + 'ms');
+  } else edge.classList.remove('on', 'beat');
+  setTimeout(heartLoop, wait);
+}
+
 function juiceBought(d){
   const i = buySeq++;
   clearTimeout(buySeqTimer);
@@ -2530,7 +2671,7 @@ function onGameEvent(type, d){
       juiceBought(d);   // 풀매수처럼 한 번에 여러 종목이면 하나씩, 효과음 반음씩 상승
       if(d.merged) toast(`${d.pos.name} ${posLabel(d.pos)} 추가 매수 +${formatKrw(d.added)} → 평단 ${fmtPrice(avgPrice(d.pos))}`, 'info');
       break;
-    case 'cardPlayed':   if(d.card.type !== 'stock') toast('▶ ' + d.card.name, 'info'); Sound.play('cardPlay'); break;
+    case 'cardPlayed':   if(d.card.type !== 'stock') toast('▶ ' + d.card.name, 'info'); Sound.play('cardPlay', { pitch: stagePitch(cardChainCount()) }); break;   // (30) 연달아 쓸수록 5음계로 위로
     case 'sold':
       juiceSell(d.pnl, rectOf(posRowEl(d.pos.id)));
       showPopNum(fmtSigned(d.pnl), d.pnl >= 0);
@@ -2577,10 +2718,11 @@ function onGameEvent(type, d){
       $('newsText').textContent = newsLine() || '시장이 평온한 흐름을 유지 중입니다.';
       if(d.day > 1) toast(`WEEK ${d.round} · DAY ${d.day} 장전 — 카드를 쓰고 장을 여세요`, 'info');
       if(d.buyBan) toast('☎ 오늘은 "투자주의 계좌" — 신규 매수 금지', 'bad');
+      dealPending = true; scheduleDeal();   // (30) 아침 드로우를 부채꼴로
       break;
     case 'marketOpen':
       toast('▶ 장 시작!', 'good');
-      Sound.play('marketOpen');
+      if(countdownNext && settings.fxSpeed !== 'min') enqueueCountdown(); else Sound.play('marketOpen');   // (31) '장 시작' 버튼 → 3·2·1 → 벨 + 번쩍
       if(d.marketCard){
         const [news, kind] = MARKET_CARD_NEWS[CARD_BY_ID[d.marketCard].base][d.outcome];
         $('newsText').textContent = news;
@@ -3085,7 +3227,8 @@ function renderHand(){
   const usable = run.hand.map((_, i) => cardUsable(i) ? '1' : '0').join('');
   const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + selectedIdx + '|' + run.pending.principalMult + '|' + run.pending.lev
     + '|' + run.marketCard + '|' + run.positions.map(p => p.id + ':' + Math.round(exposure(p))).join();   // 기대값이 포지션·대기 시장 카드에 따라 바뀐다
-  if(sig !== handSig){
+  const deal = dealReady();
+  if(sig !== handSig || deal){
     handSig = sig;
     const cols = run.hand.length > HAND_GRID_CELLS ? HAND_GRID_WIDE_COLS : HAND_GRID_COLS;   // 10장(HAND_MAX)이면 4열
     box.classList.toggle('g4', cols === HAND_GRID_WIDE_COLS);
@@ -3096,6 +3239,7 @@ function renderHand(){
           const cost = card.stock ? stockCost(STOCK_BY_ID[card.stock]) : 0;
           return handCardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, ap: cardCost(card) });
         }).join('') + '<div class="g-slot"></div>'.repeat(Math.max(0, cells - run.hand.length));   // 빈 칸 = 점선 슬롯
+    if(deal) playDeal(box);
   }
   box.querySelectorAll('[data-p]').forEach(el => { el.textContent = '@' + fmtPrice(assets[el.dataset.p].price); });
 }
@@ -3165,6 +3309,9 @@ function renderPositions(){
     const el = box.querySelector(`[data-id="${p.id}"]`);
     if(!el) return;
     el.classList.toggle('targetable', targets.indexOf(p.id) >= 0);
+    const fl = flameLevel(p);   // (32) 연속 상승 불꽃 · 반대매매 위험 맥동
+    [1, 2, 3].forEach(k => el.classList.toggle('flame-' + k, fl === k));
+    el.classList.toggle('fx-danger', posInDanger(p));
     el.querySelector('[data-f=price]').textContent = `평단 ${fmtPrice(avgPrice(p))} → ${fmtPrice(assets[p.assetId].price)}`;
     const tip = `${p.name} · 원금 ₩${formatKrw(p.principal)} · 노출 ${fmtMoney(exposure(p))} · 보유 ${p.daysHeld}일`
       + (isMarginable(p) ? ` · ${marginText(p)}${isProtected(p) ? ' · 면제' : ''}` : '');
@@ -3542,7 +3689,16 @@ const JUICE_CONFIG = {
   coins: [6, 40],                // 동전 파티클 수 (최소, 최대 — 세기 비례)
   nextGuardMs: 400,              // 결과가 뜬 뒤 이 시간 동안 '▶ 다음 날'·엔터 무시
   fireShake: { 1: 0, 2: 1, 3: 2, 4: 3 },   // 불타기 단계별 흔들림
-  fireHitStop: 90                // ×10,000 도달 히트스톱 (ms)
+  fireHitStop: 90,               // ×10,000 도달 히트스톱 (ms)
+  // ── S8 TR룸 (30·31·32) ──
+  dealGapMs: 70,                 // (30) 장전 드로우: 카드 한 장 간격
+  dealMs: 320,                   //      한 장이 날아와 자리 잡는 시간
+  dealFan: 9,                    //      부채꼴 기울기 (도, 가장자리 카드)
+  shineRarities: ['rare', 'legendary', 'mythic'],   // 반짝 + 종이 울리는 등급
+  countdownMs: 1200,             // (31) 장 시작 3·2·1 → OPEN 전체 (연쇄 속도 '빠름'이면 큐가 줄인다, '최소'면 생략)
+  flameSteps: [2, 4, 7],         // (32) 포지션 연속 상승 틱 → 불꽃 1·2·3단
+  newHighGapTicks: 4,            //      같은 포지션 신고가 번쩍 최소 간격 (틱)
+  heartMs: [1100, 350]           //      심장 박동 간격: 경고선(MAINT_WARN_HEALTH) → 반대매매 직전(건강도 1)
 };
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
@@ -3566,7 +3722,8 @@ const stageChipCls  = st => st.kind === 'add' ? 'add' : st.value < 1 ? 'cut' : '
 const fmtMultNum    = v => v >= 1e6 ? (+v).toExponential(2) : v >= 100 ? Math.round(v).toLocaleString() : (+v).toFixed(v >= 10 ? 1 : 2);
 function queueDayStage(d){
   const r = run;
-  setTimeout(() => whenFxIdle(() => { if(run === r && run.phase === 'premarket' && currentTab === 'play') playDayStage(d); }), 0);   // endOfDay가 끝나 다음 날 장전이 된 뒤
+  stageQueued = true;   // 드로우 연출은 무대 뒤로
+  setTimeout(() => whenFxIdle(() => { stageQueued = false; if(run === r && run.phase === 'premarket' && currentTab === 'play') playDayStage(d); else if(run === r) renderAll(); }), 0);   // endOfDay가 끝나 다음 날 장전이 된 뒤
 }
 function playDayStage(d){
   let rows = d.settlement.filter(r => Math.abs(r.payout) >= 0.5), rest = [];   // 보너스가 붙은 포지션만 (가격 손익만 있는 포지션은 이미 평가손익에 있다)
@@ -4588,7 +4745,9 @@ $('recordsBack').addEventListener('click', () => switchTab('title'));
 $('openBtn').addEventListener('click', () => {
   selectedIdx = -1;
   if(run && run.phase === 'shop'){ switchTab('shop'); return; }
+  countdownNext = true;   // (31) 플레이어가 누른 개장만 카운트다운
   startMarket();
+  countdownNext = false;
   renderAll();
 });
 $('deckBtn').addEventListener('click', () => { if(run) showDeck(); });
@@ -5046,13 +5205,15 @@ window.onload = () => {
     if(currentTab === 'play' && run && run.phase === 'market' && !overlayOpen && !Fx.queueBusy){   // 연쇄 연출 중엔 시장 정지 (tick을 미룰 뿐)
       tick();
       marketTickN++;
+      notePosTicks();   // (32) 불꽃·신고가 번쩍 (표시만)
       if(!run.positions.length) hideStreak();
-      if(settings.tickSound) Sound.play('tick', { volume: 0.6 });
+      if(settings.tickSound) Sound.play('tick', { volume: 0.6, pitch: Sound.semis(streak.dir * Math.min(12, streak.n)) });   // 틱 음높이가 보유 손익 콤보를 따라간다
       renderAll();
     }
     setTimeout(loop, TICK_MS / settings.speed);
   };
   setTimeout(loop, TICK_MS / settings.speed);
+  heartLoop();   // (32) 반대매매 위험 심장 박동
 };
 </script>
 </body>
