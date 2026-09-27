@@ -2017,7 +2017,7 @@ function accumUpChance(stockId){
 /* 장중: 방금 캔들에 긴 아래꼬리(≥ 몸통 × ACCUM_TAIL_RATIO) + 추세 UP·FLAT → ACCUM_TRIGGER_CHANCE로 '세력 매집 포착' 찌라시.
    찌라시가 뜨면 그 종목은 내일 UP 전이 보너스 (고르는 선택지와 무관 — 신호는 사실이어야 한다) */
 function maybeAccumTip(){
-  if(run.pendingTip || run.tipsToday >= TIP_MAX_PER_DAY) return false;
+  if(run.pendingTip || run.tipsToday >= TIP_MAX_PER_DAY || tipChance() <= 0) return false;   // 찌라시를 꺼 두면(tipChance 0) 매집 찌라시도 없음
   const s = STOCKS.find(x => {
     const a = assets[x.id], c = a.candles[a.candles.length - 1];
     if(!c || ACCUM_REGIMES.indexOf(a.regime) < 0 || a.accumBonus) return false;

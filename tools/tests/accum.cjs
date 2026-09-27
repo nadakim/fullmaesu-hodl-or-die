@@ -12,7 +12,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     const r = await p.evaluate(() => {
-      window.tipChance = () => 0; clearToasts(); startMarket();
+      window.tipChance = () => 1; clearToasts(); startMarket();   // 찌라시 켬 (세력 매집은 tipChance 0이면 안 뜬다)
       STOCKS.forEach(s => { assets[s.id].accumBonus = 0; if(assets[s.id].regime) assets[s.id].regime = 'DOWN'; });   // 다른 종목은 조건 밖
       const a = assets.semi; a.regime = 'FLAT';
       a.candles.push({ open: 100, close: 101, high: 102, low: 90, gap: 0 });   // 몸통 1, 아래꼬리 10
