@@ -2961,8 +2961,8 @@ function orderIcons(p){
   if(p.trailing)       t.push(['〰', `트레일링 스탑 ${Math.round(TRAIL_GAP * 100)}%p`, 'trail']);
   if(p.protectedToday) t.push(['🛡', '존버: 오늘 반대매매 면제', 'hodl']);
   if(p.diamond)        t.push(['💎', `다이아몬드 핸드: 이번 주 매도 불가 · 결산 보너스`, 'diamond']);
-  if(gukbapApplies(p)) t.push(['🍲', `국밥 정신: 손실 −${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%`, 'relic-on']);
-  if(sealApplies(p))   t.push(['🔏', `존버의 인장: 이익 +${Math.round(RELIC_SEAL_BONUS * 100)}%`, 'relic-on']);
+  if(gukbapApplies(p)) t.push(['🍲', `국밥 정신: 그날 손실의 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%를 장 마감 정산에서 환급`, 'relic-on']);
+  if(sealApplies(p))   t.push(['🔏', `존버의 인장: 장 마감 정산 ×${1 + RELIC_SEAL_BONUS}`, 'relic-on']);
   return t.map(([ic, tip, c]) => `<span class="o-ic ${c}" title="${tip}">${ic}</span>`).join('');
 }
 
