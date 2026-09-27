@@ -21,6 +21,7 @@ for t in tools/tests/*.cjs; do echo "== $t"; node $t $OUT 2>&1 | grep -E '^FAIL|
 | tipres | 찌라시 결과 중앙 알림·효과음·찌라시 기록 |
 | chainfx · juice | 연출 큐·갭 경보·반대매매·설정 반영·동작 줄이기 |
 | chain · nextbtn | 결산 체인 연출·▶ 다음 |
+| deckbuilding | S3: 종목 카드 금액 창(버튼·입력·Esc/Enter)·보상 카드 강화·암시장 리모델링/변환/복제·태그 아이콘 |
 | relicslots | 유물 칸 6개·종류 배지·칸 순서대로 정산·◀▶/←→/끌기(장중 불가)·가득 찬 칸 교체/포기·암시장 판매 |
 | bgm | 배경음악 트랙·무드 |
 | growth | 성장형 유물 |

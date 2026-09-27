@@ -10,7 +10,7 @@ const S = process.argv[2]; const sleep = ms => new Promise(r => setTimeout(r, ms
   await p.click('#startBtn'); await sleep(300);
   s = await st(); ok('출격 → TR룸 장전', s.tab === 'play' && s.phase === 'premarket', s);
   await p.evaluate(() => { window.tipChance = () => 0; run.hand = ['stk_semi', 'stopLoss'].map(newCard); handSig = ''; renderAll(); });
-  await p.locator('#handBox .card').first().click(); await sleep(200);
+  await p.locator('#handBox .card').first().click(); await sleep(150); await p.keyboard.press('Enter'); await sleep(200);
   ok('손패 격자 카드 클릭 → 매수', await p.evaluate(() => run.positions.length === 1));
   // 대상 지정 중 Esc = 취소 우선
   await p.locator('#handBox .card', { hasText: '손절 예약' }).click(); await sleep(150);

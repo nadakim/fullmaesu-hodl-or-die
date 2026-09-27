@@ -114,6 +114,40 @@ const HEDGE_RATIO         = 0.30;  // 인버스 헤지: 롱 노출액의 30%
 const HEDGE_STOCK         = 'inv'; // 인버스 헤지로 사는 종목
 const OVERDRAFT_AMOUNT    = 1500;  // 마이너스 통장 (만원)
 const SAVINGS_AMOUNT      = 300;   // 적금 깨기 (만원). 800 → 300: 1주차 목표(+1%)의 8배를 공짜로 주던 것 (기대 +7.6%)
+// 카드 강화(+) 수치 (docs/design/DECKBUILDING.md — 강화는 한 가지만: 행동력 −1 또는 수치 한 단계)
+const CREDIT_LEV_UP          = 3;
+const YOLO_PRINCIPAL_MULT_UP = 3;
+const AVG_DOWN_RATIO_UP      = 1.0;
+const IPO_AMOUNT_UP          = 500;
+const CHASE_AMOUNT_UP        = 1000;
+const STOP_LOSS_PCT_UP       = -0.07;
+const TAKE_PROFIT_PCT_UP     = 0.12;
+const CUT_LOSS_REFUND_UP     = 0.75;
+const TAKE_PROFIT_BONUS_UP   = 0.75;
+const ESCAPE_DRAW_UP         = 3;
+const SPLIT_SELL_DRAW_UP     = 2;
+const DIAMOND_BONUS_UP       = 0.90;
+const FORCED_DIVIDEND_UP     = 0.08;
+const DIVIDEND_PER_POS_UP    = 120;
+const HODL_RECOVER_UP        = 0.50;
+const COMPOUND_RATIO_UP      = 0.75;
+const VALUE_GOD_PCT_UP       = 0.025;
+const PUMP_UP_CHANCE_UP      = 0.80;
+const MARKET_CARD_MAIN_UP    = 0.80;  // 비둘기·매파·CEO 트윗+: 주 장세 확률 (나머지는 원래 비율대로 줄인다)
+const INDICATOR_DRAW_UP      = 3;
+const COFFEE_AP_UP           = 3;
+const ROTATION_MAX_DRAW_UP   = 5;
+const ROTATION_AP_UP         = 2;
+const FSS_GAIN_UP            = { manip: 60 };   // 강화판 금감원 게이지 상승량 (없으면 원래 값)
+const MARGIN_TOPUP_UP        = 800;
+const CASHOUT_DRAW_UP        = 1;
+const HEDGE_RATIO_UP         = 0.50;
+const INTEREST_FREE_DRAW_UP  = 2;
+const OVERDRAFT_AMOUNT_UP    = 2500;
+const FSS_CONFESS_CUT_UP     = 70;
+const SAVINGS_AMOUNT_UP      = 500;
+const LOSS_GUARD_REFUND_UP   = 0.75;
+const CIRCUIT_DROP_UP        = 0.05;
 
 // 시장 카드 — 장세를 확정하지 않고 확률을 기울인다. 결과는 장이 열릴 때 판정 (chance 합 1, NORMAL = 시장이 무시함)
 const MARKET_CARD_ODDS = {
@@ -121,6 +155,11 @@ const MARKET_CARD_ODDS = {
   hawk:     [ { state:'BEAR', chance:0.70 }, { state:'NORMAL', chance:0.20 }, { state:'BULL', chance:0.10 } ],
   ceoTweet: [ { state:'VOLATILE', chance:0.70 }, { state:'BULL', chance:0.20 }, { state:'NORMAL', chance:0.10 } ]
 };
+/* 강화판(+) 판정표: 주 장세 확률을 MARKET_CARD_MAIN_UP으로 올리고 나머지는 원래 비율대로 */
+['dove', 'hawk', 'ceoTweet'].forEach(id => {
+  const o = MARKET_CARD_ODDS[id], main = o[0].chance, rest = 1 - main;
+  MARKET_CARD_ODDS[id + '+'] = o.map((x, i) => ({ state: x.state, chance: i === 0 ? MARKET_CARD_MAIN_UP : x.chance * (1 - MARKET_CARD_MAIN_UP) / rest }));
+});
 const REVERSION_TICKS     = 3;     // 카드로 만든 강세·약세장 다음 날, 개장 후 이만큼 틱 동안
 const REVERSION_DRIFT     = 6;     // 반대 방향 지수 드리프트 (강세장 12의 절반) — 차익실현 매물
 // 지수 장세별 캔들 (generateNextCandle): 틱당 드리프트(지수 포인트)와 변동 배수. 시장 카드 기대값(marketCardEv)도 같은 값을 읽는다
@@ -207,7 +246,11 @@ const SHOP_PACKS = [
 ];
 /* 암시장 물가 (docs/design/SHOP_ECONOMY.md): 가격 = 기본가 × (1 + 계수 × (주차 − 1)), 10만 단위 반올림 → shopPrice()
    7주차(마지막 암시장)엔 팩·낱장 ×1.72, 유물 ×1.6. remove·reroll은 따로 공식을 쓰므로 0 (헬퍼만 공유) */
-const SHOP_INFLATION      = { pack: 0.12, single: 0.12, relic: 0.10, remove: 0.0, reroll: 0.0 };
+const SHOP_INFLATION      = { pack: 0.12, single: 0.12, relic: 0.10, remove: 0.0, reroll: 0.0, service: 0.12 };
+// 덱 조작 (암시장): 리모델링(강화 +) · 변환(같은 등급 무작위 카드) · 복제(한 장 더, 신화 불가). 같은 주 n번째마다 × 누진, 주차 물가 service
+const SHOP_SERVICE_BASE       = { upgrade: 350, transform: 200, duplicate: 450 };
+const SHOP_SERVICE_ESCALATION = 1.5;
+const STOCK_BUY_MIN           = 50;    // 종목 카드 매수 금액 최소 (만원). 최대 = 현금 ÷ 원금 배수
 const SHOP_PRICE_ROUND    = 10;    // 가격 반올림 단위 (만원)
 const SHOP_SINGLE_MIN     = 3;     // 낱장 진열 최소 장수
 const SHOP_SINGLE_MAX     = 5;     // 낱장 진열 최대 장수
@@ -219,15 +262,16 @@ const SHOP_REROLL_WEEK_GROWTH = 0.15;  // 주차마다 기본가 +15%
 const SHOP_REROLL_ESCALATION  = 1.5;   // 같은 주에 같은 종류를 새로고침할 때마다 × 이만큼 (1주차 낱장 100 → 150 → 230 → 340)
 const SHOP_REMOVE_ESCALATION = 1.6; // 같은 주에 제거할 때마다 비용 × 이만큼 (횟수 제한 없음, 덱 MIN_DECK_SIZE장까지). 1주차 400 → 640 → 1,020 → 1,640
 
-/* 종목. 인버스 종목은 beta가 음수 → 같은 가격 공식으로 지수와 반대로 움직인다. */
+/* 종목. 인버스 종목은 beta가 음수 → 같은 가격 공식으로 지수와 반대로 움직인다.
+   종목 카드는 전부 일반 등급 (D7: 등급 없음 — 종목 차이는 변동성·베타·시그널로). cost = 매수 금액 기본값(직접 입력 가능) */
 const STOCKS = [
   { id:'semi',   name:'반도체전자', sector:'우량주',   cost:1000, beta: 1.0, volatility:0.02,  basePrice:72000, rarity:'common' },
-  { id:'coin',   name:'대장코인',   sector:'암호화폐', cost:1500, beta: 2.5, volatility:0.08,  basePrice:95000, rarity:'uncommon' },
-  { id:'sc',     name:'초전도체',   sector:'테마주',   cost:800,  beta: 3.8, volatility:0.12,  basePrice:12000, rarity:'rare' },
+  { id:'coin',   name:'대장코인',   sector:'암호화폐', cost:1500, beta: 2.5, volatility:0.08,  basePrice:95000, rarity:'common' },
+  { id:'sc',     name:'초전도체',   sector:'테마주',   cost:800,  beta: 3.8, volatility:0.12,  basePrice:12000, rarity:'common' },
   { id:'gukbap', name:'국밥제약',   sector:'방어주',   cost:800,  beta: 0.4, volatility:0.01,  basePrice:8500,  rarity:'common' },
-  { id:'meme',   name:'밈코인',     sector:'동전주',   cost:300,  beta: 5.0, volatility:0.20,  basePrice:420,   rarity:'rare' },
+  { id:'meme',   name:'밈코인',     sector:'동전주',   cost:300,  beta: 5.0, volatility:0.20,  basePrice:420,   rarity:'common' },
   { id:'inv',    name:'지수 인버스', sector:'인버스',  cost:800,  beta:-1.0, volatility:0.004, basePrice:5000,  rarity:'common' },
-  { id:'inv2',   name:'곱버스',     sector:'인버스',   cost:600,  beta:-2.0, volatility:0.008, basePrice:3000,  rarity:'uncommon' }
+  { id:'inv2',   name:'곱버스',     sector:'인버스',   cost:600,  beta:-2.0, volatility:0.008, basePrice:3000,  rarity:'common' }
 ];
 const STOCK_BY_ID = {};
 STOCKS.forEach(s => { STOCK_BY_ID[s.id] = s; });
@@ -436,6 +480,32 @@ const END_LIQ_ADDICT         = 3;     // 한 판 반대매매 이 횟수 이상 
 const END_SIDELINE_INVESTED  = 0.50;  // 관망의 신: 매수 0회 + 결산 때 직접 산 포지션(찌라시 제외) 노출액이 순자산의 이 비율 미만
 const END_ROUND_TRIP_OVER    = 0.03;  // 천당과 지옥: 주중 최고 순자산이 목표를 이만큼(+3%) 넘겼다가 결산에서 미달
 
+/* 빌드 태그 7종 (docs/design/DECKBUILDING.md). 보상·암시장 진열·팩에서 내 덱(카드 + 유물)의 가장 많은 태그를 가진 후보는
+   같은 등급 안에서 가중치 × (1 + TAG_BIAS). 등급 확률은 그대로, 등급 안 확률만 바뀐다 (팩 확률 팝업도 같은 값) */
+const TAGS = {
+  lev:    { icon:'🔥', name:'레버리지' },
+  short:  { icon:'📉', name:'공매도' },
+  hodl:   { icon:'💎', name:'존버' },
+  scalp:  { icon:'⚡', name:'단타' },
+  tip:    { icon:'🎰', name:'찌라시' },
+  manip:  { icon:'🕴', name:'작전' },
+  spread: { icon:'🐜', name:'분산' }
+};
+const TAG_BIAS = 0.3;
+const CARD_TAGS = {
+  stk_inv:['short'], stk_inv2:['short'],
+  credit:['lev'], yolo:['lev'], short:['short'], avgDown:['hodl'], ipo:['spread'], fullBuy:['spread'], chaseLimit:['scalp'], antArmy:['spread'],
+  stopLoss:['scalp'], takeProfit:['scalp'], trailing:['scalp'], cutLoss:['scalp'], takeWin:['scalp'], escape:['scalp'], splitSell:['scalp'], topSpotter:['scalp'],
+  hodl:['lev', 'hodl'], diamond:['hodl'], forcedLong:['hodl'], dividend:['spread'], forgotPw:['lev'], hodlWins:['hodl'], compound:['hodl'], valueGod:['hodl'],
+  pump:['tip'], dove:['manip'], hawk:['manip', 'short'], ceoTweet:['manip'], coffee:['scalp'], rotation:['spread'], manip:['manip'],
+  marginTopup:['lev'], hedge:['short'], interestFree:['lev'], overdraft:['lev'], confess:['manip'], lossGuard:['lev'], circuit:['lev']
+};
+const RELIC_TAGS = {
+  gukbap:['hodl'], seal:['hodl'], vip:['tip'], hotline:['lev'], capital:['lev'], lawyer:['manip'], inverse:['short'], coldwallet:['lev'],
+  theme:['scalp'], community:['tip'], shortpro:['short'], daytrader:['scalp'], fssconnect:['manip'], timemachine:['manip'],
+  moonSavings:['scalp'], tearJar:['hodl'], traumaSurvivor:['lev'], tipCollector:['tip'], diamondTree:['hodl'], compoundMonster:['hodl']
+};
+
 /* 시작 덱 15장: 종목 8 + 증강 7 */
 const STARTER_DECK = [
   'stk_semi', 'stk_semi', 'stk_gukbap', 'stk_coin', 'stk_sc', 'stk_meme', 'stk_inv', 'stk_inv2',
@@ -592,7 +662,7 @@ function updateAssetPrices(idxLogRet, pumps, live){
 const exposure     = p => p.shares * assets[p.assetId].price;
 /* ── 유물 ── */
 const RELIC_BY_ID = {};
-RELICS.forEach(r => { RELIC_BY_ID[r.id] = r; });
+RELICS.forEach(r => { RELIC_BY_ID[r.id] = r; r.tags = RELIC_TAGS[r.id] || []; });
 const hasRelic = id => !!run && run.relics.indexOf(id) >= 0;
 
 /* 유물 칸 (RELIC_SLOTS): run.relics 순서 = 칸 순서 = 장 마감 정산 발동 순서 (왼쪽부터).
@@ -687,8 +757,7 @@ function rollRelics(n, exclude = [], weights = RELIC_RARITY_WEIGHTS){   // 등�
     const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0);
     const rarity = rollRarity(weights, cands);
     if(!rarity) break;
-    const tier = cands.filter(r => r.rarity === rarity);
-    picks.push(tier[randInt(tier.length)].id);
+    picks.push(pickTagged(cands.filter(r => r.rarity === rarity)).id);
   }
   return picks;
 }
@@ -710,7 +779,7 @@ const shortBorrowRate = () => SHORT_BORROW_RATE * capitalCut();
 function dailyInterest(){
   if(run.interestFree) return 0;
   const credit = run.positions.filter(p => p.dir > 0).reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
-  const shorts = hasRelic('shortpro') ? 0 : run.positions.filter(p => p.dir < 0).reduce((s, p) => s + posBorrowed(p), 0);
+  const shorts = hasRelic('shortpro') || run.shortFeeFreeToday ? 0 : run.positions.filter(p => p.dir < 0).reduce((s, p) => s + posBorrowed(p), 0);
   return (credit * interestRate() + shorts * shortBorrowRate()) * (1 - dtreeCut());
 }
 const dtreeCut = () => Math.min(DTREE_MAX_CUT, relicStacks('diamondTree') * DTREE_CUT_PER_STACK);   // 존버 나무
@@ -806,8 +875,8 @@ function previewSettlement(extra){
   return { mult: expSum > 0 ? gainSum / expSum : 1, rows };
 }
 /* 종목 카드를 쓰면 생길 포지션 (미리보기용, run에 넣지 않음) */
-function hypotheticalBuy(stockId){
-  const s = STOCK_BY_ID[stockId], principal = stockCost(s), lev = run.pending.lev, exp = principal * lev;
+function hypotheticalBuy(stockId, amount){
+  const s = STOCK_BY_ID[stockId], principal = (amount || s.cost) * run.pending.principalMult, lev = run.pending.lev, exp = principal * lev;
   return { id: -1, assetId: s.id, name: s.name, dir: run.pending.dir, lev, principal,
            shares: exp / assets[s.id].price, entryExposure: exp, refExp: exp, daysHeld: 0 };
 }
@@ -860,7 +929,7 @@ const currentTarget = () => ROUND_TARGETS[run.round - 1];
 const longExposure  = () => run.positions
   .filter(p => p.dir > 0 && STOCK_BY_ID[p.assetId].beta > 0)
   .reduce((s, p) => s + exposure(p), 0);
-const hedgeAmount   = () => Math.round(Math.min(longExposure() * HEDGE_RATIO, run.cash));
+const hedgeAmount   = (ratio = HEDGE_RATIO) => Math.round(Math.min(longExposure() * ratio, run.cash));
 
 /* 기존 포지션에 추가 매수: 원금·수량·진입노출액을 더해 평단이 자연히 섞인다 */
 function addToPosition(p, principal){
@@ -949,7 +1018,9 @@ function sellAllPositions(){
 
 /* ── 대기 중인 매수 효과 (신용·영끌·공매도 → 다음 종목 카드에 적용) ── */
 function resetPending(){ run.pending.lev = 1; run.pending.dir = 1; run.pending.principalMult = 1; }
-const stockCost = s => s.cost * run.pending.principalMult;
+/* 종목 카드 매수 금액: 직접 입력(run.buyAmount, playCard의 opts.amount) 또는 기본값 s.cost. 실제 투입 = 금액 × 원금 배수(영끌) */
+const stockCost = s => (run.buyAmount || s.cost) * run.pending.principalMult;
+const stockMaxAmount = () => Math.floor(Math.max(0, run.cash) / run.pending.principalMult);   // 입력 가능한 최대 금액
 /* 카드로 한 매수: 횟수를 세고 '내가 산 포지션'으로 표시 (찌라시가 사게 한 것은 제외) — '관망의 신' 판정용 */
 function noteBuy(p){ run.buys++; p.viaTip = false; }
 function buyStock(stockId){
@@ -970,8 +1041,8 @@ function checkOrders(){
     const r = posReturn(p);
     if(p.trailing) p.trailPeak = Math.max(p.trailPeak, r);
     let kind = '';
-    if(p.stopLoss && r <= STOP_LOSS_PCT) kind = 'stop';
-    else if(p.takeProfit && r >= TAKE_PROFIT_PCT) kind = 'take';
+    if(p.stopLoss && r <= p.stopLoss) kind = 'stop';          // p.stopLoss·takeProfit = 체결 수익률 (false = 없음)
+    else if(p.takeProfit && r >= p.takeProfit) kind = 'take';
     else if(p.trailing && p.trailPeak - r >= TRAIL_GAP) kind = 'trail';
     if(!kind) return;
     const pnl = closePosition(p, 0);
@@ -993,7 +1064,7 @@ function checkMarginCalls(){
       const saved = hasRelic('hotline') ? fullPenalty * RELIC_HOTLINE_PENALTY_CUT : 0;
       const penalty = fullPenalty - saved;
       const pnl = closePosition(p, penalty);
-      const refund = run.lossGuardToday && pnl < 0 ? -pnl * LOSS_GUARD_REFUND : 0;   // 손실 보전 약정
+      const refund = run.lossGuardToday && pnl < 0 ? -pnl * run.lossGuardToday : 0;   // 손실 보전 약정 (lossGuardToday = 환급 비율)
       run.cash += refund;
       run.liquidations++;
       run.lastLiquidation = { lev: p.lev, dir: p.dir, round: run.round, day: run.day };
@@ -1016,7 +1087,8 @@ function checkMarginCalls(){
 const CARDS = [];
 const CARD_BY_ID = {};
 function defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play){
-  const c = { id, name, type, ap, rarity, target, exhaust, desc, valid, play, stock: '' };
+  const c = { id, name, type, ap, rarity, target, exhaust, desc, valid, play, stock: '',
+              tags: CARD_TAGS[id] || [], base: id, upgraded: false, retain: false };   // base·upgraded = 강화판(+) 구분, retain = 장 마감에 손패에 남는다
   CARDS.push(c);
   CARD_BY_ID[id] = c;
   return c;
@@ -1117,11 +1189,11 @@ defCard('antArmy', '개미 군단 총공격', 'buy', 3, 'mythic', null, true,
 defCard('stopLoss', '손절 예약', 'sell', 0, 'common', 'position', false,
   `−${pct(STOP_LOSS_PCT)} 손실에 닿으면 자동 매도.`,
   p => !p.diamond && !p.stopLoss,
-  p => { p.stopLoss = true; });
+  p => { p.stopLoss = STOP_LOSS_PCT; });
 defCard('takeProfit', '익절 예약', 'sell', 0, 'common', 'position', false,
   `+${pct(TAKE_PROFIT_PCT)} 수익에 닿으면 자동 매도.`,
   p => !p.diamond && !p.takeProfit,
-  p => { p.takeProfit = true; });
+  p => { p.takeProfit = TAKE_PROFIT_PCT; });
 defCard('trailing', '트레일링 스탑', 'sell', 1, 'uncommon', 'position', false,
   `최고 수익률에서 ${Math.round(TRAIL_GAP * 100)}%p 밀리면 자동 매도.`,
   p => !p.diamond && !p.trailing,
@@ -1174,7 +1246,7 @@ defCard('hodl', '존버', 'hold', 1, 'common', 'position', false,
 defCard('diamond', '다이아몬드 핸드', 'hold', 1, 'rare', 'position', false,
   `이번 주 매도·예약주문 불가. 주말 결산 때 평가이익의 ${pct(DIAMOND_BONUS)} 보너스.`,
   p => !p.diamond,
-  p => { p.diamond = true; p.stopLoss = false; p.takeProfit = false; p.trailing = false; });
+  p => { p.diamond = DIAMOND_BONUS; p.stopLoss = false; p.takeProfit = false; p.trailing = false; });   // diamond = 결산 보너스 비율
 defCard('forcedLong', '강제 장기투자', 'hold', 0, 'common', 'position', true,
   `손실 중인 포지션 원금의 ${pct(FORCED_DIVIDEND)}를 배당금으로. 물린 게 아니라 배당주다.`,
   p => isLosing(p),
@@ -1205,13 +1277,13 @@ defCard('compound', '복리의 마법', 'hold', 1, 'rare', 'position', false,
 defCard('valueGod', '가치투자의 신', 'hold', 2, 'mythic', null, true,
   `이번 주 장 마감마다 ${VALUE_GOD_DAYS}일 이상 보유한 롱 원금의 ${(VALUE_GOD_PCT * 100).toFixed(1)}% 지급. 소멸.`,
   () => !run.week.valueGod,
-  () => { run.week.valueGod = true; });
+  () => { run.week.valueGod = VALUE_GOD_PCT; });   // valueGod = 원금 대비 지급 비율
 
 /* 행동 */
 defCard('pump', '리딩방 찌라시', 'action', 1, 'uncommon', 'asset', false,
   `오늘 작전: ${pct(PUMP_UP_CHANCE)} 급등(+${pct(PUMP_UP_PCT)}) / ${pct(1 - PUMP_UP_CHANCE)} 설거지(−${pct(PUMP_DOWN_PCT)}). 개장 때 공개. 금감원 +${FSS_GAIN.pump}.`,
   s => !run.pumps[s.id],
-  s => { run.pumps[s.id] = rand() < pumpUpChance() ? 1 : -1; });
+  s => { run.pumps[s.id] = rand() < pumpChanceFor(CARD_BY_ID.pump) ? 1 : -1; });
 defCard('dove', '연준 비둘기 발언', 'action', 1, 'uncommon', null, false,
   `개장 판정: ${marketOddsText('dove')}. 금감원 +${FSS_GAIN.dove}.`,
   () => run.marketCard !== 'dove',
@@ -1290,17 +1362,98 @@ defCard('delever', '디레버리징', 'defense', 1, 'rare', null, false,
 defCard('lossGuard', '손실 보전 약정', 'defense', 1, 'legendary', null, false,
   `오늘 반대매매 손실의 ${pct(LOSS_GUARD_REFUND)} 환급. ※ 실제로는 불법입니다.`,
   () => !run.lossGuardToday,
-  () => { run.lossGuardToday = true; });
+  () => { run.lossGuardToday = LOSS_GUARD_REFUND; });
 defCard('circuit', '서킷브레이커', 'defense', 1, 'mythic', null, true,
   `오늘 순자산 −${pct(CIRCUIT_DROP)}(개장 대비)면 즉시 장 마감. 반대매매 면제. 소멸.`,
   () => !run.circuitToday,
-  () => { run.circuitToday = true; run.allProtectedToday = true; });
+  () => { run.circuitToday = CIRCUIT_DROP; run.allProtectedToday = true; });   // circuitToday = 장 마감 하락폭
 
 /* 상태 (보상 풀에 나오지 않음) */
 defCard('trauma', '반대매매 트라우마', 'status', 0, 'common', null, false,
   '사용 불가. 손패 자리만 차지한다. 주간 결산 때 사라진다.',
   () => false,
   () => {});
+
+/* ══ 강화판(+) — 카드마다 한 가지만 좋아진다 (DECKBUILDING.md 표). CARD_BY_ID에만 넣고 CARDS(보상·도감 풀)에는 넣지 않는다.
+   id = 원래 id + '+', base = 원래 id, upgraded = true. over = 바꿀 필드 (ap·desc·valid·play) ══ */
+const UPGRADES = [];
+function defUpgrade(id, over){
+  const b = CARD_BY_ID[id];
+  const c = Object.assign({}, b, { id: id + '+', name: b.name + '+', upgraded: true, base: id }, over || {});
+  CARD_BY_ID[c.id] = c;
+  UPGRADES.push(c);
+  return c;
+}
+const canUpgrade = id => !!CARD_BY_ID[id] && !CARD_BY_ID[id].upgraded && !!CARD_BY_ID[id + '+'];
+STOCKS.forEach(s => defUpgrade('stk_' + s.id, { ap: 0, desc: `${s.sector} · β ${s.beta} · 행동력 0` }));
+defUpgrade('credit', { desc: `다음 종목 매수를 레버리지 ${CREDIT_LEV_UP}x로. 대출금에 매일 이자.`,
+  valid: () => run.pending.lev < CREDIT_LEV_UP, play: () => { run.pending.lev = CREDIT_LEV_UP; } });
+defUpgrade('yolo', { desc: `다음 매수: 원금 ${YOLO_PRINCIPAL_MULT_UP}배 + 레버리지 ${YOLO_LEV}x. 영혼까지 끌어모은다.`,
+  play: () => { run.pending.lev = YOLO_LEV; run.pending.principalMult = YOLO_PRINCIPAL_MULT_UP; } });
+defUpgrade('short', { desc: `다음 종목 매수를 숏(하락 베팅)으로. 오늘은 대차 이자 면제, 급등하면 반대매매.`,
+  play: () => { run.pending.dir = -1; run.shortFeeFreeToday = true; } });
+defUpgrade('avgDown', { desc: `손실 중인 포지션에 원금의 ${pct(AVG_DOWN_RATIO_UP)}를 같은 레버리지로 추가 매수.`,
+  valid: p => isLosing(p) && run.cash >= p.principal * AVG_DOWN_RATIO_UP,
+  play: p => { const add = p.principal * AVG_DOWN_RATIO_UP; run.cash -= add; addToPosition(p, add); noteBuy(p); } });
+defUpgrade('ipo', { desc: `무작위 종목(인버스 제외)을 ₩${IPO_AMOUNT_UP}만어치 공짜로 1x 매수.`,
+  play: () => { const pool = STOCKS.filter(s => s.beta > 0); noteBuy(openPosition(pool[randInt(pool.length)].id, IPO_AMOUNT_UP, 1, 1, false)); } });
+defUpgrade('fullBuy', { ap: 1 });
+defUpgrade('chaseLimit', { desc: `전날 등락률 1위 종목 ₩${CHASE_AMOUNT_UP}만 매수. 전날 +${pct(CHASE_HOT_PCT)} 이상이면 ${CHASE_HOT_LEV}x.`,
+  valid: () => run.cash >= CHASE_AMOUNT_UP,
+  play: () => { const top = STOCKS.slice().sort((a, b) => assets[b.id].lastDayChg - assets[a.id].lastDayChg)[0];
+    noteBuy(openPosition(top.id, CHASE_AMOUNT_UP, assets[top.id].lastDayChg >= CHASE_HOT_PCT ? CHASE_HOT_LEV : 1, 1, true)); } });
+defUpgrade('antArmy', { ap: 2 });
+defUpgrade('stopLoss', { desc: `−${pct(STOP_LOSS_PCT_UP)} 손실에 닿으면 자동 매도.`, play: p => { p.stopLoss = STOP_LOSS_PCT_UP; } });
+defUpgrade('takeProfit', { desc: `+${pct(TAKE_PROFIT_PCT_UP)} 수익에 닿으면 자동 매도.`, play: p => { p.takeProfit = TAKE_PROFIT_PCT_UP; } });
+defUpgrade('trailing', { ap: 0 });
+defUpgrade('cutLoss', { desc: `손실 중인 포지션을 즉시 매도, 손실의 ${pct(CUT_LOSS_REFUND_UP)}를 멘탈 보상금으로.`,
+  play: p => { noteManualSell([p]); const pnl = closePosition(p, 0); run.cash += -pnl * CUT_LOSS_REFUND_UP; emit('sold', {pos: p, pnl}); } });
+defUpgrade('takeWin', { desc: `수익 중인 포지션을 즉시 매도, 수익의 ${pct(TAKE_PROFIT_BONUS_UP)}를 보너스로.`,
+  play: p => { noteManualSell([p]); const pnl = closePosition(p, 0); run.cash += pnl * TAKE_PROFIT_BONUS_UP; emit('sold', {pos: p, pnl}); } });
+defUpgrade('escape', { desc: `매도 가능한 모든 포지션을 시장가 청산하고 카드 ${ESCAPE_DRAW_UP}장을 뽑는다.`,
+  play: () => { const r = closeAllSellable(); if(r.count > 0) emit('soldAll', r); drawCards(ESCAPE_DRAW_UP); } });
+defUpgrade('splitSell', { desc: `포지션 1/3 매도 + ${SPLIT_SELL_DRAW_UP}장 드로우.`,
+  play: p => { const pnl = closePart(p, SPLIT_SELL_RATIO); emit('sold', {pos: p, pnl, partial: true}); drawCards(SPLIT_SELL_DRAW_UP); } });
+defUpgrade('topSpotter', { ap: 1 });
+defUpgrade('hodl', { ap: 0 });
+defUpgrade('diamond', { desc: `이번 주 매도·예약주문 불가. 주말 결산 때 평가이익의 ${pct(DIAMOND_BONUS_UP)} 보너스.`,
+  play: p => { p.diamond = DIAMOND_BONUS_UP; p.stopLoss = false; p.takeProfit = false; p.trailing = false; } });
+defUpgrade('forcedLong', { desc: `손실 중인 포지션 원금의 ${pct(FORCED_DIVIDEND_UP)}를 배당금으로. 물린 게 아니라 배당주다.`,
+  play: p => { run.cash += p.principal * FORCED_DIVIDEND_UP; } });
+defUpgrade('dividend', { desc: `보유 포지션 1개당 ₩${DIVIDEND_PER_POS_UP}만을 받는다 (최대 ${DIVIDEND_MAX_POS}개).`,
+  play: () => { run.cash += Math.min(run.positions.length, DIVIDEND_MAX_POS) * DIVIDEND_PER_POS_UP; } });
+defUpgrade('forgotPw', { ap: 0 });
+defUpgrade('hodlWins', { desc: `손실 중인 모든 포지션의 평가손실 ${pct(HODL_RECOVER_UP)} 회복(평단 조정).`,
+  play: () => { run.positions.filter(isLosing).forEach(p => { const e = exposure(p); p.entryExposure = e - (e - p.entryExposure) * (1 - HODL_RECOVER_UP); }); } });
+defUpgrade('compound', { desc: `수익 포지션의 평가이익 ${pct(COMPOUND_RATIO_UP)}만큼 원금 증가. 포지션 유지, 대출↓.`,
+  play: p => { p.principal += posPnl(p) * COMPOUND_RATIO_UP; } });
+defUpgrade('valueGod', { desc: `이번 주 장 마감마다 ${VALUE_GOD_DAYS}일 이상 보유한 롱 원금의 ${(VALUE_GOD_PCT_UP * 100).toFixed(1)}% 지급. 소멸.`,
+  play: () => { run.week.valueGod = VALUE_GOD_PCT_UP; } });
+defUpgrade('pump', { desc: `오늘 작전: ${pct(PUMP_UP_CHANCE_UP)} 급등(+${pct(PUMP_UP_PCT)}) / ${pct(1 - PUMP_UP_CHANCE_UP)} 설거지(−${pct(PUMP_DOWN_PCT)}). 개장 때 공개. 금감원 +${FSS_GAIN.pump}.`,
+  play: s => { run.pumps[s.id] = rand() < pumpChanceFor(CARD_BY_ID['pump+']) ? 1 : -1; } });
+['dove', 'hawk', 'ceoTweet'].forEach(id => defUpgrade(id, { desc: `개장 판정: ${marketOddsText(id + '+')}. 금감원 +${FSS_GAIN[id]}.`,
+  valid: () => run.marketCard !== id + '+', play: () => { run.marketCard = id + '+'; } }));
+defUpgrade('indicators', { desc: `카드 ${INDICATOR_DRAW_UP}장 + 오늘 시그널 적중률 +${pct(SIGNAL_INDICATOR_BONUS)}p(다시 판독). 지표 42개가 전부 다른 말을 한다.`,
+  play: () => { drawCards(INDICATOR_DRAW_UP); STOCKS.filter(hasRegime).forEach(s => { const sg = run.signals[s.id]; if(sg && !sg.revealed) rollSignal(s.id, Math.min(1, sg.acc + SIGNAL_INDICATOR_BONUS)); }); } });
+defUpgrade('analyst', { ap: 0 });
+defUpgrade('coffee', { desc: `행동력 +${COFFEE_AP_UP}.`, play: () => { run.ap += COFFEE_AP_UP; } });
+defUpgrade('rotation', { desc: `보유 섹터 수만큼 드로우 (최대 ${ROTATION_MAX_DRAW_UP}). ${ROTATION_AP_SECTORS}개 이상이면 행동력 +${ROTATION_AP_UP}.`,
+  play: () => { const n = heldSectorCount(); drawCards(Math.min(n, ROTATION_MAX_DRAW_UP)); if(n >= ROTATION_AP_SECTORS) run.ap += ROTATION_AP_UP; } });
+defUpgrade('manip', { desc: `오늘 이 종목 확정 +${pct(MANIP_PCT)}. 내일 개장 ${Math.round(MANIP_GAP * 100)}% 갭. 금감원 +${FSS_GAIN_UP.manip}. 소멸.` });
+defUpgrade('marginTopup', { desc: `현금 ₩${MARGIN_TOPUP_UP}만을 넣어 대출을 갚고 증거금률을 높인다.`,
+  valid: p => isMarginable(p) && run.cash >= MARGIN_TOPUP_UP, play: p => { run.cash -= MARGIN_TOPUP_UP; p.principal += MARGIN_TOPUP_UP; } });
+defUpgrade('cashOut', { desc: `포지션의 절반을 매도해 현금을 확보하고 카드 ${CASHOUT_DRAW_UP}장을 뽑는다.`, play: p => { closeHalf(p); drawCards(CASHOUT_DRAW_UP); } });
+defUpgrade('hedge', { desc: `보유 롱 노출액의 ${pct(HEDGE_RATIO_UP)}만큼 지수 인버스를 1x 매수(현금 사용).`,
+  valid: () => hedgeAmount(HEDGE_RATIO_UP) >= 1, play: () => { noteBuy(openPosition(HEDGE_STOCK, hedgeAmount(HEDGE_RATIO_UP), 1, 1, true)); inverseMasterDraw(HEDGE_STOCK); } });
+defUpgrade('interestFree', { desc: `오늘 신용·대차 이자 면제. 카드 ${INTEREST_FREE_DRAW_UP}장을 뽑는다.`, play: () => { run.interestFree = true; drawCards(INTEREST_FREE_DRAW_UP); } });
+defUpgrade('overdraft', { desc: `현금 +₩${OVERDRAFT_AMOUNT_UP.toLocaleString()}만. 갚지 않는 영구 대출이라 매일 이자가 붙는다.`,
+  play: () => { run.cash += OVERDRAFT_AMOUNT_UP; run.overdraft += OVERDRAFT_AMOUNT_UP; } });
+defUpgrade('confess', { desc: `금감원 감시 게이지 −${FSS_CONFESS_CUT_UP}. "반성문 제출했습니다." 소멸.`, play: () => { run.fss = Math.max(0, run.fss - FSS_CONFESS_CUT_UP); } });
+defUpgrade('savings', { desc: `현금 +₩${SAVINGS_AMOUNT_UP}만.`, play: () => { run.cash += SAVINGS_AMOUNT_UP; } });
+defUpgrade('delever', { ap: 0 });
+defUpgrade('lossGuard', { desc: `오늘 반대매매 손실의 ${pct(LOSS_GUARD_REFUND_UP)} 환급. ※ 실제로는 불법입니다.`, play: () => { run.lossGuardToday = LOSS_GUARD_REFUND_UP; } });
+defUpgrade('circuit', { desc: `오늘 순자산 −${pct(CIRCUIT_DROP_UP)}(개장 대비)면 즉시 장 마감. 반대매매 면제. 소멸.`,
+  play: () => { run.circuitToday = CIRCUIT_DROP_UP; run.allProtectedToday = true; } });
 
 /* ── 카드 사용 ── */
 function resolveTarget(card, targetId){
@@ -1312,20 +1465,26 @@ function resolveTarget(card, targetId){
 /* 이 카드를 지금 쓰는 데 드는 행동력 (이번 주 효과 반영) */
 /* 표시용 카드 설명 — 유물로 확률이 바뀌는 카드는 지금 실제 값으로 (리딩방 VIP) */
 function cardDesc(card){
-  if(card.id === 'pump' && run && pumpUpChance() !== PUMP_UP_CHANCE)
+  if(card.id === 'pump' && run && pumpUpChance() !== PUMP_UP_CHANCE)   // (강화판 pump+는 자기 desc가 이미 강화 확률)
     return `오늘 작전: ${pct(pumpUpChance())} 급등(+${pct(PUMP_UP_PCT)}) / ${pct(1 - pumpUpChance())} 설거지(−${pct(PUMP_DOWN_PCT)}). 개장 때 공개. 금감원 +${FSS_GAIN.pump}.`;
   return card.desc;
 }
 
 function cardCost(card){
   if(card.type === 'stock' && run.week.antArmy) return 0;
-  if(run.week.topSpotter && (card.id === 'takeProfit' || card.id === 'trailing')) return 0;
+  if(run.week.topSpotter && (card.base === 'takeProfit' || card.base === 'trailing')) return 0;
   if(card.type === 'sell' && hasRelic('daytrader') && !run.sellDiscountUsed) return Math.max(0, card.ap - RELIC_DAYTRADER_CUT);
   return card.ap;
 }
 
-/* 사용 불가 이유 코드 (null = 사용 가능) */
-function checkPlay(handIdx, targetId){
+/* 사용 불가 이유 코드 (null = 사용 가능). opts.amount = 종목 카드 매수 금액 (없으면 기본값) */
+function checkPlay(handIdx, targetId, opts){
+  run && (run.buyAmount = opts && opts.amount ? opts.amount : 0);
+  const r = checkPlayInner(handIdx, targetId);
+  if(run) run.buyAmount = 0;
+  return r;
+}
+function checkPlayInner(handIdx, targetId){
   if(!run || run.phase !== 'premarket') return 'phase';
   const inst = run.hand[handIdx];
   if(!inst) return 'none';
@@ -1335,6 +1494,7 @@ function checkPlay(handIdx, targetId){
   if(run.ap < cardCost(card)) return 'ap';
   const t = resolveTarget(card, targetId);
   if(card.target && !t) return 'target';
+  if(card.type === 'stock' && run.buyAmount && run.buyAmount < STOCK_BUY_MIN) return 'amount';
   if(!card.valid(t)) return 'invalid';
   return null;
 }
@@ -1348,9 +1508,10 @@ function validTargetIds(handIdx){
   return [];
 }
 
-function playCard(handIdx, targetId){
-  const reason = checkPlay(handIdx, targetId);
+function playCard(handIdx, targetId, opts){
+  const reason = checkPlay(handIdx, targetId, opts);
   if(reason){ emit('cardRejected', {reason}); return false; }
+  run.buyAmount = opts && opts.amount ? opts.amount : 0;   // 종목 카드: 입력한 금액 (play가 stockCost로 읽는다)
   const inst = run.hand[handIdx];
   const card = CARD_BY_ID[inst.id];
   const t = resolveTarget(card, targetId);
@@ -1361,8 +1522,10 @@ function playCard(handIdx, targetId){
   if(card.exhaust) run.exhausted.push(inst); else run.discard.push(inst);
   card.play(t);
   if(card.type === 'stock' && run.week.antArmy) drawCards(ANT_ARMY_DRAW);   // 개미 군단 총공격
+  run.buyAmount = 0;
   emit('cardPlayed', {card});
-  if(FSS_GAIN[card.id]) raiseFss(FSS_GAIN[card.id]);
+  const fssGain = card.upgraded && FSS_GAIN_UP[card.base] !== undefined ? FSS_GAIN_UP[card.base] : FSS_GAIN[card.base];
+  if(fssGain) raiseFss(fssGain);
   checkBankruptcy();
   return true;
 }
@@ -1370,11 +1533,17 @@ function playCard(handIdx, targetId){
 /* ── 더미: 뽑을 카드 / 버린 카드 / 소멸 ── */
 function newCard(id){ return { uid: run.nextUid++, id }; }
 
-function buildWeekPiles(){ // 주 시작: 소멸·트라우마 정리, 덱 전체를 섞는다
-  run.drawPile = shuffle(run.masterDeck.map(newCard));
-  run.discard = [];
+/* 주 시작 (덱 순환 D6 · 슬레이 더 스파이어식): 드로우 더미는 순서 그대로 이어 간다.
+   masterDeck과 맞춰 정리만 한다 — 남은 드로우 더미 중 덱에 있는 카드는 유지, 나머지(버린·소멸·손패·새로 얻은 카드)는 버린 더미로,
+   덱에 없는 카드(트라우마·제거·강화 전 원본)는 사라진다. 드로우 더미가 비면 버린 더미를 섞는다 (첫 주 포함) */
+function buildWeekPiles(){
+  const want = run.masterDeck.slice();
+  const take = id => { const i = want.indexOf(id); if(i < 0) return false; want.splice(i, 1); return true; };
+  run.drawPile = run.drawPile.filter(c => take(c.id));
+  run.discard = want.map(newCard);
   run.exhausted = [];
   run.hand = [];
+  if(run.drawPile.length === 0){ run.drawPile = shuffle(run.discard); run.discard = []; }
 }
 
 function drawCards(n){
@@ -1415,7 +1584,8 @@ function newRun(){
     // 오늘만 유효한 효과 (startDay에서 초기화)
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
     week: { antArmy: false, topSpotter: false, valueGod: false },   // 이번 주 효과 (startNextRound에서 초기화)
-    lossGuardToday: false, sellDiscountUsed: false, dayRoll: 0, circuitToday: false, circuitTripped: false, marketOpenEquity: 0,
+    buyAmount: 0,                            // 종목 카드 입력 금액 (playCard 안에서만, 평소 0)
+    lossGuardToday: false, shortFeeFreeToday: false, sellDiscountUsed: false, dayRoll: 0, circuitToday: false, circuitTripped: false, marketOpenEquity: 0,
     gapToday: [], gapNext: [],               // 작전 세력: 오늘 건 갭 → 다음 날 개장 때 적용
     marketCard: '', cardMarket: false,       // 오늘 쓴 시장 카드 (장이 열릴 때 판정) / 오늘 장세가 카드로 만들어졌는지
     revertDir: 0, revertTicksLeft: 0,        // 카드 장세 다음 날 되돌림 (지수 방향 ±1, 남은 틱)
@@ -1453,6 +1623,7 @@ function startDay(){
   run.marketCard = '';
   run.cardMarket = false;
   run.lossGuardToday = false;
+  run.shortFeeFreeToday = false;
   run.sellDiscountUsed = false;
   run.dayRoll = rand();                    // 오늘 시장 카드 판정용 난수 (타임머신이면 장전에 결과를 보여준다)
   if(run.day === 1 && relicStacks('compoundMonster') > 0){   // 복리 괴물
@@ -1611,13 +1782,14 @@ function marketCardEv(cardId){   // 지금 대기 중인 시장 카드(없으면
   const avg = odds => odds.reduce((sum, o) => sum + o.chance * stateImpact(o.state, TICKS_PER_DAY), 0);
   return avg(MARKET_CARD_ODDS[cardId]) - avg(run.marketCard ? MARKET_CARD_ODDS[run.marketCard] : [{ state: 'NORMAL', chance: 1 }]);
 }
-const pumpEvRate = () => pumpUpChance() * PUMP_UP_PCT - (1 - pumpUpChance()) * PUMP_DOWN_PCT;
+const pumpChanceFor = card => card.upgraded ? Math.max(pumpUpChance(), PUMP_UP_CHANCE_UP) : pumpUpChance();   // 리딩방 찌라시(+) 급등 확률 (판정·표시 공용)
 const manipEvRate = () => (1 + MANIP_PCT) * (1 + MANIP_GAP) - 1;   // 오늘 +20% 확정 → 내일 개장 −12% (이틀 보유)
 function expectedValue(card, target){
-  if(card.id === 'pump' || card.id === 'manip'){
-    const rate = card.id === 'pump' ? pumpEvRate() : manipEvRate();
-    const note = card.id === 'pump'
-      ? `급등 ${pct(pumpUpChance())} × +${pct(PUMP_UP_PCT)} − 설거지 ${pct(1 - pumpUpChance())} × −${pct(PUMP_DOWN_PCT)}`
+  if(card.base === 'pump' || card.base === 'manip'){
+    const up = pumpChanceFor(card);
+    const rate = card.base === 'pump' ? up * PUMP_UP_PCT - (1 - up) * PUMP_DOWN_PCT : manipEvRate();
+    const note = card.base === 'pump'
+      ? `급등 ${pct(up)} × +${pct(PUMP_UP_PCT)} − 설거지 ${pct(1 - up)} × −${pct(PUMP_DOWN_PCT)}`
       : `오늘 +${pct(MANIP_PCT)} → 내일 −${pct(MANIP_GAP)} (이틀 보유)`;
     return { ev: target ? heldExposure(target.id) * rate : 0, rate, note };
   }
@@ -1844,7 +2016,7 @@ function tick(){
   updateCombo();
   notePeak(netEquity());
   if(checkBankruptcy()) return;
-  if(run.circuitToday && !run.circuitTripped && netEquity() <= run.marketOpenEquity * (1 - CIRCUIT_DROP)){
+  if(run.circuitToday && !run.circuitTripped && netEquity() <= run.marketOpenEquity * (1 - run.circuitToday)){
     run.circuitTripped = true;
     emit('circuitBreak', {eq: netEquity(), open: run.marketOpenEquity});
     endOfDay();
@@ -1856,8 +2028,8 @@ function tick(){
 }
 
 function endOfDay(){
-  run.discard = run.discard.concat(run.hand);   // 쓰지 않은 손패는 전부 버린다
-  run.hand = [];
+  run.discard = run.discard.concat(run.hand.filter(c => !CARD_BY_ID[c.id].retain));   // 쓰지 않은 손패는 버린다 (보유 retain 카드만 남는다)
+  run.hand = run.hand.filter(c => CARD_BY_ID[c.id].retain);
   settleDay();   // 장 마감 정산 (존버의 인장은 오늘 전까지 넘긴 장 마감 수로 판정)
   run.positions.forEach(p => { p.daysHeld++; });   // 존버의 인장: 장 마감을 넘긴 횟수
   const interest = dailyInterest();
@@ -1874,7 +2046,7 @@ function endOfDay(){
   nextRegimes();
   run.newsTomorrow = pickNews();
   if(run.week.valueGod){   // 가치투자의 신
-    const pay = run.positions.filter(p => p.dir > 0 && p.daysHeld >= VALUE_GOD_DAYS).reduce((sum, p) => sum + p.principal * VALUE_GOD_PCT, 0);
+    const pay = run.positions.filter(p => p.dir > 0 && p.daysHeld >= VALUE_GOD_DAYS).reduce((sum, p) => sum + p.principal * run.week.valueGod, 0);
     if(pay > 0){ run.cash += pay; emit('valueGodPaid', {amount: pay}); }
   }
   run.gapNext = run.gapNext.concat(run.gapToday);
@@ -1895,7 +2067,7 @@ function endOfRound(){
   run.positions.forEach(p => {
     if(!p.diamond) return;
     const pnl = posPnl(p);
-    if(pnl > 0){ diamondBonus += pnl * DIAMOND_BONUS; diamondPaid.push({ posId: p.id, amount: pnl * DIAMOND_BONUS }); }
+    if(pnl > 0){ diamondBonus += pnl * p.diamond; diamondPaid.push({ posId: p.id, amount: pnl * p.diamond }); }
     p.diamond = false;
   });
   run.cash += diamondBonus;
@@ -1991,6 +2163,25 @@ function classifyEnd(reason){
 const rewardRarityWeights = () => REWARD_RARITY_BY_WEEK.find(b => run.round <= b.upTo).weights;
 const mythicCount = () => run.masterDeck.filter(id => CARD_BY_ID[id].rarity === 'mythic').length;
 const cardAllowed = id => !inDeck(id) && (CARD_BY_ID[id].rarity !== 'mythic' || mythicCount() < MYTHIC_DECK_LIMIT);
+/* 빌드 태그: 내 덱(카드 + 유물)에서 가장 많이 나온 태그들 (동점이면 전부, 없으면 빈 배열) */
+const cardTags = id => (CARD_BY_ID[id] && CARD_BY_ID[id].tags) || [];
+function topTags(){
+  if(!run) return [];
+  const n = {};
+  run.masterDeck.forEach(id => cardTags(id).forEach(t => { n[t] = (n[t] || 0) + 1; }));
+  run.relics.forEach(id => RELIC_BY_ID[id].tags.forEach(t => { n[t] = (n[t] || 0) + 1; }));
+  const best = Math.max(0, ...Object.keys(n).map(t => n[t]));
+  return best > 0 ? Object.keys(TAGS).filter(t => n[t] === best) : [];
+}
+/* 후보(카드·유물 객체) 하나의 등급 안 가중치: 상위 태그를 하나라도 가지면 1 + TAG_BIAS */
+const tagWeight = (x, top) => x.tags.some(t => top.indexOf(t) >= 0) ? 1 + TAG_BIAS : 1;
+function pickTagged(list){   // 등급 안 가중 추첨 (rand() 한 번 — 가중치가 전부 1이면 균등)
+  const top = topTags(), w = list.map(x => tagWeight(x, top)), total = w.reduce((a, b) => a + b, 0);
+  let roll = rand() * total;
+  for(let i = 0; i < list.length; i++){ roll -= w[i]; if(roll < 0) return list[i]; }
+  return list[list.length - 1];
+}
+
 function rollRarity(weights, cands){
   const tiers = RARITIES.filter(r => weights[r] > 0 && cands.some(c => c.rarity === r));
   if(tiers.length === 0) return '';
@@ -2009,13 +2200,12 @@ function rollRewards(n, exclude = []){
     const cands = pool.filter(c => picks.indexOf(c.id) < 0);
     const rarity = rollRarity(rewardRarityWeights(), cands);
     if(!rarity) break;
-    const tier = cands.filter(c => c.rarity === rarity);
-    picks.push(tier[randInt(tier.length)].id);
+    picks.push(pickTagged(cands.filter(c => c.rarity === rarity)).id);
   }
   return picks;
 }
 
-/* 1단계 카드 보상 — kind: 'take'(카드 id) | 'remove'(masterDeck 인덱스) | 'skip' */
+/* 1단계 카드 보상 — kind: 'take'(카드 id) | 'remove'·'upgrade'(masterDeck 인덱스) | 'skip' */
 function chooseReward(kind, value){
   if(!run || run.phase !== 'reward' || run.rewardStep !== 'card') return false;
   let cardId = '';
@@ -2027,6 +2217,10 @@ function chooseReward(kind, value){
     if(run.masterDeck.length <= MIN_DECK_SIZE || value < 0 || value >= run.masterDeck.length) return false;
     cardId = run.masterDeck[value];
     run.masterDeck.splice(value, 1);
+  } else if(kind === 'upgrade'){   // 카드 강화: masterDeck 인덱스
+    if(value < 0 || value >= run.masterDeck.length || !canUpgrade(run.masterDeck[value])) return false;
+    run.masterDeck[value] += '+';
+    cardId = run.masterDeck[value];
   }
   emit('rewardChosen', {kind, cardId, deckSize: run.masterDeck.length});
   if(run.relicChoices.length){
@@ -2058,7 +2252,7 @@ const SHOP_PACK_BY_ID = {};
 SHOP_PACKS.forEach(pk => { SHOP_PACK_BY_ID[pk.id] = pk; });
 
 /* 팩에서 나올 수 있는 카드: 팩 구성 중 지금 덱에 없는 것만 (종목 카드 포함, 신화는 덱 한도까지) */
-const inDeck = id => !!run && run.masterDeck.indexOf(id) >= 0;
+const inDeck = id => !!run && run.masterDeck.some(x => CARD_BY_ID[x].base === id);   // 강화판(+)이 있어도 '덱에 있음'
 function packPool(pk){
   const ids = pk.pool.length ? pk.pool : CARDS.filter(c => c.type !== 'status').map(c => c.id);
   return ids.filter(id => CARD_BY_ID[id] && CARD_BY_ID[id].type !== 'status' && pk.weights[CARD_BY_ID[id].rarity] > 0 && cardAllowed(id));   // 확률 0% 등급은 구성에 있어도 제외
@@ -2076,9 +2270,11 @@ function packRarityOdds(pk){
 function packCardOdds(pk){
   const pool = packPool(pk);
   const out = [];
+  const top = topTags();
   packRarityOdds(pk).forEach(o => {
     const ids = pool.filter(id => CARD_BY_ID[id].rarity === o.rarity);
-    ids.forEach(id => out.push({ cardId: id, chance: o.chance / ids.length }));
+    const w = ids.map(id => tagWeight(CARD_BY_ID[id], top)), total = w.reduce((a, b) => a + b, 0);
+    ids.forEach((id, i) => out.push({ cardId: id, chance: o.chance * w[i] / total }));   // 상위 태그 카드는 TAG_BIAS만큼 더 (rollPack과 같은 계산)
   });
   return out;
 }
@@ -2090,8 +2286,7 @@ function rollPack(pk){
     roll -= odds[i].chance;
     if(roll < 0){ rarity = odds[i].rarity; break; }
   }
-  const ids = packPool(pk).filter(id => CARD_BY_ID[id].rarity === rarity);
-  return ids[randInt(ids.length)];
+  return pickTagged(packPool(pk).filter(id => CARD_BY_ID[id].rarity === rarity).map(id => CARD_BY_ID[id])).id;
 }
 
 /* 암시장 가격은 전부 여기서 (구매·화면 표시·시뮬레이터 공용) */
@@ -2122,7 +2317,7 @@ function openShop(){
   run.phase = 'shop';
   const count = SHOP_SINGLE_MIN + randInt(SHOP_SINGLE_MAX - SHOP_SINGLE_MIN + 1);
   run.shop = { singles: rollRewards(count, run.masterDeck), singlesBought: [], removed: 0, relics: rollRelics(RELIC_SHOP_COUNT, [], RELIC_SHOP_RARITY_WEIGHTS),   // 덱에 없는 카드만 진열
-               rerolls: { single: 0, relic: 0 } };   // 이번 주 새로고침 횟수 (다음 주 암시장에서 0)
+               rerolls: { single: 0, relic: 0 }, services: { upgrade: 0, transform: 0, duplicate: 0 } };   // 이번 주 새로고침 횟수 (다음 주 암시장에서 0)
   emit('shopOpen', {round: run.round});
 }
 
@@ -2171,6 +2366,35 @@ function shopRemoveCard(deckIdx){
 }
 
 /* replaceId: 칸이 가득 찼을 때 교체할 보유 유물 (없으면 'slots'로 거절) */
+/* ── 덱 조작 (리모델링·변환·복제) — 비용 serviceCost(kind, n) = (기본 × 누진^n) 물가 반영, 이번 주 n번째 ── */
+const serviceCost     = (kind, n) => shopPrice(SHOP_SERVICE_BASE[kind] * Math.pow(SHOP_SERVICE_ESCALATION, n), 'service');
+const shopServiceCost = kind => serviceCost(kind, run.shop.services[kind]);
+/* 변환 후보: 같은 등급의 다른 기본 카드 (덱에 없는 것, 신화 한도) — 순수 */
+const transformPool = id => { const c = CARD_BY_ID[id]; return CARDS.filter(x => x.type !== 'status' && x.rarity === c.rarity && x.id !== c.base && cardAllowed(x.id)); };
+function canService(kind, deckIdx){
+  const id = run.masterDeck[deckIdx];
+  if(!id) return false;
+  if(kind === 'upgrade') return canUpgrade(id);
+  if(kind === 'transform') return transformPool(id).length > 0;
+  return CARD_BY_ID[id].rarity !== 'mythic';   // duplicate
+}
+function shopService(kind, deckIdx){
+  if(!shopOpenNow()) return shopReject('phase');
+  if(!SHOP_SERVICE_BASE[kind]) return shopReject('none');
+  if(!canService(kind, deckIdx)) return shopReject(kind === 'duplicate' ? 'mythic' : 'none');
+  const price = shopServiceCost(kind);
+  if(run.slush < price) return shopReject('slush');
+  run.slush -= price;
+  run.shop.services[kind]++;
+  const from = run.masterDeck[deckIdx];
+  let to = from;
+  if(kind === 'upgrade'){ to = from + '+'; run.masterDeck[deckIdx] = to; }
+  else if(kind === 'transform'){ to = pickTagged(transformPool(from)).id; run.masterDeck[deckIdx] = to; }
+  else run.masterDeck.push(from);
+  emit('shopServiced', {kind, from, to, price, deckSize: run.masterDeck.length});
+  return true;
+}
+
 function buyRelic(id, replaceId){
   if(!shopOpenNow()) return shopReject('phase');
   if(run.shop.relics.indexOf(id) < 0) return shopReject('none');

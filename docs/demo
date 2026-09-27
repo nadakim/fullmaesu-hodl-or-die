@@ -432,6 +432,23 @@ body::after{
 .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.25;text-align:center;color:var(--text);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;}
 .card.r-mythic .g-name{color:var(--gold);}
+/* 강화판(+): 안쪽 테두리 금색 + 이름 금색 · 빌드 태그 아이콘 */
+.card.up{--cc:var(--gold);}
+.card.up .g-name,.card.up .sym{color:var(--gold);}
+.c-tags{white-space:nowrap;letter-spacing:calc(1 * var(--u));}
+.rt-tags{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--text2);}
+/* 종목 매수 금액 입력 */
+.amt-box{display:flex;flex-direction:column;gap:calc(10 * var(--u));text-align:left;}
+.amt-row{display:flex;gap:calc(8 * var(--u));align-items:center;flex-wrap:wrap;}
+.amt-row input[type=range]{flex:1;min-width:calc(160 * var(--u));accent-color:var(--gold);}
+.amt-row input[type=number]{width:calc(120 * var(--u));padding:calc(6 * var(--u));background:#000;color:var(--gold);border:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);
+  font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);}
+.amt-q{border:none;cursor:pointer;padding:calc(6 * var(--u)) calc(10 * var(--u));background:var(--panel2);color:var(--cyan);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
+.amt-q:hover{box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan);}
+.amt-info{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.7;color:var(--text2);}
+.amt-info b{color:var(--gold);font-weight:normal;}
+.shop-services{display:flex;gap:calc(10 * var(--u));flex-wrap:wrap;margin-top:calc(8 * var(--u));}
+.shop-services .ov-btn{width:auto;flex:1;min-width:calc(170 * var(--u));margin:0;}
 .g-line{text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;line-height:1.3;}
 .g-line .c-cost,.g-line .c-price{display:inline;}
 .g-desc{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--text2);}
@@ -1901,10 +1918,13 @@ const REJECT_TEXT  = {
   invalid:'지금은 쓸 수 없는 카드입니다', target:'대상을 고르세요',
   unplayable:'사용할 수 없는 카드입니다', none:'카드가 없습니다',
   locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번)',
-  banned:'☎ 금감원 제재 중 — 오늘은 신규 매수 금지'
+  banned:'☎ 금감원 제재 중 — 오늘은 신규 매수 금지',
+  amount:`매수 금액은 최소 ₩${STOCK_BUY_MIN}만입니다`
 };
 const CARD_ORDER = {};
-CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; });
+CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; CARD_ORDER[c.id + '+'] = i + 0.5; });   // 강화판(+)은 원래 카드 바로 뒤
+const tagIcons = tags => tags.map(t => TAGS[t].icon).join('');
+const tagNames = tags => tags.map(t => TAGS[t].icon + ' ' + TAGS[t].name).join(' · ');
 
 /* 금액 표시는 전부 formatKrw 하나로 (게임 금액 단위 = 만 원). 한국 큰 수 단위 만 → 무량대수(10⁶⁸원), 상위 두 단위까지.
    1억 원 미만은 정확히 ("2,345만"), 1조 원 미만은 두 단위 그대로 ("1,234억 5,678만"), 1조 원 이상은 유효숫자 4자리로 반올림 ("3조 2,420억").
@@ -2380,13 +2400,13 @@ function whenFxIdle(fn){
 
 /* 카드 사용 + 연출: 엔진 호출은 playCard 그대로. 성공하면 손패 카드가 대상(포지션·시세 행, 종목 카드는 새 포지션)으로 날아간다 */
 let lastBoughtPosId = -1;
-function playCardFx(idx, targetId){
+function playCardFx(idx, targetId, opts){
   const el = $('handBox').querySelector(`[data-idx="${idx}"]`);
   const inst = run.hand[idx];
   const card = inst ? CARD_BY_ID[inst.id] : null;
   const rect = rectOf(el), ghost = el ? el.cloneNode(true) : null;
   lastBoughtPosId = -1;
-  const ok = playCard(idx, targetId);
+  const ok = playCard(idx, targetId, opts);
   renderAll();
   if(!ok || !ghost || !card) return ok;
   const target = card.target === 'position' ? posRowEl(targetId) : card.target === 'asset' ? quoteRowEl(targetId)
@@ -2482,7 +2502,7 @@ function onGameEvent(type, d){
       toast('▶ 장 시작!', 'good');
       Sound.play('marketOpen');
       if(d.marketCard){
-        const [news, kind] = MARKET_CARD_NEWS[d.marketCard][d.outcome];
+        const [news, kind] = MARKET_CARD_NEWS[CARD_BY_ID[d.marketCard].base][d.outcome];
         $('newsText').textContent = news;
         toast(`${CARD_BY_ID[d.marketCard].name} → ${STATE_LABEL[d.outcome]}`, kind);
       }
@@ -2543,7 +2563,8 @@ function onGameEvent(type, d){
       break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
-        : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn'] : ['카드 보상 건너뜀', 'info']);
+        : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn']
+        : d.kind === 'upgrade' ? [`✦ ${CARD_BY_ID[d.cardId].name} 강화`, 'good'] : ['카드 보상 건너뜀', 'info']);
       break;
     case 'relicRewardOpen': showRelicReward(); break;
     case 'relicRewardChosen':
@@ -2561,6 +2582,9 @@ function onGameEvent(type, d){
     case 'packOpened':   showPackResult(d); juicePack(d); break;
     case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
     case 'shopRerolled': Sound.play('shopShuffle'); break;
+    case 'shopServiced': toast(d.kind === 'upgrade' ? `✦ ${CARD_BY_ID[d.to].name} 리모델링 −${fmtSlush(d.price)}`
+        : d.kind === 'transform' ? `🔀 ${CARD_BY_ID[d.from].name} → ${CARD_BY_ID[d.to].name} −${fmtSlush(d.price)}`
+        : `📑 ${CARD_BY_ID[d.from].name} 복제 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
     case 'shopRemoved':  toast(`${CARD_BY_ID[d.cardId].name} 영구 제거 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'warn'); break;
     case 'runOver':
       overPending = true;
@@ -2614,12 +2638,12 @@ function handCardHtml(card, o){
   const stock = card.stock ? STOCK_BY_ID[card.stock] : null;
   const foot = [card.target ? TARGET_LABEL[card.target] : '', card.exhaust ? '소멸' : ''].filter(Boolean).join(' · ');
   return `
-    <div class="card gcard t-${card.type} r-${card.rarity} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
+    <div class="card gcard t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
       <div class="g-top"><span class="c-ap">${card.type === 'status' ? '✕' : o.ap}</span><span class="g-band"></span><span class="g-rar" title="${card.type === 'status' ? '상태' : RARITY_LABEL[card.rarity]}"></span></div>
       <div class="g-name">${card.name}</div>
       ${stock ? `<div class="g-line"><span class="c-cost">₩${formatKrw(o.cost)}</span></div><div class="g-line"><span class="c-price" data-p="${stock.id}"></span></div>`
               : `<div class="g-line g-desc">${cardDesc(card)}</div>`}
-      <div class="g-foot">${foot}</div>
+      <div class="g-foot">${card.tags.length ? `<span class="c-tags">${tagIcons(card.tags)}</span> ` : ''}${foot}</div>
     </div>`;
 }
 
@@ -2627,14 +2651,14 @@ function cardHtml(card, o){
   const stock = card.stock ? STOCK_BY_ID[card.stock] : null;
   const foot = [card.target ? TARGET_LABEL[card.target] : '', card.exhaust ? '소멸' : ''].filter(Boolean).join(' ');
   return `
-    <div class="card t-${card.type} r-${card.rarity} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
+    <div class="card t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
       <div class="c-top"><span class="c-ap">${card.type === 'status' ? '✕' : (o.ap !== undefined ? o.ap : card.ap)}</span><span class="c-type">${TYPE_LABEL[card.type]}</span></div>
       <div class="sym">${card.name}</div>
       ${stock ? `<div class="c-cost">₩${formatKrw(o.cost || stock.cost)}</div>` : ''}
       ${stock && o.live ? `<div class="c-price" data-p="${stock.id}"></div>` : ''}
       <div class="c-desc">${cardDesc(card)}</div>
       ${o.ev ? `<div class="c-ev ${o.ev.cls}" title="${o.ev.title}">${o.ev.text}</div>` : ''}
-      <div class="c-foot"><span>${foot}</span><span class="c-rar ${card.rarity}">${card.type === 'status' ? '' : RARITY_LABEL[card.rarity]}</span></div>
+      <div class="c-foot"><span>${card.tags.length ? `<span class="c-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span> ` : ''}${foot}</span><span class="c-rar ${card.rarity}">${card.type === 'status' ? '' : RARITY_LABEL[card.rarity]}</span></div>
     </div>`;
 }
 
@@ -2681,6 +2705,7 @@ function showCardTip(el){
   const ev = idx >= 0 && run && run.phase === 'premarket' ? cardEvView(card) : null;
   cardTipEl.innerHTML = `<b>${card.name}</b>
     <span class="ct-meta">${TYPE_LABEL[card.type]} · ${RARITY_LABEL[card.rarity]} · 행동력 ${card.type === 'status' ? '—' : ap}${card.exhaust ? ' · 소멸' : ''}${card.target ? ' · 대상 ' + TARGET_LABEL[card.target] : ''}${stock ? ` · ₩${formatKrw(idx >= 0 && run ? stockCost(stock) : stock.cost)}${idx >= 0 && run ? ` · 현재가 ${fmtPrice(assets[stock.id].price)}` : ''} · ${stock.sector} · β ${stock.beta} · 변동성 ${stock.volatility}` : ''}</span>
+    ${card.tags.length ? `<span class="ct-meta">태그 ${tagNames(card.tags)}${topTags().some(t => card.tags.indexOf(t) >= 0) ? ' — 내 덱 주력 태그 (보상·암시장 +' + Math.round(TAG_BIAS * 100) + '%)' : ''}</span>` : ''}${card.upgraded ? `<span class="ct-meta">✦ 강화판 — 원래: ${CARD_BY_ID[card.base].desc}</span>` : canUpgrade(card.id) ? `<span class="ct-meta">✦ 강화하면: ${CARD_BY_ID[card.id + '+'].desc}${CARD_BY_ID[card.id + '+'].ap !== card.ap ? ` (행동력 ${CARD_BY_ID[card.id + '+'].ap})` : ''}</span>` : ''}
     ${cardDesc(card)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
   cardTipEl.hidden = false;
   const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
@@ -2898,8 +2923,8 @@ function renderTurn(){
     });
     STOCKS.filter(st => run.pumps[st.id] === 1 || run.pumps[st.id] === -1).forEach(st => chips.push(`<span class="chip mod">🕰️ ${st.name} ${run.pumps[st.id] > 0 ? '급등' : '설거지'}</span>`));
   }
-  if(run.lossGuardToday) chips.push('<span class="chip">손실 보전 약정: 오늘 반대매매 손실 50% 환급</span>');
-  if(run.circuitToday) chips.push(`<span class="chip">서킷브레이커: 오늘 −${pct(CIRCUIT_DROP)}에서 장 마감 · 반대매매 면제${run.circuitTripped ? ' (발동)' : ''}</span>`);
+  if(run.lossGuardToday) chips.push(`<span class="chip">손실 보전 약정: 오늘 반대매매 손실 ${pct(run.lossGuardToday)} 환급</span>`);
+  if(run.circuitToday) chips.push(`<span class="chip">서킷브레이커: 오늘 −${pct(run.circuitToday)}에서 장 마감 · 반대매매 면제${run.circuitTripped ? ' (발동)' : ''}</span>`);
   $('chipBox').innerHTML = chips.join('');
   // 내일 뉴스 예고: 배너 옆 '📰 내일' 버튼 (호버 = 제목, 누르면 알림)
   const tmr = newsTomorrowLine(), nb = $('newsNextBtn');
@@ -2982,11 +3007,11 @@ function cardEvView(card){
 /* 예약주문·존버·다이아·유물 태그 = 아이콘만 (설명은 호버) */
 function orderIcons(p){
   const t = [];
-  if(p.stopLoss)       t.push(['✂', `손절 예약 ${fmtPct(STOP_LOSS_PCT)}`, 'stop']);
-  if(p.takeProfit)     t.push(['🎯', `익절 예약 ${fmtPct(TAKE_PROFIT_PCT)}`, 'take']);
+  if(p.stopLoss)       t.push(['✂', `손절 예약 ${fmtPct(p.stopLoss)}`, 'stop']);
+  if(p.takeProfit)     t.push(['🎯', `익절 예약 ${fmtPct(p.takeProfit)}`, 'take']);
   if(p.trailing)       t.push(['〰', `트레일링 스탑 ${Math.round(TRAIL_GAP * 100)}%p`, 'trail']);
   if(p.protectedToday) t.push(['🛡', '존버: 오늘 반대매매 면제', 'hodl']);
-  if(p.diamond)        t.push(['💎', `다이아몬드 핸드: 이번 주 매도 불가 · 결산 보너스`, 'diamond']);
+  if(p.diamond)        t.push(['💎', `다이아몬드 핸드: 이번 주 매도 불가 · 결산 보너스 ${pct(p.diamond)}`, 'diamond']);
   if(gukbapApplies(p)) t.push(['🍲', `국밥 정신: 그날 손실의 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%를 장 마감 정산에서 환급`, 'relic-on']);
   if(sealApplies(p))   t.push(['🔏', `존버의 인장: 장 마감 정산 ×${1 + RELIC_SEAL_BONUS}`, 'relic-on']);
   return t.map(([ic, tip, c]) => `<span class="o-ic ${c}" title="${tip}">${ic}</span>`).join('');
@@ -3096,8 +3121,20 @@ function showReward(d){
     <div class="ov-cards">${run.rewardChoices.length
       ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
       : '<div class="empty-note">덱에 없는 카드가 더 이상 없습니다</div>'}</div>
+    <button class="ov-btn alt" data-act="upgradeMode" ${run.masterDeck.some(canUpgrade) ? '' : 'disabled'}>✦ 카드 강화 (덱의 카드 1장 → +)</button>
     <button class="ov-btn alt" data-act="removeMode" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거 (덱 압축)</button>
     <button class="ov-btn alt" data-act="skip">▷ 건너뛰기</button>`);
+}
+
+/* 보상 대신 카드 강화: 덱에서 강화할 수 있는 카드 1장 (이미 +인 카드·상태 카드 제외) */
+let upgradePickMode = false;
+function showUpgradePick(){
+  upgradePickMode = true;
+  showOverlay(`
+    <div class="ov-title" style="color:var(--gold)">✦ 카드 강화</div>
+    <div class="ov-sub">강화할 카드 1장을 고르세요. 강화한 카드는 이 판 끝까지 + 상태입니다. (마우스를 올리면 강화 후 효과)</div>
+    <div class="deck-list">${run.masterDeck.map((id, i) => canUpgrade(id) ? cardHtml(CARD_BY_ID[id], { attrs: `data-upgrade="${i}"` }) : '').join('')}</div>
+    <button class="ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
 }
 
 function showRelicReward(){
@@ -3585,7 +3622,7 @@ function relicTile(r, o){
   return `<div class="relic-tile ${r.rarity} ${o.cls || ''}" ${o.attrs || ''}>
     <div class="rt-icon">${r.icon}</div><div class="rt-name">${r.name}</div>
     <div class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</div>
-    <div class="rt-desc">${r.desc}</div><div class="rt-flavor">${r.flavor}</div>
+    <div class="rt-desc">${r.desc}</div>${r.tags.length ? `<div class="rt-tags">${tagNames(r.tags)}</div>` : ''}<div class="rt-flavor">${r.flavor}</div>
     ${o.extra || ''}</div>`;
 }
 
@@ -3822,14 +3859,21 @@ function renderShop(){
     <span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
     <div class="shop-note rm-ladder">다음: ${[0, 1, 2].map(k => `<span class="${k ? '' : 'now'}">${removeCost(sh.removed + k).toLocaleString()}</span>`).join(' → ')} · 같은 주에 제거할 때마다 ×${SHOP_REMOVE_ESCALATION}, 다음 주엔 처음 가격으로 (주차마다 기본가 +${SHOP_REMOVE_PER_WEEK}만) · 덱 ${MIN_DECK_SIZE}장까지</div>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
-      cardHtml(CARD_BY_ID[id], { attrs: canRemove ? `data-shop-remove="${i}"` : '', cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
+      cardHtml(CARD_BY_ID[id], { attrs: `data-shop-remove="${i}"`, cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
     <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.slush >= nextRemove ? '' : 'disabled'}>
       ${!canRemove ? `덱이 ${MIN_DECK_SIZE}장 — 더 줄일 수 없음`
         : shopPickIdx < 0 ? '제거할 카드를 고르세요' : run.slush < nextRemove ? `비자금 부족 (${fmtSlush(nextRemove)})`
         : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (${fmtSlush(nextRemove)})`}
-    </button>`;
+    </button>
+    <span class="section-label">▌ 덱 조작 — 위에서 고른 카드에 · 같은 주에 쓸 때마다 ×${SHOP_SERVICE_ESCALATION}</span>
+    <div class="shop-services">${SHOP_SERVICES.map(([kind, label, note]) => {
+      const price = shopServiceCost(kind), ok = shopPickIdx >= 0 && canService(kind, shopPickIdx);
+      return `<button class="ov-btn alt" data-service="${kind}" title="${note}" ${ok && run.slush >= price ? '' : 'disabled'}>${label} ${fmtSlush(price)}</button>`;
+    }).join('')}</div>`;
 }
 
+const SHOP_SERVICES = [['upgrade', '✦ 리모델링', '고른 카드를 강화(+)'], ['transform', '🔀 변환', '같은 등급의 다른 카드로 무작위 교체 (태그 가중)'],
+                       ['duplicate', '📑 복제', '고른 카드 1장을 덱에 한 장 더 (신화 제외)']];
 const PACK_BURST = { common: [8, ['--muted', '--line2']], uncommon: [16, ['--green2', '--green']], rare: [26, ['--blue', '--cyan']],
                      legendary: [42, ['--purple', '--gold']], mythic: [80, ['--gold', '--gold2', '--text']] };   // 등급별 파티클 수 · 색
 const PACK_REVEAL_MS = 500;   // .flip-card: 0.2초 대기 + 0.6초 뒤집기 → 절반 지점
@@ -3876,6 +3920,10 @@ $('shopBox').addEventListener('click', e => {
   else if(pk) buyPack(pk.dataset.pack);
   else if(single) buySingle(+single.dataset.single);
   else if(rm){ const i = +rm.dataset.shopRemove; shopPickIdx = shopPickIdx === i ? -1 : i; }
+  else if(e.target.closest('[data-service]')){
+    const b = e.target.closest('[data-service]');
+    if(!b.disabled && shopService(b.dataset.service, shopPickIdx)){ if(b.dataset.service !== 'duplicate') shopPickIdx = -1; renderShop(); renderNav(); return; }
+  }
   else if(e.target.closest('#shopRemoveBtn')){
     const before = shopRemoveCost();
     if(shopRemoveCard(shopPickIdx)){   // 바로 제거 → 다음 가격이 튀어 오르며 빨갛게 (올랐다는 걸 체감)
@@ -4187,11 +4235,62 @@ $('handBox').addEventListener('click', e => {
     else if(run.ap < cardCost(card)) toast(REJECT_TEXT.ap, 'bad');
     else if(validTargetIds(idx).length === 0) toast('쓸 수 있는 대상이 없습니다', 'bad');
     else selectedIdx = idx;                                       // 대상 지정 모드
+  } else if(card.type === 'stock' && run.phase === 'premarket' && run.ap >= cardCost(card) && !run.buyBanToday){
+    selectedIdx = -1;
+    showAmountPicker(idx);   // 매수 금액 고르기 → 확인하면 playCardFx(idx, null, {amount})
+    return;
   } else {
     selectedIdx = -1;
     playCardFx(idx, null);
   }
   renderAll();
+});
+
+/* 종목 카드 매수 금액 (S3): 슬라이더·빠른 버튼·숫자 입력, 정산 배수 미리보기. Enter = 매수, Esc = 취소 */
+let amtCtx = null;
+const AMT_QUICK = [0.1, 0.25, 0.5, 1];
+function showAmountPicker(idx){
+  const card = CARD_BY_ID[run.hand[idx].id], s = STOCK_BY_ID[card.base.slice(4)], max = stockMaxAmount();
+  if(max < STOCK_BUY_MIN){ toast('현금이 부족합니다', 'bad'); return; }
+  amtCtx = { idx, stockId: s.id, max, amount: Math.min(s.cost, max) };
+  const pm = run.pending, tags = [pm.lev > 1 ? `레버리지 ${pm.lev}x` : '', pm.dir < 0 ? '공매도' : '', pm.principalMult > 1 ? `영끌 원금 ×${pm.principalMult}` : ''].filter(Boolean);
+  showOverlay(`
+    <div class="ov-title" style="color:var(--gold)">${s.name} 매수 금액</div>
+    <div class="ov-sub">현금 ${fmtMoney(run.cash)} · 기본 ${fmtMoney(s.cost)}${tags.length ? ' · ' + tags.join(' · ') : ''}</div>
+    <div class="amt-box">
+      <div class="amt-row"><input type="range" id="amtRange" min="${STOCK_BUY_MIN}" max="${max}" step="10" value="${amtCtx.amount}">
+        <input type="number" id="amtNum" min="${STOCK_BUY_MIN}" max="${max}" step="10" value="${amtCtx.amount}"></div>
+      <div class="amt-row">${AMT_QUICK.map(q => `<button class="amt-q" data-amt-q="${q}">${q === 1 ? '전액' : Math.round(q * 100) + '%'}</button>`).join('')}</div>
+      <div class="amt-info" id="amtInfo"></div>
+    </div>
+    <button class="ov-btn" data-act="amtOk">▶ 매수 (Enter)</button>
+    <button class="ov-btn alt" data-act="amtCancel">✕ 취소 (Esc)</button>`);
+  updateAmountInfo();
+  const n = $('amtNum'); if(n){ n.focus(); n.select(); }
+}
+function setAmount(v, from){
+  if(!amtCtx) return;
+  amtCtx.amount = Math.max(STOCK_BUY_MIN, Math.min(amtCtx.max, Math.round(+v || 0)));
+  if(from !== 'range') $('amtRange').value = amtCtx.amount;
+  if(from !== 'num') $('amtNum').value = amtCtx.amount;
+  updateAmountInfo();
+}
+function updateAmountInfo(){
+  const el = $('amtInfo'); if(!el || !amtCtx) return;
+  const hp = hypotheticalBuy(amtCtx.stockId, amtCtx.amount), before = previewSettlement().mult, after = previewSettlement(hp).mult;
+  el.innerHTML = `투입 원금 <b>${fmtMoney(hp.principal)}</b> · 노출액 <b>${fmtMoney(hp.entryExposure)}</b> · 남는 현금 <b>${fmtMoney(run.cash - hp.principal)}</b><br>
+    정산 배수 ×${before.toFixed(2)} → <b>×${after.toFixed(2)}</b> · 유리하게 1% 움직이면 <b>${fmtSigned(hp.entryExposure * 0.01 * settleSteps(hp, 1).mult)}</b>`;
+}
+function confirmAmount(){
+  if(!amtCtx) return;
+  const c = amtCtx; amtCtx = null;
+  hideOverlay();
+  playCardFx(c.idx, null, { amount: c.amount });
+}
+function cancelAmount(){ amtCtx = null; hideOverlay(); renderAll(); }
+$('overlayBox').addEventListener('input', e => {
+  if(e.target.id === 'amtRange') setAmount(e.target.value, 'range');
+  else if(e.target.id === 'amtNum') setAmount(e.target.value, 'num');
 });
 
 $('positionsBox').addEventListener('click', e => {
@@ -4222,6 +4321,9 @@ document.addEventListener('keydown', e => {
   if((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && relicTipId && currentTab === 'play' && !overlayOpen && run && canArrangeRelics()){   // 선택한 유물 칸 옮기기
     e.preventDefault(); shiftRelic(relicTipId, e.key === 'ArrowLeft' ? -1 : 1); return;
   }
+  if(amtCtx && e.key === 'Enter'){ e.preventDefault(); confirmAmount(); return; }
+  if(amtCtx && e.key === 'Escape'){ e.preventDefault(); cancelAmount(); return; }
+  if(upgradePickMode && e.key === 'Escape'){ e.preventDefault(); upgradePickMode = false; showReward(lastRoundClear); return; }
   if(e.key === 'Escape'){
     if(selectedIdx >= 0){ selectedIdx = -1; renderAll(); return; }   // 대상 지정 취소가 먼저
     if(menuOpen()){ closeMenu(); return; }
@@ -4233,6 +4335,10 @@ $('overlay').addEventListener('click', e => {
   if(chainPlay){ skipSettlementChain(); return; }
   if(chainHold){ if(e.target.closest('[data-act="chainNext"]')) chainNext(); return; }   // 결과 화면에선 '▶ 다음'만
   if(performance.now() - chainSkippedAt < CHAIN_SKIP_GUARD_MS) return;
+  const aq = e.target.closest('[data-amt-q]');
+  if(aq && amtCtx){ setAmount(amtCtx.max * +aq.dataset.amtQ); return; }
+  const up = e.target.closest('[data-upgrade]');
+  if(up){ upgradePickMode = false; hideOverlay(); chooseReward('upgrade', +up.dataset.upgrade); renderAll(); return; }
   const tc = e.target.closest('[data-tip-choice]');
   if(tc){ chooseTip(+tc.dataset.tipChoice); return; }
   const pb = e.target.closest('[data-pack-buy]');
@@ -4257,7 +4363,10 @@ $('overlay').addEventListener('click', e => {
   const b = e.target.closest('[data-act]');
   if(!b || b.disabled) return;
   const act = b.dataset.act;
-  if(act === 'skip'){ hideOverlay(); chooseReward('skip'); renderAll(); }
+  if(act === 'amtOk') confirmAmount();
+  else if(act === 'amtCancel') cancelAmount();
+  else if(act === 'upgradeMode') showUpgradePick();
+  else if(act === 'skip'){ hideOverlay(); chooseReward('skip'); renderAll(); }
   else if(act === 'skipRelic'){ hideOverlay(); chooseRelicReward(''); renderAll(); }
   else if(act === 'swapBack'){ relicSwapCtx = null; showRelicReward(); }
   else if(act === 'swapGiveUp'){
@@ -4266,7 +4375,7 @@ $('overlay').addEventListener('click', e => {
     if(c && c.mode === 'reward'){ chooseRelicReward(''); renderAll(); }
   }
   else if(act === 'removeMode') showRemove();
-  else if(act === 'backReward') showReward(lastRoundClear);
+  else if(act === 'backReward'){ upgradePickMode = false; showReward(lastRoundClear); }
   else if(act === 'close') hideOverlay();
   else if(act === 'restart') startRun();
   else if(act === 'toReward') showReward(lastRoundClear);

@@ -77,7 +77,7 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
   await page.evaluate(spy);
   await page.evaluate(() => { window.tipChance = () => 0; setSeed(21); startRun(); run.hand = ['stk_meme', 'credit'].map(newCard); handSig = ''; renderAll(); });
   await page.locator('#handBox .card').nth(1).click(); await sleep(100);   // 신용 2x
-  await page.locator('#handBox .card').first().click(); await sleep(500);  // 밈코인 → 카드가 포지션으로 날아간다
+  await page.locator('#handBox .card').first().click(); await sleep(100); await page.keyboard.press('Enter'); await sleep(500);  // 밈코인 → 카드가 포지션으로 날아간다
   const buySfx = await page.evaluate(() => __sfx.map(x => x[0]));
   ok('카드 사용 → cardPlay · 2x 매수 buy', buySfx.includes('cardPlay') && buySfx.includes('buy'), buySfx);
   await page.evaluate(() => { startMarket(); renderAll(); });

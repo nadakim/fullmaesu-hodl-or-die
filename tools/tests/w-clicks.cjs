@@ -12,7 +12,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.evaluate(() => { window.tipChance = () => 0; run.hand = ['stk_semi','pump','stopLoss'].map(newCard); handSig=''; renderAll(); });
     ok('hand card hit', await hit('#handBox .card'));
     const c0 = await p.evaluate(() => run.cash);
-    await p.locator('#handBox .card').first().click(); await sleep(250);
+    await p.locator('#handBox .card').first().click(); await sleep(150);
+    ok('amount OK hit', await hit('[data-act="amtOk"]'));
+    await p.locator('[data-act="amtOk"]').click(); await sleep(250);
     ok('hand card click → 매수', await p.evaluate(c0 => run.cash < c0 && run.positions.length === 1, c0));
     // 종목 대상 카드 → 시세 행 클릭
     await p.locator('#handBox .card', { hasText: '리딩방 찌라시' }).click(); await sleep(150);
