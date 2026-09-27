@@ -1694,7 +1694,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 
       <div class="section-title pos-title">
         <span>▌ 보유 포지션</span>
-        <span>증거금률 25% 미만 = 반대매매</span>
+        <span id="marginRuleText">증거금률 25% 미만 = 반대매매</span>
       </div>
       <div class="positions-wrap" id="positionsBox"></div>
 
@@ -2061,7 +2061,7 @@ function gapInfo(stockId, pct){
   const hurt = held.some(p => p.dir * pct < 0);
   const tier = settings.fxSpeed === 'min' || !held.length ? 1 : hurt ? 3 : 2;
   const dir = held.length ? (held.some(p => p.dir < 0) && !held.some(p => p.dir > 0) ? 'short' : 'long') : 'none';
-  const danger = held.some(p => isMarginable(p) && marginRatio(p) < MARGIN_WARN_RATIO);
+  const danger = held.some(p => isMarginable(p) && marginWarn(p));
   return { stockId, pct, up, tier, meme: pickMeme(dir + (up ? 'Up' : 'Down')), danger: tier === 3 && danger,
            posIds: held.map(p => p.id), posRect: held.length ? rectOf(posRowEl(held[0].id)) : null };
 }
@@ -2215,7 +2215,7 @@ let brinkKey = '';
 function maybeBrink(){
   const key = run.round + '/' + run.day;
   if(brinkKey === key || run.phase === 'over') return;
-  if(!run.positions.some(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < MARGIN_WARN_RATIO)) return;
+  if(!run.positions.some(p => isMarginable(p) && !isProtected(p) && marginWarn(p))) return;
   brinkKey = key;
   const item = { kind: 'brink', tier: 4, blocking: true, duration: 1000, payload: {} };
   item.play = ctx => { Sound.play('gapAlarm', { pitch: chainPitch(ctx) }); Fx.hitStop(FX_TIER[4].hs); Fx.afterStop(() => Fx.shake(2)); Fx.stamp('파산 직전!', '', ''); };
@@ -3014,6 +3014,12 @@ function renderMultPreview(){
     + '\n' + critOddsText();
   if($('multPreview').title !== tip) $('multPreview').title = tip;
 }
+/* 반대매매 기준 문구 (엔진 플래그 MAINTENANCE_MARGIN_ON에 따라 담보비율 / 증거금률) */
+function marginText(p){
+  if(!MAINTENANCE_MARGIN_ON) return `증거금률 ${Math.round(marginRatio(p) * 100)}% / 반대매매 ${Math.round(marginCallRatio(p) * 100)}%`;
+  const c = collateralRatio(p);
+  return `담보비율 ${isFinite(c) ? Math.round(c * 100) + '%' : '—'} / 반대매매 ${Math.round(maintRatio(p) * 100)}% 미만`;
+}
 /* 크리티컬 정산 확률 (엔진 CRIT_* 그대로) — 정산 칩 툴팁·도감 */
 function critOddsText(){
   const total = CRIT_TABLE.reduce((sum, c) => sum + c.weight, 0);
@@ -3120,7 +3126,7 @@ function renderPositions(){
     el.classList.toggle('targetable', targets.indexOf(p.id) >= 0);
     el.querySelector('[data-f=price]').textContent = `평단 ${fmtPrice(avgPrice(p))} → ${fmtPrice(assets[p.assetId].price)}`;
     const tip = `${p.name} · 원금 ₩${formatKrw(p.principal)} · 노출 ${fmtMoney(exposure(p))} · 보유 ${p.daysHeld}일`
-      + (isMarginable(p) ? ` · 증거금률 ${Math.round(marginRatio(p) * 100)}% (반대매매 ${Math.round(MARGIN_CALL_RATIO * 100)}%)${isProtected(p) ? ' · 면제' : ''}` : '');
+      + (isMarginable(p) ? ` · ${marginText(p)}${isProtected(p) ? ' · 면제' : ''}` : '');
     if(el.title !== tip) el.title = tip;   // 노출액은 행 툴팁으로
     const pnl = posPnl(p);
     const pv = el.querySelector('[data-f=pnl]');
@@ -3128,12 +3134,12 @@ function renderPositions(){
     pv.className = 'val ' + (pnl >= 0 ? 'pnl-up' : 'pnl-down');
     const g = el.querySelector('[data-f=gauge]');   // 증거금률 미니 막대: 0~100%, 반대매매 선(MARGIN_CALL_RATIO)에 표시선. 숫자는 호버
     if(g){
-      const r = marginRatio(p);
-      const danger = r < MARGIN_WARN_RATIO && !isProtected(p);
+      const danger = marginWarn(p) && !isProtected(p);
       g.className = 'mgauge ' + (danger ? 'danger' : 'safe');
-      g.title = `증거금률 ${Math.round(r * 100)}% / 반대매매 ${Math.round(MARGIN_CALL_RATIO * 100)}%` + (isProtected(p) ? ' · 오늘 면제' : '');
-      g.firstElementChild.style.width = Math.max(0, Math.min(100, r * 100)) + '%';
-      g.lastElementChild.style.left = (MARGIN_CALL_RATIO * 100) + '%';
+      g.title = marginText(p) + (isProtected(p) ? ' · 오늘 면제' : '');
+      const [fill, line] = MAINTENANCE_MARGIN_ON ? [marginHealth(p) / MAINT_GAUGE_MAX, 1 / MAINT_GAUGE_MAX] : [marginRatio(p), MARGIN_CALL_RATIO];   // 막대 0~100% · 반대매매 선
+      g.firstElementChild.style.width = Math.max(0, Math.min(100, fill * 100)) + '%';
+      g.lastElementChild.style.left = (line * 100) + '%';
     }
   });
 }
@@ -3158,7 +3164,7 @@ function updateMusic(){
   if(run && run.phase === 'market') Music.setMood({
     state: marketState,
     progress: run.tickInDay / TICKS_PER_DAY,
-    danger: run.positions.some(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < MARGIN_WARN_RATIO),
+    danger: run.positions.some(p => isMarginable(p) && !isProtected(p) && marginWarn(p)),
     fss: run.fss >= FSS_WARN
   });
 }
@@ -4977,6 +4983,9 @@ const tickerContent = `▶ 반도체전자 10만 전자 가즈아! &nbsp;·&nbsp
 document.getElementById('tickerText').innerHTML = tickerContent.repeat(3);
 
 window.onload = () => {
+  $('marginRuleText').textContent = MAINTENANCE_MARGIN_ON   // 반대매매 기준 안내 (엔진 수치 그대로)
+    ? `담보비율 ${Math.round(MAINTENANCE_RATIO * 100)}%(숏 ${Math.round(SHORT_MAINTENANCE_RATIO * 100)}%) 미만 = 반대매매`
+    : `증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% 미만 = 반대매매`;
   buildQuotes();
   buildCollection();
   renderNav();

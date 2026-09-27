@@ -44,6 +44,13 @@ const SHORT_BORROW_RATE   = 0.002; // 대차 이자(공매도): 장 마감마다
                                    //            공매도: 아무 종목(고베타)·레버리지와 결합, 이자·반대매매를 감수하는 '공격적인 하락 베팅'
 const MARGIN_CALL_RATIO   = 0.25;  // 증거금률(포지션순자산 ÷ 노출액) 25% 미만 → 반대매매
 const MARGIN_WARN_RATIO   = 0.40;  // 이 아래부터 위험 표시
+/* (S7-14) 담보유지비율 반대매매 — 한국 신용거래 방식. 담보비율 = 포지션 평가액 ÷ 빌린 돈(롱) / (원금 + 공매도 대금) ÷ 갚을 주식 평가액(숏).
+   유지비율 미만이면 반대매매 → 2x는 약 −30%, 3x는 약 −7% 하락에서 (레버리지가 높을수록 빨리 온다). 🛑 수치는 시뮬 보고 후 사용자 확정 — 그때까지 꺼 둔다 */
+const MAINTENANCE_MARGIN_ON     = false; // true = 담보유지비율 방식 / false = 기존 증거금률(MARGIN_CALL_RATIO) 방식
+const MAINTENANCE_RATIO         = 1.4;   // 롱(신용): 담보비율 140% 미만 → 반대매매
+const SHORT_MAINTENANCE_RATIO   = 1.3;   // 숏(대차): 130% 미만 → 반대매매 (1x 숏 약 +54% 상승에서)
+const MAINT_WARN_HEALTH         = 1.15;  // 위험 표시: 담보비율 ÷ 유지비율이 이 아래
+const MAINT_GAUGE_MAX           = 2;     // 화면 막대: 담보비율 ÷ 유지비율 0~2를 0~100%로 (반대매매 선 = 50%)
 const LIQUIDATION_PENALTY = 0.05;  // 반대매매 때 노출액의 5% 추가 손실 (시장가 투매 슬리피지)
 const MISU_CASH_FLOOR     = 0;     // 반대매매가 음수(미수)로 체결된 뒤 현금이 이 값 미만이면 미수 동결 → 파산
 
@@ -295,6 +302,7 @@ const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legen
 const RELIC_PAYDAY_BASE          = 60;    // 월급날: 매주 첫날 현금 +이만큼 × 주차. 200 → 60: 완만한 목표에서 카드 없이도 통과시키던 불로소득 (2~8주 합계 원금의 +70% → +21%)
 const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목을 살 때마다 드로우
 const RELIC_COLD_WALLET_RATIO    = 0.20;  // 콜드월렛: 코인 종목 반대매매 기준 (기본 25%)
+const RELIC_COLD_WALLET_MAINT_CUT = 0.15;  //   담보유지비율 방식이면 유지비율 −15%p (140% → 125%)
 const RELIC_COLD_WALLET_STOCKS   = ['coin', 'meme'];
 const RELIC_THEME_SECTORS        = ['테마주', '동전주'];   // 테마주 헌터 적용 섹터
 const RELIC_THEME_BONUS          = 0.15;  // 테마주 헌터: 평가이익 +15%
@@ -378,7 +386,8 @@ const RELICS = [
     desc:`인버스 종목(지수 인버스·곱버스)을 카드로 살 때마다 카드 ${RELIC_INVERSE_DRAW}장을 뽑는다.`,
     flavor:'"모두가 탐욕스러울 때 곱버스." 3년째 물려 있다.' },
   { id:'coldwallet', icon:'🧊', name:'콜드월렛',      rarity:'common',
-    desc:`대장코인·밈코인 포지션의 반대매매 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
+    desc: MAINTENANCE_MARGIN_ON ? `대장코인·밈코인 포지션의 담보유지비율 ${Math.round(MAINTENANCE_RATIO * 100)}% → ${Math.round((MAINTENANCE_RATIO - RELIC_COLD_WALLET_MAINT_CUT) * 100)}% (반대매매가 늦게 온다).`
+      : `대장코인·밈코인 포지션의 반대매매 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
     flavor:'시드 문구는 냉장고에 붙여 놨다.' },
   { id:'theme',    icon:'🔥', name:'테마주 헌터',     rarity:'uncommon',
     desc:`${RELIC_THEME_SECTORS.join('·')} 포지션의 장 마감 정산 ×${1 + RELIC_THEME_BONUS}.`,
@@ -1048,6 +1057,19 @@ const posPnl       = p => posEquity(p) - p.principal;
 const posReturn    = p => posPnl(p) / p.principal;
 const avgPrice     = p => p.entryExposure / p.shares;
 const marginRatio  = p => { const e = exposure(p); return e > 0 ? posEquity(p) / e : 1; };
+/* (S7-14) 담보유지비율: 담보비율(collateralRatio) · 유지비율(maintRatio) · 건강도 = 담보비율 ÷ 유지비율 (1 미만 = 반대매매) */
+const coldWalletOn     = p => hasRelic('coldwallet') && RELIC_COLD_WALLET_STOCKS.indexOf(p.assetId) >= 0;
+const collateralRatio  = p => {
+  if(p.dir < 0) return (p.principal + p.entryExposure) / Math.max(1e-9, exposure(p));   // 숏: (원금 + 공매도 대금) ÷ 갚을 주식 평가액
+  const loan = posLoan(p);
+  return loan > 0 ? exposure(p) / loan : Infinity;                                    // 롱: 평가액 ÷ 빌린 돈 (1x는 빌린 돈 없음)
+};
+const maintRatio   = p => (p.dir < 0 ? SHORT_MAINTENANCE_RATIO : MAINTENANCE_RATIO) - (coldWalletOn(p) ? RELIC_COLD_WALLET_MAINT_CUT : 0);
+const marginHealth = p => MAINTENANCE_MARGIN_ON ? collateralRatio(p) / maintRatio(p) : marginRatio(p) / marginCallRatio(p);   // 1 미만 = 반대매매
+const marginCalled = p => marginHealth(p) < 1;
+const marginWarn   = p => MAINTENANCE_MARGIN_ON ? marginHealth(p) < MAINT_WARN_HEALTH : marginRatio(p) < MARGIN_WARN_RATIO;
+/* 콜드월렛이 아니었으면 반대매매됐을 포지션 (연출용) */
+const coldWalletSaved = p => coldWalletOn(p) && !marginCalled(p) && (MAINTENANCE_MARGIN_ON ? collateralRatio(p) < maintRatio(p) + RELIC_COLD_WALLET_MAINT_CUT : marginRatio(p) < MARGIN_CALL_RATIO);
 const isMarginable = p => p.lev > 1 || p.dir < 0;          // 반대매매 대상
 const posLoan      = p => p.dir > 0 ? Math.max(0, p.entryExposure - p.principal) : 0;
 const posBorrowed  = p => p.dir > 0 ? posLoan(p) : exposure(p); // 이자가 붙는 금액: 신용대출 / 빌린 주식 전액
@@ -1189,10 +1211,10 @@ function checkOrders(){
 function checkMarginCalls(){
   // 연출용 알림만 (상태·난수 변화 없음): 콜드월렛 덕분에 기본 기준이었으면 반대매매됐을 포지션
   run.positions
-    .filter(p => isMarginable(p) && !isProtected(p) && marginCallRatio(p) < MARGIN_CALL_RATIO && marginRatio(p) < MARGIN_CALL_RATIO && marginRatio(p) >= marginCallRatio(p))
+    .filter(p => isMarginable(p) && !isProtected(p) && coldWalletSaved(p))
     .forEach(p => emit('relicTriggered', {id: 'coldwallet', amount: 0, posId: p.id}));
   run.positions
-    .filter(p => isMarginable(p) && !isProtected(p) && marginRatio(p) < marginCallRatio(p))
+    .filter(p => isMarginable(p) && !isProtected(p) && marginCalled(p))
     .forEach(p => {
       const fullPenalty = exposure(p) * LIQUIDATION_PENALTY;
       const saved = hasRelic('hotline') ? fullPenalty * RELIC_HOTLINE_PENALTY_CUT : 0;
