@@ -136,3 +136,12 @@
 - 반대매매·장 마감·주간 결산처럼 기다리기 어려운 상황은 `page.evaluate`로 상태를 만들어 확인한다 (예: `assets.meme.price *= 0.7; checkMarginCalls();`, `run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll();`).
 - 시장은 TR룸 화면(`currentTab === 'play'`)에서, 장중(`run.phase === 'market'`)이고 찌라시·오버레이가 없을 때만 움직인다.
 - 찌라시가 오면 선택 전까지 `tick()`이 멈추므로, 장을 끝까지 돌리는 반복문은 위 예시처럼 `resolveTip`으로 처리한다. 실시간으로 장을 돌려 보는 테스트에서 찌라시가 끼면 안 되면 `window.tipChance = () => 0;`으로 끈다.
+
+## Git 작업 규칙
+
+- 모든 작업은 최신 `main`에서 새 브랜치를 생성해 시작한다. 머지되지 않은 다른 작업 브랜치 위에서 작업하지 않는다 (PR을 서로 쌓지 않는다).
+- 한 PR은 하나의 목적만 다룬다 (예: 카드 레어도 조정, 덱 UI 수정). 여러 기능을 한 PR에 섞지 않는다. MASTER_PLAN의 한 단계(S5 등)를 한 목적으로 볼지는 사용자에게 확인한다.
+- PR 설명에는 다음을 넣는다: 변경 요약, 영향받는 파일, 플레이테스트 방법(데모에서 무엇을 눌러 확인하는지), 관련 기획 문서의 해당 항목(`docs/design/MASTER_PLAN.md` 단계·번호, `DECKBUILDING.md`·`MULTIPLIERS.md` 등, `DECK_DESIGN_SUMMARY.md`가 생기면 그것도).
+- 작업을 시작하기 전에 열린 PR 중 같은 파일(`docs/demo`·`docs/engine.js` 등)을 수정하는 것이 있으면 먼저 사용자에게 알리고 진행 여부를 확인받는다.
+- `main`에 머지된 상태에서 게임은 반드시 실행 가능해야 한다. 미완성 기능은 CONFIG의 플래그로 꺼 둔다 (엔진·UI 모두 플래그를 읽어 분기).
+- 충돌이 나면 merge 커밋 대신 `main` 기준 rebase로 해결한다.
