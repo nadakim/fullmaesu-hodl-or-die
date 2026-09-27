@@ -10,7 +10,7 @@ const START_CASH        = 10000;   // 시작 자금 (만원) = 1억
 const TICK_MS           = 800;     // 캔들 1개 = 0.8초
 const TICKS_PER_DAY     = 12;      // 장중 = 캔들 12개 (약 10초)
 const DAYS_PER_ROUND    = 5;       // 1주(라운드) = 5거래일
-const ROUND_TARGETS     = [10200, 10800, 11500, 12300, 13200, 14300, 15600, 17100]; // 주차별 순자산 목표 (만원). 주간 +2% → +10%로 점점 가파르게. 방어형(무레버리지·저베타)·헤지·공매도·레버리지·작전 빌드가 모두 클리어 가능한 곡선 (sim/runner.js: 1주차 통과 전 전략 57%+, 클리어 18~30%)
+const ROUND_TARGETS     = [10200, 12000, 15000, 25000, 50000, 150000, 600000, 3000000]; // 주차별 순자산 목표 (만원). D8(사용자 결정): 곱하기 배수는 그대로 두고 목표를 거침없이 올린다 — 1억 200만 → 300억. 배수 빌드(레버리지 탑·개미 군단 깃발)만 끝까지 가고 곱하기 없는 빌드·nothing은 0~5% (sim/runner.js, MULTIPLIERS.md)
 const MAX_ROUND         = ROUND_TARGETS.length;
 
 // 시장
@@ -302,14 +302,14 @@ const RELIC_COMMUNITY_BONUS      = 0.10;  // 개미 커뮤니티: 찌라시 A �
 const RELIC_DAYTRADER_CUT        = 1;     // 단타의 신: 하루 첫 매도 카드 행동력 −1
 const RELIC_FSS_CONNECT_CUT      = 0.5;   // 금감원 인맥: 게이지 상승량 50% 감소
 /* 성장형 유물 (docs/design/GROWTH_RELICS.md) — 판이 진행될수록 스택이 쌓이고, 조건에 걸리면 초기화된다.
-   상태 run.relicState[id] = { stacks, best, bank }. 평가이익 보정(떡상 적금·반대매매 생존자)은 %p를 합산한 뒤 한 번만 곱한다 */
+   상태 run.relicState[id] = { stacks, best, bank }. 떡상 적금·반대매매 생존자는 S4부터 스택당 곱 배수(xmult) — 폭주가 목표 (사용자 결정, 제한은 무한 모드 목표 상승으로) */
 const MOON_COMBO_STEP        = 3;     // 떡상 적금: 상승 콤보 3·6·9…마다 +1스택
-const MOON_PNL_PER_STACK     = 0.01;  //   스택당 평가이익 +1%
+const MOON_XMULT_PER_STACK   = 1.01;  //   스택당 정산 ×1.01 (곱)
 const MOON_RESET_DOWN        = 10;    //   하락 콤보가 이 값이 되는 순간 0스택
 const TEARJAR_RATE           = 0.10;  // 개미의 눈물 저금통: 손실 청산액의 10% 적립
 const TEARJAR_PAYOUT_COMBO   = 5;     //   상승 콤보가 이 값이 되면 전액 현금 지급
 const TEARJAR_MARGIN_KEEP    = 0.5;   //   반대매매 당하면 이만큼만 남는다 (절반 증발)
-const TRAUMA_PNL_PER_STACK   = 0.03;  // 반대매매 생존자: 스택당 레버리지·숏 포지션 평가이익 +3%
+const TRAUMA_XMULT_PER_STACK = 1.03;  // 반대매매 생존자: 스택당 레버리지·숏 포지션 정산 ×1.03 (곱)
 const TIPCOL_PER_STACK       = 0.02;  // 찌라시 수집가: 스택당 A 대박 확률 +2%p
 const TIPCOL_MAX_BONUS       = 0.20;  //   최대 +20%p
 const TIP_JACKPOT_CAP        = 0.95;  // 찌라시 A 대박 확률 상한 (개미 커뮤니티와 합산 후)
@@ -319,6 +319,32 @@ const DTREE_MAX_CUT          = 0.60;  //   최대 −60%
 const DTREE_SELL_KEEP        = 0.5;   //   그런 포지션을 직접 팔면 스택 절반
 const COMPOUND_EXCESS        = 0.10;  // 복리 괴물: 결산에서 목표 대비 +10% 이상이면 +1스택, 아니면(통과는 했을 때) −1
 const COMPOUND_CASH_PER_STACK = 0.01; //   주 첫날 현금 = 순자산 × 1% × 스택
+
+/* ── S4 곱하기 콘텐츠 (docs/design/MULTIPLIERS.md) — 전부 장 마감 정산 배수. 수치는 D8(시뮬 후 조정) ── */
+const ANTFLAG_PER_POS      = 1.5;   // 개미 군단 깃발: 포지션 1개당 ×1.5
+const CC_START             = 1.1;   // 복리의 복리: ×1.1에서 시작
+const CC_STEP              = 0.1;   //   수익 마감한 날 +0.1 (스택 1개 = 0.1)
+const CC_LOSS_STEPS        = 3;     //   손실 마감한 날 −0.3 (스택 3개, ×1.1 아래로는 안 내려감)
+const LIMITUP_BASE         = 2;     // 상한가 행진: 연속 상승 n일 → ×2ⁿ
+const LIMITUP_MAX_STREAK   = 10;    //   n 상한 (×1024)
+const PHOENIX_PER_STACK    = 1.25;  // 반대매매 불사조: 반대매매 1번당 영구 ×1.25
+const DOPAMINE_PER_COMBO   = 1;     // 도파민 과다: 상승 콤보 1당 합산 배수 +1
+const DOPAMINE_X_COMBO     = 10;    //   콤보가 이 이상이면 대신 ×콤보
+const FSS_VIP_MULT         = 10;    // 금감원 VIP: 이번 주 제재를 당했으면 ×10
+const BRINK_RATIO          = 0.5;   // 벼랑 끝 전술: 순자산 < 이번 주 목표 × 0.5면
+const BRINK_MULT           = 5;     //   ×5
+const SPLIT_WAYS           = 2;     // 주식 분할: 똑같은 두 포지션으로 (강화 3개)
+const SPLIT_WAYS_UP        = 3;
+const LEV_ETF_MULT         = 2;     // 레버리지 ETF: 포지션 레버리지 ×2 (중첩)
+const LEV_ETF_MAX_LEV      = 24;    //   레버리지 상한
+const FUTURES_MULT         = 3;     // 선물 만기일: 이번 주 정산 ×3
+const FUTURES_MULT_UP      = 4;
+const FUTURES_NEXT         = 0.5;   //   다음 주 정산 ×0.5
+const COIN_FLIP_CHANCE     = 0.5;   // 모 아니면 도: 성공 확률 (화면에 그대로)
+const COIN_FLIP_CHANCE_UP  = 0.6;
+const COIN_FLIP_MULT       = 10;    //   성공하면 그 포지션 오늘 정산 ×10, 실패하면 포지션 가치 0
+const CRIT_CHANCE          = 0.05;  // 크리티컬 정산: 수익 포지션 정산마다 5%
+const CRIT_TABLE           = [ { mult: 2, weight: 70 }, { mult: 3, weight: 25 }, { mult: 5, weight: 5 } ];   // 배수 · 가중치
 
 const RELICS = [
   { id:'gukbap',   icon:'🍲', name:'국밥 정신',       rarity:'rare',
@@ -374,7 +400,7 @@ const RELICS = [
     flavor:'정보가 곧 실력이다. 그 정보가 미래에서 왔을 뿐.' },
   // ── 성장형 (growth: 'count' = 스택 개수 · 'money' = 적립금 만원) ──
   { id:'moonSavings', icon:'📈', name:'떡상 적금', rarity:'rare', growth:'count',
-    desc:`상승 콤보 ${MOON_COMBO_STEP}·${MOON_COMBO_STEP * 2}·${MOON_COMBO_STEP * 3}…마다 +1스택. 스택당 모든 포지션 장 마감 정산 배수 +${MOON_PNL_PER_STACK}. 하락 콤보 ${MOON_RESET_DOWN}이면 강제 해지(0스택).`,
+    desc:`상승 콤보 ${MOON_COMBO_STEP}·${MOON_COMBO_STEP * 2}·${MOON_COMBO_STEP * 3}…마다 +1스택. 스택당 모든 포지션 장 마감 정산 ×${MOON_XMULT_PER_STACK} (곱 — 스택이 쌓일수록 기하급수). 하락 콤보 ${MOON_RESET_DOWN}이면 강제 해지(0스택).`,
     reset:`하락 콤보 ${MOON_RESET_DOWN} → 0스택`,
     flavor:'"적금은 복리래." 이율은 차트가 정한다.' },
   { id:'tearJar', icon:'🐷', name:'개미의 눈물 저금통', rarity:'uncommon', growth:'money',
@@ -382,7 +408,7 @@ const RELICS = [
     reset:`반대매매 → 적립금 ${Math.round((1 - TEARJAR_MARGIN_KEEP) * 100)}% 증발`,
     flavor:'눈물 젖은 돼지. 배를 가르면 조금 덜 슬프다.' },
   { id:'traumaSurvivor', icon:'🩹', name:'반대매매 생존자', rarity:'legendary', growth:'count',
-    desc:`반대매매를 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 장 마감 정산 배수 +${TRAUMA_PNL_PER_STACK}.`,
+    desc:`반대매매를 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 장 마감 정산 ×${TRAUMA_XMULT_PER_STACK} (곱).`,
     reset:'초기화 없음 — 대신 반대매매 자체가 고통',
     flavor:'"한 번 털려 봐야 안다." 세 번 털린 사람이 말했다.' },
   { id:'tipCollector', icon:'📂', name:'찌라시 수집가', rarity:'rare', growth:'count',
@@ -396,7 +422,46 @@ const RELICS = [
   { id:'compoundMonster', icon:'👹', name:'복리 괴물', rarity:'mythic', growth:'count',
     desc:`결산에서 목표를 ${Math.round(COMPOUND_EXCESS * 100)}% 이상 넘기면 +1스택, 겨우 통과하면 −1. 매주 첫날 현금 +순자산 × ${Math.round(COMPOUND_CASH_PER_STACK * 100)}% × 스택.`,
     reset:`목표 +${Math.round(COMPOUND_EXCESS * 100)}% 미만으로 통과 → −1스택`,
-    flavor:'아인슈타인이 말했다던 그것. 말한 적은 없다.' }
+    flavor:'아인슈타인이 말했다던 그것. 말한 적은 없다.' },
+  // ── 곱하기 (S4) ──
+  { id:'levTower', icon:'🗼', name:'레버리지 탑', rarity:'rare',
+    desc:'장 마감 정산 × 보유 포지션 레버리지를 전부 곱한 값 (3x·2x·2x → ×12). 오늘 반대매매가 났으면 그날은 효과 없음.',
+    flavor:'한 층 올라갈 때마다 전망이 좋아진다. 내려올 땐 엘리베이터가 없다.' },
+  { id:'sectorSet', icon:'🧩', name:'섹터 풀세트', rarity:'uncommon',
+    desc:'장 마감 정산 × 보유한 서로 다른 섹터 수.',
+    flavor:'분산 투자의 정석. 전부 같이 빠진다는 것만 빼면.' },
+  { id:'antFlag', icon:'🚩', name:'개미 군단 깃발', rarity:'uncommon',
+    desc:`장 마감 정산 × ${ANTFLAG_PER_POS}^포지션 수 (포지션 1개당 ×${ANTFLAG_PER_POS}).`,
+    flavor:'깃발 아래 모인 개미는 강하다. 한 마리씩 털려서 그렇지.' },
+  { id:'ccompound', icon:'♾️', name:'복리의 복리', rarity:'rare', growth:'count',
+    desc:`장 마감 정산 ×${CC_START}에서 시작. 수익으로 마감한 날마다 영구 +${CC_STEP}, 손실로 마감하면 −${CC_STEP * CC_LOSS_STEPS} (×${CC_START} 아래로는 안 내려감).`,
+    reset:`손실 마감한 날 −${CC_STEP * CC_LOSS_STEPS}`,
+    flavor:'복리를 복리로 굴리면? 계산기가 먼저 포기했다.' },
+  { id:'limitUp', icon:'🚀', name:'상한가 행진', rarity:'legendary',
+    desc:`포지션이 장 마감 기준으로 연속 상승한 날 수 n(오늘 포함, 최대 ${LIMITUP_MAX_STREAK}) → 그 포지션 정산 ×${LIMITUP_BASE}ⁿ. 하락 마감하면 리셋.`,
+    flavor:'점상 → 점상 → 점상. 네 번째 날 아침이 제일 무섭다.' },
+  { id:'phoenix', icon:'🐦‍🔥', name:'반대매매 불사조', rarity:'rare', growth:'count',
+    desc:`반대매매를 당할 때마다 영구 +1스택. 모든 포지션 정산 ×${PHOENIX_PER_STACK}^스택.`,
+    reset:'초기화 없음',
+    flavor:'깡통에서 다시 태어난다. 몇 번째인지는 세지 않는다.' },
+  { id:'copycat', icon:'🦜', name:'리딩방 따라쟁이', rarity:'rare',
+    desc:'정산에서 바로 오른쪽 칸 유물의 효과를 한 번 더 복사해 발동한다.',
+    flavor:'"저도 그거 샀어요." 언제나 한 박자 늦게.' },
+  { id:'rerun', icon:'📺', name:'재방송 뉴스', rarity:'rare',
+    desc:'정산에서 맨 왼쪽(1번 칸) 유물의 효과가 이 칸에서 한 번 더 발동한다.',
+    flavor:'어제 호재가 오늘 또 호재. 시장은 기억력이 나쁘다.' },
+  { id:'dopamine', icon:'💉', name:'도파민 과다', rarity:'uncommon',
+    desc:`장 마감 때 상승 콤보 수만큼 합산 배수 +${DOPAMINE_PER_COMBO}. 콤보 ${DOPAMINE_X_COMBO} 이상이면 대신 ×콤보 수.`,
+    flavor:'초록 캔들 하나에 도파민 한 방울.' },
+  { id:'fssVip', icon:'🎖️', name:'금감원 VIP', rarity:'rare',
+    desc:`이번 주 금감원 제재를 당했으면 장 마감 정산 ×${FSS_VIP_MULT}.`,
+    flavor:'조사실 커피 취향까지 기억해 주는 사이.' },
+  { id:'brink', icon:'🧗', name:'벼랑 끝 전술', rarity:'uncommon',
+    desc:`순자산이 이번 주 목표의 ${Math.round(BRINK_RATIO * 100)}% 미만이면 장 마감 정산 ×${BRINK_MULT}.`,
+    flavor:'잃을 게 없는 사람이 제일 크게 건다.' },
+  { id:'infinity', icon:'🌌', name:'무량대수', rarity:'mythic',
+    desc:'정산 맨 마지막(칸 위치 무관)에 그 포지션 정산 금액(만원)의 자릿수만큼 ×배수.',
+    flavor:'10⁶⁸. 여기까지 세어 본 사람은 없다.' }
 ];
 
 /* 찌라시 — 장중 무작위 선택 이벤트. 도착하면 선택할 때까지 시장이 멈춘다.
@@ -498,12 +563,15 @@ const CARD_TAGS = {
   stopLoss:['scalp'], takeProfit:['scalp'], trailing:['scalp'], cutLoss:['scalp'], takeWin:['scalp'], escape:['scalp'], splitSell:['scalp'], topSpotter:['scalp'],
   hodl:['lev', 'hodl'], diamond:['hodl'], forcedLong:['hodl'], dividend:['spread'], forgotPw:['lev'], hodlWins:['hodl'], compound:['hodl'], valueGod:['hodl'],
   pump:['tip'], dove:['manip'], hawk:['manip', 'short'], ceoTweet:['manip'], coffee:['scalp'], rotation:['spread'], manip:['manip'],
-  marginTopup:['lev'], hedge:['short'], interestFree:['lev'], overdraft:['lev'], confess:['manip'], lossGuard:['lev'], circuit:['lev']
+  marginTopup:['lev'], hedge:['short'], interestFree:['lev'], overdraft:['lev'], confess:['manip'], lossGuard:['lev'], circuit:['lev'],
+  split:['spread'], levEtf:['lev'], reinvest:['hodl'], timeLoop:['scalp'], allIn:['lev'], futures:['scalp'], coinFlip:['tip'], relist:['lev']
 };
 const RELIC_TAGS = {
   gukbap:['hodl'], seal:['hodl'], vip:['tip'], hotline:['lev'], capital:['lev'], lawyer:['manip'], inverse:['short'], coldwallet:['lev'],
   theme:['scalp'], community:['tip'], shortpro:['short'], daytrader:['scalp'], fssconnect:['manip'], timemachine:['manip'],
-  moonSavings:['scalp'], tearJar:['hodl'], traumaSurvivor:['lev'], tipCollector:['tip'], diamondTree:['hodl'], compoundMonster:['hodl']
+  moonSavings:['scalp'], tearJar:['hodl'], traumaSurvivor:['lev'], tipCollector:['tip'], diamondTree:['hodl'], compoundMonster:['hodl'],
+  levTower:['lev'], sectorSet:['spread'], antFlag:['spread'], ccompound:['hodl'], limitUp:['hodl'], phoenix:['lev'],
+  copycat:['tip'], rerun:['scalp'], dopamine:['scalp'], fssVip:['manip'], brink:['tip'], infinity:[]
 };
 
 /* 시작 덱 15장: 종목 8 + 증강 7 */
@@ -723,9 +791,9 @@ function shrinkRelic(id, n, reason){   // 복리 괴물: −1
 function noteManualSell(ps){
   if(ps.some(p => p.daysHeld >= DTREE_DAYS)) resetRelic('diamondTree', 'sell', DTREE_SELL_KEEP);
 }
-/* 성장형 정산 합산 배수 %p (장 마감 정산 SETTLE_EFFECTS의 'mult') */
-const moonPct   = () => relicStacks('moonSavings') * MOON_PNL_PER_STACK;
-const traumaPct = p => (p.lev > 1 || p.dir < 0) ? relicStacks('traumaSurvivor') * TRAUMA_PNL_PER_STACK : 0;
+/* 성장형 정산 곱 배수 (장 마감 정산 SETTLE_EFFECTS의 'xmult', 1 = 효과 없음) */
+const moonX   = () => Math.pow(MOON_XMULT_PER_STACK, relicStacks('moonSavings'));
+const traumaX = p => (p.lev > 1 || p.dir < 0) ? Math.pow(TRAUMA_XMULT_PER_STACK, relicStacks('traumaSurvivor')) : 1;
 
 /* ── 콤보 (엔진): 매 틱 끝, 직전 틱에도 있던 포지션들의 평가손익 합이 오르면 up+1·down=0, 내리면 반대. 없거나 0이면 유지 ── */
 function updateCombo(){
@@ -800,30 +868,73 @@ const SETTLE_EFFECTS = {
   gukbap:         { kind: 'xmult', onLoss: true,  apply: p => gukbapApplies(p) ? { kind: 'xmult', value: 1 - RELIC_GUKBAP_LOSS_CUT } : null },
   seal:           { kind: 'xmult', onLoss: false, apply: p => sealApplies(p) ? { kind: 'xmult', value: 1 + RELIC_SEAL_BONUS } : null },
   theme:          { kind: 'xmult', onLoss: false, apply: p => RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0 ? { kind: 'xmult', value: 1 + RELIC_THEME_BONUS } : null },
-  moonSavings:    { kind: 'mult',  onLoss: false, apply: p => moonPct() > 0 ? { kind: 'mult', value: moonPct(), label: `${relicStepLabel('moonSavings')} ×${relicStacks('moonSavings')}스택` } : null },
-  traumaSurvivor: { kind: 'mult',  onLoss: false, apply: p => traumaPct(p) > 0 ? { kind: 'mult', value: traumaPct(p), label: `${relicStepLabel('traumaSurvivor')} ×${relicStacks('traumaSurvivor')}스택` } : null }
+  moonSavings:    { kind: 'xmult', onLoss: false, apply: p => moonX() > 1 ? { kind: 'xmult', value: moonX(), label: `${relicStepLabel('moonSavings')} ${relicStacks('moonSavings')}스택` } : null },
+  traumaSurvivor: { kind: 'xmult', onLoss: false, apply: p => traumaX(p) > 1 ? { kind: 'xmult', value: traumaX(p), label: `${relicStepLabel('traumaSurvivor')} ${relicStacks('traumaSurvivor')}스택` } : null },
+  // S4 곱하기
+  levTower:  { kind: 'xmult', onLoss: false, apply: p => { const v = levProduct(); return v > 1 && !run.liqToday ? { kind: 'xmult', value: v } : null; } },
+  sectorSet: { kind: 'xmult', onLoss: false, apply: p => { const n = heldSectorCount(); return n > 1 ? { kind: 'xmult', value: n, label: `${relicStepLabel('sectorSet')} ${n}섹터` } : null; } },
+  antFlag:   { kind: 'xmult', onLoss: false, apply: p => { const n = run.positions.length; return n > 0 ? { kind: 'xmult', value: Math.pow(ANTFLAG_PER_POS, n), label: `${relicStepLabel('antFlag')} ${n}개` } : null; } },
+  ccompound: { kind: 'xmult', onLoss: false, apply: p => ({ kind: 'xmult', value: ccX() }) },
+  limitUp:   { kind: 'xmult', onLoss: false, apply: (p, base) => { const n = limitUpStreak(p, base); return n > 0 ? { kind: 'xmult', value: Math.pow(LIMITUP_BASE, n), label: `${relicStepLabel('limitUp')} ${n}연상` } : null; } },
+  phoenix:   { kind: 'xmult', onLoss: false, apply: p => relicStacks('phoenix') > 0 ? { kind: 'xmult', value: Math.pow(PHOENIX_PER_STACK, relicStacks('phoenix')), label: `${relicStepLabel('phoenix')} ${relicStacks('phoenix')}스택` } : null },
+  dopamine:  { kind: 'mult',  onLoss: false, apply: p => { const c = run.combo.up; return c <= 0 ? null : c >= DOPAMINE_X_COMBO ? { kind: 'xmult', value: c, label: `${relicStepLabel('dopamine')} 콤보 ${c}` } : { kind: 'mult', value: c * DOPAMINE_PER_COMBO, label: `${relicStepLabel('dopamine')} 콤보 ${c}` }; } },
+  fssVip:    { kind: 'xmult', onLoss: false, apply: p => run.week.sanctioned ? { kind: 'xmult', value: FSS_VIP_MULT } : null },
+  brink:     { kind: 'xmult', onLoss: false, apply: p => netEquity() < currentTarget() * BRINK_RATIO ? { kind: 'xmult', value: BRINK_MULT } : null },
+  copycat:   { kind: 'copy',  onLoss: false, apply: () => null },   // 효과는 settleSteps가 복사 대상으로 대신 (copySource)
+  rerun:     { kind: 'copy',  onLoss: false, apply: () => null },
+  infinity:  { kind: 'xmult', onLoss: false, apply: () => null }    // 정산 맨 마지막에 settleSteps가 따로
 };
+/* S4 정산 보조 (순수) */
+const levProduct    = () => run.positions.reduce((m, p) => m * p.lev, 1);
+const ccX           = () => CC_START + CC_STEP * relicStacks('ccompound');
+const limitUpStreak = (p, base) => base > 0 ? Math.min(LIMITUP_MAX_STREAK, (p.upStreak || 0) + 1) : 0;   // 오늘 포함 연속 상승 마감 수
+/* 따라쟁이(오른쪽 칸)·재방송(1번 칸): 효과를 빌려 올 유물. 복사 유물끼리는 복사하지 않는다 ('' = 없음) */
+function copySource(id, i){
+  const t = id === 'copycat' ? run.relics[i + 1] : id === 'rerun' ? run.relics[0] : id;
+  if(!t || (t !== id && SETTLE_EFFECTS[t] && SETTLE_EFFECTS[t].kind === 'copy') || t === 'infinity') return '';
+  return t;
+}
+/* 판정 난수가 필요 없는 정산 단계 라벨 (유물이 아닌 source) */
+const SETTLE_SOURCE_LABEL = { card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
+const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : (SETTLE_SOURCE_LABEL[src] || src);
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
 
 /* 순수 계산 (rand·상태 변경 없음): 포지션 p가 오늘 base만큼 벌었을 때의 정산 단계. 미리보기(previewSettlement)와 공용.
    배수는 칸 순서대로 차례로: mult = 지금 배수 + 값, xmult = 지금 배수 × 값 → 더하기를 앞 칸, 곱하기를 뒤 칸에 둘수록 커진다 */
-function settleSteps(p, base){
+function settleSteps(p, base, crit){
   let chips = base, m = 1;
   const steps = [{ label: '오늘 손익', kind: 'base', value: base, runningChips: chips, runningMult: 1, source: 'base' }];
+  const push = (e, source, label) => {
+    if(e.kind === 'add') chips += e.value;
+    else if(e.kind === 'mult') m += e.value;
+    else m *= e.value;
+    steps.push({ label, kind: e.kind, value: e.value, runningChips: chips, runningMult: m, source });
+  };
   if(base !== 0){
-    run.relics.forEach(id => {
-      const fx = SETTLE_EFFECTS[id];
+    run.relics.forEach((id, i) => {
+      const src = copySource(id, i), fx = SETTLE_EFFECTS[src];
       if(!fx || (base < 0) !== fx.onLoss) return;
-      const e = fx.apply(p);
+      const e = fx.apply(p, base);
       if(!e) return;
-      if(e.kind === 'add') chips += e.value;
-      else if(e.kind === 'mult') m += e.value;
-      else m *= e.value;
-      steps.push({ label: e.label || relicStepLabel(id), kind: e.kind, value: e.value,
-                   runningChips: chips, runningMult: m, source: id });
+      const label = e.label || relicStepLabel(src);
+      push(e, id, src === id ? label : `${relicStepLabel(id)} ← ${label}`);
     });
   }
+  if(base > 0){   // 카드 효과 → 무량대수 → 크리티컬 (최종 금액 직전)
+    (p.todayX || []).forEach(x => push({ kind: 'xmult', value: x.value }, 'card', x.label));
+    if(run.week.futures && run.week.futures !== 1) push({ kind: 'xmult', value: run.week.futures }, 'futures', `${SETTLE_SOURCE_LABEL.futures} ×${run.week.futures}`);
+    if(hasRelic('infinity')){ const d = String(Math.floor(Math.abs(chips * m))).length; push({ kind: 'xmult', value: d }, 'infinity', `${relicStepLabel('infinity')} ${d}자리`); }
+    if(crit > 1) push({ kind: 'xmult', value: crit }, 'crit', `${SETTLE_SOURCE_LABEL.crit} ×${crit}`);
+  }
   return { steps, chips, mult: m, total: chips * m };
+}
+/* 크리티컬 판정 (settleDay 안에서만, rand) → 배수 또는 0 */
+function rollCrit(){
+  if(rand() >= CRIT_CHANCE) return 0;
+  const total = CRIT_TABLE.reduce((sum, c) => sum + c.weight, 0);
+  let roll = rand() * total;
+  for(let i = 0; i < CRIT_TABLE.length; i++){ roll -= CRIT_TABLE[i].weight; if(roll < 0) return CRIT_TABLE[i].mult; }
+  return CRIT_TABLE[CRIT_TABLE.length - 1].mult;
 }
 
 /* 장 마감 정산: 포지션마다 보너스를 현금으로. 기록 run.lastDay → emit('daySettled') (정산 연출은 이 기록을 재생만 한다) */
@@ -831,12 +942,26 @@ function settleDay(){
   const rows = [];
   const bySource = {};   // 유물별 보너스 합 (연출용)
   let payoutSum = 0;
-  run.positions.forEach(p => {
+  let dayBase = 0;
+  run.positions.slice().forEach(p => {
     const base = p.dir * (exposure(p) - p.refExp);
     p.refExp = exposure(p);
-    const r = settleSteps(p, base);
-    const payout = r.total - base;
-    run.cash += payout;
+    dayBase += base;
+    const crit = base > 0 ? rollCrit() : 0;
+    const r = settleSteps(p, base, crit);
+    if(crit) emit('settleCrit', {posId: p.id, name: p.name, mult: crit});
+    let payout = r.total - base;
+    if(base > 0 && run.timeLoopToday > 0){   // 타임 루프: 오늘 정산(손익 × 배수)을 한 번 더
+      const again = r.total * run.timeLoopToday;
+      r.steps.push({ label: `${SETTLE_SOURCE_LABEL.timeLoop} ×${run.timeLoopToday}`, kind: 'add', value: again,
+                     runningChips: r.chips + again / r.mult, runningMult: r.mult, source: 'timeLoop' });
+      payout += again;
+    }
+    p.upStreak = base > 0 ? limitUpStreak(p, base) : base < 0 ? 0 : (p.upStreak || 0);   // 상한가 행진
+    p.todayX = [];
+    if(p.reinvestToday && payout > 0) addToPosition(p, payout);   // 배당 재투자: 정산금을 현금 대신 원금에
+    else run.cash += payout;
+    p.reinvestToday = false;
     payoutSum += payout;
     if(base > 0) run.maxSettleMult = Math.max(run.maxSettleMult, r.mult);
     const sources = [];   // 이 포지션의 보너스를 단계별로 나눈 몫 [{source, label, amount}] — 합 = payout
@@ -844,7 +969,7 @@ function settleDay(){
       if(k === 0) return;
       const prev = r.steps[k - 1];
       const amount = st.runningChips * st.runningMult - prev.runningChips * prev.runningMult;
-      sources.push({ source: st.source, label: relicStepLabel(st.source), amount });
+      sources.push({ source: st.source, label: stepLabel(st.source), amount });
       bySource[st.source] = (bySource[st.source] || 0) + amount;
     });
     rows.push({ posId: p.id, posName: p.name, assetId: p.assetId, dir: p.dir, lev: p.lev,
@@ -855,9 +980,12 @@ function settleDay(){
   run.maxSettlePayout = Math.max(run.maxSettlePayout, payoutSum);
   run.lastDay = { round: run.round, day: run.day, settlement: rows, payout: payoutSum };
   run.weekDays.push(run.lastDay);
+  run.timeLoopToday = 0;
+  if(dayBase > 0) growRelic('ccompound', 1);   // 복리의 복리
+  else if(dayBase < 0) shrinkRelic('ccompound', CC_LOSS_STEPS, 'lossDay');
   emit('daySettled', run.lastDay);
   if(run.day < DAYS_PER_ROUND)   // 연출용 (이미 계산된 값). 주 마지막 날은 주간 결산 체인이 유물별로 보여준다
-    Object.keys(bySource).forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
+    Object.keys(bySource).forEach(id => { if(bySource[id] && RELIC_BY_ID[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
 }
 
 /* 예상 정산 미리보기 (순수 함수 — rand·상태 변경 없음). extra = 가정 포지션(카드를 쓰면 생길 포지션, 선택).
@@ -958,7 +1086,8 @@ function openPosition(stockId, principal, lev, dir, payCash){
     id: run.nextPosId++, assetId: stockId, name: s.name, dir, lev,
     principal, shares: exp / assets[stockId].price, entryExposure: exp, refExp: exp,   // refExp = 정산 기준 노출액 (직전 장 마감 또는 매수 시점 가격)
     stopLoss: false, takeProfit: false, trailing: false, trailPeak: 0,
-    protectedToday: false, diamond: false, daysHeld: 0, viaTip: false
+    protectedToday: false, diamond: false, daysHeld: 0, viaTip: false,
+    upStreak: 0, todayX: [], reinvestToday: false   // S4: 상한가 행진 연속 상승 · 오늘 카드 정산 배수 · 배당 재투자
   };
   run.positions.push(p);
   emit('bought', {pos: p, merged: false, added: principal});
@@ -1067,6 +1196,8 @@ function checkMarginCalls(){
       const refund = run.lossGuardToday && pnl < 0 ? -pnl * run.lossGuardToday : 0;   // 손실 보전 약정 (lossGuardToday = 환급 비율)
       run.cash += refund;
       run.liquidations++;
+      run.liqToday++;
+      run.liquidated.push({ assetId: p.assetId, principal: p.principal, lev: p.lev, dir: p.dir });   // 재상장용
       run.lastLiquidation = { lev: p.lev, dir: p.dir, round: run.round, day: run.day };
       // 미수: 갭으로 포지션 순자산이 0 아래에서 체결됐는데 현금으로 못 갚으면 → 미수 동결 = 파산
       const deficit = pnl + p.principal < 0 && run.cash < MISU_CASH_FLOOR;
@@ -1075,6 +1206,7 @@ function checkMarginCalls(){
       emit('marginCall', {pos: p, pnl, penalty, saved, refund, deficit});
       resetRelic('tearJar', 'marginCall', TEARJAR_MARGIN_KEEP);
       growRelic('traumaSurvivor', 1);
+      growRelic('phoenix', 1);
       if(saved > 0) emit('relicTriggered', {id: 'hotline', amount: saved, posId: p.id});   // 연출용 (이미 계산된 값)
     });
 }
@@ -1368,6 +1500,62 @@ defCard('circuit', '서킷브레이커', 'defense', 1, 'mythic', null, true,
   () => !run.circuitToday,
   () => { run.circuitToday = CIRCUIT_DROP; run.allProtectedToday = true; });   // circuitToday = 장 마감 하락폭
 
+/* ── 곱하기 카드 (S4) — 장 마감 정산 배수를 만진다 ── */
+function splitPosition(p, n){   // 똑같은 n개 포지션으로 (합계는 그대로)
+  ['principal', 'shares', 'entryExposure', 'refExp'].forEach(k => { p[k] /= n; });
+  for(let i = 1; i < n; i++) run.positions.push(Object.assign({}, p, { id: run.nextPosId++, todayX: p.todayX.slice() }));
+}
+function levUpPosition(p, mult){   // 지금 가격으로 같은 방향 노출을 (mult−1)배 더 (빌린 돈으로)
+  const add = exposure(p) * (mult - 1);
+  p.shares *= mult;
+  p.entryExposure += add;
+  p.refExp += add;
+  p.lev *= mult;
+}
+defCard('split', '주식 분할', 'hold', 1, 'uncommon', 'position', false,
+  '포지션 하나를 똑같은 두 포지션으로 나눈다 (합계 그대로). 포지션 수를 세는 효과에 두 번 잡힌다.',
+  p => true, p => { splitPosition(p, SPLIT_WAYS); });
+defCard('levEtf', '레버리지 ETF', 'buy', 1, 'rare', 'position', false,
+  `포지션 레버리지 ×${LEV_ETF_MULT} (지금 가격으로 빌려서 더 산다, 중첩 가능, 최대 ${LEV_ETF_MAX_LEV}x). 반대매매 위험도 ×${LEV_ETF_MULT}.`,
+  p => p.lev * LEV_ETF_MULT <= LEV_ETF_MAX_LEV, p => { levUpPosition(p, LEV_ETF_MULT); });
+defCard('reinvest', '배당 재투자', 'hold', 1, 'uncommon', 'position', false,
+  '오늘 장 마감 정산금 전액을 현금 대신 그 포지션 원금에 추가한다 (같은 레버리지로 더 산다).',
+  p => !p.reinvestToday, p => { p.reinvestToday = true; });
+defCard('timeLoop', '타임 루프', 'action', 2, 'legendary', null, true,
+  '오늘 장 마감 정산(손익 × 배수)을 수익 포지션마다 한 번 더 받는다. 소멸.',
+  () => true, () => { run.timeLoopToday++; });
+defCard('allIn', '몰빵', 'action', 1, 'rare', 'position', false,
+  '이 포지션만 남기고 팔 수 있는 포지션을 전부 판다. 남은 포지션의 오늘 정산 ×(판 개수 + 1).',
+  p => run.positions.some(x => x !== p && canSell(x)),
+  p => {
+    const others = run.positions.filter(x => x !== p && canSell(x));
+    noteManualSell(others);
+    others.forEach(x => closePosition(x, 0));
+    p.todayX.push({ label: `🃏 몰빵 ×${others.length + 1}`, value: others.length + 1 });
+    emit('allIn', {pos: p, sold: others.length});
+  });
+defCard('futures', '선물 만기일', 'action', 1, 'rare', null, false,
+  `이번 주 장 마감 정산 ×${FUTURES_MULT}, 다음 주 정산 ×${FUTURES_NEXT}.`,
+  () => run.week.futures < FUTURES_MULT, () => { run.week.futures = FUTURES_MULT * run.week.futures; run.futuresNext = FUTURES_NEXT; });
+defCard('coinFlip', '모 아니면 도', 'action', 1, 'rare', 'position', false,
+  `${pct(COIN_FLIP_CHANCE)}: 이 포지션 오늘 정산 ×${COIN_FLIP_MULT} / ${pct(1 - COIN_FLIP_CHANCE)}: 포지션 가치 0 (원금 증발).`,
+  p => canSell(p), p => coinFlip(p, COIN_FLIP_CHANCE));
+function coinFlip(p, chance){
+  const win = rand() < chance;
+  if(win) p.todayX.push({ label: `🃏 모 ×${COIN_FLIP_MULT}`, value: COIN_FLIP_MULT });
+  else closePosition(p, posEquity(p));   // 가치 0으로 청산 (빌린 돈은 포지션이 갚고, 원금만큼 손실)
+  emit('coinFlip', {pos: p, win, chance});
+}
+defCard('relist', '재상장', 'buy', 1, 'rare', null, true,
+  '마지막으로 반대매매 당한 포지션을 원래 원금·레버리지·방향으로 되살린다 (현금 안 듦). 소멸.',
+  () => run.liquidated.length > 0,
+  () => {
+    const x = run.liquidated.pop();
+    run.cash += x.principal;
+    const p = openPosition(x.assetId, x.principal, x.lev, x.dir, true);
+    emit('relisted', {pos: p});
+  });
+
 /* 상태 (보상 풀에 나오지 않음) */
 defCard('trauma', '반대매매 트라우마', 'status', 0, 'common', null, false,
   '사용 불가. 손패 자리만 차지한다. 주간 결산 때 사라진다.',
@@ -1454,6 +1642,13 @@ defUpgrade('delever', { ap: 0 });
 defUpgrade('lossGuard', { desc: `오늘 반대매매 손실의 ${pct(LOSS_GUARD_REFUND_UP)} 환급. ※ 실제로는 불법입니다.`, play: () => { run.lossGuardToday = LOSS_GUARD_REFUND_UP; } });
 defUpgrade('circuit', { desc: `오늘 순자산 −${pct(CIRCUIT_DROP_UP)}(개장 대비)면 즉시 장 마감. 반대매매 면제. 소멸.`,
   play: () => { run.circuitToday = CIRCUIT_DROP_UP; run.allProtectedToday = true; } });
+['levEtf', 'reinvest', 'allIn', 'relist'].forEach(id => defUpgrade(id, { ap: 0 }));
+defUpgrade('split', { desc: `포지션 하나를 똑같은 ${SPLIT_WAYS_UP}개 포지션으로 나눈다 (합계 그대로).`, play: p => { splitPosition(p, SPLIT_WAYS_UP); } });
+defUpgrade('timeLoop', { ap: 1 });
+defUpgrade('futures', { desc: `이번 주 장 마감 정산 ×${FUTURES_MULT_UP}, 다음 주 정산 ×${FUTURES_NEXT}.`,
+  valid: () => run.week.futures < FUTURES_MULT_UP, play: () => { run.week.futures = FUTURES_MULT_UP * run.week.futures; run.futuresNext = FUTURES_NEXT; } });
+defUpgrade('coinFlip', { desc: `${pct(COIN_FLIP_CHANCE_UP)}: 이 포지션 오늘 정산 ×${COIN_FLIP_MULT} / ${pct(1 - COIN_FLIP_CHANCE_UP)}: 포지션 가치 0 (원금 증발).`,
+  play: p => coinFlip(p, COIN_FLIP_CHANCE_UP) });
 
 /* ── 카드 사용 ── */
 function resolveTarget(card, targetId){
@@ -1583,7 +1778,8 @@ function newRun(){
     pending: { lev: 1, dir: 1, principalMult: 1 },
     // 오늘만 유효한 효과 (startDay에서 초기화)
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
-    week: { antArmy: false, topSpotter: false, valueGod: false },   // 이번 주 효과 (startNextRound에서 초기화)
+    week: { antArmy: false, topSpotter: false, valueGod: false, sanctioned: false, futures: 1 },   // 이번 주 효과 (startNextRound에서 초기화)
+    futuresNext: 1, timeLoopToday: 0, liqToday: 0, liquidated: [],   // 선물 만기일 다음 주 배수 · 타임 루프 · 오늘 반대매매 수 · 반대매매 기록(재상장)
     buyAmount: 0,                            // 종목 카드 입력 금액 (playCard 안에서만, 평소 0)
     lossGuardToday: false, shortFeeFreeToday: false, sellDiscountUsed: false, dayRoll: 0, circuitToday: false, circuitTripped: false, marketOpenEquity: 0,
     gapToday: [], gapNext: [],               // 작전 세력: 오늘 건 갭 → 다음 날 개장 때 적용
@@ -1625,6 +1821,8 @@ function startDay(){
   run.lossGuardToday = false;
   run.shortFeeFreeToday = false;
   run.sellDiscountUsed = false;
+  run.timeLoopToday = 0;
+  run.liqToday = 0;
   run.dayRoll = rand();                    // 오늘 시장 카드 판정용 난수 (타임머신이면 장전에 결과를 보여준다)
   if(run.day === 1 && relicStacks('compoundMonster') > 0){   // 복리 괴물
     const pay = Math.max(0, netEquity()) * COMPOUND_CASH_PER_STACK * relicStacks('compoundMonster');
@@ -1844,6 +2042,7 @@ function decayFss(amount){
 function sanctionFss(){
   run.fss = 0;
   run.fssSanctions++;
+  run.week.sanctioned = true;   // 금감원 VIP
   const kinds = Object.keys(FSS_SANCTION_WEIGHTS);
   const total = kinds.reduce((sum, k) => sum + FSS_SANCTION_WEIGHTS[k], 0);
   let roll = rand() * total, kind = kinds[kinds.length - 1];
@@ -2447,7 +2646,8 @@ function leaveShop(){
 
 function startNextRound(){
   run.round++;
-  run.week = { antArmy: false, topSpotter: false, valueGod: false };
+  run.week = { antArmy: false, topSpotter: false, valueGod: false, sanctioned: false, futures: run.futuresNext };
+  run.futuresNext = 1;
   decayFss(FSS_WEEKLY_DECAY);
   run.day = 1;
   run.rewardChoices = [];

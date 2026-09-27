@@ -16,7 +16,9 @@
 - **S2** (브랜치 `claude/s2-relic-slots`, S1 위): 유물 칸 6개·교체/포기·순서 변경(끌기·◀▶·←→, 장전·암시장)·암시장 판매, 정산 배수를 칸 순서대로 차례 적용 (`docs/design/RELIC_SLOTS.md`). Open Q3 재측정: `nothing` 8.8% (칸 제한 영향 없음)
 - S2 후 결정: Open Q3(`nothing` 8.8%) = **A안** 그대로 두고 S4 후 재측정
 - **S3** (브랜치 `claude/s3-deckbuilding`, S2 위): 카드 강화(+) 50종·보상 '카드 강화'·암시장 리모델링/변환/복제, 빌드 태그 7종 + 등급 안 가중치, 덱 순환(빌 때만 셔플·retain 틀), 종목 카드 금액 입력 창 (`docs/design/DECKBUILDING.md`). D5 표대로 · D6 버림 + retain 예외 · D7 종목 카드 등급 폐지. Open Q1 재측정: deckThinner 26.8% → 24.6%
-- 다음: 승인 후 S4 곱하기 콘텐츠 (`claude/s4-multiplier-content`) — 🛑 D8 배수 수치
+- **S4** (브랜치 `claude/s4-multiplier-content`, S3 위): 떡상 적금·반대매매 생존자 → xmult(폭주 허용, 사용자 결정), 곱하기 유물 12종·카드 8종, 크리티컬 정산 5%, 배수 봇 `levTowerBuild`·`antFlagBuild` (`docs/design/MULTIPLIERS.md`). 상위 10% ÷ 중앙값 = ×38~×62만 (대박 구조 확인), 대신 전 전략 클리어율 +6~16%p, nothing 12.8%
+- S4 결정: **D8** 배수 그대로 + 목표를 거침없이 상향 → `ROUND_TARGETS` 1억 200만 → 300억 (D4 재측정 완료). 배수 봇 30.6%·53.0%, 나머지 0~5%, nothing 2.2%
+- 다음: 결정 후 S5 빠른 UI (`claude/s5-quick-ui`)
 
 ## Summary
 

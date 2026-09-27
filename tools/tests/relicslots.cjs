@@ -12,19 +12,19 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.goto('http://127.0.0.1:8765/demo.html'); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await sleep(460);
     // 1) 6칸 표시 + 빈 칸
-    const r1 = await page.evaluate(() => { window.tipChance = () => 0; ['seal', 'moonSavings'].forEach(id => gainRelic(id, 't')); relicSig = ''; renderAll();
+    const r1 = await page.evaluate(() => { window.tipChance = () => 0; ['seal', 'dopamine'].forEach(id => gainRelic(id, 't')); relicSig = ''; renderAll();
       return { slots: document.querySelectorAll('#relicBar .relic-slot').length, relics: document.querySelectorAll('#relicBar [data-relic]').length, label: document.querySelector('#relicBar .relic-label').textContent,
                kinds: [...document.querySelectorAll('#relicBar .rl-kind')].map(x => x.textContent) }; });
     ok(r1.slots === 4 && r1.relics === 2 && /2\/6/.test(r1.label), W + ' 유물 2개 + 빈 칸 4', r1);
-    ok(r1.kinds.join() === '×,+', W + ' 종류 배지 (인장 × · 적금 +)', r1.kinds);
+    ok(r1.kinds.join() === '×,+', W + ' 종류 배지 (인장 × · 도파민 +)', r1.kinds);
     // 2) 정산 순서: 적금(+)이 인장(×)보다 앞이면 배수가 크다
-    const r2 = await page.evaluate(() => { run.relicState.moonSavings.stacks = 10;
+    const r2 = await page.evaluate(() => { run.combo.up = 3;
       const p = openPosition('semi', 1000, 1, 1, true); p.daysHeld = 4;
-      const a = settleSteps(p, 100).mult;   // [seal, moon] = 1 × 1.2 + 0.1 = 1.3
+      const a = settleSteps(p, 100).mult;   // [seal, dopamine] = 1 × 1.2 + 3 = 4.2
       moveRelic(1, 0);
-      const b2 = settleSteps(p, 100).mult;  // [moon, seal] = (1 + 0.1) × 1.2 = 1.32
+      const b2 = settleSteps(p, 100).mult;  // [dopamine, seal] = (1 + 3) × 1.2 = 4.8
       return { a, b: b2, order: run.relics.join() }; });
-    ok(Math.abs(r2.a - 1.3) < 1e-9 && Math.abs(r2.b - 1.32) < 1e-9 && r2.order === 'moonSavings,seal', W + ' 칸 순서대로 정산 (+ 앞 1.32 > × 앞 1.30)', r2);
+    ok(Math.abs(r2.a - 4.2) < 1e-9 && Math.abs(r2.b - 4.8) < 1e-9 && r2.order === 'dopamine,seal', W + ' 칸 순서대로 정산 (+ 앞 4.8 > × 앞 4.2)', r2);
     // 3) ◀▶ 버튼 · ←→ 키 · 장중 불가
     await page.evaluate(() => { relicSig = ''; renderAll(); });
     await page.locator('#relicBar [data-relic="seal"]').click(); await sleep(100);
@@ -32,15 +32,15 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     const r3 = await page.evaluate(() => run.relics.join());
     await page.keyboard.press('ArrowRight'); await sleep(100);
     const r3b = await page.evaluate(() => run.relics.join());
-    ok(r3 === 'seal,moonSavings' && r3b === 'moonSavings,seal', W + ' ◀ 버튼 · → 키로 칸 이동', [r3, r3b]);
+    ok(r3 === 'seal,dopamine' && r3b === 'dopamine,seal', W + ' ◀ 버튼 · → 키로 칸 이동', [r3, r3b]);
     const r3c = await page.evaluate(() => { startMarket(); const m = moveRelic(0, 1); return { m, order: run.relics.join(), drag: !!document.querySelector('#relicBar [draggable="true"]') }; });
     await page.evaluate(() => { relicSig = ''; renderAll(); });
     const drag = await page.evaluate(() => !!document.querySelector('#relicBar [draggable="true"]'));
-    ok(!r3c.m && r3c.order === 'moonSavings,seal' && !drag, W + ' 장중에는 순서 변경 불가 (끌기도 꺼짐)', r3c);
+    ok(!r3c.m && r3c.order === 'dopamine,seal' && !drag, W + ' 장중에는 순서 변경 불가 (끌기도 꺼짐)', r3c);
     // 4) 끌어서 옮기기 (장전)
-    await page.evaluate(() => { startRun(); ['seal', 'theme', 'moonSavings'].forEach(id => gainRelic(id, 't')); relicSig = ''; renderAll(); });
-    await page.dragAndDrop('#relicBar [data-relic="moonSavings"]', '#relicBar [data-relic="seal"]'); await sleep(150);
-    ok(await page.evaluate(() => run.relics.join()) === 'moonSavings,seal,theme', W + ' 끌어서 1번 칸으로', await page.evaluate(() => run.relics.join()));
+    await page.evaluate(() => { startRun(); ['seal', 'theme', 'dopamine'].forEach(id => gainRelic(id, 't')); relicSig = ''; renderAll(); });
+    await page.dragAndDrop('#relicBar [data-relic="dopamine"]', '#relicBar [data-relic="seal"]'); await sleep(150);
+    ok(await page.evaluate(() => run.relics.join()) === 'dopamine,seal,theme', W + ' 끌어서 1번 칸으로', await page.evaluate(() => run.relics.join()));
     if(W === 1920) await page.screenshot({ path: S + '/relicslots-bar.png' });
     // 5) 가득 찬 칸: 보상 → 교체 오버레이 → 교체
     const r5 = await page.evaluate(() => { ['capital', 'payday', 'lawyer'].forEach(id => gainRelic(id, 't'));
@@ -67,8 +67,8 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.locator('[data-own-sell="payday"]').click(); await sleep(150);
     const after = await page.evaluate(() => ({ slush: run.slush, has: hasRelic('payday'), n: run.relics.length }));
     ok(armed && !after.has && after.n === 5 && after.slush === before.slush + before.price && before.price > 0, W + ' 판매: 두 번 눌러야 · 비자금 +판매가', [before, after]);
-    await page.locator('[data-own-move="1"][data-own-relic="moonSavings"]').click(); await sleep(150);
-    ok(await page.evaluate(() => run.relics[1] === 'moonSavings'), W + ' 암시장 ▶ 버튼으로 칸 이동');
+    await page.locator('[data-own-move="1"][data-own-relic="dopamine"]').click(); await sleep(150);
+    ok(await page.evaluate(() => run.relics[1] === 'dopamine'), W + ' 암시장 ▶ 버튼으로 칸 이동');
     const r6 = await page.evaluate(() => { gainRelic('vip', 't'); run.slush = 99999; const id = run.shop.relics.find(x => !hasRelic(x)); renderShop(); return id; });
     await page.locator(`[data-buy-relic="${r6}"]`).click(); await sleep(200);
     ok(await page.locator('[data-swap-pick]').count() === 6, W + ' 가득 찬 칸에서 구매 → 교체 오버레이');

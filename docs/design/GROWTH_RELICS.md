@@ -26,7 +26,7 @@ UI: `docs/demo` `enqueueRelicGrow`·`enqueueRelicBig`·`enqueueRelicShatter`·`g
 
 - (2026-09-27, S1) 평가이익 보정은 없어지고 **장 마감 정산**(`SETTLEMENT.md`)으로 옮겼다: 떡상 적금·반대매매 생존자는 `SETTLE_EFFECTS`의 `mult`(합산 배수 +스택×1%·+스택×3%),
   존버의 인장·테마주 헌터는 `xmult`(×1.2·×1.15). 그날 수익이 난 포지션에만, 보너스분은 현금으로. S2부터 배수는 유물 칸 순서대로 적용된다 — 떡상 적금·반대매매 생존자를 앞 칸에 두면 (1 + moon + trauma) × 인장 × 테마 (RELIC_SLOTS.md).
-  (MASTER_PLAN S4에서 떡상 적금·반대매매 생존자를 `xmult`로 바꿔 폭주를 허용할 예정 — 사용자 결정.)
+- (2026-09-27, S4) **사용자 결정: 폭주가 목표, 제한은 무한 모드 목표 상승으로 대응.** 떡상 적금·반대매매 생존자는 `xmult`로 바뀌었다 — 스택당 ×1.01 · ×1.03을 곱한다(`MOON_XMULT_PER_STACK`·`TRAUMA_XMULT_PER_STACK`, 50스택이면 ×1.64 · ×4.38). 새 성장형 곱하기 유물 복리의 복리·반대매매 불사조는 `MULTIPLIERS.md`.
 - 주간 결산 체인은 이번 주 정산 보너스를 유물별로 합친 요약("📈 떡상 적금 +₩ 12만")으로 나온다.
 - 보상·암시장 풀에 그대로 포함 (보상 `RELIC_RARITY_WEIGHTS`, 암시장 `RELIC_SHOP_RARITY_WEIGHTS`).
 

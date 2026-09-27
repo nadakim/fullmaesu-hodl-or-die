@@ -50,7 +50,7 @@ function buyRelicFor(E, id, prio, rng){
 }
 /* 칸 순서 정리 (엔진에 moveRelic이 있을 때만, 암시장에서): 칩 더하기 → 합산 배수 → 곱 배수 → 정산과 무관한 유물.
    정산 배수는 칸 순서대로 차례로 적용되므로 더하기를 앞에 둘수록 커진다 — 봇은 늘 최선의 순서로 둔다 */
-const KIND_ORDER = { add: 0, mult: 1, xmult: 2 };
+const KIND_ORDER = { add: 0, mult: 1, xmult: 2, copy: 3 };
 function arrangeRelics(E){
   if(!hasFn(E, 'moveRelic') || !E.SETTLE_EFFECTS) return;
   const key = id => { const fx = E.SETTLE_EFFECTS[id]; return fx ? KIND_ORDER[fx.kind] : 3; };
@@ -63,7 +63,7 @@ const hasFn = (E, name) => { try { return typeof E[name] === 'function'; } catch
 function rerollForRelics(E, relics){
   if(!hasFn(E, 'rerollShop')) return;
   for(let guard = 0; guard < 30; guard++){
-    const want = relics.filter(id => !E.hasRelic(id));
+    const want = relics.filter(id => E.RELIC_BY_ID[id] && !E.hasRelic(id));   // 옛 엔진(비교용)에 없는 유물은 건너뛴다
     if(!want.length || E.run.shop.relics.some(id => want.indexOf(id) >= 0) || !E.rerollAvailable('relic')) return;
     const cheapest = Math.min.apply(null, want.map(id => E.relicPrice(id)));
     if(E.run.slush < E.shopRerollCost('relic') + cheapest || !E.rerollShop('relic')) return;
@@ -297,5 +297,44 @@ const deckThinner = {
   }
 };
 
-module.exports = { allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
+/* ── S4 배수 빌드 2종 (docs/design/MULTIPLIERS.md): '10번 중 1번 대박'이 나오는지 보는 용도 ── */
+const MULT_ALWAYS = ['futures', 'timeLoop'];   // 대상 없는 정산 배수 카드는 보이면 쓴다
+/* levTowerBuild: 레버리지 탑 중심. 신용·영끌로 고베타 롱 → 레버리지 ETF를 가장 큰 포지션에 → 선물·타임 루프. 찌라시 A */
+const levTowerBuild = {
+  premarket(E){
+    const biggest = ids => ids.slice().sort((a, b) => E.exposure(posById(E, b)) - E.exposure(posById(E, a)))[0];
+    for(;;){
+      const buyable = () => E.run.hand.some((_, i) => isLongStock(E, card(E, i)) && canAfford(E, card(E, i)));
+      if(E.run.pending.lev === 1 && buyable()) playOne(E, c => LEVER.indexOf(c.base || c.id) >= 0, c => -LEVER.indexOf(c.base || c.id));
+      if(playOne(E, c => isLongStock(E, c), c => betaOf(E, c))) continue;
+      if(playOne(E, c => (c.base || c.id) === 'levEtf' || (c.base || c.id) === 'relist', () => 0, biggest)) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0)) continue;
+      if(playOne(E, c => ['coffee', 'indicators', 'marginTopup', 'hodl'].indexOf(c.base || c.id) >= 0)) continue;
+      break;
+    }
+  },
+  tip: () => 0,
+  cardPick: ['levEtf', 'relist', 'timeLoop', 'futures', 'credit', 'yolo', 'stk_meme', 'stk_sc', 'stk_coin', 'coffee', 'marginTopup'],
+  relicPick: ['levTower', 'phoenix', 'traumaSurvivor', 'limitUp', 'rerun', 'infinity', 'hotline', 'coldwallet'],
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
+};
+/* antFlagBuild: 개미 군단 깃발 중심. 무레버리지로 서로 다른 종목을 많이 → 주식 분할로 포지션 수 늘리기 → 선물·타임 루프. 찌라시 B */
+const antFlagBuild = {
+  premarket(E){
+    const held = id => E.run.positions.some(p => p.assetId === id);
+    for(;;){
+      if(playOne(E, c => isLongStock(E, c) && !held(stockOf(E, c).id), c => -betaOf(E, c))) continue;
+      if(playOne(E, c => (c.base || c.id) === 'split', () => 0, ids => ids.slice().sort((a, b) => E.exposure(posById(E, b)) - E.exposure(posById(E, a)))[0])) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || ['antArmy', 'rotation', 'dividend', 'ipo', 'fullBuy'].indexOf(c.base || c.id) >= 0)) continue;
+      if(playOne(E, c => isLongStock(E, c), c => -betaOf(E, c))) continue;
+      break;
+    }
+  },
+  tip: () => 1,
+  cardPick: ['split', 'timeLoop', 'futures', 'ipo', 'fullBuy', 'antArmy', 'rotation', 'dividend', 'stk_semi', 'stk_gukbap', 'stk_coin'],
+  relicPick: ['antFlag', 'sectorSet', 'ccompound', 'dopamine', 'moonSavings', 'infinity', 'seal'],
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
+};
+
+module.exports = { levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
                    relicSwap, arrangeRelics };

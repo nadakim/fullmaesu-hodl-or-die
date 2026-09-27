@@ -137,7 +137,7 @@ const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.t
 
     // 8) 졸업(8주차 통과) → 체인 → 엔딩 화면
     await page.evaluate(() => { window.tipChance = () => 0; startRun(); run.round = MAX_ROUND; markWeekStart(); });
-    const s8 = await page.evaluate(() => { gainRelic('seal','t'); gainRelic('theme','t'); run.cash += 20000;
+    const s8 = await page.evaluate(() => { gainRelic('seal','t'); gainRelic('theme','t'); run.cash += ROUND_TARGETS[MAX_ROUND - 1];
       const p = openPosition('meme', 600, 1, 1, true); p.daysHeld = 4; run.day = DAYS_PER_ROUND; startMarket(); assets.meme.price *= 1.2; endOfDay(); renderAll();
       return { phase: run.phase, reason: run.endReason, playing: !!chainPlay }; });
     ok(W + ' 졸업 → 체인 재생', s8.reason === 'VICTORY' && s8.playing, JSON.stringify(s8));
