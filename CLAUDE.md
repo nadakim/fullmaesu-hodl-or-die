@@ -28,14 +28,14 @@
 - `docs/demo` — 프로토타입 본체 (HTML, **확장자 없음**). CSS·마크업·UI JS. 엔진은 `<script src="engine.js">`로 불러온다.
 - `docs/engine.js` — CONFIG + ENGINE (DOM 없음). 브라우저와 Node(`sim/load-engine.js`, vm) 양쪽에서 같은 파일을 쓴다.
 - `docs/audio.js` — 효과음 (UI 전용). Web Audio API 합성 칩튠, 음원 파일 없음. `Sound.play(이름, {pitch, volume})`, 사전 `Sound.SFX`, 파일 상단에 이름 → 이벤트 표.
-- `docs/music.js` — 배경음악 (UI 전용). 곡은 코드가 아니라 데이터 `SONGS`(파일 맨 위, 트래커 형식 `{bpm, stepsPerBeat, patterns, order}`, 칸 = 'C4'·'-'·'.'·드럼 K/S/H/O). 패미컴 4채널 + market 적응형 레이어, look-ahead 스케줄러. `Music.setTrack`·`setMood`·`stinger`·`duck`. `Sound.mixBus`(같은 컴프레서)로 섞는다.
+- `docs/music.js` — 배경음악 (UI 전용). 곡은 코드가 아니라 데이터 `SONGS`(파일 맨 위, 트래커 형식 `{bpm, stepsPerBeat, patterns, order}`, 칸 = 'C4'·'-'·'.'·드럼 K/S/H/O). 패미컴 4채널 + market 적응형 레이어, look-ahead 스케줄러. `Music.setTrack`·`setMood`·`stinger`·`duck`·`setMuffle`(암시장 로우패스). `Sound.mixBus`(같은 컴프레서)로 섞는다.
 - `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`·`streak`, 캔버스 한 장)·`chip`, **연출 큐** `Fx.enqueue({kind, tier, blocking, duration, play, stop, skip})` — 한 틱에 몰린 이벤트를 발생 순서대로 하나씩(두 번째부터 CHAIN ×n, 효과음 반음씩), blocking 항목이 있으면 `Fx.queueBusy` → 게임 루프가 tick을 미룬다, 클릭·Space·Enter = `Fx.skipQueue`.
 - `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
-- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 28개, 실행법·주의점은 `tools/tests/README.md`)
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 29개, 실행법·주의점은 `tools/tests/README.md`)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
@@ -83,6 +83,7 @@
 - 엔진은 UI에 직접 손대지 않고 `emit(type, data)`로만 알린다. 새 규칙을 넣을 때도 같은 방식을 따른다.
 - 연쇄 연출(demo `enqueueGap`·`enqueueLiquidation`·`enqueueRelic`·`juiceMilestones`·`juiceStreak`): tier 1~4 = `FX_TIER`(히트스톱·흔들림·파티클), 갭 경보 강도는 약(미보유, 시장 안 멈춤)·중(보유+유리)·강(보유+불리), 밈 문구는 `GAP_MEMES`에만 추가 (금지 소재 규칙 그대로). 유물 연출은 엔진 `emit('relicTriggered', {id, amount})` — 엔진에 넣어도 되는 건 이미 계산된 값을 담는 emit 추가뿐(`rand()`·상태 변경 금지). 결산 체인·게임오버 화면은 `whenFxIdle`로 큐가 끝난 뒤. 찌라시 결과는 `enqueueTipResult`(같은 갭 경보 틀, 순자산 변화로 상승·횡보·하락 = `TIP_RESULT_FLAT_PCT`, 5% 이상 tier 3, 밈 `TIP_RESULT_MEMES`) → 끝나거나 스킵하면 `showTipResultOverlay`. 효과음 파일 덮어쓰기: `docs/assets/sfx/<SFX 이름>.ogg` + `assets/sfx/files.js`의 `SFX_FILES` 목록 (README 참고, 라이선스 CC0 권장). 설정 `fxSpeed` 보통·빠름·최소(간격 0.1초, 갭 경보 전부 약).
 - TR룸 연출(S8, 수치 `JUICE_CONFIG`의 `deal*`·`countdownMs`·`flameSteps`·`newHighGapTicks`·`heartMs`): 장전 드로우 — `dayStart`가 `dealPending`, 다음 `renderHand`(`dealReady` = TR룸·장전·정산 무대/큐/오버레이 없음)에서 `playDeal`(부채꼴 `.deal`, `cardDeal` 5음계, 희귀 이상 `.shine`+`rareDraw`), 카드 사용음은 `stagePitch(cardChainCount())`. 장 시작 — '▶ 장 시작' 버튼(`countdownNext`)으로 연 `marketOpen`만 `enqueueCountdown`(막는 큐 항목 → 시장 정지, 클릭·Space 스킵, `fxSpeed` 'min'이면 벨만. 테스트의 `startMarket()` 직접 호출은 벨만). 장중 — 게임 루프가 tick 뒤 `notePosTicks`(연속 상승·포지션 신고가 `.fx-newhigh`), `renderPositions`가 `flameLevel` → `.flame-1~3`·`posInDanger` → `.fx-danger`, `heartLoop`(UI setTimeout)가 위험 포지션 중 가장 낮은 건강도로 `heartInterval` 간격 `heartbeat` + `#fxDangerEdge`. 흔들림 끔(`body.no-motion`)·동작 줄이기면 맥동·불꽃 애니메이션 없음(소리는 남음).
+- 암시장 연출(S8-33, 수치 `JUICE_CONFIG`의 `hazeInMs`·`shopPadVolume`·`hoverGapMs`·`packShakeMs`·`packFlipMs`·`mythDarkMs`·`mythSpinMs`): 입장(`switchTab`에서 다른 화면 → shop) `enterShopHaze` = `#screen-shop.haze-in`(채도) + `::before/::after` 보라 안개 + `shopPad`, BGM은 `updateMusic`이 `Music.setMuffle(currentTab === 'shop')`(로우패스 `MUSIC_MUFFLE_HZ`). 호버 `#shopBox` mouseover → `shopHover`(요소가 바뀔 때만) + CSS `shopFloat`(진열 카드 전체, 팩·유물은 아이콘만 — 누르는 자리는 움직이지 않는다). 팩 개봉 `showPackResult`·`juicePack`(`packTiming`): `.flip-stage.pk.<등급>` > `.pk-pillar` + `.pk-float` > `.pk-shake` > `.flip-card`, 소리 `packShake` → `packBurst` → `packFlip`, 신화는 `#overlay.pk-dark` + `choir` + `mythSpin`. 유물 구매는 `relicGained`(source 'shop') → `relicClackId` → `renderShop` 끝에서 그 칸 `.slot-in` + `relicClack`.
 - 소리·타격감은 엔진에 한 줄도 넣지 않는다. `onGameEvent`와 UI 연출 함수에서만 `Sound.play`·`Fx.*`를 부른다 (새 효과음은 `audio.js` 사전 + 상단 표에 추가). 세기는 `Fx.intensity(금액, 순자산)`(순자산의 `FX_MONEY_FULL` = 1)로 정하고 '강'은 대략 10번 중 1번. 히트스톱은 게임 루프가 `Fx.frozenFor()`만큼 다음 tick을 미루는 것뿐 — tick 순서·횟수·결과는 그대로여야 한다 (`sim/runner.js` 전후 결과 JSON 동일로 확인). 설정 '화면 흔들림'을 끄면 흔들림·글리치·히트스톱이 모두 꺼지고, 파티클·소리는 남는다.
 - 엔진 안의 시간 흐름은 틱 카운트(`tickInDay`, `eventTicksLeft`)로 처리한다. `setTimeout`/`setInterval`은 UI 쪽 게임 루프(`window.onload`)에만 둔다.
 - C#으로 옮기기 쉬운 형태를 선호: 명확한 필드를 가진 평범한 객체, 순수 함수, 숫자 상수는 이름 있는 상수로. JS 전용 트릭(동적 프로퍼티 추가, 암묵적 형변환, 프로토타입 조작)은 피한다.

@@ -258,6 +258,8 @@ const MUSIC_WAKE_MS       = 25;     // 스케줄러가 깨어나는 간격
 const MUSIC_FADE_S        = 1;      // 기본 크로스페이드
 const MUSIC_TEMPO_RAMP    = 0.12;   // market: 장 마감 직전 최대 +12%
 const MUSIC_STINGER_DUCK  = 0.3;    // 스팅어가 도는 동안 BGM 볼륨 배율
+const MUSIC_MUFFLE_HZ     = 650;    // 암시장: BGM 로우패스 (물속처럼)
+const MUSIC_MUFFLE_S      = 0.35;   // 로우패스 전환 시간상수 (초)
 const MUSIC_VIBRATO       = { rate: 7, depth: 0.012 };   // VOLATILE · gameOver: 주파수의 ±1.2%
 
 const Music = (() => {
@@ -273,7 +275,7 @@ const Music = (() => {
   let instances = [];                                  // 도는 곡 (페이드 아웃 중인 것 포함)
   let mood = { state: 'NORMAL', progress: 0, danger: false, fss: false };
   const ducks = {};                                    // 이름 → 볼륨 배율 (찌라시 0.5 · 결산 체인 0.2 …)
-  let duckTarget = 1, skippedSteps = 0;   // skippedSteps: 뒤처져서 소리 없이 건너뛴 칸 (검증용)
+  let duckTarget = 1, skippedSteps = 0, muffleNode = null, muffled = false;   // skippedSteps: 뒤처져서 소리 없이 건너뛴 칸 (검증용)
   const log = [];                                      // 검증용: 마디 시작 기록 { track, t, bar, mood, bpm }
 
   /* ── 오디오 그래프 (Sound와 같은 AudioContext · 같은 컴프레서) ── */
@@ -283,7 +285,9 @@ const Music = (() => {
     if(c === ctx) return true;
     ctx = c; waves = {}; instances = []; current = null; duckTarget = 1;
     out = ctx.createGain(); out.gain.value = MUSIC_MASTER_GAIN * volume; out.connect(Sound.mixBus);
-    duckNode = ctx.createGain(); duckNode.connect(out);
+    muffleNode = ctx.createBiquadFilter(); muffleNode.type = 'lowpass'; muffleNode.Q.value = 0.9;
+    muffleNode.frequency.value = muffled ? MUSIC_MUFFLE_HZ : 20000; muffleNode.connect(out);
+    duckNode = ctx.createGain(); duckNode.connect(muffleNode);   // 곡 → 덕 → 로우패스(암시장) → 마스터
     stingBus = ctx.createGain(); stingBus.connect(out);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
@@ -500,6 +504,10 @@ const Music = (() => {
   }
   const duck = (key, level) => { ducks[key] = level; applyDuck(); };
   const unduck = key => { delete ducks[key]; applyDuck(); };
+  function setMuffle(on){   // 암시장: 곡 전체를 물속처럼 (스팅어는 그대로)
+    muffled = !!on;
+    if(muffleNode) muffleNode.frequency.setTargetAtTime(muffled ? MUSIC_MUFFLE_HZ : 20000, ctx.currentTime, MUSIC_MUFFLE_S);
+  }
   function setMood(m){ mood = Object.assign({}, mood, m); }
 
   function setEnabled(on){
@@ -538,8 +546,8 @@ const Music = (() => {
   }
   const barsOf = name => { const s = SONGS[name]; return s.order.reduce((n, p) => n + Math.max(...['p1', 'p2', 'tri', 'noise'].map(c => (s.patterns[p][c] ? s.patterns[p][c].length : 0))), 0); };
 
-  return { SONGS, pump, setTrack, crossfadeTo, stinger, duck, unduck, setMood, setEnabled, setVolume, validate, barsOf, noteFreq,
+  return { SONGS, pump, setTrack, crossfadeTo, stinger, duck, unduck, setMood, setMuffle, setEnabled, setVolume, validate, barsOf, noteFreq,
            get track(){ return current ? current.name : null; }, get desired(){ return desired; }, get log(){ return log; },
            get instances(){ return instances.map(i => ({ name: i.name, loop: i.loop, stopping: !!i.stopping, osc: Object.keys(i.ch).filter(k => i.ch[k].osc || k === 'lfo').length })); },
-           get skippedSteps(){ return skippedSteps; }, get duckLevel(){ return duckNode ? duckNode.gain.value : 1; }, get enabled(){ return enabled; }, get mood(){ return mood; } };
+           get skippedSteps(){ return skippedSteps; }, get duckLevel(){ return duckNode ? duckNode.gain.value : 1; }, get enabled(){ return enabled; }, get mood(){ return mood; }, get muffled(){ return muffled; } };
 })();
