@@ -20,7 +20,7 @@ const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(
     // 2) 곱하기 유물 + 크리티컬 → 무대
     await p.evaluate(() => { ['antFlag', 'levTower'].forEach(id => gainRelic(id, 't')); openPosition('coin', 800, 2, 1, true);
       window.rollCrit = () => 3; });   // 크리티컬 릴 확인용 (엔진 rollCrit를 이 테스트에서만 고정)
-    await p.evaluate(runDay(1.004));
+    await p.evaluate(runDay(1.02));
     await p.waitForFunction(() => !!stage, null, { timeout: 8000 });
     const s1 = await p.evaluate(() => [overlayOpen, run.phase, $('overlayBox').textContent.includes('장 마감 정산'), stage.rows.length]);
     ok(W + ' 보너스 있는 날 → 다음 날 장전에 무대', s1[0] && s1[1] === 'premarket' && s1[2] && s1[3] >= 1, s1);
@@ -42,10 +42,10 @@ const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(
     ok(W + ' Enter → 다음 날 (오버레이 닫힘)', await p.evaluate(() => !stage && !overlayOpen && run.phase === 'premarket'));
     // 4) 작은 정산 → 자동 2배속 (이번 판 최고 대비)
     await p.evaluate(() => { stageBest = { run, payout: 1e12 }; });   // 이번 판 최고 정산이 아주 크면 오늘 것은 '작은 정산'
-    await p.evaluate(runDay(1.004));
+    await p.evaluate(runDay(1.02));   // 장중 무작위 하락이 있어도 확실히 수익 마감
     const small = await p.waitForFunction(() => stage, null, { timeout: 8000 }).then(() => p.evaluate(() => stage.speed)).catch(() => 'no stage');
     ok(W + ' 작은 정산 → 자동 ' + '2배속', small === 2, small);
-    await p.evaluate(() => { stageSkip(); stageSkip(); stage.readyAt = 0; stageNext(); });
+    await p.evaluate(() => { if(stage){ stageSkip(); stageSkip(); stage.readyAt = 0; stageNext(); } });
     // 5) 설정 '결산 연출' 끔 → 무대 없이 알림
     await p.evaluate(() => { settings.chainFx = false; });
     await p.evaluate(runDay(1.004)); await sleep(1600);
@@ -53,8 +53,9 @@ const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(
     await p.evaluate(() => { settings.chainFx = true; });
     // 6) 주 마지막 날 → 무대 대신 주간 체인
     await p.evaluate(() => { run.day = DAYS_PER_ROUND; run.cash += ROUND_TARGETS[0]; });
-    await p.evaluate(runDay(1.004)); await sleep(1600);
-    ok(W + ' 주 마지막 날 → 무대 없이 결산 체인', await p.evaluate(() => !stage && (!!chainPlay || !!chainHold)));
+    await p.evaluate(runDay(1.004));
+    await p.waitForFunction(() => !!chainPlay || !!chainHold, null, { timeout: 8000 }).catch(() => {});   // 앞선 연출(큐)이 끝난 뒤 체인
+    ok(W + ' 주 마지막 날 → 무대 없이 결산 체인', await p.evaluate(() => !stage && (!!chainPlay || !!chainHold)), await p.evaluate(() => [run.phase, !!stage, Fx.queueLength]));
     await p.close();
   }
   ok('page errors 없음', errs.length === 0, errs);
