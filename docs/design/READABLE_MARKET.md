@@ -87,3 +87,16 @@
 
 `REGIMES` · `REGIME_DRIFT` {UP 0.004, FLAT 0, DOWN −0.004, HOT 0.002} · `GAP_HOT_MULT` 2.5 · `REGIME_UP_LONG_DAYS` 2 · `REGIME_TRANSITION` · `REGIME_START` ·
 `SIGNAL_ACCURACY` 0.65 · `SIGNAL_INDICATOR_BONUS` 0.20 · `NEWS_RUMOR_CHANCE` 0.6 · `NEWS_EVENTS` · `INDEX_STATE` · `INDEX_TICK_RANGE` 40
+
+## 세력 매집 (S7-20, 2026-09-27)
+
+- **감지:** 장중 틱마다 `maybeAccumTip`이 방금 캔들을 본다. 아래꼬리가 몸통의 `ACCUM_TAIL_RATIO`(3)배 이상이고 종목 추세가 UP·FLAT(`ACCUM_REGIMES`)이면, `ACCUM_TRIGGER_CHANCE`(5%) 확률로 찌라시 '세력 매집 포착'(`TIP_EVENTS`의 `accum`)을 연다.
+  - 이 찌라시는 `special: true`라서 일반 찌라시 추첨에서는 나오지 않는다.
+- **효과:** 찌라시가 뜬 종목은 선택과 상관없이 `accumBonus`를 받는다. 신호는 사실이어야 하기 때문이다.
+  - 다음 장 마감의 추세 전이(`transitionRow`)에서 UP 확률이 +`ACCUM_UP_BONUS`(35%p) 오르고, 나머지 상태는 비율대로 줄어든다.
+  - 예: FLAT 종목은 UP 전환 확률이 20% → 55%가 된다.
+- **표시:** 본문의 '내일 매수세 전환 확률 {accumUp}'은 순수 함수 `accumUpChance(stockId)`의 값이다. 판정에 쓰는 `transitionRow`와 같은 계산이다.
+- **실측** (`node sim/accum-check.js --n 600`, random 봇):
+  - 포착 1,392회. 표시 확률 평균 71.7%, 실제 다음 날 UP 전환 71.6% (±2.4%, 95% 신뢰구간).
+  - 대조: 매집이 없었던 UP·FLAT 종목의 다음 날 UP 비율은 36.8%.
+- **빈도:** 판당 찌라시 3.6건 중 약 1.1건이다. 발동 확률을 35%로 두면 판당 14회가 떠서 일반 찌라시 자리를 다 차지했다. 그래서 5%로 낮췄다.

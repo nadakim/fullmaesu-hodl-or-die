@@ -3906,7 +3906,8 @@ function showRoundResult(w){
 }
 
 /* ── 찌라시 ── */
-const fillTip = (text, stockId) => text.split('{stock}').join(stockId ? STOCK_BY_ID[stockId].name : '');
+const fillTip = (text, stockId, tip) => text.split('{stock}').join(stockId ? STOCK_BY_ID[stockId].name : '')
+  .split('{accumUp}').join(tip && tip.accumUp ? Math.round(tip.accumUp * 100) + '%' : '');   // 세력 매집: 엔진 accumUpChance 값 그대로
 
 function tipChoiceMeta(tip, choice, idx){
   const parts = [];
@@ -3931,7 +3932,7 @@ function tipCardHtml(tip, wrap){
   const ev = TIP_BY_ID[tip.eventId];
   const body = `
     <div class="noti-headline">${fillTip(ev.headline, tip.stockId)}</div>
-    <div class="noti-body">${fillTip(ev.body, tip.stockId)}</div>
+    <div class="noti-body">${fillTip(ev.body, tip.stockId, tip)}</div>
     ${ev.choices.map((c, i) => `
       <button class="choice ${i === 0 ? 'risky' : 'safe'}" data-tip-choice="${i}">
         <span class="ch-label">${'AB'[i]}. ${fillTip(c.label, tip.stockId)}</span>

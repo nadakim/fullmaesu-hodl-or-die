@@ -550,8 +550,20 @@ const TIP_EVENTS = [
         { chance:0.45, tag:'대박', text:'"우리 아들 대단하네" 용돈 입금', effects:[{ kind:'cash', amount:500 }] },
         { chance:0.55, tag:'쪽박', text:'등짝 스매싱. 이번 달 용돈 끊김', effects:[{ kind:'cash', amount:-400 }] } ] },
       { label:'"적금 들고 있어요"', outcomes:[
-        { chance:1, tag:'확정', text:'"기특하네" 몰래 쓰라며 비상금 입금', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] }
+        { chance:1, tag:'확정', text:'"기특하네" 몰래 쓰라며 비상금 입금', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
+  // (S7-20) 세력 매집: 무작위로 오지 않는다(special) — 장중 캔들에 긴 아래꼬리가 생기면 maybeAccumTip이 연다. {accumUp} = 내일 매수세 전환 확률(엔진 accumUpChance 그대로)
+  { id:'accum', special:true, headline:'★ 세력 매집 포착: {stock}', body:'장중 긴 아래꼬리 — 누군가 저가에서 쓸어 담았다. 내일 매수세 전환 확률 {accumUp} (평소보다 높음).', pick:true,
+    choices:[
+      { label:'세력 옆자리에 탑승 (매수)', outcomes:[
+        { chance:1, tag:'확정', text:'{stock} 매수 완료. 내일 추세는 개장 뒤에 드러난다', effects:[{ kind:'buy', stock:'$pick', amount:500 }] } ] },
+      { label:'"설거지일 수도" 관망', outcomes:[
+        { chance:1, tag:'확정', text:'캡처만 해 뒀다. 정보값은 비자금으로', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] }
 ];
+/* (S7-20) 세력 매집 이벤트 */
+const ACCUM_TAIL_RATIO     = 3;      // 아래꼬리 ≥ 몸통 × 3
+const ACCUM_TRIGGER_CHANCE = 0.05;   // 조건을 만족한 캔들에서 찌라시가 뜰 확률 (종목 13개 × 12틱이라 조건 캔들이 많다 — 찌라시 5건 중 1건쯤이 되게)
+const ACCUM_UP_BONUS       = 0.35;   // 매집 포착 종목: 내일 UP 전이 확률 +35%p (다른 상태는 비율대로 줄인다)
+const ACCUM_REGIMES        = ['UP', 'FLAT'];   // 이 추세일 때만 (하락·과열 종목의 꼬리는 매집이 아니다)
 
 /* 게임오버 원인 판정 기준 (문구는 UI의 ENDINGS) */
 // 목표 미달 엔딩 판정 (classifyEnd). 위에서부터 먼저 맞는 것
@@ -710,7 +722,7 @@ function initAssets(){
   assets = {};
   STOCKS.forEach(s => {
     assets[s.id] = { price: s.basePrice, dayOpen: s.basePrice, lastDayChg: 0, history: Array(ASSET_HISTORY).fill(s.basePrice), candles: [],
-                     dayCandles: [], daily: [], limitHit: 0,   // (S7) 오늘 캔들 · 일봉 · 오늘 상·하한가(+1/−1/0)
+                     dayCandles: [], daily: [], limitHit: 0, accumBonus: 0,   // accumBonus = 세력 매집 포착 → 내일 UP 전이 보너스   // (S7) 오늘 캔들 · 일봉 · 오늘 상·하한가(+1/−1/0)
                      regime: '', regimeDays: 0 };   // 숨은 추세 (인버스는 '' = 지수를 따른다). initRegimes에서 정한다
   });
   // 시작 시 차트가 비어 보이지 않도록 과거 시세를 미리 만들어 둔다
@@ -1984,12 +1996,45 @@ function initRegimes(){
   });
 }
 /* 장 마감: 전이 행렬로 내일 추세. UP이 REGIME_UP_LONG_DAYS일 이상이면 UP_LONG 행(과열 확률 ↑) */
+/* 내일 추세 전이표 (순수): 세력 매집이 포착된 종목은 UP 확률 +ACCUM_UP_BONUS, 나머지는 비율대로 줄인다 */
+function transitionRow(a){
+  const row = REGIME_TRANSITION[a.regime === 'UP' && a.regimeDays >= REGIME_UP_LONG_DAYS ? 'UP_LONG' : a.regime];
+  if(!a.accumBonus) return row;
+  const up = row.find(o => o.state === 'UP'), baseUp = up ? up.chance : 0;
+  const newUp = Math.min(1, baseUp + a.accumBonus), scale = baseUp < 1 ? (1 - newUp) / (1 - baseUp) : 0;
+  const out = row.filter(o => o.state !== 'UP').map(o => ({ state: o.state, chance: o.chance * scale }));
+  out.unshift({ state: 'UP', chance: newUp });
+  return out;
+}
+/* 화면에 보이는 '내일 매수세 전환 확률' = 판정에 쓰는 값 그대로 (순수) */
+function accumUpChance(stockId){
+  const a = assets[stockId], saved = a.accumBonus;
+  a.accumBonus = ACCUM_UP_BONUS;
+  const p = transitionRow(a).find(o => o.state === 'UP').chance;
+  a.accumBonus = saved;
+  return p;
+}
+/* 장중: 방금 캔들에 긴 아래꼬리(≥ 몸통 × ACCUM_TAIL_RATIO) + 추세 UP·FLAT → ACCUM_TRIGGER_CHANCE로 '세력 매집 포착' 찌라시.
+   찌라시가 뜨면 그 종목은 내일 UP 전이 보너스 (고르는 선택지와 무관 — 신호는 사실이어야 한다) */
+function maybeAccumTip(){
+  if(run.pendingTip || run.tipsToday >= TIP_MAX_PER_DAY || tipChance() <= 0) return false;   // 찌라시를 꺼 두면(tipChance 0) 매집 찌라시도 없음
+  const s = STOCKS.find(x => {
+    const a = assets[x.id], c = a.candles[a.candles.length - 1];
+    if(!c || ACCUM_REGIMES.indexOf(a.regime) < 0 || a.accumBonus) return false;
+    const body = Math.abs(c.close - c.open), tail = Math.min(c.open, c.close) - c.low;
+    return body > 0 && tail >= body * ACCUM_TAIL_RATIO;
+  });
+  if(!s || rand() >= ACCUM_TRIGGER_CHANCE) return false;
+  assets[s.id].accumBonus = ACCUM_UP_BONUS;
+  openTip('accum', s.id);
+  return true;
+}
 function nextRegimes(){
   STOCKS.forEach(s => {
     const a = assets[s.id];
     if(!a.regime) return;
-    const row = a.regime === 'UP' && a.regimeDays >= REGIME_UP_LONG_DAYS ? 'UP_LONG' : a.regime;
-    const next = pickWeighted(REGIME_TRANSITION[row]);
+    const next = pickWeighted(transitionRow(a));
+    a.accumBonus = 0;
     a.regimeDays = next === a.regime ? a.regimeDays + 1 : 1;
     a.regime = next;
   });
@@ -2172,14 +2217,15 @@ function maybeTriggerTip(){
   run.ticksSinceTip++;
   if(run.pendingTip || run.tipsToday >= TIP_MAX_PER_DAY || run.ticksSinceTip < TIP_MIN_GAP_TICKS) return;
   if(rand() >= tipChance()) return;
-  const cands = TIP_EVENTS.filter(e => e.id !== run.lastTipId);   // 같은 찌라시 연속 금지
+  const cands = TIP_EVENTS.filter(e => e.id !== run.lastTipId && !e.special);   // 같은 찌라시 연속 금지 · 조건형(세력 매집)은 제외
   openTip(cands[randInt(cands.length)].id);
 }
 
-function openTip(eventId){
+function openTip(eventId, stockId){
   const ev = TIP_BY_ID[eventId];
   const pool = STOCKS.filter(s => s.beta > 0);
-  run.pendingTip = { eventId, stockId: ev.pick ? pool[randInt(pool.length)].id : '' };
+  run.pendingTip = { eventId, stockId: stockId || (ev.pick ? pool[randInt(pool.length)].id : ''), accumUp: 0 };
+  if(eventId === 'accum') run.pendingTip.accumUp = accumUpChance(run.pendingTip.stockId);
   run.tipsToday++;
   run.ticksSinceTip = 0;
   run.lastTipId = eventId;
@@ -2303,7 +2349,7 @@ function tick(){
   }
   run.tickInDay++;
   if(run.tickInDay >= TICKS_PER_DAY) endOfDay();
-  else maybeTriggerTip();
+  else if(!maybeAccumTip()) maybeTriggerTip();
 }
 
 function endOfDay(){
