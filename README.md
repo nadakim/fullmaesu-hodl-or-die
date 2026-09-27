@@ -1,12 +1,12 @@
 # fullmaesu-hodl-or-die
-Retro 2D trading game prototype — HODL or Die
+Retro 2D trading game prototype — BULL TRAP
 
-# 풀매수 기원단: HODL or Die
+# 풀매수 기원단: BULL TRAP
 > 주식 시장의 급등락과 도파민을 카드 게임으로 재해석한 레트로 2D 트레이딩 게임.
 
 ## 🎮 Project
 
-**풀매수 기원단: HODL or Die**는 주식 시장의 급등과 폭락을 게임 시스템으로 재해석한 2D 게임 프로젝트입니다.
+**풀매수 기원단: BULL TRAP**은 주식 시장의 급등과 폭락을 게임 시스템으로 재해석한 2D 게임 프로젝트입니다.
 
 현재는 군복무로 인하여 사이버지식정보방에서 HTML / CSS / JavaScript / Canvas를 활용한 웹 프로토타입을 개발하고 있으며, 이후 웹 그대로 데스크톱 래퍼(Electron)로 포장해 스팀에 출시하는 것을 목표로 합니다. Unity 이식은 출시·흥행 이후 필요할 때 검토합니다.
 

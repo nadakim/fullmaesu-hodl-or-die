@@ -1,4 +1,4 @@
-/* 풀매수 기원단: HODL or Die — 게임 엔진 (CONFIG + ENGINE). DOM·Canvas·타이머를 쓰지 않는다.
+/* 풀매수 기원단: BULL TRAP — 게임 엔진 (CONFIG + ENGINE). DOM·Canvas·타이머를 쓰지 않는다.
    브라우저: docs/demo가 <script src="engine.js">로 불러오고, UI는 setEventListener()로 이벤트를 받는다.
    Node: sim/load-engine.js가 vm으로 불러온다 (헤드리스 시뮬레이터 sim/runner.js). */
 
