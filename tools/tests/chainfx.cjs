@@ -40,6 +40,8 @@ const FIND = `(want) => {
     // 1) 강 단계 갭 (3x 밈·초전도체 보유 + 불리한 갭)
     const st = await page.evaluate(`(${FIND})('strong')`);
     await sleep(600);
+    // 등장 애니메이션(gaIn*, scale 2.4 → 1)이 끝난 뒤에 크기를 잰다 — 기기가 느리면 600ms 안에 안 끝나 가로 넘침으로 잘못 잡혔다
+    await page.evaluate(() => { const b = document.querySelector('.gap-alert .ga-box'); return b ? Promise.all(b.getAnimations().filter(a => /^gaIn/.test(a.animationName)).map(a => a.finished)) : null; });
     const a1 = await page.evaluate(() => { const el = document.querySelector('.gap-alert'); return el && { cls: el.className, name: el.querySelector('.ga-name').textContent,
       meme: el.querySelector('.ga-meme').textContent, warn: !!el.querySelector('.ga-warn'), tape: el.querySelector('.ga-tape').textContent,
       busy: Fx.queueBusy, blocker: document.querySelector('.fx-blocker').classList.contains('on'),
