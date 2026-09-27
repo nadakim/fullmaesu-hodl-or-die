@@ -276,10 +276,10 @@ const COMPOUND_CASH_PER_STACK = 0.01; //   주 첫날 현금 = 순자산 × 1% �
 
 const RELICS = [
   { id:'gukbap',   icon:'🍲', name:'국밥 정신',       rarity:'rare',
-    desc:`${RELIC_GUKBAP_SECTORS.join('·')} 종목 포지션의 평가손실 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}% 감소. 청산·반대매매 계산에도 적용.`,
+    desc:`${RELIC_GUKBAP_SECTORS.join('·')} 종목 포지션이 그날 손실로 장을 마감하면 그 손실의 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%를 정산에서 돌려받는다.`,
     flavor:'든든하게 한 그릇 말고 오면 손실도 반만 아프다.' },
   { id:'seal',     icon:'🔏', name:'존버의 인장',     rarity:'uncommon',
-    desc:`장 마감을 ${RELIC_SEAL_DAYS}번 이상 넘긴 포지션은 평가이익 +${Math.round(RELIC_SEAL_BONUS * 100)}%.`,
+    desc:`장 마감을 ${RELIC_SEAL_DAYS}번 이상 넘긴 포지션은 장 마감 정산 ×${1 + RELIC_SEAL_BONUS}.`,
     flavor:'팔면 끝이고, 안 팔면 아직 끝난 게 아니다.' },
   { id:'vip',      icon:'📱', name:'리딩방 VIP',      rarity:'uncommon',
     desc:`리딩방 찌라시 급등 확률 ${Math.round(PUMP_UP_CHANCE * 100)}% → ${Math.round(RELIC_VIP_PUMP_CHANCE * 100)}%.`,
@@ -309,7 +309,7 @@ const RELICS = [
     desc:`대장코인·밈코인 포지션의 반대매매 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
     flavor:'시드 문구는 냉장고에 붙여 놨다.' },
   { id:'theme',    icon:'🔥', name:'테마주 헌터',     rarity:'uncommon',
-    desc:`${RELIC_THEME_SECTORS.join('·')} 포지션의 평가이익 +${Math.round(RELIC_THEME_BONUS * 100)}%.`,
+    desc:`${RELIC_THEME_SECTORS.join('·')} 포지션의 장 마감 정산 ×${1 + RELIC_THEME_BONUS}.`,
     flavor:'테마는 순환한다. 내가 산 테마만 빼고.' },
   { id:'community', icon:'👥', name:'개미 커뮤니티',   rarity:'uncommon',
     desc:`찌라시에서 A(고위험)를 고르면 대박 확률 +${Math.round(RELIC_COMMUNITY_BONUS * 100)}%p.`,
@@ -328,7 +328,7 @@ const RELICS = [
     flavor:'정보가 곧 실력이다. 그 정보가 미래에서 왔을 뿐.' },
   // ── 성장형 (growth: 'count' = 스택 개수 · 'money' = 적립금 만원) ──
   { id:'moonSavings', icon:'📈', name:'떡상 적금', rarity:'rare', growth:'count',
-    desc:`상승 콤보 ${MOON_COMBO_STEP}·${MOON_COMBO_STEP * 2}·${MOON_COMBO_STEP * 3}…마다 +1스택. 스택당 모든 포지션 평가이익 +${Math.round(MOON_PNL_PER_STACK * 100)}%. 하락 콤보 ${MOON_RESET_DOWN}이면 강제 해지(0스택).`,
+    desc:`상승 콤보 ${MOON_COMBO_STEP}·${MOON_COMBO_STEP * 2}·${MOON_COMBO_STEP * 3}…마다 +1스택. 스택당 모든 포지션 장 마감 정산 배수 +${MOON_PNL_PER_STACK}. 하락 콤보 ${MOON_RESET_DOWN}이면 강제 해지(0스택).`,
     reset:`하락 콤보 ${MOON_RESET_DOWN} → 0스택`,
     flavor:'"적금은 복리래." 이율은 차트가 정한다.' },
   { id:'tearJar', icon:'🐷', name:'개미의 눈물 저금통', rarity:'uncommon', growth:'money',
@@ -336,7 +336,7 @@ const RELICS = [
     reset:`반대매매 → 적립금 ${Math.round((1 - TEARJAR_MARGIN_KEEP) * 100)}% 증발`,
     flavor:'눈물 젖은 돼지. 배를 가르면 조금 덜 슬프다.' },
   { id:'traumaSurvivor', icon:'🩹', name:'반대매매 생존자', rarity:'legendary', growth:'count',
-    desc:`반대매매를 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 평가이익 +${Math.round(TRAUMA_PNL_PER_STACK * 100)}%.`,
+    desc:`반대매매를 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 장 마감 정산 배수 +${TRAUMA_PNL_PER_STACK}.`,
     reset:'초기화 없음 — 대신 반대매매 자체가 고통',
     flavor:'"한 번 털려 봐야 안다." 세 번 털린 사람이 말했다.' },
   { id:'tipCollector', icon:'📂', name:'찌라시 수집가', rarity:'rare', growth:'count',
@@ -628,7 +628,7 @@ function shrinkRelic(id, n, reason){   // 복리 괴물: −1
 function noteManualSell(ps){
   if(ps.some(p => p.daysHeld >= DTREE_DAYS)) resetRelic('diamondTree', 'sell', DTREE_SELL_KEEP);
 }
-/* 성장형 평가이익 보정 %p (합산 후 relicAdjustedPnl에서 한 번 곱한다) */
+/* 성장형 정산 합산 배수 %p (장 마감 정산 SETTLE_EFFECTS의 'mult') */
 const moonPct   = () => relicStacks('moonSavings') * MOON_PNL_PER_STACK;
 const traumaPct = p => (p.lev > 1 || p.dir < 0) ? relicStacks('traumaSurvivor') * TRAUMA_PNL_PER_STACK : 0;
 
@@ -692,58 +692,127 @@ const dtreeCut = () => Math.min(DTREE_MAX_CUT, relicStacks('diamondTree') * DTRE
 const gukbapApplies = p => hasRelic('gukbap') && RELIC_GUKBAP_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0;
 const sealApplies   = p => hasRelic('seal') && p.daysHeld >= RELIC_SEAL_DAYS;
 
-/* 가격만으로 계산한 손익 → 유물 보정 (국밥 정신: 손실 감소 / 존버의 인장: 이익 증가) */
+/* 가격만으로 계산한 손익. 유물 보정은 평가손익에 섞지 않고 장 마감 정산(settleDay)에서 현금으로 준다 */
 const rawPnl = p => p.dir * (exposure(p) - p.entryExposure);
-function relicAdjustedPnl(p, pnl){
-  if(pnl < 0 && gukbapApplies(p)) return pnl * (1 - RELIC_GUKBAP_LOSS_CUT);
-  let out = pnl;
-  if(pnl > 0 && sealApplies(p))   out *= 1 + RELIC_SEAL_BONUS;
-  if(pnl > 0 && hasRelic('theme') && RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0) out *= 1 + RELIC_THEME_BONUS;
-  if(pnl > 0) out *= 1 + moonPct() + traumaPct(p);   // 성장형: %p 합산 후 한 번
-  return out;
-}
-const posEquity    = p => p.principal + relicAdjustedPnl(p, rawPnl(p));
+const posEquity    = p => p.principal + rawPnl(p);
 
-/* 결산 체인 (연출용 기록) — relicAdjustedPnl과 같은 조건·순서·연산으로 유물 보정을 한 단계씩 다시 적는다.
-   값은 아무것도 바꾸지 않는다 (rand() 없음, 상태 변경 없음). UI가 주간 결산 때 이 순서대로 '재생'만 한다.
-   step = { label, kind: 'base'|'mult'|'add', value, runningTotal, source: 'base'|유물 id|'diamond' }
-   마지막 runningTotal === relicAdjustedPnl(p, rawPnl(p)). relicAdjustedPnl을 고치면 여기도 같이 고친다. */
+/* ══ 장 마감 정산 (docs/design/SETTLEMENT.md) ══
+   포지션마다 base = 직전 정산(또는 매수) 이후의 가격 손익 = dir × (노출액 − 기준 노출액 refExp).
+   step kind: 'base' | 'add'(칩 +) | 'mult'(합산 배수 +) | 'xmult'(곱 배수 ×)
+     chips = base + Σadd,  mult = (1 + Σmult) × Πxmult,  정산금 = chips × mult − base (이미 평가손익에 든 base는 빼고 보너스분만 현금)
+   수익(base > 0)엔 onLoss가 아닌 효과만, 손실(base < 0)엔 손실을 줄이는 onLoss 효과만 (예: 국밥 정신 ×0.5 → 절반 환급).
+   유물은 run.relics 순서대로 발동한다. 새 정산 유물은 여기에 한 줄 추가. */
+const SETTLE_EFFECTS = {
+  gukbap:         { onLoss: true,  apply: p => gukbapApplies(p) ? { kind: 'xmult', value: 1 - RELIC_GUKBAP_LOSS_CUT } : null },
+  seal:           { onLoss: false, apply: p => sealApplies(p) ? { kind: 'xmult', value: 1 + RELIC_SEAL_BONUS } : null },
+  theme:          { onLoss: false, apply: p => RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0 ? { kind: 'xmult', value: 1 + RELIC_THEME_BONUS } : null },
+  moonSavings:    { onLoss: false, apply: p => moonPct() > 0 ? { kind: 'mult', value: moonPct(), label: `${relicStepLabel('moonSavings')} ×${relicStacks('moonSavings')}스택` } : null },
+  traumaSurvivor: { onLoss: false, apply: p => traumaPct(p) > 0 ? { kind: 'mult', value: traumaPct(p), label: `${relicStepLabel('traumaSurvivor')} ×${relicStacks('traumaSurvivor')}스택` } : null }
+};
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
-function buildSettlementSteps(p){
-  const pnl = rawPnl(p);
-  const steps = [{ label: '평가손익', kind: 'base', value: pnl, runningTotal: pnl, source: 'base' }];
-  if(pnl < 0 && gukbapApplies(p)){
-    steps.push({ label: relicStepLabel('gukbap'), kind: 'mult', value: 1 - RELIC_GUKBAP_LOSS_CUT,
-                 runningTotal: pnl * (1 - RELIC_GUKBAP_LOSS_CUT), source: 'gukbap' });
-    return steps;
+
+/* 순수 계산 (rand·상태 변경 없음): 포지션 p가 오늘 base만큼 벌었을 때의 정산 단계. 미리보기(previewSettlement)와 공용 */
+function settleSteps(p, base){
+  let chips = base, addSum = 0, xprod = 1;
+  const steps = [{ label: '오늘 손익', kind: 'base', value: base, runningChips: chips, runningMult: 1, source: 'base' }];
+  if(base !== 0){
+    run.relics.forEach(id => {
+      const fx = SETTLE_EFFECTS[id];
+      if(!fx || (base < 0) !== fx.onLoss) return;
+      const e = fx.apply(p);
+      if(!e) return;
+      if(e.kind === 'add') chips += e.value;
+      else if(e.kind === 'mult') addSum += e.value;
+      else xprod *= e.value;
+      steps.push({ label: e.label || relicStepLabel(id), kind: e.kind, value: e.value,
+                   runningChips: chips, runningMult: (1 + addSum) * xprod, source: id });
+    });
   }
-  let out = pnl;
-  if(pnl > 0 && sealApplies(p)){
-    out *= 1 + RELIC_SEAL_BONUS;
-    steps.push({ label: relicStepLabel('seal'), kind: 'mult', value: 1 + RELIC_SEAL_BONUS, runningTotal: out, source: 'seal' });
-  }
-  if(pnl > 0 && hasRelic('theme') && RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0){
-    out *= 1 + RELIC_THEME_BONUS;
-    steps.push({ label: relicStepLabel('theme'), kind: 'mult', value: 1 + RELIC_THEME_BONUS, runningTotal: out, source: 'theme' });
-  }
-  if(pnl > 0){   // 성장형: relicAdjustedPnl과 같은 값(합산 %p × 한 번) — 표시만 유물별 add 단계로 나눈다
-    const base = out, mp = moonPct(), tp = traumaPct(p);
-    if(mp > 0){ out = out + base * mp; steps.push({ label: `${relicStepLabel('moonSavings')} ×${relicStacks('moonSavings')}스택 +${Math.round(mp * 100)}%`, kind: 'add', value: base * mp, runningTotal: out, source: 'moonSavings' }); }
-    if(tp > 0){ out = out + base * tp; steps.push({ label: `${relicStepLabel('traumaSurvivor')} ×${relicStacks('traumaSurvivor')}스택 +${Math.round(tp * 100)}%`, kind: 'add', value: base * tp, runningTotal: out, source: 'traumaSurvivor' }); }
-    if(mp > 0 || tp > 0) steps[steps.length - 1].runningTotal = base * (1 + mp + tp);   // 마지막 값은 relicAdjustedPnl과 같은 식으로 (부동소수까지 일치)
-  }
-  return steps;
+  const mult = (1 + addSum) * xprod;
+  return { steps, chips, mult, total: chips * mult };
 }
-/* 이번 결산의 포지션별 체인. diamondPaid = endOfRound가 이미 계산해 현금으로 준 다이아몬드 보너스 [{ posId, amount }] */
+
+/* 장 마감 정산: 포지션마다 보너스를 현금으로. 기록 run.lastDay → emit('daySettled') (정산 연출은 이 기록을 재생만 한다) */
+function settleDay(){
+  const rows = [];
+  const bySource = {};   // 유물별 보너스 합 (연출용)
+  let payoutSum = 0;
+  run.positions.forEach(p => {
+    const base = p.dir * (exposure(p) - p.refExp);
+    p.refExp = exposure(p);
+    const r = settleSteps(p, base);
+    const payout = r.total - base;
+    run.cash += payout;
+    payoutSum += payout;
+    if(base > 0) run.maxSettleMult = Math.max(run.maxSettleMult, r.mult);
+    const sources = [];   // 이 포지션의 보너스를 단계별로 나눈 몫 [{source, label, amount}] — 합 = payout
+    r.steps.forEach((st, k) => {
+      if(k === 0) return;
+      const prev = r.steps[k - 1];
+      const amount = st.runningChips * st.runningMult - prev.runningChips * prev.runningMult;
+      sources.push({ source: st.source, label: relicStepLabel(st.source), amount });
+      bySource[st.source] = (bySource[st.source] || 0) + amount;
+    });
+    rows.push({ posId: p.id, posName: p.name, assetId: p.assetId, dir: p.dir, lev: p.lev,
+                base, steps: r.steps, chips: r.chips, mult: r.mult, payout, sources });
+  });
+  run.settledToday = payoutSum;
+  run.settledTotal += payoutSum;
+  run.maxSettlePayout = Math.max(run.maxSettlePayout, payoutSum);
+  run.lastDay = { round: run.round, day: run.day, settlement: rows, payout: payoutSum };
+  run.weekDays.push(run.lastDay);
+  emit('daySettled', run.lastDay);
+  if(run.day < DAYS_PER_ROUND)   // 연출용 (이미 계산된 값). 주 마지막 날은 주간 결산 체인이 유물별로 보여준다
+    Object.keys(bySource).forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
+}
+
+/* 예상 정산 미리보기 (순수 함수 — rand·상태 변경 없음). extra = 가정 포지션(카드를 쓰면 생길 포지션, 선택).
+   포지션별 배수 = 오늘 수익이 났을 때의 mult. 전체 배수 = 노출액 가중 평균 (모든 포지션이 유리하게 1% 움직일 때 번 돈 ÷ 기본 손익).
+   → { mult, rows: [{posId, name, dir, lev, mult, per1pct}] } — per1pct = 유리하게 +1%면 정산 후 손익(기본 + 보너스) */
+function previewSettlement(extra){
+  const ps = extra ? run.positions.concat([extra]) : run.positions;
+  let expSum = 0, gainSum = 0;
+  const rows = ps.map(p => {
+    const e = exposure(p), m = settleSteps(p, 1).mult;
+    expSum += e;
+    gainSum += e * m;
+    return { posId: p.id, name: p.name, dir: p.dir, lev: p.lev, mult: m, per1pct: e * 0.01 * m };
+  });
+  return { mult: expSum > 0 ? gainSum / expSum : 1, rows };
+}
+/* 종목 카드를 쓰면 생길 포지션 (미리보기용, run에 넣지 않음) */
+function hypotheticalBuy(stockId){
+  const s = STOCK_BY_ID[stockId], principal = stockCost(s), lev = run.pending.lev, exp = principal * lev;
+  return { id: -1, assetId: s.id, name: s.name, dir: run.pending.dir, lev, principal,
+           shares: exp / assets[s.id].price, entryExposure: exp, refExp: exp, daysHeld: 0 };
+}
+
+/* 주간 결산 체인 (연출용 요약) — 이번 주 매일 정산(run.weekDays)을 포지션별·유물별로 합친다. 값은 이미 현금으로 지급됨.
+   step = { label, kind: 'base'|'add', value, runningTotal, source }: base = 이번 주 장 마감 손익 합, add = 유물별 정산 보너스 합.
+   diamondPaid = endOfRound가 준 다이아몬드 보너스 [{ posId, amount }] */
 function buildSettlementChain(diamondPaid){
-  return run.positions.map(p => {
-    const steps = buildSettlementSteps(p);
-    const paid = diamondPaid.find(d => d.posId === p.id);
+  const byPos = [];
+  run.weekDays.forEach(d => d.settlement.forEach(r => {
+    let g = byPos.find(x => x.posId === r.posId);
+    if(!g){ g = { posId: r.posId, posName: r.posName, assetId: r.assetId, dir: r.dir, lev: r.lev, base: 0, bonus: 0, sources: [] }; byPos.push(g); }
+    g.base += r.base;
+    g.bonus += r.payout;
+    r.sources.forEach(x => {
+      const e = g.sources.find(y => y.source === x.source);
+      if(e) e.amount += x.amount; else g.sources.push({ source: x.source, label: x.label, amount: x.amount });
+    });
+  }));
+  return byPos.map(g => {
+    const steps = [{ label: '장 마감 손익 (이번 주)', kind: 'base', value: g.base, runningTotal: g.base, source: 'base' }];
+    let total = g.base;
+    g.sources.forEach(x => { if(x.amount === 0) return; total += x.amount; steps.push({ label: x.label, kind: 'add', value: x.amount, runningTotal: total, source: x.source }); });
+    if(steps.length > 1) steps[steps.length - 1].runningTotal = g.base + g.bonus;   // 합은 실제 지급액과 정확히
+    const paid = diamondPaid.find(d => d.posId === g.posId);
     if(paid){
       const prev = steps[steps.length - 1].runningTotal;
       steps.push({ label: '💎 다이아몬드 핸드', kind: 'add', value: paid.amount, runningTotal: prev + paid.amount, source: 'diamond' });
     }
-    return { posId: p.id, posName: p.name, assetId: p.assetId, dir: p.dir, lev: p.lev,
+    return { posId: g.posId, posName: g.posName, assetId: g.assetId, dir: g.dir, lev: g.lev,
              steps, finalPnl: steps[steps.length - 1].runningTotal };
   });
 }
@@ -774,6 +843,7 @@ function addToPosition(p, principal){
   p.principal += principal;
   p.shares += exp / assets[p.assetId].price;
   p.entryExposure += exp;
+  p.refExp += exp;   // 정산 기준: 새로 산 몫은 지금 가격부터
 }
 
 /* 같은 종목·방향·레버리지 포지션이 이미 있으면 거기에 합친다 (레버리지·방향이 다르면 별도 포지션) */
@@ -792,7 +862,7 @@ function openPosition(stockId, principal, lev, dir, payCash){
   }
   const p = {
     id: run.nextPosId++, assetId: stockId, name: s.name, dir, lev,
-    principal, shares: exp / assets[stockId].price, entryExposure: exp,
+    principal, shares: exp / assets[stockId].price, entryExposure: exp, refExp: exp,   // refExp = 정산 기준 노출액 (직전 장 마감 또는 매수 시점 가격)
     stopLoss: false, takeProfit: false, trailing: false, trailPeak: 0,
     protectedToday: false, diamond: false, daysHeld: 0, viaTip: false
   };
@@ -819,6 +889,7 @@ function closePart(p, frac){   // 포지션의 frac만큼 시장가 매도
   p.principal *= 1 - frac;
   p.shares *= 1 - frac;
   p.entryExposure *= 1 - frac;
+  p.refExp *= 1 - frac;
   return pnl;
 }
 const closeHalf = p => closePart(p, 0.5);
@@ -945,6 +1016,7 @@ function deleverPosition(p){
   const sold = Math.max(0, 1 - eq / exp);          // 판 비율
   run.realized += posPnl(p) * sold;
   p.principal = eq;
+  p.refExp *= (eq / assets[p.assetId].price) / p.shares;   // 남은 수량 비율만큼
   p.shares = eq / assets[p.assetId].price;
   p.entryExposure = eq;
   p.lev = 1;
@@ -1304,6 +1376,8 @@ function newRun(){
     cash: START_CASH, realized: 0, interestPaid: 0, overdraft: 0,
     slush: SLUSH_START,   // 비자금 (암시장 전용, 순자산 제외)
     liquidations: 0, peakEquity: START_CASH, weekPeak: START_CASH,   // 판 최고 · 이번 주 최고 순자산
+    settledToday: 0, settledTotal: 0, lastDay: null, weekDays: [],   // 장 마감 정산: 오늘 보너스 · 누적 · 오늘 기록 · 이번 주 기록 (주간 체인용)
+    maxSettleMult: 1, maxSettlePayout: 0,                               // 이번 판 최고 정산 배수 · 하루 최고 보너스
     buys: 0, finesPaid: 0, tipNet: 0,   // 누적: 카드로 매수한 횟수 · 금감원 과징금 · 찌라시 순자산 변화 (엔딩 판정용)
     weekStart: { equity: START_CASH, realized: 0, liquidations: 0, interestPaid: 0, buys: 0, finesPaid: 0, tipNet: 0 },   // 주간 결산 비교 기준
     lastLiquidation: { lev: 0, dir: 0, round: 0, day: 0 },   // 파산 원인 판정용
@@ -1759,6 +1833,7 @@ function tick(){
 function endOfDay(){
   run.discard = run.discard.concat(run.hand);   // 쓰지 않은 손패는 전부 버린다
   run.hand = [];
+  settleDay();   // 장 마감 정산 (존버의 인장은 오늘 전까지 넘긴 장 마감 수로 판정)
   run.positions.forEach(p => { p.daysHeld++; });   // 존버의 인장: 장 마감을 넘긴 횟수
   const interest = dailyInterest();
   run.cash -= interest;
@@ -1781,13 +1856,6 @@ function endOfDay(){
   run.gapToday = [];
   decayFss(FSS_DAILY_DECAY);
   if(interest > 0 && hasRelic('capital')) emit('relicTriggered', {id: 'capital', amount: interest / capitalCut() - interest});   // 연출용: 할인된 이자
-  if(run.day < DAYS_PER_ROUND){   // 연출용: 평가손익 보정 유물 (결산 체인과 같은 계산을 읽기만)
-    const bySource = {};
-    run.positions.forEach(p => buildSettlementSteps(p).forEach((st, k, steps) => {
-      if(k > 0) bySource[st.source] = (bySource[st.source] || 0) + (st.runningTotal - steps[k - 1].runningTotal);
-    }));
-    ['gukbap', 'seal', 'theme', 'moonSavings', 'traumaSurvivor'].forEach(id => { if(bySource[id]) emit('relicTriggered', {id, amount: bySource[id]}); });
-  }
   emit('dayEnd', {day: run.day, interest, waived: run.interestFree, discounted: hasRelic('capital'), newsTomorrow: run.newsTomorrow});
   if(checkBankruptcy()) return;
   if(run.day >= DAYS_PER_ROUND){ endOfRound(); return; }
@@ -1844,6 +1912,7 @@ function weekSummary(eq, target, diamondBonus, bailout){
     positions: run.positions.length, unrealized: run.positions.reduce((sum, p) => sum + posPnl(p), 0),
     invested: eq > 0 ? run.positions.filter(p => !p.viaTip).reduce((sum, p) => sum + exposure(p), 0) / eq : 0,   // 직접 산 포지션 노출액 ÷ 순자산
     buys: run.buys - ws.buys, fines: run.finesPaid - ws.finesPaid, tipNet: run.tipNet - ws.tipNet, peak: run.weekPeak,
+    settled: run.weekDays.reduce((sum, d) => sum + d.payout, 0),   // 이번 주 장 마감 정산 보너스 합계 (이미 현금)
     slush: 0,   // 이번 주 비자금 적립 (통과했을 때 endOfRound가 채움)
     settlementChain: [],   // 결산 체인 연출용 포지션별 단계 (endOfRound가 채움)
     progress: target > ws.equity ? (eq - ws.equity) / (target - ws.equity) : 1   // 이번 주 필요 상승분 중 번 비율
@@ -1862,6 +1931,7 @@ function markWeekStart(){
   run.weekStart = { equity: netEquity(), realized: run.realized, liquidations: run.liquidations, interestPaid: run.interestPaid,
                     buys: run.buys, finesPaid: run.finesPaid, tipNet: run.tipNet };
   run.weekPeak = run.weekStart.equity;
+  run.weekDays = [];   // 이번 주 장 마감 정산 기록 (주간 결산 체인 요약용)
 }
 
 /* 게임오버 원인: 파산은 직전 반대매매의 종류로, 목표 미달은 이번 주 내용으로 */

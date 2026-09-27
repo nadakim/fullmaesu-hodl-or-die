@@ -159,8 +159,8 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
   });
   console.log('chain sfx (이름, 반음):', JSON.stringify(chain.sfx));
   const steps = chain.sfx.filter(x => x[0] === 'chainStep').map(x => x[1]);
-  // 밈코인: base 0, ×1.20(+1+2=3), ×1.15(+2+2=4) / 반도체: base 2, ×1.20(2+1+2=5), +다이아(2+2=4)
-  ok('체인 스텝 피치 (반음): 밈코인 0→3→4, 반도체 2→5→4 (곱연산 +2, 두 번째 포지션 +2 시작)', JSON.stringify(steps) === JSON.stringify([0, 3, 4, 2, 5, 4]), steps);
+  // 주간 체인 = 이번 주 정산 보너스 요약 (유물별 금액 = add). 밈코인: base 0, 인장 +1, 테마 +2 / 반도체: base 2, 인장 3, 다이아 4
+  ok('체인 스텝 피치 (반음): 밈코인 0→1→2, 반도체 2→3→4 (스텝마다 반음, 두 번째 포지션 +2 시작)', JSON.stringify(steps) === JSON.stringify([0, 1, 2, 2, 3, 4]), steps);
   ok('카운트업 블립 반복 + 도장 2번 + 끝나면 weekClear(BGM 켜짐이면 스팅어) → 결산 화면', chain.ticks >= 32 && chain.sfx.filter(x => /^stamp/.test(x[0])).length === 2 && (chain.sfx.some(x => x[0] === 'weekClear') || chain.stinger) && chain.result, { ticks: chain.ticks });
 
   // 스킵: 남은 소리 끊고 도장 1번만 (weekClear 없음)
