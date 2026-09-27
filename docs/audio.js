@@ -42,6 +42,12 @@
    | rareDraw    | 장전 드로우: 희귀 이상 카드 (opts.rarity)                   | 맑은 종 1음 (등급이 높을수록 높게)      |
    | drumRoll    | 장 시작 카운트다운 3·2·1 (opts.last = 마지막 박)            | 스네어 연타 "두르르" / 마지막은 탕       |
    | heartbeat   | 장중 반대매매 위험 (증거금 건강도가 낮을수록 자주)          | 저음 "쿵-쿵"                           |
+   | shopPad     | 암시장 입장: 긴 리버브 몽환 패드 (Am9 화음, 느린 어택)      | "우우웅~" 물속 화음                      |
+   | shopHover   | 암시장 카드·팩·유물에 마우스를 올릴 때                     | 떨리며 올라가는 "띠잉~"                  |
+   | packShake   | 팩 개봉: 공중에서 흔들림                                   | 달그락달그락                            |
+   | packBurst   | 팩 개봉: 터짐 (opts.rarity 높을수록 크게)                  | "펑" + 위로 쓸어 올림                    |
+   | choir       | 팩 개봉 신화: 금빛 기둥 + 회전 등장                        | "아~" 합창 화음                          |
+   | relicClack  | 유물 구매: 칸에 꽂힘                                       | 금속 "철컥"                             |
    | settleAdd   | 장 마감 정산 무대: 칩 더하기 단계 (opts.pitch = 5음계 한 칸씩 위)  | 경쾌한 "딩"                            |
    | settleMult  | 장 마감 정산 무대: 배수 단계 (opts.pitch · opts.big = ×10 이상이면 더 크게) | "슈욱—펑"                    |
    | settleThud  | 장 마감 정산 무대: 끝 마침표 (순자산 "쾅" 뒤)               | 저음 "둥"                              |
@@ -254,6 +260,47 @@ const Sound = (() => {
       bell(b, 100, t + 0.13, 0.9, 0.22, p);
       bell(b, 107, t + 0.13, 0.5, 0.08, p);
       return 1.05;
+    },
+    shopPad(b, t, p){   // 암시장 몽환 패드: 살짝 어긋난 두 겹 사인·삼각파 화음 + 피드백 딜레이(리버브 흉내)
+      const wet = ctx.createGain(), dl = ctx.createDelay(1), fb = ctx.createGain(), lp = filter(wet, 'lowpass', 1400);
+      wet.gain.value = 0.55; dl.delayTime.value = 0.23; fb.gain.value = 0.55;
+      const dry = ctx.createGain(); dry.gain.value = 1; dry.connect(b); dry.connect(dl);
+      dl.connect(lp); lp.connect(fb); fb.connect(dl); wet.connect(b);
+      [57, 60, 64, 67, 71].forEach((n, i) => {
+        tone(dry, 'sine', midi(n) * p, t + i * 0.08, 3.2, 0.05, { attack: 0.9, hold: 0.5, vibrato: 4.5 });
+        tone(dry, 'triangle', midi(n) * p * 1.004, t + i * 0.08, 3.2, 0.025, { attack: 1.1, hold: 0.4 });
+      });
+      return 4.6;
+    },
+    shopHover(b, t, p){   // "띠잉~": 사인이 살짝 올라가며 떨림
+      tone(b, 'sine', midi(88) * p, t, 0.5, 0.07, { f1: midi(89) * p, vibrato: 7, attack: 0.01 });
+      tone(b, 'triangle', midi(100) * p, t + 0.02, 0.25, 0.02);
+      return 0.5;
+    },
+    packShake(b, t, p){   // 달그락: 짧은 노이즈 연타
+      for(let i = 0; i < 7; i++) noise(b, t + i * 0.065, 0.035, 0.16 + (i % 2) * 0.06, 'bandpass', (1400 + (i % 3) * 500) * p, 0, 2);
+      return 0.5;
+    },
+    packBurst(b, t, p, o){   // 펑 + 쓸어 올림. 등급이 높을수록 크고 길게
+      const k = { common: 0.6, uncommon: 0.75, rare: 0.9, legendary: 1.05, mythic: 1.25 }[o.rarity] || 0.7;
+      noise(b, t, 0.25 * k, 0.42 * k, 'lowpass', 2400, 300);
+      noise(b, t + 0.02, 0.4 * k, 0.16 * k, 'bandpass', 600, 6000, 1.2);
+      tone(b, 'square', 90 * p, t, 0.18, 0.18 * k, { f1: 45 * p });
+      return 0.45 * k + 0.05;
+    },
+    choir(b, t, p){   // "아~": 톱니파를 모음 포먼트(800·1150Hz) 두 개로 거른 C장조 화음, 느린 어택
+      const f1 = filter(b, 'bandpass', 800, 5), f2 = filter(b, 'bandpass', 1150, 6);
+      [60, 64, 67, 72, 76].forEach((n, i) => [f1, f2].forEach((f, j) =>
+        tone(f, 'sawtooth', midi(n) * p * (j ? 1.003 : 1), t + i * 0.03, 2.2, 0.11, { attack: 0.35, hold: 0.6, vibrato: 5 })));
+      bell(b, 96, t + 0.4, 1.2, 0.08, p);
+      return 2.3;
+    },
+    relicClack(b, t, p){   // 철컥: 금속성 딸깍 두 번 + 낮은 받침
+      noise(b, t, 0.03, 0.4, 'highpass', 3500 * p, 0, 1);
+      tone(b, 'square', 1900 * p, t, 0.02, 0.06);
+      noise(b, t + 0.07, 0.05, 0.5, 'bandpass', 2600 * p, 0, 3);
+      tone(b, 'triangle', 220 * p, t + 0.07, 0.12, 0.3, { f1: 110 * p });
+      return 0.22;
     },
     cardDeal(b, t, p){   // 카드 한 장 펼침: 짧은 하이패스 노이즈 + 아주 짧은 틱
       noise(b, t, 0.05, 0.22, 'highpass', 2600 * p, 0, 0.8);

@@ -859,6 +859,43 @@ body::after{
 @keyframes rrIn{from{transform:rotateY(90deg);}to{transform:rotateY(0);}}
 .shop-item .flip-card{animation-delay:0s;}
 
+/* ── S8(33) 암시장 몽롱 연출 ── */
+/* 입장: 채도가 빠졌다 돌아오며 보라 안개가 깔린다. 안개 = 보라 한 겹(옅게) + 픽셀 점 무늬가 천천히 흐름 */
+#screen-shop{position:relative;isolation:isolate;}
+#screen-shop::before,#screen-shop::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;}
+#screen-shop::before{background:var(--purple);opacity:.07;}
+#screen-shop::after{opacity:.22;background-image:radial-gradient(var(--purple) calc(1 * var(--u)),transparent calc(1.6 * var(--u)));
+  background-size:calc(26 * var(--u)) calc(26 * var(--u));animation:hazeDrift 14s steps(28) infinite;}
+@keyframes hazeDrift{from{background-position:0 0;}to{background-position:calc(26 * var(--u)) calc(-52 * var(--u));}}
+#screen-shop.haze-in #shopBox{animation:hazeIn 1.2s steps(8) both;}
+@keyframes hazeIn{0%{filter:saturate(.1) brightness(.6);}100%{filter:none;}}
+/* 호버: 진열된 카드가 둥실, 팩·유물은 아이콘만 (누르는 자리가 움직이지 않게) */
+#shopBox .shop-item:hover .card,#shopBox .pack:not(.disabled):hover .pk-icon,#shopBox .relic-row:not(.own-relics) .relic-tile:hover .rt-icon{animation:shopFloat 1.4s steps(8) infinite;}
+@keyframes shopFloat{0%,100%{translate:0 0;}50%{translate:0 calc(-6 * var(--u));}}
+/* 팩 개봉: 공중에서 흔들림 → 터짐 → 등급 색 빛기둥 속에서 카드가 내려온다. 신화 = 암전 → 금빛 기둥 → 회전 등장 */
+.flip-stage{position:relative;}
+.flip-stage.pk{padding-top:calc(44 * var(--u));}   /* 카드가 떠 있는 높이만큼 (제목을 가리지 않게) */
+.pk-float{position:relative;z-index:1;animation:pkDescend .6s steps(6) var(--pk-shake) both;}   /* 바깥: 공중 → 내려옴 */
+.pk-shake{animation:pkShake var(--pk-shake) steps(8);}                                           /* 안쪽: 흔들림 */
+@keyframes pkShake{20%{transform:rotate(-6deg);}40%{transform:rotate(6deg) translateY(calc(-2 * var(--u)));}60%{transform:rotate(-8deg);}80%{transform:rotate(8deg) translateY(calc(-3 * var(--u)));}}
+@keyframes pkDescend{from{transform:translateY(calc(-34 * var(--u)));}to{transform:none;}}
+.pk-float .flip-card{animation-delay:var(--pk-shake);}
+.pk-pillar{position:absolute;left:50%;top:0;bottom:0;width:calc(150 * var(--u));margin-left:calc(-75 * var(--u));z-index:0;
+  background:var(--pk-col);opacity:0;transform-origin:50% 0;animation:pkPillar 1.4s steps(7) var(--pk-shake) forwards;}
+.pk-pillar::before{content:'';position:absolute;inset:0 calc(40 * var(--u));background:var(--text);opacity:.5;}
+@keyframes pkPillar{0%{opacity:0;transform:scaleY(0);}15%{opacity:.75;transform:scaleY(1);}100%{opacity:.22;transform:scaleY(1);}}
+.flip-stage.common{--pk-col:var(--muted);}.flip-stage.uncommon{--pk-col:var(--green2);}.flip-stage.rare{--pk-col:var(--blue);}
+.flip-stage.legendary{--pk-col:var(--purple);}.flip-stage.mythic{--pk-col:var(--gold);}
+.flip-stage.mythic .pk-float .flip-card{animation:mythSpin 1.2s steps(12) var(--pk-shake) both;}
+@keyframes mythSpin{from{transform:rotateY(1260deg) scale(.6);}to{transform:rotateY(0) scale(1);}}
+.overlay.pk-dark{background:#000;}
+.overlay.pk-dark .overlay-box{background:#000;box-shadow:none;}
+.overlay.pk-dark .overlay-box > :not(.flip-stage){visibility:hidden;}
+/* 유물 구매: 칸에 "철컥" 꽂힘 */
+.relic-tile.slot-in{animation:slotIn .32s steps(4) backwards;}
+@keyframes slotIn{0%{transform:translateY(calc(-28 * var(--u))) scale(1.15);}70%{transform:translateY(calc(2 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) #000;}}
+@media (prefers-reduced-motion: reduce){#screen-shop::after,#screen-shop.haze-in #shopBox,#shopBox .shop-item:hover .card,#shopBox .pack:hover .pk-icon,#shopBox .relic-row:not(.own-relics) .relic-tile:hover .rt-icon,.pk-float,.pk-shake,.pk-float .flip-card,.pk-pillar,.relic-tile.slot-in{animation:none !important;}.pk-pillar{opacity:.22;}}
+
 .phone-noti{
   width:100%;max-width:calc(360 * var(--u));
   background:var(--panel);
@@ -2847,7 +2884,8 @@ function onGameEvent(type, d){
       break;
     }
     case 'relicGained':
-      Sound.play('relicGain');
+      if(d.source === 'shop') relicClackId = d.id;   // (S8-33) 소리는 칸에 꽂힐 때 "철컥"
+      else Sound.play('relicGain');
       if(d.source !== 'reward') toast(`${RELIC_BY_ID[d.id].icon} 유물 획득: ${RELIC_BY_ID[d.id].name}`, 'good');
       break;
     case 'relicTriggered':
@@ -3349,6 +3387,7 @@ function musicTrackFor(){
 function updateMusic(){
   const t = musicTrackFor();
   if(t) Music.setTrack(t);
+  Music.setMuffle(currentTab === 'shop');   // (S8-33) 암시장 = 물속처럼
   if(run && run.phase === 'market') Music.setMood({
     state: marketState,
     progress: run.tickInDay / TICKS_PER_DAY,
@@ -3446,8 +3485,8 @@ function showSignalGuide(){
 
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
 function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && (currentTab === 'play' || currentTab === 'shop')); }
-function showOverlay(html){ $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); }
-function hideOverlay(){ overlayOpen = false; syncOverlay(); }
+function showOverlay(html){ $('overlay').classList.remove('pk-dark'); $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); }
+function hideOverlay(){ $('overlay').classList.remove('pk-dark'); overlayOpen = false; syncOverlay(); }
 function statRow(label, value){ return `<div>${label}<b>${value}</b></div>`; }
 const sortedCardIds = ids => ids.slice().sort((a, b) => CARD_ORDER[a] - CARD_ORDER[b]);
 
@@ -3698,7 +3737,15 @@ const JUICE_CONFIG = {
   countdownMs: 1200,             // (31) 장 시작 3·2·1 → OPEN 전체 (연쇄 속도 '빠름'이면 큐가 줄인다, '최소'면 생략)
   flameSteps: [2, 4, 7],         // (32) 포지션 연속 상승 틱 → 불꽃 1·2·3단
   newHighGapTicks: 4,            //      같은 포지션 신고가 번쩍 최소 간격 (틱)
-  heartMs: [1100, 350]           //      심장 박동 간격: 경고선(MAINT_WARN_HEALTH) → 반대매매 직전(건강도 1)
+  heartMs: [1100, 350],          //      심장 박동 간격: 경고선(MAINT_WARN_HEALTH) → 반대매매 직전(건강도 1)
+  // ── S8 암시장 (33) ──
+  hazeInMs: 1200,                // 입장: 채도가 빠졌다 돌아오는 시간 (CSS hazeIn과 같게)
+  shopPadVolume: 0.8,            // 입장 몽환 패드 볼륨
+  hoverGapMs: 120,               // 호버 "띠잉~" 최소 간격
+  packShakeMs: 520,              // 팩 개봉: 공중에서 흔들리는 시간 → 터짐
+  packFlipMs: 600,               //          터진 뒤 뒤집히는 시간 (CSS cardFlip과 같게)
+  mythDarkMs: 700,               // 신화: 암전 시간 → 금빛 기둥
+  mythSpinMs: 1200               //       회전 등장 시간 (CSS mythSpin과 같게)
 };
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
@@ -4400,32 +4447,69 @@ function renderShop(){
       const price = shopServiceCost(kind), ok = shopPickIdx >= 0 && canService(kind, shopPickIdx);
       return `<button class="ov-btn alt" data-service="${kind}" title="${note}" ${ok && run.slush >= price ? '' : 'disabled'}>${label} ${fmtSlush(price)}</button>`;
     }).join('')}</div>`;
+  if(relicClackId){   // (S8-33) 방금 산 유물이 칸에 "철컥"
+    const i = run.relics.indexOf(relicClackId), el = box.querySelectorAll('.own-relics .relic-tile')[i];
+    relicClackId = '';
+    if(el){ el.classList.add('slot-in'); setTimeout(() => { Sound.play('relicClack'); const r = rectOf(el); if(r) Fx.sparks(r, 1, 10, '--gold'); }, 230); }
+  }
 }
 
 const SHOP_SERVICES = [['upgrade', '✦ 리모델링', '고른 카드를 강화(+)'], ['transform', '🔀 변환', '같은 등급의 다른 카드로 무작위 교체 (태그 가중)'],
                        ['duplicate', '📑 복제', '고른 카드 1장을 덱에 한 장 더 (신화 제외)']];
 const PACK_BURST = { common: [8, ['--muted', '--line2']], uncommon: [16, ['--green2', '--green']], rare: [26, ['--blue', '--cyan']],
                      legendary: [42, ['--purple', '--gold']], mythic: [80, ['--gold', '--gold2', '--text']] };   // 등급별 파티클 수 · 색
-const PACK_REVEAL_MS = 500;   // .flip-card: 0.2초 대기 + 0.6초 뒤집기 → 절반 지점
+/* (S8-33) 팩 개봉: 공중에서 흔들림(달그락) → 터짐(펑 + 파티클 + 등급 색 빛기둥) → 기둥 속에서 카드가 내려오며 뒤집힘(등급 음).
+   신화 = 암전 → 금빛 기둥 + 합창 → 회전 등장 → 화면이 돌아온다. 시간은 JUICE_CONFIG (CSS 변수 --pk-shake로 넘김) */
+const packTiming = rarity => {
+  const J = JUICE_CONFIG, myth = rarity === 'mythic', start = myth ? J.mythDarkMs : J.packShakeMs;
+  return { myth, start, reveal: start + (myth ? J.mythSpinMs : J.packFlipMs / 2) };
+};
 function juicePack(d){
-  const rarity = CARD_BY_ID[d.cardId].rarity, pb = PACK_BURST[rarity];
-  setTimeout(() => Sound.play('packFlip', { rarity }), PACK_REVEAL_MS - 220);   // 휘릭(0.22초) 끝에 등급 음
-  setTimeout(() => {
+  const rarity = CARD_BY_ID[d.cardId].rarity, pb = PACK_BURST[rarity], T = packTiming(rarity);
+  const burstAt = () => {
     const el = $('overlayBox').querySelector('.flip-card'), r = rectOf(el);
     if(r) Fx.burst(r.left + r.width / 2, r.top + r.height / 2, pb[0], pb[1]);
-  }, PACK_REVEAL_MS);
+  };
+  if(!T.myth) Sound.play('packShake');
+  setTimeout(() => { Sound.play('packBurst', { rarity }); if(T.myth) Sound.play('choir'); burstAt(); }, T.start);
+  setTimeout(() => Sound.play('packFlip', { rarity }), T.reveal - 220);   // 휘릭(0.22초) 끝에 등급 음
+  if(T.myth) setTimeout(() => { burstAt(); if(overlayOpen) $('overlay').classList.remove('pk-dark'); }, T.reveal);
 }
 function showPackResult(d){
-  const pk = SHOP_PACK_BY_ID[d.packId], card = CARD_BY_ID[d.cardId];
+  const pk = SHOP_PACK_BY_ID[d.packId], card = CARD_BY_ID[d.cardId], T = packTiming(card.rarity);
   showOverlay(`
     <div class="ov-title" style="color:var(--purple)">${pk.icon} ${pk.name} 개봉</div>
-    <div class="flip-stage"><div class="flip-card">
-      <div class="flip-face flip-back">?</div>
-      <div class="flip-face flip-front">${cardHtml(card, {})}</div>
-    </div></div>
+    <div class="flip-stage pk ${card.rarity}" style="--pk-shake:${T.start}ms"><div class="pk-pillar"></div>
+      <div class="pk-float"><div class="pk-shake"><div class="flip-card">
+        <div class="flip-face flip-back">?</div>
+        <div class="flip-face flip-front">${cardHtml(card, {})}</div>
+      </div></div></div>
+    </div>
     <div class="ov-sub"><span class="c-rar ${card.rarity}">${RARITY_LABEL[card.rarity]}</span> · ${card.name} — 덱에 추가 (덱 ${d.deckSize}장)</div>
     <button class="ov-btn" data-act="close">확인</button>`);
+  if(T.myth && !PREFERS_REDUCED_MOTION) $('overlay').classList.add('pk-dark');   // 신화: 암전 (juicePack이 회전 등장 끝에 걷는다)
 }
+
+/* (S8-33) 암시장 호버: 카드·팩·유물에 올리면 "띠잉~" (5음계 중 하나, 연출용 Math.random) */
+let shopHoverEl = null, shopHoverAt = 0;
+$('shopBox').addEventListener('mouseover', e => {
+  const t = e.target.closest('.shop-item, .pack, .relic-tile');
+  if(t === shopHoverEl) return;
+  shopHoverEl = t;
+  if(!t || overlayOpen || t.classList.contains('disabled')) return;
+  const now = performance.now();
+  if(now - shopHoverAt < JUICE_CONFIG.hoverGapMs) return;
+  shopHoverAt = now;
+  Sound.play('shopHover', { pitch: Sound.semis(JUICE_CONFIG.pentatonic[Math.floor(Math.random() * JUICE_CONFIG.pentatonic.length)]) });
+});
+/* (S8-33) 입장: 채도 빠짐 → 보라 안개, 몽환 패드. BGM 로우패스는 updateMusic이 화면을 보고 건다 */
+function enterShopHaze(){
+  const el = $('screen-shop');
+  el.classList.remove('haze-in'); void el.offsetWidth; el.classList.add('haze-in');
+  setTimeout(() => el.classList.remove('haze-in'), JUICE_CONFIG.hazeInMs + 50);
+  Sound.play('shopPad', { volume: JUICE_CONFIG.shopPadVolume });
+}
+let relicClackId = '';   // 방금 암시장에서 산 유물: renderShop 뒤 그 칸에 꽂는다
 
 $('shopBox').addEventListener('click', e => {
   if(!run) return;
@@ -4690,7 +4774,7 @@ function switchTab(s){
   if(s === 'shop' && !shopOpenNow()){ toast(SHOP_REJECT_TEXT.phase, 'warn'); return; }
   // TR룸·암시장을 떠날 때는 그 화면의 알림을 지운다 (암시장 알림이 TR룸 차트 위에 남지 않게)
   if(s !== currentTab && (currentTab === 'play' || currentTab === 'shop')) clearToasts();
-  const wasTitle = currentTab === 'title';
+  const wasTitle = currentTab === 'title', prevTab = currentTab;
   currentTab = s;  // 게임 화면이 아니면 시장이 멈춘다
   closeMenu();
   screens.forEach(x => x.classList.toggle('active', x.id === 'screen-' + s));
@@ -4699,7 +4783,7 @@ function switchTab(s){
     if(!run || (run.phase === 'over' && !overlayOpen)) startRun();
     renderAll();
   }
-  if(s === 'shop') renderShop();
+  if(s === 'shop'){ renderShop(); if(prevTab !== 'shop') enterShopHaze(); }
   if(s === 'records') buildRecords();
   if(s === 'settings'){ $('settingsBack').textContent = settingsReturn === 'play' ? '◀ TR룸' : '◀ 타이틀'; buildSettings(); }
   if(s === 'play' && run && run.pendingTip && !overlayOpen) showTipOverlay();
