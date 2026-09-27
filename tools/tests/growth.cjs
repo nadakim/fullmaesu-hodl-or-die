@@ -18,8 +18,8 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.evaluate(() => { run.hand = ['stk_semi'].map(newCard); playCard(0);
       const p = run.positions[0]; run.combo = { up: 2, down: 0 }; run.comboPnl = { [p.id]: posPnl(p) - 100 }; updateCombo(); renderAll(); });
     await page.waitForTimeout(300);
-    const g1 = await page.evaluate(() => [relicStacks('moonSavings'), document.querySelector('[data-relic="moonSavings"] .rl-stk')?.textContent, $('fxStreak').textContent, Object.keys(Sound.stats.played)]);
-    ok(g1[0] === 1 && g1[1] === '1' && /상승 콤보 ×3/.test(g1[2]) && g1[3].includes('relicTick'), `${w} 상승 콤보 3 → +1스택, 배지 1, 콤보 표시(엔진 값), relicTick`, g1);
+    const g1 = await page.evaluate(() => [relicStacks('moonSavings'), document.querySelector('[data-relic="moonSavings"] .rl-stk')?.textContent, combo.n, Object.keys(Sound.stats.played)]);
+    ok(g1[0] === 1 && g1[1] === '1' && g1[2] >= 1 && g1[3].includes('relicTick'), `${w} 상승 콤보 3 → +1스택, 배지 1, 수익 콤보 +1(UI), relicTick`, g1);
     // 1초 안 +3 합치기
     await page.waitForTimeout(600);
     await page.evaluate(() => { Fx.skipQueue(); __debug.grow('moonSavings', 1); __debug.grow('moonSavings', 1); __debug.grow('moonSavings', 1); });

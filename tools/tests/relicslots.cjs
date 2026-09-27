@@ -69,7 +69,9 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     ok(armed && !after.has && after.n === 5 && after.slush === before.slush + before.price && before.price > 0, W + ' 판매: 두 번 눌러야 · 비자금 +판매가', [before, after]);
     await page.locator('[data-own-move="1"][data-own-relic="dopamine"]').click(); await sleep(150);
     ok(await page.evaluate(() => run.relics[1] === 'dopamine'), W + ' 암시장 ▶ 버튼으로 칸 이동');
-    const r6 = await page.evaluate(() => { gainRelic('vip', 't'); run.slush = 99999; const id = run.shop.relics.find(x => !hasRelic(x)); renderShop(); return id; });
+    const r6 = await page.evaluate(() => {   // 칸 채우기: 보유·진열에 없는 유물 (보상으로 vip가 나왔을 수도 있어 고정 id를 쓰지 않는다)
+      const fill = RELICS.map(r => r.id).find(x => !hasRelic(x) && run.shop.relics.indexOf(x) < 0); gainRelic(fill, 't'); run.slush = 99999; const id = run.shop.relics.find(x => !hasRelic(x)); renderShop(); return id; });
+    ok(await page.evaluate(() => relicSlotsFull()), W + ' 암시장: 6칸 가득');
     await page.locator(`[data-buy-relic="${r6}"]`).click(); await sleep(200);
     ok(await page.locator('[data-swap-pick]').count() === 6, W + ' 가득 찬 칸에서 구매 → 교체 오버레이');
     await page.locator('[data-act="swapGiveUp"]').click(); await sleep(150);
