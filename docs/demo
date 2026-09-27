@@ -2519,6 +2519,10 @@ function onGameEvent(type, d){
       toast(d.active ? `📰 사실로 확인: ${newsEffectText(n)}` : `📰 루머로 판명 — ${n.text.split(' — ')[0]} 효과 없음`, d.active ? 'warn' : 'info');
       break;
     }
+    case 'settleCrit': toast(`💥 크리티컬 정산! ${d.name} ×${d.mult}`, 'good'); Fx.chip('CRIT ×' + d.mult, rectOf($('positionsBox')), 'gold'); break;
+    case 'allIn': toast(`🃏 몰빵: ${d.sold}개 정리 — ${d.pos.name} 오늘 정산 ×${d.sold + 1}`, 'warn'); break;
+    case 'coinFlip': toast(d.win ? `🎲 모! ${d.pos.name} 오늘 정산 ×${COIN_FLIP_MULT}` : `🎲 도… ${d.pos.name} 가치 0 (원금 증발)`, d.win ? 'good' : 'bad'); break;
+    case 'relisted': toast(`📈 재상장: ${d.pos.name} ${d.pos.lev}x 부활`, 'good'); break;
     case 'daySettled':   // 장 마감 정산 (큰 연출은 S6 — 지금은 알림만)
       if(Math.abs(d.payout) >= 0.5){
         const best = d.settlement.reduce((m, r) => r.payout > 0 ? Math.max(m, r.mult) : m, 1);
@@ -2952,8 +2956,14 @@ function renderMultPreview(){
   }
   lastMultShown = pv.mult;
   const tip = '오늘 예상 정산 배수 — 장 마감에 포지션이 그날 번 돈 × 배수만큼 받는다 (보너스분은 현금으로)'
-    + (pv.rows.length ? '\n' + pv.rows.map(r => `${r.name} ${r.dir < 0 ? '숏 ' : ''}${r.lev}x ${fmtMult(r.mult)} · 유리하게 +1%면 ${fmtSigned(r.per1pct)}`).join('\n') : '\n포지션 없음');
+    + (pv.rows.length ? '\n' + pv.rows.map(r => `${r.name} ${r.dir < 0 ? '숏 ' : ''}${r.lev}x ${fmtMult(r.mult)} · 유리하게 +1%면 ${fmtSigned(r.per1pct)}`).join('\n') : '\n포지션 없음')
+    + '\n' + critOddsText();
   if($('multPreview').title !== tip) $('multPreview').title = tip;
+}
+/* 크리티컬 정산 확률 (엔진 CRIT_* 그대로) — 정산 칩 툴팁·도감 */
+function critOddsText(){
+  const total = CRIT_TABLE.reduce((sum, c) => sum + c.weight, 0);
+  return `💥 크리티컬: 수익 포지션 정산마다 ${Math.round(CRIT_CHANCE * 100)}% → ` + CRIT_TABLE.map(c => `×${c.mult} ${Math.round(c.weight / total * 100)}%`).join(' / ');
 }
 /* 종목 카드를 쓰면 배수가 어떻게 바뀌는지 (카드 툴팁) */
 function cardSettleView(stockId){
@@ -3627,7 +3637,7 @@ function relicTile(r, o){
 }
 
 /* 정산 종류 배지: 합산 배수 + / 곱 배수 × / 칩 +. 정산에 안 쓰는 유물은 없음 */
-const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'] };
+const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'], copy: ['⇄', 'mult', '효과 복사'] };
 const relicKind = id => SETTLE_EFFECTS[id] ? SETTLE_EFFECTS[id].kind : '';
 function renderRelics(){
   if(relicTipId && !hasRelic(relicTipId)) relicTipId = '';
@@ -3668,9 +3678,11 @@ function shiftRelic(id, d){
 function growthTipHtml(r){
   const st = relicStacks(r.id), best = run.relicState[r.id] ? run.relicState[r.id].best : 0;
   const eff = {
-    moonSavings: () => `정산 배수 +${moonPct().toFixed(2)}`,
+    moonSavings: () => `정산 ×${moonX().toFixed(2)}`,
     tearJar: () => `적립금 ₩${formatKrw(st)} — 상승 콤보 ${TEARJAR_PAYOUT_COMBO}에 지급`,
-    traumaSurvivor: () => `레버리지·숏 정산 배수 +${(st * TRAUMA_PNL_PER_STACK).toFixed(2)}`,
+    traumaSurvivor: () => `레버리지·숏 정산 ×${Math.pow(TRAUMA_XMULT_PER_STACK, st).toFixed(2)}`,
+    ccompound: () => `정산 ×${ccX().toFixed(1)}`,
+    phoenix: () => `정산 ×${Math.pow(PHOENIX_PER_STACK, st).toFixed(2)}`,
     tipCollector: () => `찌라시 A 대박 +${Math.round(tipCollectorBonus() * 100)}%p`,
     diamondTree: () => `이자 −${Math.round(dtreeCut() * 100)}%`,
     compoundMonster: () => `다음 주 첫날 현금 +${st}% (지금 ₩${formatKrw(Math.max(0, netEquity()) * COMPOUND_CASH_PER_STACK * st)})`
@@ -3952,7 +3964,7 @@ function buildCollection(){
   $('collectionFilter').innerHTML = [''].concat(RARITIES).map(r =>
     `<button class="${r === collectionRarity ? 'on' : ''}" data-rarity="${r}">${r ? `<span class="c-rar ${r}">${RARITY_LABEL[r]}</span> ${count(r)}` : '전체'}</button>`).join('');
   const show = x => !collectionRarity || x.rarity === collectionRarity;
-  $('collectionBox').innerHTML = TYPE_ORDER.map(t => {
+  $('collectionBox').innerHTML = `<div class="shop-note">${critOddsText()}</div>` + TYPE_ORDER.map(t => {
     const list = CARDS.filter(c => c.type === t && (t === 'status' ? !collectionRarity : show(c)));
     if(list.length === 0) return '';
     return `<div class="pile-title">▌ ${TYPE_LABEL[t]} (${list.length})</div>
