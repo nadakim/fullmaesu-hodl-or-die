@@ -38,6 +38,9 @@
    | relicTick   | 유물 소발동 (매 틱·매일 발동, 성장형 +스택). opts.stacks: 1 = 기본음, 10스택마다 한 옥타브 위 (최대 3옥타브) | 짧은 "칭" |
    | relicLevelUp| 유물 대발동 (성장형 5·10·25·50스택, 저금통 지급, 큰 금액). opts.rarity: 끝음이 등급마다 다름, 신화는 반짝 아르페지오 추가 | 상승 아르페지오 + 반짝 |
    | relicShatter| 성장형 유물 초기화 (relicReset)                             | 유리 깨지는 노이즈 + 하강음           |
+   | settleAdd   | 장 마감 정산 무대: 칩 더하기 단계 (opts.pitch = 5음계 한 칸씩 위)  | 경쾌한 "딩"                            |
+   | settleMult  | 장 마감 정산 무대: 배수 단계 (opts.pitch · opts.big = ×10 이상이면 더 크게) | "슈욱—펑"                    |
+   | settleThud  | 장 마감 정산 무대: 끝 마침표 (순자산 "쾅" 뒤)               | 저음 "둥"                              |
    | shopShuffle | shopRerolled (암시장 진열 새로고침)                         | 카드 섞는 "촤르륵" 노이즈 연타 + 끝 "탁" |
 
    파일 덮어쓰기: docs/assets/sfx/<이름>.ogg|mp3|wav 를 docs/assets/sfx/files.js의 SFX_FILES 목록에 적으면 합성음 대신 그 파일을 튼다
@@ -247,6 +250,24 @@ const Sound = (() => {
       bell(b, 100, t + 0.13, 0.9, 0.22, p);
       bell(b, 107, t + 0.13, 0.5, 0.08, p);
       return 1.05;
+    },
+    settleAdd(b, t, p){   // 정산 칩 더하기: 경쾌한 "딩"
+      tone(b, 'square', midi(79) * p, t, 0.05, 0.06);
+      tone(b, 'sine', midi(91) * p, t + 0.01, 0.22, 0.09);
+      return 0.25;
+    },
+    settleMult(b, t, p, o){   // 정산 배수: 올라가는 바람 "슈욱" → "펑"
+      noise(b, t, 0.22, 0.22, 'bandpass', 600, 4200 * p, 3);
+      tone(b, 'sawtooth', 220 * p, t, 0.2, 0.05, { f1: 880 * p });
+      noise(b, t + 0.22, 0.12, o.big ? 0.7 : 0.45, 'lowpass', 900);
+      tone(b, 'square', 110 * p, t + 0.22, 0.14, o.big ? 0.2 : 0.12, { f1: 55 * p });
+      bell(b, 88, t + 0.24, 0.35, o.big ? 0.14 : 0.08, p);
+      return 0.5;
+    },
+    settleThud(b, t){   // 정산 끝 마침표: 저음 "둥"
+      tone(b, 'sine', 70, t, 0.6, 0.35, { f1: 42 });
+      noise(b, t, 0.06, 0.3, 'lowpass', 300);
+      return 0.65;
     },
     flatShrug(b, t, p){   // 김빠진 "음~음": 조금 올라갔다가, 아래로 내려앉는다
       tone(b, 'triangle', midi(62) * p, t, 0.26, 0.2, { f1: midi(64) * p, hold: 0.6, vibrato: 5 });

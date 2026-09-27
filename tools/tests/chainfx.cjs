@@ -77,6 +77,7 @@ const FIND = `(want) => {
 
       // 3) 유물 조명: 장 마감에 캐피탈·존버의 인장·테마주 헌터 → 하나씩 순서대로
       const rel = await page.evaluate(async () => {
+        settings.chainFx = false;   // 결산 연출을 켜면 정산 유물은 장 마감 정산 무대(S6)가 차례로 보여준다 — 여기선 무대 없이 쓰는 유물 조명을 본다 (무대는 daystage.cjs)
         Fx.skipQueue(); window.tipChance = () => 0; setSeed(3); startRun(); ['capital', 'seal', 'theme'].forEach(id => gainRelic(id, 't')); run.cash += 5000;
         const p = openPosition('meme', 600, 2, 1, true); p.daysHeld = 4;
         startMarket(); assets.meme.price *= 1.3; renderAll();
@@ -87,6 +88,7 @@ const FIND = `(want) => {
         const q = Fx.pending().map(i => i.payload.id).filter(Boolean);
         while(Fx.queueLength) await new Promise(r => setTimeout(r, 50));
         Fx.flash = of;
+        settings.chainFx = true;
         return { q, flashes };
       });
       const gaps = rel.flashes.slice(1).map((f, i) => f[1] - rel.flashes[i][1]);
