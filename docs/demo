@@ -432,6 +432,30 @@ body::after{
 .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.25;text-align:center;color:var(--text);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;}
 .card.r-mythic .g-name{color:var(--gold);}
+.card.gcard:not(.t-stock) .g-name{font-family:var(--gf-lg),monospace;font-size:var(--fs-lg);-webkit-line-clamp:3;}   /* 설명 없는 카드는 이름만 크게 (설명·수치는 툴팁) */
+.hand.g4 .card.gcard:not(.t-stock) .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);}
+/* 추천: 지금 쓰면 오늘 예상 정산 배수가 오르는 카드 (previewSettlement 비교) */
+.card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite;}
+@keyframes boostGlow{0%,100%{box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold2);}50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(5 * var(--u)) var(--gold);}}
+@media (prefers-reduced-motion: reduce){.card.gcard.boost:not(.disabled){animation:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold);}}
+/* 차트 크게 보기 (게임은 계속 진행 — 오버레이가 아니라 떠 있는 창) */
+.chart-zoom{position:fixed;left:15vw;top:12vh;width:70vw;height:76vh;z-index:70;background:var(--bg);display:flex;flex-direction:column;gap:calc(6 * var(--u));padding:calc(10 * var(--u));box-shadow:0 0 0 calc(3 * var(--u)) var(--cyan), calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
+.chart-zoom[hidden]{display:none;}
+.cz-tabs{display:flex;flex-wrap:wrap;gap:calc(4 * var(--u));align-items:center;}
+.cz-tabs button{border:none;cursor:pointer;background:var(--panel2);color:var(--text2);padding:calc(4 * var(--u)) calc(8 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
+.cz-tabs button.on{color:var(--bg);background:var(--cyan);}
+.cz-tabs .cz-close{margin-left:auto;color:var(--text);}
+.cz-head{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);color:var(--text);}
+.chart-zoom canvas{flex:1;min-height:0;width:100%;background:#000;}
+@media (max-width: 900px){.chart-zoom{left:2vw;width:96vw;top:8vh;height:70vh;}}
+/* 배속 버튼 (HUD) */
+.guide{text-align:left;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.7;color:var(--text2);display:flex;flex-direction:column;gap:calc(6 * var(--u));max-width:calc(560 * var(--u));}
+.guide b{color:var(--text);font-weight:normal;} .guide .s-rev{color:var(--cyan);}
+.guide-row{display:flex;align-items:center;gap:calc(8 * var(--u));}
+.speed-btns{display:flex;gap:calc(3 * var(--u));}
+.hud{flex-wrap:wrap;row-gap:calc(4 * var(--u));}   /* 좁은 화면: 배속 버튼이 다음 줄로 (잘리지 않게) */
+.speed-btns button{border:none;cursor:pointer;background:var(--panel2);color:var(--text2);padding:calc(2 * var(--u)) calc(5 * var(--u));font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);box-shadow:0 0 0 calc(1 * var(--u)) var(--line);}
+.speed-btns button.on{background:var(--gold);color:var(--bg);}
 /* 강화판(+): 안쪽 테두리 금색 + 이름 금색 · 빌드 태그 아이콘 */
 .card.up{--cc:var(--gold);}
 .card.up .g-name,.card.up .sym{color:var(--gold);}
@@ -953,7 +977,9 @@ body::after{
 .q-tag.gap{color:var(--bg);background:var(--gold);padding:calc(1 * var(--u)) calc(2 * var(--u));}
 /* 읽을 수 있는 시장: 시그널 · 어제 채점 · 기대값 */
 .q-sig{display:block;font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;color:var(--muted);margin-top:calc(3 * var(--u));line-height:1.4;white-space:nowrap;}
-.q-sig .s-UP{color:var(--green);} .q-sig .s-DOWN{color:var(--red);} .q-sig .s-HOT{color:var(--gold);} .q-sig .s-FLAT{color:var(--text);}
+.q-sig .sig-chip{display:inline-block;padding:0 calc(3 * var(--u));font-size:var(--fs-m16);line-height:1.2;box-shadow:0 0 0 calc(1 * var(--u)) #000;}
+.q-sig .s-UP{background:var(--green-dim);box-shadow:0 0 0 calc(1 * var(--u)) var(--green);} .q-sig .s-DOWN{background:var(--red-dim);box-shadow:0 0 0 calc(1 * var(--u)) var(--red);}
+.q-sig .s-HOT{background:var(--gold2);box-shadow:0 0 0 calc(1 * var(--u)) var(--gold);} .q-sig .s-FLAT{background:var(--panel2);box-shadow:0 0 0 calc(1 * var(--u)) var(--muted);}
 .q-sig .s-rev{color:var(--cyan);}
 .q-sig .hit{color:var(--green);} .q-sig .miss{color:var(--red);}
 .c-ev{font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
@@ -1388,7 +1414,8 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
     gap:calc(4 * var(--u)) calc(10 * var(--u));align-items:center;
   }
   .play-top .hud-col{grid-area:hud;margin:0;display:flex;flex-direction:column;gap:calc(5 * var(--u));min-width:0;}
-  .play-top .hud{margin:0;white-space:nowrap;gap:calc(6 * var(--u));}
+  .play-top .hud{margin:0;white-space:nowrap;gap:calc(4 * var(--u)) calc(6 * var(--u));flex-wrap:wrap;}   /* 좁으면 배속 버튼이 다음 줄로 */
+  .play-top .day-track{min-width:calc(40 * var(--u));}
   .play-top .fss{gap:calc(6 * var(--u));}
   .play-top .fss-state{min-width:0;}
   .play-top .balance-main{grid-area:bal;margin:0;padding:calc(5 * var(--u)) calc(9 * var(--u));}
@@ -1551,6 +1578,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
           <button data-menu="title">◀ 타이틀로<small id="menuTitleNote">판은 그대로 유지됩니다 · 타이틀의 '이어하기'로 복귀</small></button>
           <button data-menu="tips">📱 찌라시 기록<i class="menu-dot" id="menuTipDot" hidden></i></button>
           <button data-menu="deck">🃏 덱 확인</button>
+          <button data-menu="signalGuide">📖 시그널 설명서</button>
           <button data-menu="settings">⚙ 환경 설정</button>
         </div>
       </div>
@@ -1560,6 +1588,7 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
           <span id="roundText">WEEK 1/8</span>
           <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
           <span id="dayText">DAY 1/5 · 장전</span>
+          <div class="speed-btns" id="speedBtns" title="장중 속도 (키보드 1~4). 결과·확률은 그대로"></div>
         </div>
         <div class="fss" id="fssBox" title="시장 카드(비둘기·매파·CEO 트윗·리딩방·작전 세력)를 쓸 때마다 쌓인다. 가득 차면 제재: 과징금 / 매수 금지 / 강제 청산.">
           <span class="fss-label">☎ 금감원 감시</span>
@@ -1612,7 +1641,12 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
       <div class="chart-box px-corner-box" id="chartBox">
         <div class="chart-header"><span class="ch-name" id="chartLabel">IDX</span>: <span id="marketPriceText">1000</span> <span class="ch-chg" id="chartChg"></span><span class="state-badge" id="marketStateBadge" hidden></span></div>
         <button class="chart-back" id="chartBackBtn" hidden>◀ 지수</button>
-        <canvas id="candlestickChart"></canvas>
+        <canvas id="candlestickChart" title="클릭 = 크게 보기"></canvas>
+      </div>
+      <div class="chart-zoom" id="chartZoom" hidden>
+        <div class="cz-tabs" id="czTabs"></div>
+        <div class="cz-head" id="czHead"></div>
+        <canvas id="czCanvas"></canvas>
       </div>
 
       <div class="section-title">
@@ -2646,7 +2680,7 @@ function handCardHtml(card, o){
       <div class="g-top"><span class="c-ap">${card.type === 'status' ? '✕' : o.ap}</span><span class="g-band"></span><span class="g-rar" title="${card.type === 'status' ? '상태' : RARITY_LABEL[card.rarity]}"></span></div>
       <div class="g-name">${card.name}</div>
       ${stock ? `<div class="g-line"><span class="c-cost">₩${formatKrw(o.cost)}</span></div><div class="g-line"><span class="c-price" data-p="${stock.id}"></span></div>`
-              : `<div class="g-line g-desc">${cardDesc(card)}</div>`}
+              : ''}
       <div class="g-foot">${card.tags.length ? `<span class="c-tags">${tagIcons(card.tags)}</span> ` : ''}${foot}</div>
     </div>`;
 }
@@ -2837,7 +2871,7 @@ function signalHtml(s){   // 시세판: 아이콘 + 적중률만 (라벨·어제
   if(!hasRegime(s)) return '지수 연동';
   const sg = run.signals[s.id];
   if(!sg) return '';
-  return `<span class="s-${sg.shown}">${SIGNAL_ICON[sg.shown]}</span> ` + (sg.revealed ? '<span class="s-rev">확정 100%</span>' : `적중 ${Math.round(sg.acc * 100)}%`);
+  return `<span class="sig-chip s-${sg.shown}">${SIGNAL_ICON[sg.shown]}</span> ` + (sg.revealed ? '<span class="s-rev">확정 100%</span>' : `적중 ${Math.round(sg.acc * 100)}%`);
 }
 function signalHelp(s){
   if(!hasRegime(s)) return '인버스는 추세가 따로 없고 지수를 반대로 따라간다';
@@ -2982,7 +3016,7 @@ function cardUsable(idx){
 function renderHand(){
   const box = $('handBox');
   const usable = run.hand.map((_, i) => cardUsable(i) ? '1' : '0').join('');
-  const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + selectedIdx + '|' + run.pending.principalMult
+  const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + selectedIdx + '|' + run.pending.principalMult + '|' + run.pending.lev
     + '|' + run.marketCard + '|' + run.positions.map(p => p.id + ':' + Math.round(exposure(p))).join();   // 기대값이 포지션·대기 시장 카드에 따라 바뀐다
   if(sig !== handSig){
     handSig = sig;
@@ -2991,12 +3025,21 @@ function renderHand(){
     const cells = cols * HAND_GRID_ROWS;
     box.innerHTML = run.hand.map((inst, i) => {
           const card = CARD_BY_ID[inst.id];
-          const cls = (usable[i] === '1' ? '' : 'disabled') + (i === selectedIdx ? ' selected' : '');
+          const cls = (usable[i] === '1' ? '' : 'disabled') + (i === selectedIdx ? ' selected' : '') + (usable[i] === '1' && boostsSettle(i) ? ' boost' : '');
           const cost = card.stock ? stockCost(STOCK_BY_ID[card.stock]) : 0;
           return handCardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, ap: cardCost(card) });
         }).join('') + '<div class="g-slot"></div>'.repeat(Math.max(0, cells - run.hand.length));   // 빈 칸 = 점선 슬롯
   }
   box.querySelectorAll('[data-p]').forEach(el => { el.textContent = '@' + fmtPrice(assets[el.dataset.p].price); });
+}
+
+/* (S5-25) 지금 쓰면 오늘 예상 정산 배수가 오르는 카드: 종목 카드는 hypotheticalBuy로 previewSettlement를 비교,
+   정산 배수를 직접 곱하는 카드(곱하기 카드)는 보유 포지션이 있으면. 엔진 상태는 바꾸지 않는다 */
+const SETTLE_BOOST_CARDS = ['levEtf', 'split', 'allIn', 'coinFlip', 'futures', 'timeLoop', 'reinvest'];
+function boostsSettle(i){
+  const card = CARD_BY_ID[run.hand[i].id];
+  if(card.stock) return previewSettlement(hypotheticalBuy(card.stock)).mult > previewSettlement().mult + 1e-9;
+  return SETTLE_BOOST_CARDS.indexOf(card.base) >= 0 && run.positions.length > 0;
 }
 
 /* 카드 기대값 표시 (엔진 expectedValue). 대상 카드(리딩방·작전 세력)는 수익률 + 보유 종목별 금액을 툴팁으로 */
@@ -3112,8 +3155,74 @@ function renderAll(){
   renderHand();
   renderPositions();
   renderRelics();
+  renderSpeedBtns();
+  renderChartZoom();
   fitNews();          // 화면이 보인 뒤에 잰다 (숨은 화면에서는 폭이 0)
   fitRelicEmpty();
+}
+
+/* ── (S5-22) 차트 크게 보기: 떠 있는 창이라 장은 계속 진행된다. 탭 = 지수 + 종목 7개, Esc·✕로 닫기 ── */
+let zoomTarget = '';   // '' = 닫힘, 'idx' 또는 종목 id
+function openChartZoom(target){ zoomTarget = target || chartTarget; renderChartZoom(); }
+function closeChartZoom(){ zoomTarget = ''; $('chartZoom').hidden = true; }
+function renderChartZoom(){
+  const box = $('chartZoom');
+  if(!zoomTarget || !run || currentTab !== 'play'){ box.hidden = true; return; }
+  box.hidden = false;
+  const tabs = [['idx', 'IDX 지수']].concat(STOCKS.map(s => [s.id, s.name]));
+  const sig = tabs.map(t => t[0]).join() + '|' + zoomTarget;
+  if($('czTabs').dataset.sig !== sig){
+    $('czTabs').dataset.sig = sig;
+    $('czTabs').innerHTML = tabs.map(([id, name]) => `<button data-cz="${id}" class="${id === zoomTarget ? 'on' : ''}">${name}</button>`).join('') + '<button class="cz-close" data-cz-close="1">✕ 닫기 (Esc)</button>';
+  }
+  const isIdx = zoomTarget === 'idx', a = isIdx ? null : assets[zoomTarget];
+  const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
+  $('czHead').innerHTML = isIdx ? `IDX ${Math.round(marketPrice).toLocaleString()}`
+    : `${STOCK_BY_ID[zoomTarget].name} ${fmtPrice(a.price)} <span class="${chg >= 0 ? 'pnl-up' : 'pnl-down'}">${fmtPct(chg)}</span> · ${signalHtml(STOCK_BY_ID[zoomTarget])}`;
+  const cv = $('czCanvas'), ctx = cv.getContext('2d');
+  if(!cv.clientWidth) return;
+  const dpr = window.devicePixelRatio || 1, k = Math.max(1, Math.round(uiScale * dpr * 1.5));
+  cv.width = Math.floor(cv.clientWidth * dpr); cv.height = Math.floor(cv.clientHeight * dpr);
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  drawCandles(ctx, cv.width, cv.height, isIdx ? candleData : a.candles, k, { slots: MAX_CANDLES, grid: true, priceLine: true });
+}
+$('candlestickChart').addEventListener('click', () => openChartZoom());
+$('chartZoom').addEventListener('click', e => {
+  const t = e.target.closest('[data-cz]');
+  if(t){ zoomTarget = t.dataset.cz; renderChartZoom(); return; }
+  if(e.target.closest('[data-cz-close]')) closeChartZoom();
+});
+
+/* ── (S5-24) 배속 버튼: 설정 speed와 같은 값 (0.5·1·2·4), 장중에도 바로. 키보드 1~4 ── */
+const speedKeys = () => SETTING_OPTIONS.speed.map(o => o[0]);   // SETTING_OPTIONS는 아래에서 정의 → 함수로 늦게 읽는다
+function setSpeed(v){ if(settings.speed === v) return; settings.speed = v; saveSettings(); renderSpeedBtns(); }
+function renderSpeedBtns(){
+  const box = $('speedBtns'), sig = String(settings.speed);
+  if(box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  box.innerHTML = speedKeys().map((v, i) => `<button data-speed="${v}" class="${v === settings.speed ? 'on' : ''}" title="키 ${i + 1}">${v}×</button>`).join('');
+}
+$('speedBtns').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if(b) setSpeed(+b.dataset.speed); });
+
+/* ── (S5-23) 시그널 설명서 (≡ 메뉴). 숫자는 엔진 CONFIG 그대로 ── */
+function showSignalGuide(){
+  const acc = Math.round(SIGNAL_ACCURACY * 100);
+  const chip = k => `<span class="q-sig"><span class="sig-chip s-${k}">${SIGNAL_ICON[k]}</span></span>`;
+  showOverlay(`
+    <div class="ov-title" style="color:var(--cyan)">📖 시그널 설명서</div>
+    <div class="guide">
+      <p>종목마다 눈에 안 보이는 <b>추세</b>가 있습니다. 장이 열리기 전에 그 추세를 짐작하게 해 주는 게 <b>시그널</b>입니다. 시세표 종목 이름 옆 색 칩이 그것입니다.</p>
+      <div class="guide-row">${chip('UP')} <b>매수세</b> — 오늘 오를 가능성이 크다 (하루 약 ${fmtPct(perDay(REGIME_DRIFT.UP))})</div>
+      <div class="guide-row">${chip('DOWN')} <b>매도세</b> — 오늘 내릴 가능성이 크다 (하루 약 ${fmtPct(perDay(REGIME_DRIFT.DOWN))})</div>
+      <div class="guide-row">${chip('HOT')} <b>과열</b> — 오르긴 하는데(${fmtPct(perDay(REGIME_DRIFT.HOT))}) 갭하락이 ×${GAP_HOT_MULT}로 잦다. 레버리지 주의</div>
+      <div class="guide-row">${chip('FLAT')} <b>보합</b> — 추세 없음</div>
+      <p><b>적중 ${acc}%</b> = 칩이 진짜 추세일 확률입니다. 나머지 ${100 - acc}%는 셋 중 다른 하나입니다. 애널리스트 리포트를 쓰면 <span class="s-rev">확정 100%</span>로 바뀝니다. 보조지표는 적중률을 올려 줍니다.</p>
+      <p><b>어제 적중 ✓✗</b>: 종목 이름에 마우스를 올리면 어제 시그널이 맞았는지 나옵니다. 여러 번 맞히는 종목이 꼭 믿을 만한 건 아닙니다 — 확률은 매일 같습니다.</p>
+      <p><b>📰 뉴스</b>: 전광판의 '오늘 개장' 뉴스는 <b>확정</b>이면 반드시, <b>루머 N%</b>면 개장 때 N% 확률로 사실이 됩니다. '📰 내일' 버튼은 내일 개장 뉴스 예고입니다.</p>
+      <p>인버스·곱버스는 추세가 따로 없고 지수를 반대로 따라갑니다 (지수 연동).</p>
+    </div>
+    <button class="ov-btn" data-act="close">확인</button>`);
 }
 
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
@@ -3975,7 +4084,7 @@ function buildCollection(){
 /* ── 환경 설정 (UI 전용 — 엔진 규칙에는 영향 없음) ── */
 const SETTINGS_KEY = 'hodl.settings';
 const SETTING_OPTIONS = {
-  speed: [[1, '1x'], [2, '2x'], [4, '4x']],
+  speed: [[0.5, '0.5x'], [1, '1x'], [2, '2x'], [4, '4x']],
   shake: [[true, '켜기'], [false, '끄기']],
   crt:   [['off', '끄기'], ['weak', '약'], ['strong', '강']],
   sound: [[true, '켜기'], [false, '끄기']],
@@ -4203,6 +4312,7 @@ $('menuPanel').addEventListener('click', e => {
   if(act === 'title') switchTab('title');
   else if(act === 'tips') showTipLog();
   else if(act === 'deck'){ if(run) showDeck(); }
+  else if(act === 'signalGuide') showSignalGuide();
   else if(act === 'settings'){ settingsReturn = currentTab; switchTab('settings'); }
 });
 document.addEventListener('click', e => { if(menuOpen() && !e.target.closest('.menu-wrap')) closeMenu(); });
@@ -4336,6 +4446,8 @@ document.addEventListener('keydown', e => {
   if(amtCtx && e.key === 'Enter'){ e.preventDefault(); confirmAmount(); return; }
   if(amtCtx && e.key === 'Escape'){ e.preventDefault(); cancelAmount(); return; }
   if(upgradePickMode && e.key === 'Escape'){ e.preventDefault(); upgradePickMode = false; showReward(lastRoundClear); return; }
+  if(e.key === 'Escape' && zoomTarget){ e.preventDefault(); closeChartZoom(); return; }
+  if(currentTab === 'play' && !overlayOpen && !e.ctrlKey && !e.metaKey && !e.altKey && /^[1-4]$/.test(e.key) && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))){ setSpeed(speedKeys()[+e.key - 1]); return; }
   if(e.key === 'Escape'){
     if(selectedIdx >= 0){ selectedIdx = -1; renderAll(); return; }   // 대상 지정 취소가 먼저
     if(menuOpen()){ closeMenu(); return; }

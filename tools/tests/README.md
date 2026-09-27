@@ -23,6 +23,7 @@ for t in tools/tests/*.cjs; do echo "== $t"; node $t $OUT 2>&1 | grep -E '^FAIL|
 | chain · nextbtn | 결산 체인 연출·▶ 다음 |
 | deckbuilding | S3: 종목 카드 금액 창(버튼·입력·Esc/Enter)·보상 카드 강화·암시장 리모델링/변환/복제·태그 아이콘 |
 | multipliers | S4: 주식 분할·레버리지 ETF·몰빵 손패 사용·곱하기 유물 정산 단계·크리티컬 확률 공개(정산 칩·도감)·알림 |
+| quickui | S5: 손패 이름만·추천 빛남·HUD 배속(0.5×·키 1~4)·차트 크게 보기(장 진행)·시그널 칩·설명서 (4개 창 크기) |
 | relicslots | 유물 칸 6개·종류 배지·칸 순서대로 정산·◀▶/←→/끌기(장중 불가)·가득 찬 칸 교체/포기·암시장 판매 |
 | bgm | 배경음악 트랙·무드 |
 | growth | 성장형 유물 |
