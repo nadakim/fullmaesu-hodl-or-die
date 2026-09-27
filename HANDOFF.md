@@ -14,7 +14,9 @@
 - 사용자 요청: PR을 올리거나 수정 작업을 끝낼 때마다 **웹에서 바로 플레이할 수 있는 데모 아티팩트**를 올린다 (아래 Demo 항목)
 - **플레이 데모 아티팩트 (최신)**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — 작업마다 같은 URL로 재게시. 만드는 법: `docs/demo` → `index.html`(`<title>BULL TRAP</title>` 넣기) + `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로, 폰트 6개는 `{artifact: <이 URL>, path: 'assets/fonts/…'}`로 서버 복사. 다른 세션에서 갱신하려면 먼저 `Artifact read`(파일 전부 읽기) 후 `url`로 게시. 예전 아티팩트(Qv1Si1jamWgT4hRuHKbkCY)는 S0 이전 버전
 - **S2** (브랜치 `claude/s2-relic-slots`, S1 위): 유물 칸 6개·교체/포기·순서 변경(끌기·◀▶·←→, 장전·암시장)·암시장 판매, 정산 배수를 칸 순서대로 차례 적용 (`docs/design/RELIC_SLOTS.md`). Open Q3 재측정: `nothing` 8.8% (칸 제한 영향 없음)
-- 다음: 승인 후 S3 덱빌딩 (`claude/s3-deckbuilding`) — 🛑 D5 카드별 강화안, D6 안 쓴 손패 유지 여부, D7 종목 카드 등급 의미
+- S2 후 결정: Open Q3(`nothing` 8.8%) = **A안** 그대로 두고 S4 후 재측정
+- **S3** (브랜치 `claude/s3-deckbuilding`, S2 위): 카드 강화(+) 50종·보상 '카드 강화'·암시장 리모델링/변환/복제, 빌드 태그 7종 + 등급 안 가중치, 덱 순환(빌 때만 셔플·retain 틀), 종목 카드 금액 입력 창 (`docs/design/DECKBUILDING.md`). D5 표대로 · D6 버림 + retain 예외 · D7 종목 카드 등급 폐지. Open Q1 재측정: deckThinner 26.8% → 24.6%
+- 다음: 승인 후 S4 곱하기 콘텐츠 (`claude/s4-multiplier-content`) — 🛑 D8 배수 수치
 
 ## Summary
 
