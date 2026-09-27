@@ -36,7 +36,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.keyboard.press('Escape'); await sleep(80);
     ok(W + ' Esc → 닫힘 (메뉴 안 열림)', await p.evaluate(() => $('chartZoom').hidden && $('menuPanel').hidden));
     // 시그널 칩 + 설명서
-    ok(W + ' 시그널 색 칩', await p.evaluate(() => document.querySelectorAll('#quoteBox .sig-chip').length === 5));
+    ok(W + ' 시그널 색 칩', await p.evaluate(() => document.querySelectorAll('#quoteBox .sig-chip').length === STOCKS.filter(hasRegime).length));
     await p.click('#menuBtn'); await sleep(80);
     await p.locator('[data-menu="signalGuide"]').click(); await sleep(150);
     ok(W + ' ≡ → 시그널 설명서', await p.evaluate(() => overlayOpen && $('overlayBox').textContent.includes('시그널 설명서') && $('overlayBox').textContent.includes('적중 65%')));

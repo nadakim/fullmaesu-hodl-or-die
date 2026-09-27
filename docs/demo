@@ -974,6 +974,8 @@ body::after{
 .q-tag.hidden{color:var(--purple);}
 .q-tag.up{color:var(--green);}
 .q-tag.down{color:var(--red);}
+.q-chg.limit-up{color:var(--bg);background:var(--green);padding:0 calc(2 * var(--u));}
+.q-chg.limit-down{color:var(--text);background:var(--red2);padding:0 calc(2 * var(--u));}
 .q-tag.gap{color:var(--bg);background:var(--gold);padding:calc(1 * var(--u)) calc(2 * var(--u));}
 /* 읽을 수 있는 시장: 시그널 · 어제 채점 · 기대값 */
 .q-sig{display:block;font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;color:var(--muted);margin-top:calc(3 * var(--u));line-height:1.4;white-space:nowrap;}
@@ -1502,6 +1504,15 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 
 /* ── TR룸 3단: 넓은 창 — [시장 32] [행동 38] [포지션 30] ──
    .play-right를 display:contents로 풀어서 그 안의 요소를 가운데(행동)·오른쪽(포지션) 칸에 나눠 놓는다 */
+@media (min-width: 901px){
+  /* (S7-17) 종목 13개: 시세판 2열 격자 — 스파크라인은 빼고 이름·시그널 / 가격·등락 */
+  .play-left .quotes{min-height:0;display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:calc(3 * var(--u)) calc(4 * var(--u));overflow:hidden;}
+  .play-left .quote-row{grid-template-columns:minmax(0, 1fr) auto;gap:calc(1 * var(--u)) calc(4 * var(--u));padding:calc(1 * var(--u)) calc(5 * var(--u));}
+  .play-left .quote-row canvas{display:none;}
+  .play-left .quote-row .q-price{grid-column:2;grid-row:1;}
+  .play-left .quote-row .q-chg{grid-column:2;grid-row:2;}
+  .play-left .quote-row .q-name{grid-row:1 / span 2;}
+}
 @media (min-width: 1200px) and (min-aspect-ratio: 145/100){
   #screen-play.active{
     grid-template-columns:minmax(0, 32fr) minmax(0, 38fr) minmax(0, 30fr);
@@ -1834,7 +1845,18 @@ function fitRelicEmpty(){
 const cc = document.getElementById('candlestickChart');
 const cctx = cc.getContext('2d', {antialias: false});
 
-function renderChart(data = candleData){
+/* (S7-15) 차트 데이터: 'day' = 오늘 장 캔들(개장 때 비움, 전일 종가 기준선) · 'daily' = 일봉 */
+function chartSeries(target, mode){
+  const isIdx = target === 'idx', a = isIdx ? null : assets[target];
+  if(mode === 'daily'){
+    const d = isIdx ? idxDay.daily : a.daily;
+    if(d.length) return { data: d.slice(-DAILY_SLOTS), slots: DAILY_SLOTS, ref: 0 };
+  }
+  const cs = isIdx ? idxDay.candles : a.dayCandles, prev = isIdx ? idxDay.prevClose : a.prevClose;
+  return { data: cs.length ? cs : [{ open: prev, close: prev, high: prev, low: prev, gap: 0 }], slots: TICKS_PER_DAY, ref: prev };
+}
+const DAILY_SLOTS = 20;   // 일봉 탭에 보이는 날 수
+function renderChart(series){
   if(!cc.clientWidth) return;
   const dpr = window.devicePixelRatio || 1;
   const k = Math.max(1, Math.round(uiScale * dpr));   // 기준 1px = 실제 픽셀 수 (배율 × 화면 밀도, 정수로 반올림해 픽셀이 고르게)
@@ -1843,7 +1865,7 @@ function renderChart(data = candleData){
   cctx.imageSmoothingEnabled = false;
   cctx.fillStyle = '#000';
   cctx.fillRect(0,0,cc.width,cc.height);
-  drawCandles(cctx, cc.width, cc.height, data, k, { slots: MAX_CANDLES, grid: true, priceLine: true });
+  drawCandles(cctx, cc.width, cc.height, series.data, k, { slots: series.slots, grid: true, priceLine: true, refLine: series.ref });
 }
 
 /* 캔들 그리기 (메인 차트 · 타이틀 배경 공용). data를 slots칸에 왼쪽부터, offsetX(px)만큼 왼쪽으로 밀어서 그린다.
@@ -1864,8 +1886,9 @@ function drawCandles(ctx, W, H, data, k, o){
   }
   if(data.length===0) return;
 
-  const maxP = o.maxP !== undefined ? o.maxP : Math.max(...data.map(c=>c.high))*1.02;
-  const minP = o.minP !== undefined ? o.minP : Math.min(...data.map(c=>c.low))*0.98;
+  const refs = o.refLine ? [o.refLine] : [];   // (S7-15) 전일 종가 기준선도 화면 안에 들어오게
+  const maxP = o.maxP !== undefined ? o.maxP : Math.max(...data.map(c=>c.high), ...refs)*1.02;
+  const minP = o.minP !== undefined ? o.minP : Math.min(...data.map(c=>c.low), ...refs)*0.98;
   const range = maxP-minP||1;
   const offsetX = o.offsetX || 0;
 
@@ -1916,7 +1939,16 @@ function drawCandles(ctx, W, H, data, k, o){
     }
   });
 
-  if(o.priceLine){
+  if(o.refLine){   // 전일 종가: 회색 긴 점선 + 'PREV' 표시
+    const ry = scaleY(o.refLine);
+    ctx.fillStyle = '#8a96c4';
+    for(let x=0;x<W;x+=8*k) ctx.fillRect(x,ry,4*k,k);
+    ctx.font = `${8 * k}px "Press Start 2P", "GP8", monospace`;
+    ctx.textAlign = 'right';
+    ctx.fillText('PREV', W - 4*k, Math.max(22*k, ry - 3*k));   // 오른쪽 (왼쪽 위는 차트 제목)
+    ctx.textAlign = 'left';
+  }
+  if(o.priceLine && data.length){
     const py = scaleY(data[data.length-1].close);
     ctx.fillStyle = '#00e5ff';
     for(let x=0;x<W;x+=4*k) ctx.fillRect(x,py,2*k,k);
@@ -2567,6 +2599,11 @@ function onGameEvent(type, d){
       toast(d.active ? `📰 사실로 확인: ${newsEffectText(n)}` : `📰 루머로 판명 — ${n.text.split(' — ')[0]} 효과 없음`, d.active ? 'warn' : 'info');
       break;
     }
+    case 'priceLimit': {   // 상·하한가: 보유 종목만 알림 (시세판 태그는 항상)
+      if(run.positions.some(p => p.assetId === d.stockId))
+        toast(`${d.dir > 0 ? '🔒 상한가' : '🧊 하한가'}! ${STOCK_BY_ID[d.stockId].name} ${d.dir > 0 ? '+' : '−'}${Math.round(PRICE_LIMIT * 100)}%`, d.dir > 0 ? 'good' : 'bad');
+      break;
+    }
     case 'settleCrit': toast(`💥 크리티컬 정산! ${d.name} ×${d.mult}`, 'good'); Fx.chip('CRIT ×' + d.mult, rectOf($('positionsBox')), 'gold'); break;
     case 'allIn': toast(`🃏 몰빵: ${d.sold}개 정리 — ${d.pos.name} 오늘 정산 ×${d.sold + 1}`, 'warn'); break;
     case 'coinFlip': toast(d.win ? `🎲 모! ${d.pos.name} 오늘 정산 ×${COIN_FLIP_MULT}` : `🎲 도… ${d.pos.name} 가치 0 (원금 증발)`, d.win ? 'good' : 'bad'); break;
@@ -2842,8 +2879,9 @@ function renderHud(){
 function renderMainChart(){
   const isIdx = chartTarget === 'idx';
   const a = isIdx ? null : assets[chartTarget];
-  renderChart(isIdx ? candleData : a.candles);
+  renderChart(chartSeries(chartTarget, 'day'));
   $('chartLabel').textContent = isIdx ? 'IDX' : STOCK_BY_ID[chartTarget].name;
+  $('chartLabel').title = isIdx ? '시장 전체 흐름(지수). 종목은 이 흐름을 베타(β)만큼 따라간다 — β 2면 두 배로, 인버스는 반대로. 점선 = 전일 종가' : '점선 = 전일 종가';
   $('marketPriceText').textContent = isIdx ? Math.round(marketPrice).toLocaleString() : fmtPrice(a.price);
   const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
   $('chartChg').textContent = isIdx ? '' : fmtPct(chg);
@@ -2939,6 +2977,9 @@ function renderQuotes(){
     // 찌라시: 장전에는 결과를 숨긴다
     const pm = run.pumps[s.id], tag = row.querySelector('.q-tag');
     const gap = assets[s.id].candles.slice(-GAP_TAG_CANDLES).reduce((g, c) => c.gap || g, 0);   // 최근 갭
+    const lim = a.limitHit;   // (S7-19) 상·하한가: 등락률 칸을 색으로 칠한다 (이름 칸은 좁아서 잘린다)
+    if(lim){ ch.textContent = (lim > 0 ? '上 ' : '下 ') + ch.textContent; ch.className += lim > 0 ? ' limit-up' : ' limit-down'; ch.title = lim > 0 ? `상한가 (+${Math.round(PRICE_LIMIT * 100)}% 제한)` : `하한가 (−${Math.round(PRICE_LIMIT * 100)}% 제한)`; }
+    else ch.title = '';
     tag.textContent = gap ? (gap > 0 ? 'GAP▲' : 'GAP▼') : !pm ? '' : run.phase !== 'market' ? '찌라시?' : pm > 0 ? '작전▲' : '설거지▼';
     tag.className = 'q-tag ' + (gap ? 'gap' : !pm ? '' : run.phase !== 'market' ? 'hidden' : pm > 0 ? 'up' : 'down');
     row.classList.toggle('targetable', targets.indexOf(s.id) >= 0);
@@ -3189,6 +3230,7 @@ function renderAll(){
 
 /* ── (S5-22) 차트 크게 보기: 떠 있는 창이라 장은 계속 진행된다. 탭 = 지수 + 종목 7개, Esc·✕로 닫기 ── */
 let zoomTarget = '';   // '' = 닫힘, 'idx' 또는 종목 id
+let zoomMode = 'day';  // 'day' 오늘 장 · 'daily' 일봉 (S7-15)
 function openChartZoom(target){ zoomTarget = target || chartTarget; renderChartZoom(); }
 function closeChartZoom(){ zoomTarget = ''; $('chartZoom').hidden = true; }
 function renderChartZoom(){
@@ -3196,10 +3238,11 @@ function renderChartZoom(){
   if(!zoomTarget || !run || currentTab !== 'play'){ box.hidden = true; return; }
   box.hidden = false;
   const tabs = [['idx', 'IDX 지수']].concat(STOCKS.map(s => [s.id, s.name]));
-  const sig = tabs.map(t => t[0]).join() + '|' + zoomTarget;
+  const sig = tabs.map(t => t[0]).join() + '|' + zoomTarget + '|' + zoomMode;
   if($('czTabs').dataset.sig !== sig){
     $('czTabs').dataset.sig = sig;
-    $('czTabs').innerHTML = tabs.map(([id, name]) => `<button data-cz="${id}" class="${id === zoomTarget ? 'on' : ''}">${name}</button>`).join('') + '<button class="cz-close" data-cz-close="1">✕ 닫기 (Esc)</button>';
+    $('czTabs').innerHTML = [['day', '오늘'], ['daily', '일봉']].map(([m, t]) => `<button data-cz-mode="${m}" class="cz-mode ${m === zoomMode ? 'on' : ''}">${t}</button>`).join('')
+      + tabs.map(([id, name]) => `<button data-cz="${id}" class="${id === zoomTarget ? 'on' : ''}">${name}</button>`).join('') + '<button class="cz-close" data-cz-close="1">✕ 닫기 (Esc)</button>';
   }
   const isIdx = zoomTarget === 'idx', a = isIdx ? null : assets[zoomTarget];
   const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
@@ -3211,12 +3254,15 @@ function renderChartZoom(){
   cv.width = Math.floor(cv.clientWidth * dpr); cv.height = Math.floor(cv.clientHeight * dpr);
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
-  drawCandles(ctx, cv.width, cv.height, isIdx ? candleData : a.candles, k, { slots: MAX_CANDLES, grid: true, priceLine: true });
+  const ser = chartSeries(zoomTarget, zoomMode);
+  drawCandles(ctx, cv.width, cv.height, ser.data, k, { slots: ser.slots, grid: true, priceLine: true, refLine: ser.ref });
 }
 $('candlestickChart').addEventListener('click', () => openChartZoom());
 $('chartZoom').addEventListener('click', e => {
   const t = e.target.closest('[data-cz]');
   if(t){ zoomTarget = t.dataset.cz; renderChartZoom(); return; }
+  const m = e.target.closest('[data-cz-mode]');
+  if(m){ zoomMode = m.dataset.czMode; renderChartZoom(); return; }
   if(e.target.closest('[data-cz-close]')) closeChartZoom();
 });
 
