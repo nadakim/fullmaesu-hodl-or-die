@@ -12,7 +12,9 @@
 - **S1** (브랜치 `claude/s1-settlement-engine`, S0 위에 쌓음 — PR base = S0 브랜치): 장 마감 정산 `settleDay`(유물 보정 → 현금 보너스, add·mult·xmult), 예상 정산 미리보기(행동력 줄 `정산 ×N` + 종목 카드 툴팁), `formatKrw` 큰 수 단위, 주간 체인 = 이번 주 정산 요약, 시뮬 지표(최고 순자산 분포·하루 최대 배수) + `sim/compare.js`. 문서 `docs/design/SETTLEMENT.md`
 - S1 결정: **D3** 주간 결산 체인 = 요약 한 화면 유지(확정), **D4** 목표 금액 그대로 → **S4 이후 재측정**
 - 사용자 요청: PR을 올리거나 수정 작업을 끝낼 때마다 **웹에서 바로 플레이할 수 있는 데모 아티팩트**를 올린다 (아래 Demo 항목)
-- 다음: 승인 후 S2 유물 슬롯(`claude/s2-relic-slots`) — Open Q3(`nothing` 클리어율) 재측정 포함
+- **플레이 데모 아티팩트 (최신)**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — 작업마다 같은 URL로 재게시. 만드는 법: `docs/demo` → `index.html`(`<title>BULL TRAP</title>` 넣기) + `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로, 폰트 6개는 `{artifact: <이 URL>, path: 'assets/fonts/…'}`로 서버 복사. 다른 세션에서 갱신하려면 먼저 `Artifact read`(파일 전부 읽기) 후 `url`로 게시. 예전 아티팩트(Qv1Si1jamWgT4hRuHKbkCY)는 S0 이전 버전
+- **S2** (브랜치 `claude/s2-relic-slots`, S1 위): 유물 칸 6개·교체/포기·순서 변경(끌기·◀▶·←→, 장전·암시장)·암시장 판매, 정산 배수를 칸 순서대로 차례 적용 (`docs/design/RELIC_SLOTS.md`). Open Q3 재측정: `nothing` 8.8% (칸 제한 영향 없음)
+- 다음: 승인 후 S3 덱빌딩 (`claude/s3-deckbuilding`) — 🛑 D5 카드별 강화안, D6 안 쓴 손패 유지 여부, D7 종목 카드 등급 의미
 
 ## Summary
 

@@ -245,6 +245,8 @@ const RELIC_TALISMAN_AP          = 1;     // 떡상 기원 부적: 매일 행동
 const RELIC_LAWYER_DECAY_MULT    = 2;     // 전관 변호사: 금감원 게이지 자연 감소(매일·매주) 배수
 const RELIC_REWARD_CHOICES       = 2;     // 매주 결산 보상에 나오는 유물 수 (아직 없는 것만)
 const RELIC_SHOP_COUNT           = 3;     // 암시장 유물 진열 수 (남은 유물이 모자라면 그만큼만)
+const RELIC_SLOTS                = 6;     // 유물 보유 칸. 가득 차면 새 유물은 한 칸을 골라 교체하거나 포기 (docs/design/RELIC_SLOTS.md)
+const RELIC_SELL_RATE            = 0.5;   // 암시장 유물 판매: 얻을 때 값(구매가, 보상이면 그 주 암시장 가격)의 이 비율을 비자금으로
 const RELIC_PRICE                = { common:900, uncommon:1300, rare:1700, legendary:2200, mythic:3000 }; // 암시장 유물 가격 (비자금)
 const RELIC_PAYDAY_BASE          = 60;    // 월급날: 매주 첫날 현금 +이만큼 × 주차. 200 → 60: 완만한 목표에서 카드 없이도 통과시키던 불로소득 (2~8주 합계 원금의 +70% → +21%)
 const RELIC_INVERSE_DRAW         = 1;     // 인버스 장인: 인버스 종목을 살 때마다 드로우
@@ -593,14 +595,37 @@ const RELIC_BY_ID = {};
 RELICS.forEach(r => { RELIC_BY_ID[r.id] = r; });
 const hasRelic = id => !!run && run.relics.indexOf(id) >= 0;
 
-function gainRelic(id, source){
+/* 유물 칸 (RELIC_SLOTS): run.relics 순서 = 칸 순서 = 장 마감 정산 발동 순서 (왼쪽부터).
+   가득 차면 gainRelic은 실패한다 — 새 유물은 replaceId(교체할 보유 유물)를 주고 얻는다. paid = 판매가 기준값 (구매가) */
+const relicSlotsFull = () => run.relics.length >= RELIC_SLOTS;
+function gainRelic(id, source, paid, replaceId){
   if(!RELIC_BY_ID[id] || hasRelic(id)) return false;
-  run.relics.push(id);
-  run.relicState[id] = { stacks: 0, best: 0 };
+  let at = run.relics.length;
+  if(relicSlotsFull()){
+    if(!replaceId || !hasRelic(replaceId)) return false;
+    at = run.relics.indexOf(replaceId);   // 교체한 칸에 그대로 들어간다
+    loseRelic(replaceId);
+    emit('relicReplaced', {id: replaceId, by: id});
+  }
+  run.relics.splice(at, 0, id);
+  run.relicState[id] = { stacks: 0, best: 0, paid: paid !== undefined ? paid : relicPrice(id) };
   emit('relicGained', {id, source});
   return true;
 }
 function loseRelic(id){ run.relics = run.relics.filter(x => x !== id); }
+/* 칸 순서 바꾸기 (장전·암시장에서만, 장중 불가). from → to 자리로 옮긴다 */
+const canArrangeRelics = () => !!run && (run.phase === 'premarket' || run.phase === 'shop');
+function moveRelic(from, to){
+  if(!canArrangeRelics()) return false;
+  const n = run.relics.length;
+  if(from < 0 || from >= n || to < 0 || to >= n || from === to) return false;
+  const id = run.relics.splice(from, 1)[0];
+  run.relics.splice(to, 0, id);
+  emit('relicMoved', {id, from, to});
+  return true;
+}
+/* 판매가 = 얻을 때 값 × RELIC_SELL_RATE (10만 단위). 부모님 카드처럼 쓰고 사라진 유물은 팔 수 없다 */
+const relicSellPrice = id => Math.round(((run.relicState[id] && run.relicState[id].paid) || 0) * RELIC_SELL_RATE / SHOP_PRICE_ROUND) * SHOP_PRICE_ROUND;
 
 /* ── 성장형 유물: 스택 (적립형 tearJar는 만원 단위 적립금) ── */
 const relicStacks = id => hasRelic(id) && run.relicState[id] ? run.relicState[id].stacks : 0;
@@ -699,21 +724,22 @@ const posEquity    = p => p.principal + rawPnl(p);
 /* ══ 장 마감 정산 (docs/design/SETTLEMENT.md) ══
    포지션마다 base = 직전 정산(또는 매수) 이후의 가격 손익 = dir × (노출액 − 기준 노출액 refExp).
    step kind: 'base' | 'add'(칩 +) | 'mult'(합산 배수 +) | 'xmult'(곱 배수 ×)
-     chips = base + Σadd,  mult = (1 + Σmult) × Πxmult,  정산금 = chips × mult − base (이미 평가손익에 든 base는 빼고 보너스분만 현금)
+     chips = base + Σadd,  mult = 1에서 시작해 칸 순서대로 +mult · ×xmult,  정산금 = chips × mult − base (이미 평가손익에 든 base는 빼고 보너스분만 현금)
    수익(base > 0)엔 onLoss가 아닌 효과만, 손실(base < 0)엔 손실을 줄이는 onLoss 효과만 (예: 국밥 정신 ×0.5 → 절반 환급).
-   유물은 run.relics 순서대로 발동한다. 새 정산 유물은 여기에 한 줄 추가. */
+   유물은 run.relics 순서(= 칸 순서, 왼쪽부터)대로 발동한다. 새 정산 유물은 여기에 한 줄 추가 (kind = 화면 표시·자동 정렬용 대표 종류). */
 const SETTLE_EFFECTS = {
-  gukbap:         { onLoss: true,  apply: p => gukbapApplies(p) ? { kind: 'xmult', value: 1 - RELIC_GUKBAP_LOSS_CUT } : null },
-  seal:           { onLoss: false, apply: p => sealApplies(p) ? { kind: 'xmult', value: 1 + RELIC_SEAL_BONUS } : null },
-  theme:          { onLoss: false, apply: p => RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0 ? { kind: 'xmult', value: 1 + RELIC_THEME_BONUS } : null },
-  moonSavings:    { onLoss: false, apply: p => moonPct() > 0 ? { kind: 'mult', value: moonPct(), label: `${relicStepLabel('moonSavings')} ×${relicStacks('moonSavings')}스택` } : null },
-  traumaSurvivor: { onLoss: false, apply: p => traumaPct(p) > 0 ? { kind: 'mult', value: traumaPct(p), label: `${relicStepLabel('traumaSurvivor')} ×${relicStacks('traumaSurvivor')}스택` } : null }
+  gukbap:         { kind: 'xmult', onLoss: true,  apply: p => gukbapApplies(p) ? { kind: 'xmult', value: 1 - RELIC_GUKBAP_LOSS_CUT } : null },
+  seal:           { kind: 'xmult', onLoss: false, apply: p => sealApplies(p) ? { kind: 'xmult', value: 1 + RELIC_SEAL_BONUS } : null },
+  theme:          { kind: 'xmult', onLoss: false, apply: p => RELIC_THEME_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0 ? { kind: 'xmult', value: 1 + RELIC_THEME_BONUS } : null },
+  moonSavings:    { kind: 'mult',  onLoss: false, apply: p => moonPct() > 0 ? { kind: 'mult', value: moonPct(), label: `${relicStepLabel('moonSavings')} ×${relicStacks('moonSavings')}스택` } : null },
+  traumaSurvivor: { kind: 'mult',  onLoss: false, apply: p => traumaPct(p) > 0 ? { kind: 'mult', value: traumaPct(p), label: `${relicStepLabel('traumaSurvivor')} ×${relicStacks('traumaSurvivor')}스택` } : null }
 };
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
 
-/* 순수 계산 (rand·상태 변경 없음): 포지션 p가 오늘 base만큼 벌었을 때의 정산 단계. 미리보기(previewSettlement)와 공용 */
+/* 순수 계산 (rand·상태 변경 없음): 포지션 p가 오늘 base만큼 벌었을 때의 정산 단계. 미리보기(previewSettlement)와 공용.
+   배수는 칸 순서대로 차례로: mult = 지금 배수 + 값, xmult = 지금 배수 × 값 → 더하기를 앞 칸, 곱하기를 뒤 칸에 둘수록 커진다 */
 function settleSteps(p, base){
-  let chips = base, addSum = 0, xprod = 1;
+  let chips = base, m = 1;
   const steps = [{ label: '오늘 손익', kind: 'base', value: base, runningChips: chips, runningMult: 1, source: 'base' }];
   if(base !== 0){
     run.relics.forEach(id => {
@@ -722,14 +748,13 @@ function settleSteps(p, base){
       const e = fx.apply(p);
       if(!e) return;
       if(e.kind === 'add') chips += e.value;
-      else if(e.kind === 'mult') addSum += e.value;
-      else xprod *= e.value;
+      else if(e.kind === 'mult') m += e.value;
+      else m *= e.value;
       steps.push({ label: e.label || relicStepLabel(id), kind: e.kind, value: e.value,
-                   runningChips: chips, runningMult: (1 + addSum) * xprod, source: id });
+                   runningChips: chips, runningMult: m, source: id });
     });
   }
-  const mult = (1 + addSum) * xprod;
-  return { steps, chips, mult, total: chips * mult };
+  return { steps, chips, mult: m, total: chips * m };
 }
 
 /* 장 마감 정산: 포지션마다 보너스를 현금으로. 기록 run.lastDay → emit('daySettled') (정산 연출은 이 기록을 재생만 한다) */
@@ -2011,10 +2036,12 @@ function chooseReward(kind, value){
   return true;
 }
 
-/* 2단계 유물 보상 — relicId: 고른 유물, '' = 건너뛰기 */
-function chooseRelicReward(relicId){
+/* 2단계 유물 보상 — relicId: 고른 유물, '' = 건너뛰기. 칸이 가득 차 있으면 replaceId(교체할 보유 유물)가 있어야 한다 */
+function chooseRelicReward(relicId, replaceId){
   if(!run || run.phase !== 'reward' || run.rewardStep !== 'relic') return false;
-  if(relicId && (run.relicChoices.indexOf(relicId) < 0 || !gainRelic(relicId, 'reward'))) return false;
+  if(relicId && run.relicChoices.indexOf(relicId) < 0) return false;
+  if(relicId && relicSlotsFull() && !(replaceId && hasRelic(replaceId))){ emit('relicSlotsFull', {id: relicId, source: 'reward'}); return false; }
+  if(relicId && !gainRelic(relicId, 'reward', relicPrice(relicId), replaceId)) return false;
   emit('relicRewardChosen', {relicId});
   finishReward();
   return true;
@@ -2143,14 +2170,27 @@ function shopRemoveCard(deckIdx){
   return true;
 }
 
-function buyRelic(id){
+/* replaceId: 칸이 가득 찼을 때 교체할 보유 유물 (없으면 'slots'로 거절) */
+function buyRelic(id, replaceId){
   if(!shopOpenNow()) return shopReject('phase');
   if(run.shop.relics.indexOf(id) < 0) return shopReject('none');
   if(hasRelic(id)) return shopReject('sold');
   const price = relicPrice(id);
   if(run.slush < price) return shopReject('slush');
+  if(relicSlotsFull() && !(replaceId && hasRelic(replaceId))) return shopReject('slots');
   run.slush -= price;
-  gainRelic(id, 'shop');
+  gainRelic(id, 'shop', price, replaceId);
+  return true;
+}
+
+/* 유물 판매 (암시장에서만): 얻을 때 값 × RELIC_SELL_RATE를 비자금으로 */
+function sellRelic(id){
+  if(!shopOpenNow()) return shopReject('phase');
+  if(!hasRelic(id)) return shopReject('none');
+  const price = relicSellPrice(id);
+  run.slush += price;
+  loseRelic(id);
+  emit('relicSold', {id, price});
   return true;
 }
 

@@ -39,7 +39,7 @@ const box = (page, k) => page.evaluate(k => { const b = document.querySelector(`
     s = await box(page, 'single'); r = await box(page, 'relic');
     ok(s.dis && r.dis, W + ' 비자금 부족 → 둘 다 비활성');
     // 새로 뽑을 유물 없음 → 비활성
-    await page.evaluate(() => { run.slush = 99999; RELICS.forEach(x => { if(run.shop.relics.indexOf(x.id) < 0 && !hasRelic(x.id)) gainRelic(x.id, 'test'); }); renderShop(); });
+    await page.evaluate(() => { run.slush = 99999; RELICS.forEach(x => { if(run.shop.relics.indexOf(x.id) < 0 && !hasRelic(x.id)) run.relics.push(x.id); });   /* 유물 칸 제한을 넘겨 강제로 전부 보유 (진열 밖 유물이 없게) */ renderShop(); });
     r = await box(page, 'relic');
     ok(r.dis, W + ' 새로 들여올 유물 없음 → 비활성');
     // 다음 주: 횟수 초기화 + 주차 기본가 상승
