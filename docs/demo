@@ -127,6 +127,54 @@ small{font-size:inherit;}   /* 브라우저 기본 smaller(83%)는 허용 크기
     0 0 0 calc(4 * var(--u)) #000;
 }
 
+/* ── TACTILE: 손에 잡히는 화면 (버튼 · 패널 · 명찰 · 구역 배경 · 카드 기울기) ──────────
+   새 UI는 이 클래스를 쓴다. 색은 :root 변수만, 모서리는 직각, 그림자는 픽셀 오프셋, 무늬는 hard-stop만. */
+/* 묵직한 버튼: 버튼마다 --bk-ring(테두리 색)만 바꾼다. 아래·오른쪽 그림자 깊이 --bk-d (기본 4, .sm 작은 버튼 2)
+   호버 = 1칸 떠오르며 그림자 +1 · 누름 = 그림자만큼 내려앉고 그림자 0 · 비활성 = 그림자 없이 흐림 */
+.btn-chunky{
+  --bk-ring:var(--line); --bk-d:calc(4 * var(--u));
+  --bk-hi:color-mix(in srgb, var(--bk-ring) 45%, var(--text));   /* 윗면 1픽셀 밝은 테두리 */
+  --bk-side:color-mix(in srgb, var(--bk-ring) 38%, var(--bg));    /* 두께(옆면): 버튼 색의 어두운 톤 — 검은 그림자는 어두운 배경에 묻힌다 */
+  box-shadow:0 0 0 calc(2 * var(--u)) var(--bk-ring),inset 0 calc(1 * var(--u)) 0 var(--bk-hi),
+    var(--bk-d) var(--bk-d) 0 calc(2 * var(--u)) var(--bk-side),calc(var(--bk-d) + var(--u)) calc(var(--bk-d) + var(--u)) 0 calc(2 * var(--u)) #000;
+  transform:none;transition:none;
+}
+.btn-chunky.sm{--bk-d:calc(2 * var(--u));}
+.btn-chunky:hover:not(:disabled){
+  transform:translate(calc(-1 * var(--u)),calc(-1 * var(--u)));
+  box-shadow:0 0 0 calc(2 * var(--u)) var(--bk-ring),inset 0 calc(1 * var(--u)) 0 var(--bk-hi),
+    calc(var(--bk-d) + var(--u)) calc(var(--bk-d) + var(--u)) 0 calc(2 * var(--u)) var(--bk-side),calc(var(--bk-d) + calc(2 * var(--u))) calc(var(--bk-d) + calc(2 * var(--u))) 0 calc(2 * var(--u)) #000;
+}
+.btn-chunky:active:not(:disabled){transform:translate(var(--bk-d),var(--bk-d));box-shadow:0 0 0 calc(2 * var(--u)) var(--bk-ring),inset 0 calc(1 * var(--u)) 0 #000;}
+.btn-chunky:disabled{transform:none;opacity:.5;cursor:not-allowed;box-shadow:0 0 0 calc(2 * var(--u)) var(--bk-ring);}
+/* 숨쉬기: 누를 수 있는 중요 버튼(장 시작 · 정산 ▶ 다음 날) — 1.5초 주기 밝기, 흔들림 끔·동작 줄이기면 정지 */
+.btn-chunky.breathe:not(:disabled){animation:bkBreathe 1.5s steps(6) infinite;}
+@keyframes bkBreathe{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
+body.no-motion .btn-chunky.breathe{animation:none;}
+@media (prefers-reduced-motion: reduce){.btn-chunky.breathe{animation:none;}}
+
+/* 패널 틀 3종: 기본 .px-panel(얇은 틀, 강조색 --pc로 바꿀 수 있음) · 강조 .px-panel-gold(보상·정산) · 위험 .px-panel-red(반대매매 경고) */
+.px-panel{--pc:var(--line);background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--pc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.px-panel-gold,.px-panel-red{background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--pc),0 0 0 calc(4 * var(--u)) #000,calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
+.px-panel-gold{--pc:var(--gold2);}
+.px-panel-red{--pc:var(--red2);}
+/* 명찰: 패널 왼쪽 위에 걸친 제목 띠 (relative로 2칸 내려 아래 패널 테두리에 겹친다 — 흐름은 그대로) */
+.px-tag{display:inline-block;position:relative;top:calc(3 * var(--u));z-index:3;padding:calc(3 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u));
+  font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.3;color:var(--bg);background:var(--gold2);text-shadow:none;white-space:nowrap;
+  box-shadow:0 0 0 calc(2 * var(--u)) #000,calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.px-tag::before{content:'';display:inline-block;width:calc(4 * var(--u));height:calc(4 * var(--u));margin-right:calc(6 * var(--u));vertical-align:middle;background:var(--bg);}   /* 명찰 구멍 */
+
+/* 구역 배경 무늬 (대비 아주 낮게, hard-stop만): 손패 = 초록 펠트 점 · 시장 = 모니터 격자 · 포지션 = 장부 줄 · 암시장 = 보라 벨벳 체크(#screen-shop::after) */
+.tx-felt{background-color:color-mix(in srgb, var(--green-dim) 28%, var(--bg));
+  background-image:conic-gradient(from 0deg at calc(1 * var(--u)) calc(1 * var(--u)), transparent 75%, color-mix(in srgb, var(--green) 10%, transparent) 0);
+  background-size:calc(4 * var(--u)) calc(4 * var(--u));}
+.tx-grid{background-image:linear-gradient(0deg, color-mix(in srgb, var(--cyan) 6%, transparent) calc(1 * var(--u)), transparent 0),
+  linear-gradient(90deg, color-mix(in srgb, var(--cyan) 6%, transparent) calc(1 * var(--u)), transparent 0);
+  background-size:calc(12 * var(--u)) calc(12 * var(--u));}
+.tx-ledger{background-color:var(--bg);background-attachment:local;
+  background-image:linear-gradient(90deg, transparent calc(9 * var(--u)), color-mix(in srgb, var(--red) 25%, transparent) 0 calc(10 * var(--u)), transparent 0),
+  repeating-linear-gradient(180deg, transparent 0 calc(13 * var(--u)), color-mix(in srgb, var(--text) 7%, transparent) calc(13 * var(--u)) calc(14 * var(--u)));}
+
 *{box-sizing:border-box; image-rendering:pixelated;}
 html,body{
   margin:0;padding:0;
@@ -254,8 +302,8 @@ body::after{
 .t-links a[hidden]{display:none;}
 .t-icons{display:flex;gap:calc(10 * var(--u));}
 .t-icon{width:calc(44 * var(--u));height:calc(44 * var(--u));border:none;cursor:pointer;background:rgba(2,4,10,.8);color:var(--cyan);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1;}
-.t-icon:hover,.t-icon.sel{box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;color:var(--text);}
+  font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1;}
+.t-icon:hover,.t-icon.sel{--bk-ring:var(--cyan);color:var(--text);}
 .t-press{position:absolute;left:0;right:0;bottom:calc(52 * var(--u));text-align:center;z-index:2;
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);animation:blink 1.1s step-end infinite;}
 .t-press[hidden]{display:none;}
@@ -332,8 +380,8 @@ body::after{
 .news-row{display:flex;align-items:stretch;gap:calc(6 * var(--u));margin-bottom:calc(10 * var(--u));}
 .news-row .news-banner{flex:1;min-width:0;margin:0;}
 .news-next{flex:none;border:none;cursor:help;background:#000;color:var(--cyan);padding:0 calc(8 * var(--u));
-  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);white-space:nowrap;}
-.news-next:hover{box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan);}
+  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);white-space:nowrap;}
+.news-next:hover{--bk-ring:var(--cyan);}
 .news-next[hidden]{display:none;}
 /* 차트 제목 옆 장세 뱃지 (평상시 숨김) */
 .chart-header .state-badge{margin-left:calc(6 * var(--u));padding:0 calc(5 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);text-shadow:none;color:#000;vertical-align:middle;}
@@ -343,8 +391,6 @@ body::after{
 .chart-header .state-badge[hidden]{display:none;}
 
 .balance-main{
-  background:var(--panel);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),0 0 0 calc(4 * var(--u)) #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;
   padding:calc(10 * var(--u));text-align:center;margin-bottom:calc(10 * var(--u));
 }
 .balance-main .label{
@@ -361,8 +407,6 @@ body::after{
   display:grid;grid-template-columns:1fr;gap:calc(8 * var(--u));margin-bottom:calc(10 * var(--u));
 }
 .asset-card{
-  background:var(--panel);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
   padding:calc(8 * var(--u));text-align:center;
 }
 .asset-card .label{
@@ -398,7 +442,7 @@ body::after{
 .chart-back{
   position:absolute;top:calc(5 * var(--u));right:calc(8 * var(--u));z-index:10;border:none;cursor:pointer;
   background:#000;color:var(--cyan);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);padding:calc(4 * var(--u)) calc(6 * var(--u));
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
+  --bk-ring:var(--cyan);
 }
 .chart-back:hover{background:var(--panel2);}
 .chart-back[hidden]{display:none;}
@@ -436,14 +480,16 @@ body::after{
 .hand.g4 .card.gcard:not(.t-stock) .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);}
 /* 추천: 지금 쓰면 오늘 예상 정산 배수가 오르는 카드 (previewSettlement 비교) */
 .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite;}
+.hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite,handIdle 3.2s step-end infinite;}
+body.no-motion .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite;}
 @keyframes boostGlow{0%,100%{box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold2);}50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(5 * var(--u)) var(--gold);}}
 @media (prefers-reduced-motion: reduce){.card.gcard.boost:not(.disabled){animation:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold);}}
 /* 차트 크게 보기 (게임은 계속 진행 — 오버레이가 아니라 떠 있는 창) */
 .chart-zoom{position:fixed;left:15vw;top:12vh;width:70vw;height:76vh;z-index:70;background:var(--bg);display:flex;flex-direction:column;gap:calc(6 * var(--u));padding:calc(10 * var(--u));box-shadow:0 0 0 calc(3 * var(--u)) var(--cyan), calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
 .chart-zoom[hidden]{display:none;}
 .cz-tabs{display:flex;flex-wrap:wrap;gap:calc(4 * var(--u));align-items:center;}
-.cz-tabs button{border:none;cursor:pointer;background:var(--panel2);color:var(--text2);padding:calc(4 * var(--u)) calc(8 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
-.cz-tabs button.on{color:var(--bg);background:var(--cyan);}
+.cz-tabs button{border:none;cursor:pointer;background:var(--panel2);color:var(--text2);padding:calc(4 * var(--u)) calc(8 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
+.cz-tabs button.on{color:var(--bg);background:var(--cyan);--bk-ring:var(--cyan);}
 .cz-tabs .cz-close{margin-left:auto;color:var(--text);}
 .cz-head{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);color:var(--text);}
 .chart-zoom canvas{flex:1;min-height:0;width:100%;background:#000;}
@@ -452,10 +498,10 @@ body::after{
 .guide{text-align:left;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.7;color:var(--text2);display:flex;flex-direction:column;gap:calc(6 * var(--u));max-width:calc(560 * var(--u));}
 .guide b{color:var(--text);font-weight:normal;} .guide .s-rev{color:var(--cyan);}
 .guide-row{display:flex;align-items:center;gap:calc(8 * var(--u));}
-.speed-btns{display:flex;gap:calc(3 * var(--u));}
+.speed-btns{display:flex;gap:calc(5 * var(--u));}
 .hud{flex-wrap:wrap;row-gap:calc(4 * var(--u));}   /* 좁은 화면: 배속 버튼이 다음 줄로 (잘리지 않게) */
-.speed-btns button{border:none;cursor:pointer;background:var(--panel2);color:var(--text2);padding:calc(2 * var(--u)) calc(5 * var(--u));font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);box-shadow:0 0 0 calc(1 * var(--u)) var(--line);}
-.speed-btns button.on{background:var(--gold);color:var(--bg);}
+.speed-btns button{border:none;cursor:pointer;background:var(--panel2);color:var(--text2);padding:calc(2 * var(--u)) calc(5 * var(--u));font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);}
+.speed-btns button.on{background:var(--gold);color:var(--bg);--bk-ring:var(--gold2);}
 /* 강화판(+): 안쪽 테두리 금색 + 이름 금색 · 빌드 태그 아이콘 */
 .card.up{--cc:var(--gold);}
 .card.up .g-name,.card.up .sym{color:var(--gold);}
@@ -467,7 +513,7 @@ body::after{
 .amt-row input[type=range]{flex:1;min-width:calc(160 * var(--u));accent-color:var(--gold);}
 .amt-row input[type=number]{width:calc(120 * var(--u));padding:calc(6 * var(--u));background:#000;color:var(--gold);border:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);
   font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);}
-.amt-q{border:none;cursor:pointer;padding:calc(6 * var(--u)) calc(10 * var(--u));background:var(--panel2);color:var(--cyan);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
+.amt-q{border:none;cursor:pointer;padding:calc(6 * var(--u)) calc(10 * var(--u));background:var(--panel2);color:var(--cyan);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
 .amt-q:hover{box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan);}
 .amt-info{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.7;color:var(--text2);}
 .amt-info b{color:var(--gold);font-weight:normal;}
@@ -493,7 +539,7 @@ body::after{
 }
 .card:hover{
   background:var(--panel);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),0 0 0 calc(4 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;
+  box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),0 0 0 calc(4 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;   /* 등급 색 테두리 발광 (픽셀 링) */
   transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));
 }
 .card:active{transform:translate(calc(2 * var(--u)),calc(2 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;}
@@ -526,14 +572,14 @@ body::after{
 .c-ap{background:var(--cc);color:#000;padding:calc(2 * var(--u)) calc(4 * var(--u));font-size:var(--fs-p1);font-family:'Press Start 2P',var(--gp-p1),monospace;}
 .c-type{color:var(--cc);font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;}
 .card .sym{font-size:var(--fs-sm);font-family:var(--gf-sm),monospace;line-height:1.5;color:var(--text);text-align:center;text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;}
-.c-cost{font-size:var(--fs-p1);font-family:'Press Start 2P',var(--gp-p1),monospace;color:var(--gold);text-align:center;}
-.c-price{font-size:var(--fs-p1);font-family:'Press Start 2P',var(--gp-p1),monospace;color:var(--cyan);text-align:center;}
+.c-cost{font-size:var(--fs-v1);font-family:'VT323',var(--gv-v1),monospace;line-height:1;color:var(--gold);text-align:center;}   /* 숫자 = VT323 */
+.c-price{font-size:var(--fs-v1);font-family:'VT323',var(--gv-v1),monospace;line-height:1;color:var(--cyan);text-align:center;}
 .c-desc{flex:1;overflow:hidden;font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.1;padding-top:calc(1 * var(--u));color:var(--text2);text-align:center;}
 .c-desc.clamped{display:-webkit-box;-webkit-box-orient:vertical;flex:1 1 0;}   /* 넘치는 설명: 첫 문장만 (전문은 툴팁) */
 .card[data-clamp="1"] .c-foot > span:first-child::before{content:'ⓘ ';color:var(--cyan);}
 .card-tip{
   position:fixed;z-index:97;max-width:calc(240 * var(--u));padding:calc(8 * var(--u)) calc(10 * var(--u));pointer-events:none;
-  background:#000;color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;
+  color:var(--text);--pc:var(--cyan);
   font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.2;
 }
 .card-tip b{display:block;margin-bottom:calc(4 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;color:var(--gold);font-weight:normal;}
@@ -556,9 +602,9 @@ body::after{
 .coll-filter{display:flex;flex-wrap:wrap;gap:calc(6 * var(--u));margin:calc(10 * var(--u)) 0 calc(4 * var(--u));}
 .coll-filter button{
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);padding:calc(6 * var(--u)) calc(8 * var(--u));cursor:pointer;
-  background:#000;color:var(--muted);border:0;box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
+  background:#000;color:var(--muted);border:0;
 }
-.coll-filter button.on{color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.coll-filter button.on{color:var(--text);--bk-ring:var(--gold);}
 
 .card.disabled{opacity:.35;cursor:not-allowed;}
 .card.disabled:hover{background:var(--panel2);transform:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),0 0 0 calc(4 * var(--u)) var(--rc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
@@ -566,6 +612,20 @@ body::after{
   background:var(--panel);transform:translate(calc(-2 * var(--u)),calc(-5 * var(--u)));
   box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) #000,calc(5 * var(--u)) calc(7 * var(--u)) 0 #000;
 }
+/* 카드 기울기 (JS tiltFrame이 마우스 위치로 --rx·--ry·--sx만 바꾼다 — transform 하나라 레이아웃 재계산 없음).
+   손패·보상·암시장 카드, 선택 가능한 카드만. 희귀 이상은 반짝이 한 줄이 기울기 반대로 지나간다 (hard-stop 띠) */
+.card.tilt{z-index:2;transform:perspective(calc(520 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.05);}
+.card.tilt:active{transform:perspective(calc(520 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1);}
+.card.tilt.r-rare,.card.tilt.r-legendary,.card.tilt.r-mythic{
+  background-image:linear-gradient(105deg, transparent calc(var(--sx, 50%) - 4%), color-mix(in srgb, var(--rc) 24%, transparent) 0 calc(var(--sx, 50%) + 4%), transparent 0);}
+/* 손패가 가만히 있을 때 아주 작게 위아래로 (카드마다 시차, translate라 기울기 transform과 겹쳐도 된다). 흔들림 끔·동작 줄이기면 정지 */
+.hand .card.gcard{animation:handIdle 3.2s step-end infinite;}
+.hand .card.gcard:nth-child(3n+2){animation-delay:-1.1s;}
+.hand .card.gcard:nth-child(3n){animation-delay:-2.2s;}
+.hand .card.gcard:nth-child(n+4):nth-child(-n+6){animation-duration:3.6s;}
+@keyframes handIdle{0%,100%{translate:0 0;}25%,75%{translate:0 calc(-1 * var(--u));}50%{translate:0 calc(-2 * var(--u));}}
+body.no-motion .hand .card.gcard{animation:none;}
+@media (prefers-reduced-motion: reduce){.hand .card.gcard{animation:none;} .hand .card.gcard.boost:not(.disabled){animation:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold);}}
 
 .positions-wrap{
   display:flex;flex-direction:column;gap:calc(6 * var(--u));
@@ -575,8 +635,6 @@ body::after{
 .positions-wrap::-webkit-scrollbar-thumb{background:var(--muted);}
 
 .pos-item{
-  background:var(--panel);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
   padding:calc(4 * var(--u)) calc(8 * var(--u));flex:none;
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);
 }
@@ -608,36 +666,24 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 
 .sell-btn{
   background:var(--red-dim);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
+  --bk-ring:var(--red2);
   color:var(--text);
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);
   padding:calc(4 * var(--u)) calc(7 * var(--u));cursor:pointer;
   border:none;margin-left:calc(8 * var(--u));
-  border-radius:0;
 }
-.sell-btn:hover{background:var(--red2);transform:translate(calc(-1 * var(--u)),calc(-1 * var(--u)));}
-.sell-btn:active{transform:translate(calc(1 * var(--u)),calc(1 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;}
+.sell-btn:hover:not(:disabled){background:var(--red2);}
 
 .sell-all-btn{
   width:100%;padding:calc(14 * var(--u));
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);
   background:var(--red-dim);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--red),0 0 0 calc(4 * var(--u)) #000,calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;
+  --bk-ring:var(--red);
   color:var(--gold);border:none;
   cursor:pointer;letter-spacing:.05em;
   text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #5c0010;
-  border-radius:0;
-  transition:none;
 }
-.sell-all-btn:hover{
-  background:var(--red2);
-  transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--red),0 0 0 calc(4 * var(--u)) #000,calc(7 * var(--u)) calc(7 * var(--u)) 0 #000;
-}
-.sell-all-btn:active{
-  transform:translate(calc(3 * var(--u)),calc(3 * var(--u)));
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
-}
+.sell-all-btn:hover:not(:disabled){background:var(--red2);}
 
 .popnum{
   position:absolute;
@@ -675,7 +721,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   margin-bottom:calc(4 * var(--u));
 }
 .shop-sub{
-  font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);
+  font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.4;   /* 라벨 = Galmuri */
   color:var(--muted);margin-bottom:calc(16 * var(--u));
 }
 .section-label{
@@ -738,8 +784,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .rl-kind.xmult,.rl-kind.mult{background:var(--gold);} .rl-kind.copy{background:var(--text2);}
 .relic-tip .rt-move{display:flex;gap:calc(6 * var(--u));margin-top:calc(6 * var(--u));flex-wrap:wrap;align-items:center;}
 .relic-tip .rt-move button{border:none;cursor:pointer;padding:calc(4 * var(--u)) calc(8 * var(--u));background:var(--panel2);color:var(--cyan);
-  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
-.relic-tip .rt-move button:disabled{opacity:.35;cursor:not-allowed;}
+  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
 .relic-tip .rt-move span{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);}
 /* 유물 교체 오버레이 · 암시장 보유 유물 */
 .swap-new{display:flex;justify-content:center;margin:calc(4 * var(--u)) 0 calc(10 * var(--u));}
@@ -748,10 +793,10 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .rt-slot{font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--muted);}
 .own-relic-btns{display:flex;gap:calc(6 * var(--u));flex-wrap:wrap;justify-content:center;}
 .own-relic-btns .buy-btn{min-width:0;}
-.buy-btn.sell{background:var(--red-dim);color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.buy-btn.sell{background:var(--red-dim);color:var(--gold);--bk-ring:var(--red2);}
 .buy-btn.sell.armed{background:var(--red);color:#000;}
 .relic-tip{
-  margin:0 0 calc(8 * var(--u));padding:calc(8 * var(--u)) calc(10 * var(--u));background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
+  margin:0 0 calc(8 * var(--u));padding:calc(8 * var(--u)) calc(10 * var(--u));--pc:var(--gold2);
   font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.2;color:var(--text);
 }
 .relic-tip b{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);font-weight:normal;color:var(--gold);}
@@ -781,18 +826,18 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .shop-locked small{display:block;margin-top:calc(10 * var(--u));font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);}
 .shop-bar{
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:calc(10 * var(--u));
-  padding:calc(10 * var(--u)) calc(12 * var(--u));background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--purple),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
+  padding:calc(10 * var(--u)) calc(12 * var(--u));--pc:var(--purple);
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:2;color:var(--muted);
 }
 .shop-bar b{color:var(--gold);font-weight:normal;}
-.slush-amt{color:var(--gold);font-weight:normal;}
+.slush-amt{color:var(--gold);font-weight:normal;font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1;}
 .slush-line{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);margin-top:calc(6 * var(--u));white-space:nowrap;cursor:help;}
 #shopSlush{font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);vertical-align:-0.1em;}   /* 비자금은 암시장·결산에서만 크게 */
 /* (N2) 순자산 상자: 호버·포커스하면 빌린 돈·확정손익·낸 이자 */
 .balance-main{position:relative;cursor:help;}
 .bal-more{color:var(--cyan);}
 .bal-tip{display:none;position:absolute;z-index:40;left:0;right:0;top:calc(100% + calc(8 * var(--u)));padding:calc(8 * var(--u)) calc(10 * var(--u));text-align:left;
-  background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;
+  --pc:var(--cyan);
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.8;color:var(--muted);}
 .bal-tip div{display:flex;justify-content:space-between;align-items:baseline;gap:calc(10 * var(--u));white-space:nowrap;}
 .bal-tip b{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);font-weight:normal;color:var(--text);}
@@ -813,17 +858,17 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .rm-next.rm-up{animation:rmUp .6s steps(6);}
 @keyframes rmUp{0%,50%{color:var(--red);text-shadow:0 0 0 var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--red-dim);}}
 .rm-ladder span{color:var(--muted);} .rm-ladder span.now{color:var(--gold);}
-.pack .pk-price{color:var(--gold);font-size:var(--fs-p1);font-family:'Press Start 2P',var(--gp-p1),monospace;}
+.pack .pk-price{color:var(--gold);font-size:var(--fs-v2);font-family:'VT323',var(--gv-v2),monospace;line-height:1;}
 .pack .pk-odds{display:flex;flex-wrap:wrap;justify-content:center;gap:calc(4 * var(--u)) calc(8 * var(--u));font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;color:var(--muted);}
 .pack .pk-desc{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);color:var(--muted);}
 .pack.disabled,.pack:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 .pack-col{position:relative;}
 .pk-info{   /* 팩 구성 보기 (구매와 별개) */
   position:absolute;top:calc(-7 * var(--u));right:calc(-7 * var(--u));z-index:2;width:calc(22 * var(--u));height:calc(22 * var(--u));padding:calc(2 * var(--u)) 0 0;border:none;cursor:pointer;
-  background:#000;color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
+  background:#000;color:var(--cyan);--bk-ring:var(--cyan);
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1;
 }
-.pk-info:hover{transform:scale(1.25);box-shadow:0 0 0 calc(2 * var(--u)) var(--text),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;color:var(--text);}
+.pk-info:hover{--bk-ring:var(--text);color:var(--text);}
 /* 팩 구성 팝업 */
 .pki-head{display:flex;align-items:center;gap:calc(10 * var(--u));text-align:left;margin-bottom:calc(10 * var(--u));}
 .pki-head .pk-icon{font-size:var(--fs-v4);font-family:'VT323',var(--gv-v4),monospace;line-height:1;}
@@ -848,15 +893,14 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .pki-card.out .odds{color:var(--muted);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);text-align:center;}
 .pki-btns{position:sticky;bottom:calc(-18 * var(--u));display:flex;gap:calc(8 * var(--u));margin:calc(14 * var(--u)) calc(-18 * var(--u)) calc(-18 * var(--u));padding:calc(8 * var(--u)) calc(18 * var(--u)) calc(14 * var(--u));background:var(--panel);box-shadow:0 calc(-2 * var(--u)) 0 var(--line);}
 .pki-btns .ov-btn{margin-top:0;}
-.pki-btns .ov-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 .deck-list.shop-singles,.deck-list.shop-remove{justify-content:flex-start;max-height:none;overflow:visible;}
 .shop-item{display:flex;flex-direction:column;align-items:center;gap:calc(10 * var(--u));}
 .buy-btn{
   border:none;cursor:pointer;padding:calc(7 * var(--u)) calc(10 * var(--u));min-width:calc(108 * var(--u));
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);background:var(--green-dim);color:var(--green);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
+  --bk-ring:var(--green2);
 }
-.buy-btn:disabled{background:var(--panel);color:var(--muted);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);cursor:not-allowed;}
+.buy-btn:disabled{background:var(--panel);color:var(--muted);--bk-ring:var(--line);}
 .shop-remove .card[data-shop-remove]{cursor:pointer;}
 .shop-remove .card.picked{transform:translate(calc(-2 * var(--u)),calc(-5 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--red),0 0 0 calc(4 * var(--u)) #000,calc(5 * var(--u)) calc(7 * var(--u)) 0 #000;}
 .shop-remove-btn{max-width:calc(360 * var(--u));}
@@ -879,10 +923,9 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .reroll-box{display:flex;align-items:center;gap:calc(8 * var(--u));flex-wrap:wrap;}
 .reroll-btn{
   border:none;cursor:pointer;padding:calc(6 * var(--u)) calc(9 * var(--u)) calc(5 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;
-  background:#000;color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
+  background:#000;color:var(--cyan);--bk-ring:var(--cyan);
 }
-.reroll-btn:hover:not(:disabled){transform:translate(calc(-1 * var(--u)),calc(-1 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--text),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
-.reroll-btn:disabled{opacity:.4;cursor:not-allowed;}
+.reroll-btn:hover:not(:disabled){--bk-ring:var(--text);}
 .reroll-btn b{display:inline-block;color:var(--gold);font-weight:normal;}
 .reroll-next{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);color:var(--muted);}
 .rr-out{animation:rrOut .22s steps(4) forwards;}
@@ -896,9 +939,10 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 #screen-shop{position:relative;isolation:isolate;}
 #screen-shop::before,#screen-shop::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;}
 #screen-shop::before{background:var(--purple);opacity:.07;}
-#screen-shop::after{opacity:.22;background-image:radial-gradient(var(--purple) calc(1 * var(--u)),transparent calc(1.6 * var(--u)));
-  background-size:calc(26 * var(--u)) calc(26 * var(--u));animation:hazeDrift 14s steps(28) infinite;}
-@keyframes hazeDrift{from{background-position:0 0;}to{background-position:calc(26 * var(--u)) calc(-52 * var(--u));}}
+#screen-shop::after{opacity:.09;   /* 보라 벨벳 체크 (hard-stop 체커보드) — 안개처럼 천천히 흐른다 */
+  background-image:conic-gradient(var(--purple) 25%, transparent 0 50%, var(--purple) 0 75%, transparent 0);
+  background-size:calc(16 * var(--u)) calc(16 * var(--u));animation:hazeDrift 14s steps(28) infinite;}
+@keyframes hazeDrift{from{background-position:0 0;}to{background-position:calc(32 * var(--u)) calc(-64 * var(--u));}}
 #screen-shop.haze-in #shopBox{animation:hazeIn 1.2s steps(8) both;}
 @keyframes hazeIn{0%{filter:saturate(.1) brightness(.6);}100%{filter:none;}}
 /* 호버: 진열된 카드가 둥실, 팩·유물은 아이콘만 (누르는 자리가 움직이지 않게) */
@@ -930,8 +974,6 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 
 .phone-noti{
   width:100%;max-width:calc(360 * var(--u));
-  background:var(--panel);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),0 0 0 calc(4 * var(--u)) #000,calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;
   padding:calc(18 * var(--u));
 }
 .noti-headline{
@@ -945,9 +987,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 }
 .choice{
   display:block;width:100%;text-align:left;border:none;color:var(--text);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
   padding:calc(11 * var(--u)) calc(13 * var(--u));margin-bottom:calc(10 * var(--u));cursor:pointer;
-  background:var(--panel2);
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);
   transition:none;
 }
@@ -1027,6 +1067,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);
 }
 .target-track{height:calc(6 * var(--u));background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--line);margin-top:calc(6 * var(--u));}
+#targetPct{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:.8;color:var(--text2);}
 .target-fill{height:100%;width:0;background:var(--gold2);}
 .target-fill.done{background:var(--green);}
 
@@ -1034,7 +1075,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .quote-row{
   display:grid;grid-template-columns:1fr calc(64 * var(--u)) calc(62 * var(--u)) calc(50 * var(--u));align-items:center;gap:calc(6 * var(--u));
   background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);
-  padding:calc(5 * var(--u)) calc(8 * var(--u));font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);
+  padding:calc(5 * var(--u)) calc(8 * var(--u));font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1;   /* 가격·등락 = VT323 */
 }
 .q-name{font-size:var(--fs-sm);font-family:var(--gf-sm),monospace;color:var(--text);}
 .quote-row canvas{width:calc(64 * var(--u));height:calc(18 * var(--u));display:block;image-rendering:pixelated;}
@@ -1071,7 +1112,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .ap-pips{display:flex;gap:calc(4 * var(--u));}
 .ap-pip{width:calc(10 * var(--u));height:calc(10 * var(--u));background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 .ap-pip.on{background:var(--gold);}
-.ap-text{color:var(--gold);}
+.ap-text{color:var(--gold);font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1;}
 .mult-preview{display:inline-block;padding:0 calc(6 * var(--u));white-space:nowrap;cursor:help;
   font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.1;color:var(--gold);
   box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
@@ -1080,9 +1121,8 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .deck-btn,.back-btn{
   border:none;cursor:pointer;background:var(--panel);color:var(--cyan);
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);padding:calc(5 * var(--u)) calc(7 * var(--u));white-space:nowrap;flex:none;
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
 }
-.deck-btn:hover,.back-btn:hover{box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.deck-btn:hover,.back-btn:hover{--bk-ring:var(--cyan);}
 
 .chips{display:flex;flex-wrap:wrap;gap:calc(6 * var(--u));margin-bottom:calc(8 * var(--u));}
 .chips:empty{display:none;}
@@ -1103,13 +1143,9 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   width:100%;padding:calc(13 * var(--u));margin:calc(4 * var(--u)) 0 calc(6 * var(--u));border:none;cursor:pointer;
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);letter-spacing:.05em;
   background:var(--green-dim);color:var(--green);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) #000,calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;
+  --bk-ring:var(--green);
 }
-.open-btn:hover{transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) #000,calc(7 * var(--u)) calc(7 * var(--u)) 0 #000;}
-.open-btn:disabled{
-  cursor:default;transform:none;background:var(--panel);color:var(--muted);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--line),0 0 0 calc(4 * var(--u)) #000,calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
-}
+.open-btn:disabled{cursor:default;background:var(--panel);color:var(--muted);--bk-ring:var(--line);}
 
 /* 포지션 배지 · 예약주문 태그 */
 .lev-badge{font-size:var(--fs-p1);font-family:'Press Start 2P',var(--gp-p1),monospace;padding:calc(1 * var(--u)) calc(3 * var(--u));margin-left:calc(5 * var(--u));background:var(--gold2);color:#000;vertical-align:middle;}
@@ -1117,7 +1153,6 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .lev-badge.short{background:var(--red2);color:var(--text);}
 .o-ic.stop{color:var(--red);} .o-ic.take{color:var(--green);} .o-ic.trail,.o-ic.hodl{color:var(--cyan);} .o-ic.diamond{color:var(--gold);}
 .positions-wrap{max-height:calc(240 * var(--u));}
-.sell-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
 
 .toast-layer{
   position:fixed;top:calc(48 * var(--u));left:50%;transform:translateX(-50%);z-index:95;
@@ -1141,8 +1176,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .overlay.show{display:flex;}
 .overlay-box{
   width:100%;max-width:calc(440 * var(--u));max-height:92vh;overflow-y:auto;
-  background:var(--panel);text-align:center;padding:calc(18 * var(--u));
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),0 0 0 calc(4 * var(--u)) #000,calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;
+  text-align:center;padding:calc(18 * var(--u));
 }
 .ov-title{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.6;margin-bottom:calc(8 * var(--u));}
 .ov-sub{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);color:var(--text);margin-bottom:calc(14 * var(--u));line-height:1.3;}
@@ -1156,11 +1190,11 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   width:100%;padding:calc(12 * var(--u));margin-top:calc(8 * var(--u));border:none;cursor:pointer;
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);
   background:var(--green-dim);color:var(--green);
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;
+  --bk-ring:var(--green2);
 }
-.ov-btn:hover{transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));}
-.ov-btn.alt{background:var(--panel2);color:var(--muted);box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
-.ov-btn.warn{background:var(--red-dim);color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
+.ov-btn.alt{background:var(--panel2);color:var(--muted);--bk-ring:var(--line);}
+.ov-btn.alt:hover:not(:disabled){color:var(--text);}
+.ov-btn.warn{background:var(--red-dim);color:var(--red);--bk-ring:var(--red2);}
 
 /* 라운드 결과 · 게임오버 */
 .result-kicker{font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--muted);margin-bottom:calc(6 * var(--u));}
@@ -1256,7 +1290,6 @@ body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stag
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);
 }
 .ending-cause{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);color:var(--muted);margin-bottom:calc(6 * var(--u));}
-.ov-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
 .ov-cards,.deck-list{display:flex;flex-wrap:wrap;gap:calc(12 * var(--u));justify-content:center;padding:calc(6 * var(--u)) calc(4 * var(--u)) calc(12 * var(--u));}
 .deck-list{max-height:46vh;overflow-y:auto;}
 .pile-title{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--gold);text-align:left;margin:calc(10 * var(--u)) 0 calc(6 * var(--u));}
@@ -1273,16 +1306,16 @@ body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stag
 #screen-settings{padding:calc(18 * var(--u)) calc(14 * var(--u)) calc(28 * var(--u));}
 .set-list{display:flex;flex-direction:column;gap:calc(10 * var(--u));max-width:calc(760 * var(--u));padding:calc(6 * var(--u)) calc(4 * var(--u)) calc(12 * var(--u));}
 .set-row{display:flex;justify-content:space-between;align-items:center;gap:calc(14 * var(--u));flex-wrap:wrap;
-  background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;padding:calc(10 * var(--u)) calc(12 * var(--u));}
+  padding:calc(10 * var(--u)) calc(12 * var(--u));}
 .set-row .sr-label{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text);line-height:1.6;}
-.set-row .sr-desc{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);color:var(--muted);margin-top:calc(3 * var(--u));}
+.set-row .sr-desc{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.5;color:var(--muted);margin-top:calc(3 * var(--u));}
 .set-row.disabled .sr-label,.set-row.disabled .sr-desc{color:var(--muted);}
 .seg{display:flex;gap:calc(6 * var(--u));flex-wrap:wrap;}
 .seg button{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);padding:calc(8 * var(--u)) calc(10 * var(--u));cursor:pointer;
-  background:var(--bg);color:var(--muted);border:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
-.seg button.on{color:var(--bg);background:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+  background:var(--bg);color:var(--muted);border:none;}
+.seg button.on{color:var(--bg);background:var(--gold);--bk-ring:var(--gold2);}
 .seg button:disabled{cursor:not-allowed;}
-.set-danger{color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.set-danger{color:var(--red);--bk-ring:var(--red2);}
 .set-danger.armed{color:var(--bg);background:var(--red);}
 /* CRT 강도·배경 연출 (body 속성으로 전환) */
 body[data-crt="weak"]::before{opacity:.5;}
@@ -1494,9 +1527,9 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .boss-chip{white-space:nowrap;padding:calc(2 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;
   color:var(--red);background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--red2);cursor:help;}
 .boss-chip.final{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
-.boss-notice{margin:calc(10 * var(--u)) 0;padding:calc(8 * var(--u)) calc(10 * var(--u));text-align:left;background:#000;
-  box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;}
-.boss-notice.final{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
+.boss-notice{margin:calc(10 * var(--u)) 0;padding:calc(8 * var(--u)) calc(10 * var(--u));text-align:left;
+  font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;}
+.boss-notice.final{--pc:var(--gold2);}
 .boss-notice .bn-lead{color:var(--red);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
 .boss-notice.final .bn-lead{color:var(--gold);}
 .boss-notice .bn-name{color:var(--text);font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.5;}
@@ -1541,11 +1574,11 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 /* ── TR룸 메뉴 (≡): 탭 대신. 타이틀로 · 찌라시 기록 · 덱 확인 · 환경 설정 ── */
 .menu-wrap{position:relative;grid-area:menu;align-self:stretch;display:flex;}
 .menu-btn{position:relative;min-width:calc(36 * var(--u));padding:0 calc(8 * var(--u));border:none;cursor:pointer;background:#000;color:var(--gold);
-  font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1;box-shadow:0 0 0 calc(2 * var(--u)) var(--line),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
-.menu-btn:hover,.menu-btn[aria-expanded="true"]{color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+  font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1;}
+.menu-btn:hover,.menu-btn[aria-expanded="true"]{color:var(--cyan);--bk-ring:var(--cyan);}
 .menu-dot{position:absolute;top:calc(3 * var(--u));right:calc(3 * var(--u));width:calc(7 * var(--u));height:calc(7 * var(--u));background:var(--red);box-shadow:0 0 0 calc(1 * var(--u)) #000;}
 .menu-panel{position:absolute;top:calc(100% + calc(6 * var(--u)));left:0;z-index:60;display:flex;flex-direction:column;gap:calc(4 * var(--u));
-  min-width:calc(230 * var(--u));padding:calc(6 * var(--u));background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),0 0 0 calc(4 * var(--u)) #000,calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
+  min-width:calc(230 * var(--u));padding:calc(6 * var(--u));--pc:var(--cyan);}
 .menu-panel[hidden]{display:none;}
 .menu-panel button{position:relative;text-align:left;border:none;cursor:pointer;background:var(--panel2);color:var(--text);padding:calc(8 * var(--u)) calc(10 * var(--u));
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;box-shadow:0 0 0 calc(1 * var(--u)) var(--line);}
@@ -1754,8 +1787,8 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
     <div class="t-corner">
       <div class="t-links"><a id="steamLink" target="_blank" rel="noopener" hidden>STEAM</a><a id="discordLink" target="_blank" rel="noopener" hidden>DISCORD</a></div>
       <div class="t-icons">
-        <button class="t-icon" id="titleSettingsIcon" aria-label="환경 설정" title="환경 설정">⚙</button>
-        <button class="t-icon" id="langBtn" aria-label="언어" title="언어">🌐</button>
+        <button class="btn-chunky sm t-icon" id="titleSettingsIcon" aria-label="환경 설정" title="환경 설정">⚙</button>
+        <button class="btn-chunky sm t-icon" id="langBtn" aria-label="언어" title="언어">🌐</button>
       </div>
     </div>
     <div class="t-press" id="titlePress">아무 키나 눌러 시작</div>
@@ -1771,8 +1804,8 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
     <!-- 가로 화면: 상단 HUD 바 / 왼쪽 시장 / 오른쪽 손패·포지션 (900px 이하는 세로 스택) -->
     <div class="play-top">
       <div class="menu-wrap">
-        <button class="menu-btn" id="menuBtn" aria-label="메뉴" aria-haspopup="true" aria-expanded="false">≡<i class="menu-dot" id="menuDot" hidden></i></button>
-        <div class="menu-panel" id="menuPanel" hidden>
+        <button class="btn-chunky sm menu-btn" id="menuBtn" aria-label="메뉴" aria-haspopup="true" aria-expanded="false">≡<i class="menu-dot" id="menuDot" hidden></i></button>
+        <div class="menu-panel px-panel" id="menuPanel" hidden>
           <button data-menu="title">◀ 타이틀로<small id="menuTitleNote">판은 그대로 유지됩니다 · 타이틀의 '이어하기'로 복귀</small></button>
           <button data-menu="tips">📱 찌라시 기록<i class="menu-dot" id="menuTipDot" hidden></i></button>
           <button data-menu="deck">🃏 덱 확인</button>
@@ -1797,12 +1830,12 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
         </div>
       </div>
 
-      <div class="balance-main px-corner-box" id="balanceBox" tabindex="0" aria-describedby="balTip">
+      <div class="balance-main px-panel-gold px-corner-box" id="balanceBox" tabindex="0" aria-describedby="balTip">
         <div class="label">▌ NET ASSETS · 순자산 <span class="bal-more">ⓘ</span></div>
         <div class="total" id="totalAssets">₩ 10,000만</div>
         <div class="target-line"><span id="targetText">WEEK 1 목표</span><span id="targetPct">0%</span></div>
         <div class="target-track"><div class="target-fill" id="targetFill"></div></div>
-        <div class="bal-tip" id="balTip" role="tooltip">
+        <div class="bal-tip px-panel" id="balTip" role="tooltip">
           <div>빌린 돈 (신용·대차)<b id="debtVal">₩ 0만</b></div>
           <div>확정손익 (판 누적)<b id="realizedPnL">₩ 0만</b></div>
           <div>낸 이자 (판 누적)<b id="interestVal">₩ 0만</b></div>
@@ -1811,7 +1844,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
       </div>
 
       <div class="assets-grid">
-        <div class="asset-card">
+        <div class="asset-card px-panel">
           <div class="label" id="cashLabel">■ CASH</div>
           <div class="val highlight" id="availableCash">₩ 10,000만</div>
           <div class="slush-line" title="비자금 — 암시장에서만 쓰는 돈 (순자산에 안 들어감)"><b class="slush-amt" id="slushVal">💼 0만</b></div>
@@ -1820,7 +1853,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 
     </div>
 
-    <div class="play-left">
+    <div class="play-left tx-grid">
       <div class="news-row">
       <div class="news-banner" id="newsBanner">
         <span>
@@ -1828,13 +1861,13 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
           <span id="newsText">시장이 평온한 흐름을 유지 중입니다.</span>
         </span>
       </div>
-      <button class="news-next" id="newsNextBtn" hidden>📰 내일</button>
+      <button class="btn-chunky sm news-next" id="newsNextBtn" hidden>📰 내일</button>
       </div>
 
       <!-- pixel candlestick chart (시장 지수) -->
       <div class="chart-box px-corner-box" id="chartBox">
         <div class="chart-header"><span class="ch-name" id="chartLabel">IDX</span>: <span id="marketPriceText">1000</span> <span class="ch-chg" id="chartChg"></span><span class="state-badge" id="marketStateBadge" hidden></span></div>
-        <button class="chart-back" id="chartBackBtn" hidden>◀ 지수</button>
+        <button class="btn-chunky sm chart-back" id="chartBackBtn" hidden>◀ 지수</button>
         <canvas id="candlestickChart" title="클릭 = 크게 보기"></canvas>
       </div>
       <div class="chart-zoom" id="chartZoom" hidden>
@@ -1844,7 +1877,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
       </div>
 
       <div class="section-title">
-        <span>▌ 종목 시세</span>
+        <span class="px-tag">종목 시세</span>
         <span>클릭 = 큰 차트로 보기</span>
       </div>
       <div class="quotes" id="quoteBox"></div>
@@ -1853,32 +1886,32 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 
     <div class="play-right">
       <div class="relic-bar" id="relicBar"></div>
-      <div class="relic-tip" id="relicTip" hidden></div>
+      <div class="relic-tip px-panel" id="relicTip" hidden></div>
       <div class="turn-bar">
         <span>행동력</span>
         <span class="ap-pips" id="apPips"></span>
         <span class="ap-text" id="apText">3/3</span>
         <span class="mult-preview" id="multPreview"><span class="mp-label">정산</span><span id="multText">×1.00</span></span>
         <span class="pile-text" id="pileText">덱 0 · 버림 0 · 소멸 0</span>
-        <button class="deck-btn" id="deckBtn">덱 확인</button>
+        <button class="btn-chunky sm deck-btn" id="deckBtn">덱 확인</button>
       </div>
       <div class="chips" id="chipBox"></div>
 
       <div class="section-title hand-title">
-        <span>▌ 손패</span>
+        <span class="px-tag">손패</span>
         <span id="handHint">카드를 눌러 사용</span>
       </div>
-      <div class="hand" id="handBox"></div>
+      <div class="hand px-panel tx-felt" id="handBox"></div>
 
-      <button class="open-btn" id="openBtn">▶ 장 시작</button>
+      <button class="btn-chunky breathe open-btn" id="openBtn">▶ 장 시작</button>
 
       <div class="section-title pos-title">
-        <span>▌ 보유 포지션</span>
+        <span class="px-tag">보유 포지션</span>
         <span id="marginRuleText">🧨 심지가 다 타면 반대매매</span>
       </div>
-      <div class="positions-wrap" id="positionsBox"></div>
+      <div class="positions-wrap px-panel tx-ledger" id="positionsBox"></div>
 
-      <button class="sell-all-btn" id="sellAllBtn">◆ 전량 매도 (시장가 청산)</button>
+      <button class="btn-chunky sell-all-btn" id="sellAllBtn">◆ 전량 매도 (시장가 청산)</button>
     </div>
   </section>
 
@@ -1896,7 +1929,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
         <div class="shop-title">◈ 카드 도감</div>
         <div class="shop-sub" id="collectionSub"></div>
       </div>
-      <button class="back-btn" id="collectionBack">◀ 타이틀</button>
+      <button class="btn-chunky sm back-btn" id="collectionBack">◀ 타이틀</button>
     </div>
     <div class="coll-filter" id="collectionFilter"></div>
     <div id="collectionBox"></div>
@@ -1909,7 +1942,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
         <div class="shop-title">◈ 환경 설정</div>
         <div class="shop-sub">이 브라우저에 저장됩니다. 저장이 막혀 있으면 이번 접속 동안만 적용됩니다.</div>
       </div>
-      <button class="back-btn" id="settingsBack">◀ 타이틀</button>
+      <button class="btn-chunky sm back-btn" id="settingsBack">◀ 타이틀</button>
     </div>
     <div id="settingsBox"></div>
   </section>
@@ -1921,7 +1954,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
         <div class="shop-title">◈ 파산 기록</div>
         <div class="shop-sub" id="recordsSub"></div>
       </div>
-      <button class="back-btn" id="recordsBack">◀ 타이틀</button>
+      <button class="btn-chunky sm back-btn" id="recordsBack">◀ 타이틀</button>
     </div>
     <div id="recordsBox"></div>
   </section>
@@ -1934,7 +1967,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 <div class="fx-streak" id="fxStreak"></div>
 <div class="fx-vignette" id="fxVignette"></div>
 <div class="fx-danger-edge" id="fxDangerEdge"></div>
-<div class="overlay" id="overlay"><div class="overlay-box" id="overlayBox"></div></div>
+<div class="overlay" id="overlay"><div class="overlay-box px-panel-gold" id="overlayBox"></div></div>
 
 <script src="engine.js"></script>
 <script src="assets/sfx/files.js"></script>
@@ -2326,7 +2359,7 @@ const bossDescNow = b => b.desc + (b.mods.haltTopBeta ? ` (대상: ${STOCK_BY_ID
 function bossNotice(id, lead, compact){   // 결산·보상·암시장 예고 상자
   const b = BOSS_BY_ID[id];
   if(!b) return '';
-  return `<div class="boss-notice ${b.final ? 'final' : ''} ${compact ? 'compact' : ''}" data-boss="${b.id}">
+  return `<div class="boss-notice px-panel-red ${b.final ? 'final' : ''} ${compact ? 'compact' : ''}" data-boss="${b.id}">
     <div class="bn-lead">${lead}</div><div class="bn-name">${b.icon} ${b.name} <span class="bn-kind">${bossKindLabel(b)}</span></div>
     <div class="bn-desc">${bossDescNow(b)}</div></div>`;
 }
@@ -3041,7 +3074,7 @@ function onGameEvent(type, d){
           ? `내일 하루 <b>신규 매수 금지</b><br><small>"투자주의 계좌" 지정. 보유 종목은 팔 수 있습니다.</small>`
           : `<b>${d.pos.name} ${posLabel(d.pos)}</b> 강제 청산 ${fmtSigned(d.pnl)}<br><small>보유 중 가장 큰 포지션. "증거 보전 차원입니다."</small>`}</div>
         <div class="ov-sub">감시 게이지는 0으로 돌아갑니다. 당분간 조용히 지내세요.</div>
-        <button class="ov-btn" data-act="close">…네, 알겠습니다</button>`);
+        <button class="btn-chunky ov-btn" data-act="close">…네, 알겠습니다</button>`);
       break;
     case 'roundClear':
       lastRoundClear = d;
@@ -3189,7 +3222,7 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => { fon
 /* 카드 툴팁: 설명 전문 · 행동력 · 종목 수치 · 기대값(손패). 마우스는 잠깐 올려 두면, 터치는 길게 누르면 */
 const CARD_TIP_DELAY_MS = 280, CARD_LONGPRESS_MS = 450;
 const cardTipEl = document.createElement('div');
-cardTipEl.className = 'card-tip';
+cardTipEl.className = 'card-tip px-panel';
 cardTipEl.hidden = true;
 document.body.appendChild(cardTipEl);
 let cardTipTimer = null, suppressClickUntil = 0;
@@ -3593,11 +3626,11 @@ function renderPositions(){
     box.innerHTML = run.positions.length === 0
       ? `<div class="empty-note pos-empty">── NO POSITION ──<small>장전에 종목 카드를 써서 매수하세요</small></div>`
       : run.positions.map(p => `
-        <div class="pos-item" data-id="${p.id}">
+        <div class="pos-item px-panel" data-id="${p.id}">
           <div class="p-l1">
             <span class="name">${p.name}${p.dir < 0 ? '<span class="lev-badge short">숏</span>' : ''}${p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : ''}</span>
             <span class="val" data-f="pnl"></span>
-            <button class="sell-btn" data-sell="${p.id}" ${canSell(p) ? '' : 'disabled'}>매도</button>
+            <button class="btn-chunky sm sell-btn" data-sell="${p.id}" ${canSell(p) ? '' : 'disabled'}>매도</button>
           </div>
           <div class="p-l2">
             <span class="detail" data-f="price"></span>
@@ -3614,7 +3647,9 @@ function renderPositions(){
     el.classList.toggle('targetable', targets.indexOf(p.id) >= 0);
     const fl = flameLevel(p);   // (32) 연속 상승 불꽃 · 반대매매 위험 맥동
     [1, 2, 3].forEach(k => el.classList.toggle('flame-' + k, fl === k));
-    el.classList.toggle('fx-danger', posInDanger(p));
+    const danger = posInDanger(p);
+    el.classList.toggle('fx-danger', danger);
+    el.classList.toggle('px-panel-red', danger); el.classList.toggle('px-panel', !danger);   // 반대매매 경고 = 위험 패널
     el.querySelector('[data-f=price]').textContent = `평단 ${fmtPrice(avgPrice(p))} → ${fmtPrice(assets[p.assetId].price)}`;
     const tip = `${p.name} · 원금 ₩${formatKrw(p.principal)} · 노출 ${fmtMoney(exposure(p))} · 보유 ${p.daysHeld}일`
       + (isMarginable(p) ? ` · ${marginText(p)}${isProtected(p) ? ' · 면제' : ''}` : '');
@@ -3691,8 +3726,8 @@ function renderChartZoom(){
   const sig = tabs.map(t => t[0]).join() + '|' + zoomTarget + '|' + zoomMode;
   if($('czTabs').dataset.sig !== sig){
     $('czTabs').dataset.sig = sig;
-    $('czTabs').innerHTML = [['day', '오늘'], ['daily', '일봉']].map(([m, t]) => `<button data-cz-mode="${m}" class="cz-mode ${m === zoomMode ? 'on' : ''}">${t}</button>`).join('')
-      + tabs.map(([id, name]) => `<button data-cz="${id}" class="${id === zoomTarget ? 'on' : ''}">${name}</button>`).join('') + '<button class="cz-close" data-cz-close="1">✕ 닫기 (Esc)</button>';
+    $('czTabs').innerHTML = [['day', '오늘'], ['daily', '일봉']].map(([m, t]) => `<button data-cz-mode="${m}" class="btn-chunky sm cz-mode ${m === zoomMode ? 'on' : ''}">${t}</button>`).join('')
+      + tabs.map(([id, name]) => `<button data-cz="${id}" class="btn-chunky sm ${id === zoomTarget ? 'on' : ''}">${name}</button>`).join('') + '<button class="btn-chunky sm cz-close" data-cz-close="1">✕ 닫기 (Esc)</button>';
   }
   const isIdx = zoomTarget === 'idx', a = isIdx ? null : assets[zoomTarget];
   const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
@@ -3723,7 +3758,7 @@ function renderSpeedBtns(){
   const box = $('speedBtns'), sig = String(settings.speed);
   if(box.dataset.sig === sig) return;
   box.dataset.sig = sig;
-  box.innerHTML = speedKeys().map((v, i) => `<button data-speed="${v}" class="${v === settings.speed ? 'on' : ''}" title="키 ${i + 1}">${v}×</button>`).join('');
+  box.innerHTML = speedKeys().map((v, i) => `<button data-speed="${v}" class="btn-chunky sm ${v === settings.speed ? 'on' : ''}" title="키 ${i + 1}">${v}×</button>`).join('');
 }
 $('speedBtns').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if(b) setSpeed(+b.dataset.speed); });
 
@@ -3742,7 +3777,7 @@ function showSectorLevels(){
     <div class="ov-title" style="color:var(--gold)">📊 섹터 레벨</div>
     <div class="ov-sub">리포트 카드를 쓰면 그 섹터 레벨 +1. 그 섹터 포지션이 수익으로 장 마감하면 정산 맨 앞(유물보다 먼저)에서 레벨당 <span class="n-chip">칩 +원금의 ${Math.round(SECTOR_LEVEL_CHIP_PCT * 100)}%</span> · <span class="n-mult">배수 +${SECTOR_LEVEL_MULT}</span>.</div>
     <table class="sector-table"><thead><tr><th>섹터 · 종목</th><th>레벨</th><th>지금 효과</th><th>리포트 카드</th></tr></thead><tbody>${rows}</tbody></table>
-    <button class="ov-btn" data-act="close">확인</button>`);
+    <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
 }
 /* 팩 팝업: 등급 안 가중 안내 (엔진 topTags·topSectors 그대로 — packCardOdds의 확률에 이미 들어 있다) */
 function biasNoteHtml(){
@@ -3770,7 +3805,7 @@ function showSignalGuide(){
       <p><b>📰 뉴스</b>: 전광판의 '오늘 개장' 뉴스는 <b>확정</b>이면 반드시, <b>루머 N%</b>면 개장 때 N% 확률로 사실이 됩니다. '📰 내일' 버튼은 내일 개장 뉴스 예고입니다.</p>
       <p>인버스·곱버스는 추세가 따로 없고 지수를 반대로 따라갑니다 (지수 연동).</p>
     </div>
-    <button class="ov-btn" data-act="close">확인</button>`);
+    <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
 }
 
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
@@ -3789,9 +3824,9 @@ function showReward(d){
     <div class="ov-cards">${run.rewardChoices.length
       ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
       : '<div class="empty-note">덱에 없는 카드가 더 이상 없습니다</div>'}</div>
-    <button class="ov-btn alt" data-act="upgradeMode" ${run.masterDeck.some(canUpgrade) ? '' : 'disabled'}>✦ 카드 강화 (덱의 카드 1장 → +)</button>
-    <button class="ov-btn alt" data-act="removeMode" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거 (덱 압축)</button>
-    <button class="ov-btn alt" data-act="skip">▷ 건너뛰기</button>`);
+    <button class="btn-chunky ov-btn alt" data-act="upgradeMode" ${run.masterDeck.some(canUpgrade) ? '' : 'disabled'}>✦ 카드 강화 (덱의 카드 1장 → +)</button>
+    <button class="btn-chunky ov-btn alt" data-act="removeMode" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거 (덱 압축)</button>
+    <button class="btn-chunky ov-btn alt" data-act="skip">▷ 건너뛰기</button>`);
 }
 
 /* 보상 대신 카드 강화: 덱에서 강화할 수 있는 카드 1장 (이미 +인 카드·상태 카드 제외) */
@@ -3802,7 +3837,7 @@ function showUpgradePick(){
     <div class="ov-title" style="color:var(--gold)">✦ 카드 강화</div>
     <div class="ov-sub">강화할 카드 1장을 고르세요. 강화한 카드는 이 판 끝까지 + 상태입니다. (마우스를 올리면 강화 후 효과)</div>
     <div class="deck-list">${run.masterDeck.map((id, i) => canUpgrade(id) ? cardHtml(CARD_BY_ID[id], { attrs: `data-upgrade="${i}"` }) : '').join('')}</div>
-    <button class="ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
+    <button class="btn-chunky ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
 }
 
 function showRelicReward(){
@@ -3811,7 +3846,7 @@ function showRelicReward(){
     <div class="ov-sub">아직 없는 유물 ${run.relicChoices.length}개 중 1개${run.boss ? ` (🏆 보스 격파 +${BOSS_RELIC_CHOICE_BONUS})` : ''}. 한 판 동안 상시 발동합니다. 유물 칸 ${run.relics.length}/${RELIC_SLOTS}${relicSlotsFull() ? ' — 가득 차서 하나를 교체해야 합니다' : ''}.</div>
     ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스', true) : ''}
     <div class="ov-cards">${run.relicChoices.map(id => relicTile(RELIC_BY_ID[id], { attrs: `data-relic-reward="${id}"` })).join('')}</div>
-    <button class="ov-btn alt" data-act="skipRelic">▷ 유물 건너뛰기</button>`);
+    <button class="btn-chunky ov-btn alt" data-act="skipRelic">▷ 유물 건너뛰기</button>`);
 }
 
 /* 유물 칸이 가득 찼을 때: 새 유물 대신 버릴 보유 유물 고르기 (또는 포기). mode 'reward' | 'shop' */
@@ -3825,8 +3860,8 @@ function showRelicSwap(mode, id){
     <div class="swap-new">${relicTile(r, {})}</div>
     <div class="pile-title">▌ 버릴 유물 — 새 유물이 그 칸에 들어간다</div>
     <div class="ov-cards">${run.relics.map((x, i) => relicTile(RELIC_BY_ID[x], { attrs: `data-swap-pick="${x}"`, extra: `<span class="rt-slot">${i + 1}번 칸</span>` })).join('')}</div>
-    ${mode === 'reward' ? '<button class="ov-btn alt" data-act="swapBack">◀ 다른 유물 보기</button>' : ''}
-    <button class="ov-btn alt" data-act="swapGiveUp">${mode === 'reward' ? '▷ 유물 포기 (건너뛰기)' : '✕ 사지 않기'}</button>`);
+    ${mode === 'reward' ? '<button class="btn-chunky ov-btn alt" data-act="swapBack">◀ 다른 유물 보기</button>' : ''}
+    <button class="btn-chunky ov-btn alt" data-act="swapGiveUp">${mode === 'reward' ? '▷ 유물 포기 (건너뛰기)' : '✕ 사지 않기'}</button>`);
 }
 
 function showRemove(){
@@ -3834,7 +3869,7 @@ function showRemove(){
     <div class="ov-title" style="color:var(--red)">카드 제거</div>
     <div class="ov-sub">덱에서 없앨 카드 1장을 고르세요.</div>
     <div class="deck-list">${run.masterDeck.map((id, i) => cardHtml(CARD_BY_ID[id], { attrs: `data-remove="${i}"` })).join('')}</div>
-    <button class="ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
+    <button class="btn-chunky ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
 }
 
 function showDeck(){
@@ -3846,7 +3881,7 @@ function showDeck(){
     ${pile('뽑을 카드 (순서 비공개)', run.drawPile)}
     ${pile('버린 카드', run.discard)}
     ${pile('소멸', run.exhausted)}
-    <button class="ov-btn alt" data-act="close">✕ 닫기</button>`);
+    <button class="btn-chunky ov-btn alt" data-act="close">✕ 닫기</button>`);
 }
 
 /* 게임오버 문구 — 전부 재정적 파산 소재(반대매매·깡통계좌·존버/영끌 실패)로만 쓴다 */
@@ -3999,8 +4034,8 @@ function showRunOver(reason){
       ${statTile('수익률 (시작 대비)', `<span class="${signCls(run.endEquity - START_CASH)}">${fmtPct(run.endEquity / START_CASH - 1)}</span>`)}
       ${statTile('덱 · 유물', `${run.masterDeck.length}장 · ${run.relics.length}개`)}
     </div>
-    <button class="ov-btn" data-act="restart">↺ 다시 시작</button>
-    <button class="ov-btn alt" data-act="title">◀ 타이틀로</button>`);
+    <button class="btn-chunky ov-btn" data-act="restart">↺ 다시 시작</button>
+    <button class="btn-chunky ov-btn alt" data-act="title">◀ 타이틀로</button>`);
   if(reason === 'VICTORY') cashRain();
 }
 
@@ -4053,7 +4088,10 @@ const JUICE_CONFIG = {
   comboMaxScale: 2,              // 최대 크기
   comboShake: { 2: 0, 3: 1, 4: 2, 5: 3 },        // 단계가 오를 때 흔들림
   comboParts: { 2: 10, 3: 18, 4: 30, 5: 64 },    // 단계가 오를 때 파티클 수
-  comboCoolMs: 1600              // 끊긴 뒤 '최대 ×N'이 남아 있는 시간
+  comboCoolMs: 1600,             // 끊긴 뒤 '최대 ×N'이 남아 있는 시간
+  // ── 손에 잡히는 화면 (ui-tactile) ──
+  tiltMaxDeg: 8,                 // 카드 기울기 최대 각도 (도) — 손패·보상·암시장 카드
+  btnHoverGapMs: 60              // .btn-chunky 호버 틱 최소 간격 (연타 방지)
 };
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
@@ -4230,7 +4268,7 @@ function stageHold(){
   s.readyAt = performance.now() + JUICE_CONFIG.nextGuardMs;
   Music.unduck('stage');
   const hint = $('stageHint'); if(hint) hint.remove();
-  if($('stageList')) $('overlayBox').insertAdjacentHTML('beforeend', '<button class="ov-btn chain-next" data-act="stageNext">▶ 다음 날</button>');
+  if($('stageList')) $('overlayBox').insertAdjacentHTML('beforeend', '<button class="btn-chunky breathe ov-btn chain-next" data-act="stageNext">▶ 다음 날</button>');
 }
 function stageNext(){
   if(!stage || !stage.hold || performance.now() < stage.readyAt) return;
@@ -4392,7 +4430,7 @@ function enterChainHold(skipped){
   renderChainFinal(cp.rows);
   const hint = $('overlayBox').querySelector('.chain-skip');
   if(hint) hint.remove();
-  $('overlayBox').insertAdjacentHTML('beforeend', '<button class="ov-btn chain-next" data-act="chainNext">▶ 다음</button>');
+  $('overlayBox').insertAdjacentHTML('beforeend', '<button class="btn-chunky breathe ov-btn chain-next" data-act="chainNext">▶ 다음</button>');
   chainHold = { run: cp.run, onDone: cp.onDone, skipped: !!skipped, readyAt: performance.now() + CHAIN_NEXT_GUARD_MS };
 }
 function chainNext(){   // '▶ 다음' · 엔터
@@ -4447,8 +4485,8 @@ function showRoundResult(w){
       ${statTile('총 반대매매', run.liquidations + '회')}
       ${statTile('다음 주 목표', fmtMoney(ROUND_TARGETS[w.round]))}
     </div>
-    <button class="ov-btn" data-act="toReward">▶ 보상 고르고 WEEK ${w.round + 1}로</button>
-    <button class="ov-btn warn" data-act="restartAsk">↺ 다시 시작</button>`);
+    <button class="btn-chunky ov-btn" data-act="toReward">▶ 보상 고르고 WEEK ${w.round + 1}로</button>
+    <button class="btn-chunky ov-btn warn" data-act="restartAsk">↺ 다시 시작</button>`);
 }
 
 /* ── 찌라시 ── */
@@ -4480,12 +4518,12 @@ function tipCardHtml(tip, wrap){
     <div class="noti-headline">${fillTip(ev.headline, tip.stockId)}</div>
     <div class="noti-body">${fillTip(ev.body, tip.stockId, tip)}</div>
     ${ev.choices.map((c, i) => `
-      <button class="choice ${i === 0 ? 'risky' : 'safe'}" data-tip-choice="${i}">
+      <button class="choice px-panel ${i === 0 ? 'risky' : 'safe'}" data-tip-choice="${i}">
         <span class="ch-label">${'AB'[i]}. ${fillTip(c.label, tip.stockId)}</span>
         <span class="ch-meta">${tipChoiceMeta(tip, c, i)}</span>
         ${tipEvHtml(i)}
       </button>`).join('')}`;
-  return wrap ? `<div class="phone-noti">${body}</div>` : body;
+  return wrap ? `<div class="phone-noti px-panel-gold">${body}</div>` : body;
 }
 
 function tipResultHtml(r){
@@ -4506,7 +4544,7 @@ function showTipResultOverlay(r){
     <div class="noti-headline">${fillTip(ev.headline, r.stockId)}</div>
     <div class="noti-body">${'AB'[r.choiceIdx]}. ${fillTip(ev.choices[r.choiceIdx].label, r.stockId)}</div>
     ${tipResultHtml(r)}
-    <button class="ov-btn" data-act="close">확인 — 장 계속</button>`);
+    <button class="btn-chunky ov-btn" data-act="close">확인 — 장 계속</button>`);
 }
 
 /* 찌라시 기록 (≡ 메뉴): 최근 결과 목록 오버레이. 열면 미확인 표시가 꺼진다 */
@@ -4525,7 +4563,7 @@ function showTipLog(){
     ${run.tipLog.length ? tipResultHtml(run.tipLog[0]) + `<div class="pile-title">▌ 최근 찌라시 결과</div><ul class="tip-log">${log}</ul>`
       : `<div class="tip-empty">📵 아직 받은 찌라시가 없습니다<small>장중에 무작위로 도착합니다 (하루 최대 ${TIP_MAX_PER_DAY}개). 도착하면 시장이 멈추고 선택을 기다립니다.</small></div>`}
     </div>
-    <button class="ov-btn" data-act="close">닫기</button>`);
+    <button class="btn-chunky ov-btn" data-act="close">닫기</button>`);
   renderNav();
 }
 
@@ -4566,7 +4604,7 @@ function renderRelics(){
     const r = RELIC_BY_ID[relicTipId], i = run.relics.indexOf(relicTipId), kb = RELIC_KIND_BADGE[relicKind(relicTipId)];
     const kbCls = kb ? (kb[1] === 'add' ? 'n-chip' : kb[1] === 'copy' ? '' : 'n-mult') : '';
     const move = `<span class="rt-move"><span>${i + 1}번 칸${kb ? ` · 정산 ${i + 1}번째 · <span class="${kbCls}">${kb[2]}</span>` : ''}</span>${arrange
-      ? `<button data-relic-move="-1" ${i > 0 ? '' : 'disabled'}>◀ 앞으로</button><button data-relic-move="1" ${i < run.relics.length - 1 ? '' : 'disabled'}>뒤로 ▶</button><span>끌어서 옮기기 · ←→</span>`
+      ? `<button class="btn-chunky sm" data-relic-move="-1" ${i > 0 ? '' : 'disabled'}>◀ 앞으로</button><button class="btn-chunky sm" data-relic-move="1" ${i < run.relics.length - 1 ? '' : 'disabled'}>뒤로 ▶</button><span>끌어서 옮기기 · ←→</span>`
       : '<span>순서는 장전·암시장에서 바꿀 수 있다</span>'}</span>`;
     tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${relicKind(r.id) ? settleColor(r.desc) : r.desc}${r.growth ? growthTipHtml(r) : ''}<i>${r.flavor}</i>${move}`;
     tip.hidden = false;
@@ -4655,7 +4693,7 @@ function packHtml(pk){
   const odds = packRarityOdds(pk).map(o => `<span class="c-rar ${o.rarity}">${RARITY_LABEL[o.rarity]} ${fmtChance(o.chance)}</span>`).join('');
   return `
     <div class="pack-col">
-      <button class="pk-info" data-pack-info="${pk.id}" title="${pk.name} 구성·확률 보기" aria-label="${pk.name} 구성·확률 보기">?</button>
+      <button class="btn-chunky sm pk-info" data-pack-info="${pk.id}" title="${pk.name} 구성·확률 보기" aria-label="${pk.name} 구성·확률 보기">?</button>
       <button class="pack ${afford ? '' : 'disabled'}" data-pack="${pk.id}">
         <div class="pk-icon">${pk.icon}</div>
         <div>${pk.name}</div>
@@ -4696,8 +4734,8 @@ function showPackInfo(packId){
     ${out.length ? `<div class="pki-note">흐린 카드 ${out.length}장은 덱에 이미 있거나(신화는 덱에 ${MYTHIC_DECK_LIMIT}장까지) 이번엔 나오지 않아 확률 계산에서 빠져 있습니다.</div>` : ''}
     ${pool.length ? groups : '<div class="pki-note">덱에 없는 카드가 남지 않아 지금은 살 수 없습니다.</div>'}
     <div class="pki-btns">
-      <button class="ov-btn" data-pack-buy="${pk.id}" ${affordable ? '' : 'disabled'}>${pool.length ? (run.slush >= price ? `구매 ${fmtSlush(price)}` : `비자금 부족 (${fmtSlush(price)})`) : '살 수 없음'}</button>
-      <button class="ov-btn alt" data-act="close">닫기</button>
+      <button class="btn-chunky ov-btn" data-pack-buy="${pk.id}" ${affordable ? '' : 'disabled'}>${pool.length ? (run.slush >= price ? `구매 ${fmtSlush(price)}` : `비자금 부족 (${fmtSlush(price)})`) : '살 수 없음'}</button>
+      <button class="btn-chunky ov-btn alt" data-act="close">닫기</button>
     </div>`);
 }
 
@@ -4710,7 +4748,7 @@ function relicOddsHtml(){
 }
 function rerollBoxHtml(kind){
   const n = run.shop.rerolls[kind], cost = rerollCost(kind, n), can = rerollAvailable(kind);
-  return `<span class="reroll-box"><button class="reroll-btn" data-reroll="${kind}" ${can && run.slush >= cost ? '' : 'disabled'}
+  return `<span class="reroll-box"><button class="btn-chunky reroll-btn" data-reroll="${kind}" ${can && run.slush >= cost ? '' : 'disabled'}
       title="${can ? '' : kind === 'relic' ? '새로 들여올 유물이 없습니다' : '새로 뽑을 칸·카드가 없습니다'}">🔄 새로고침 <b id="rrCost-${kind}">${fmtSlush(cost)}</b></button>
     <span class="reroll-next">다음 ${rerollCost(kind, n + 1).toLocaleString()} → ${rerollCost(kind, n + 2).toLocaleString()}</span></span>`;
 }
@@ -4741,11 +4779,11 @@ function renderShop(){
   const canRemove = run.masterDeck.length > MIN_DECK_SIZE;   // 횟수 제한 없음 — 누진 비용 + 덱 최소 장수만
   if(shopPickIdx >= run.masterDeck.length) shopPickIdx = -1;
   box.innerHTML = `
-    <div class="shop-bar">
+    <div class="shop-bar px-panel">
       <span>WEEK ${run.round} 결산 완료 · 비자금 <b class="slush-amt" id="shopSlush">${fmtSlush(run.slush)}</b> · 덱 <b>${run.masterDeck.length}장</b><br>
         다음 주 목표 <b>${fmtMoney(ROUND_TARGETS[run.round])}</b> · 순자산 <b>${fmtMoney(netEquity())}</b><br>
         물가 상승률: 1주차 대비 <b class="infl">+${Math.round(shopInflation('pack') * 100)}%</b> (팩·낱장 · 유물 +${Math.round(shopInflation('relic') * 100)}%)</span>
-      <button class="open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
+      <button class="btn-chunky open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
     </div>
     ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스 — 여기서 대비할 카드·유물을 사 두세요') : ''}
     <div class="shop-note">암시장은 비자금만 받습니다. 계좌 돈(순자산)은 그대로 — 비자금은 주간 목표를 넘긴 만큼 더 쌓입니다 (기본 ${fmtSlush(SLUSH_WEEKLY_BASE)} + 초과분의 ${Math.round(SLUSH_EXCESS_RATE * 100)}%).</div>
@@ -4759,30 +4797,30 @@ function renderShop(){
       const label = bought ? '구매 완료' : owned ? '덱에 있음' : `${fmtPrice2(price, 'single')} 구매`;
       const fresh = shopFlipIn === 'single' && !bought;   // 방금 새로 뽑은 칸: 뒤집히며 나타난다 (팩 개봉 flip-card 재사용)
       return `<div class="shop-item">${fresh ? `<div class="flip-card"><div class="flip-face flip-back">?</div><div class="flip-face flip-front">${cardHtml(CARD_BY_ID[id], {})}</div></div>` : cardHtml(CARD_BY_ID[id], {})}
-        <button class="buy-btn" data-single="${i}" ${bought || owned || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
+        <button class="btn-chunky buy-btn" data-single="${i}" ${bought || owned || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
     <div class="shop-sec-head"><span class="section-label">▌ 유물 — 한 판 동안 상시 발동 · ${RELIC_SHOP_COUNT}칸</span>${rerollBoxHtml('relic')}</div>
     ${relicOddsHtml()}
     <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
       const r = RELIC_BY_ID[id], price = relicPrice(id), owned = hasRelic(id);
-      return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : '', extra: `<button class="buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
+      return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : '', extra: `<button class="btn-chunky buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
     <span class="section-label">▌ 보유 유물 ${run.relics.length}/${RELIC_SLOTS}칸 — 정산은 왼쪽(1번 칸)부터 차례로 · 더하기(+)는 앞, 곱하기(×)는 뒤가 유리 · 판매 = 얻을 때 값의 ${Math.round(RELIC_SELL_RATE * 100)}%</span>
     <div class="relic-row own-relics">${run.relics.length ? run.relics.map((id, i) => {
       const kb = RELIC_KIND_BADGE[relicKind(id)];
       return relicTile(RELIC_BY_ID[id], { extra: `<span class="rt-slot">${i + 1}번 칸${kb ? ' · ' + kb[2] : ''}</span>
-        <div class="own-relic-btns"><button class="buy-btn" data-own-move="-1" data-own-relic="${id}" ${i > 0 ? '' : 'disabled'} aria-label="앞 칸으로">◀</button>
-        <button class="buy-btn" data-own-move="1" data-own-relic="${id}" ${i < run.relics.length - 1 ? '' : 'disabled'} aria-label="뒤 칸으로">▶</button>
-        <button class="buy-btn sell" data-own-sell="${id}">판매 +${fmtSlush(relicSellPrice(id))}</button></div>` });
+        <div class="own-relic-btns"><button class="btn-chunky buy-btn" data-own-move="-1" data-own-relic="${id}" ${i > 0 ? '' : 'disabled'} aria-label="앞 칸으로">◀</button>
+        <button class="btn-chunky buy-btn" data-own-move="1" data-own-relic="${id}" ${i < run.relics.length - 1 ? '' : 'disabled'} aria-label="뒤 칸으로">▶</button>
+        <button class="btn-chunky buy-btn sell" data-own-sell="${id}">판매 +${fmtSlush(relicSellPrice(id))}</button></div>` });
     }).join('') : '<div class="shop-note">보유 유물 없음</div>'}</div>
 
     <span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
     <div class="shop-note rm-ladder">다음: ${[0, 1, 2].map(k => `<span class="${k ? '' : 'now'}">${removeCost(sh.removed + k).toLocaleString()}</span>`).join(' → ')} · 같은 주에 제거할 때마다 ×${SHOP_REMOVE_ESCALATION}, 다음 주엔 처음 가격으로 (주차마다 기본가 +${SHOP_REMOVE_PER_WEEK}만) · 덱 ${MIN_DECK_SIZE}장까지</div>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
       cardHtml(CARD_BY_ID[id], { attrs: `data-shop-remove="${i}"`, cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
-    <button class="ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.slush >= nextRemove ? '' : 'disabled'}>
+    <button class="btn-chunky ov-btn alt shop-remove-btn" id="shopRemoveBtn" ${canRemove && shopPickIdx >= 0 && run.slush >= nextRemove ? '' : 'disabled'}>
       ${!canRemove ? `덱이 ${MIN_DECK_SIZE}장 — 더 줄일 수 없음`
         : shopPickIdx < 0 ? '제거할 카드를 고르세요' : run.slush < nextRemove ? `비자금 부족 (${fmtSlush(nextRemove)})`
         : `✂ ${CARD_BY_ID[run.masterDeck[shopPickIdx]].name} 영구 제거 (${fmtSlush(nextRemove)})`}
@@ -4790,7 +4828,7 @@ function renderShop(){
     <span class="section-label">▌ 덱 조작 — 위에서 고른 카드에 · 같은 주에 쓸 때마다 ×${SHOP_SERVICE_ESCALATION}</span>
     <div class="shop-services">${SHOP_SERVICES.map(([kind, label, note]) => {
       const price = shopServiceCost(kind), ok = shopPickIdx >= 0 && canService(kind, shopPickIdx);
-      return `<button class="ov-btn alt" data-service="${kind}" title="${note}" ${ok && run.slush >= price ? '' : 'disabled'}>${label} ${fmtSlush(price)}</button>`;
+      return `<button class="btn-chunky ov-btn alt" data-service="${kind}" title="${note}" ${ok && run.slush >= price ? '' : 'disabled'}>${label} ${fmtSlush(price)}</button>`;
     }).join('')}</div>`;
   if(relicClackId){   // (S8-33) 방금 산 유물이 칸에 "철컥"
     const i = run.relics.indexOf(relicClackId), el = box.querySelectorAll('.own-relics .relic-tile')[i];
@@ -4831,7 +4869,7 @@ function showPackResult(d){
       </div></div></div>
     </div>
     <div class="ov-sub"><span class="c-rar ${card.rarity}">${RARITY_LABEL[card.rarity]}</span> · ${card.name} — 덱에 추가 (덱 ${d.deckSize}장)</div>
-    <button class="ov-btn" data-act="close">확인</button>`);
+    <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
   if(T.myth && !PREFERS_REDUCED_MOTION) $('overlay').classList.add('pk-dark');   // 신화: 암전 (juicePack이 회전 등장 끝에 걷는다)
 }
 
@@ -4909,8 +4947,8 @@ function buildCollection(){
   $('collectionSub').textContent += ` · 유물 ${RELICS.length}`;
   const count = r => CARDS.filter(c => c.type !== 'status' && c.rarity === r).length + RELICS.filter(x => x.rarity === r).length;
   $('collectionFilter').innerHTML = [''].concat(RARITIES).map(r =>
-    `<button class="${r === collectionRarity ? 'on' : ''}" data-rarity="${r}">${r ? `<span class="c-rar ${r}">${RARITY_LABEL[r]}</span> ${count(r)}` : '전체'}</button>`).join('')
-    + `<button class="${collectionRarity === 'boss' ? 'on' : ''}" data-rarity="boss">👹 보스 ${BOSSES.length}</button>`;
+    `<button class="btn-chunky sm ${r === collectionRarity ? 'on' : ''}" data-rarity="${r}">${r ? `<span class="c-rar ${r}">${RARITY_LABEL[r]}</span> ${count(r)}` : '전체'}</button>`).join('')
+    + `<button class="btn-chunky sm ${collectionRarity === 'boss' ? 'on' : ''}" data-rarity="boss">👹 보스 ${BOSSES.length}</button>`;
   const bossSec = `<div class="pile-title">▌ 보스 (${BOSSES.length}) — ${BOSS_WEEK_ROUNDS.join('·')}주차 일반 보스(한 판에 중복 없음) · ${BOSS_FINAL_ROUND}주차 최종 보스 · 직전 주 결산에서 예고</div>
       <div class="boss-grid">${BOSSES.map(b => bossTile(b)).join('')}</div>`;
   if(collectionRarity === 'boss'){ $('collectionBox').innerHTML = bossSec; return; }
@@ -4974,10 +5012,10 @@ function applySettings(){
   document.body.dataset.crt = settings.crt;
 }
 function settingRow(key, label, desc, disabled){
-  return `<div class="set-row ${disabled ? 'disabled' : ''}" data-row="${key}">
+  return `<div class="set-row px-panel ${disabled ? 'disabled' : ''}" data-row="${key}">
     <div><div class="sr-label">${label}</div><div class="sr-desc">${desc}</div></div>
     <div class="seg">${SETTING_OPTIONS[key].map(([v, t]) =>
-      `<button data-set="${key}" data-val="${JSON.stringify(v).replace(/"/g, '&quot;')}" class="${settings[key] === v ? 'on' : ''}" ${disabled ? 'disabled' : ''}>${t}</button>`).join('')}</div>
+      `<button data-set="${key}" data-val="${JSON.stringify(v).replace(/"/g, '&quot;')}" class="btn-chunky sm ${settings[key] === v ? 'on' : ''}" ${disabled ? 'disabled' : ''}>${t}</button>`).join('')}</div>
   </div>`;
 }
 function buildSettings(){
@@ -4995,9 +5033,9 @@ function buildSettings(){
     ${settingRow('bgm', '배경음악', '화면·장세에 따라 바뀌는 칩튠 BGM. 장중에는 강세·약세·변동성·반대매매 위험에 맞춰 곡이 변합니다.', !settings.sound)}
     ${settingRow('bgmVol', '배경음악 볼륨', '0 · 25 · 40 · 50 · 75 · 100%. 효과음보다 작게 기본 40.', !settings.sound || !settings.bgm)}
     ${settingRow('tickSound', '장중 틱 소리', '캔들이 하나 생길 때마다 작은 시계 소리. 계속 울리니 기본은 끔.', !settings.sound)}
-    <div class="set-row" data-row="reset">
+    <div class="set-row px-panel" data-row="reset">
       <div><div class="sr-label">기록 초기화</div><div class="sr-desc">파산 기록(엔딩 도감·최근 판·누적 통계)과 개미 회차를 지웁니다. 설정은 남습니다.</div></div>
-      <div class="seg"><button class="set-danger" id="settingsReset">✕ 기록 초기화</button></div>
+      <div class="seg"><button class="btn-chunky sm set-danger" id="settingsReset">✕ 기록 초기화</button></div>
     </div>
   </div>`;
 }
@@ -5065,7 +5103,7 @@ function buildRecords(){
     : `<div class="rec-empty">아직 끝낸 판이 없습니다. 첫 반대매매는 누구에게나 찾아옵니다.</div>`;
   $('recordsBox').innerHTML = summary + tiles +
     `<div class="pile-title">▌ 최근 ${RECORDS_HISTORY}판</div>` + rows +
-    (total ? `<button class="back-btn rec-reset" id="recordsReset">✕ 기록 초기화</button>` : '');
+    (total ? `<button class="btn-chunky sm back-btn rec-reset" id="recordsReset">✕ 기록 초기화</button>` : '');
 }
 $('recordsBox').addEventListener('click', e => {
   const b = e.target.closest('#recordsReset');
@@ -5311,11 +5349,11 @@ function showAmountPicker(idx){
     <div class="amt-box">
       <div class="amt-row"><input type="range" id="amtRange" min="${STOCK_BUY_MIN}" max="${max}" step="10" value="${amtCtx.amount}">
         <input type="number" id="amtNum" min="${STOCK_BUY_MIN}" max="${max}" step="10" value="${amtCtx.amount}"></div>
-      <div class="amt-row">${AMT_QUICK.map(q => `<button class="amt-q" data-amt-q="${q}">${q === 1 ? '전액' : Math.round(q * 100) + '%'}</button>`).join('')}</div>
+      <div class="amt-row">${AMT_QUICK.map(q => `<button class="btn-chunky sm amt-q" data-amt-q="${q}">${q === 1 ? '전액' : Math.round(q * 100) + '%'}</button>`).join('')}</div>
       <div class="amt-info" id="amtInfo"></div>
     </div>
-    <button class="ov-btn" data-act="amtOk">▶ 매수 (Enter)</button>
-    <button class="ov-btn alt" data-act="amtCancel">✕ 취소 (Esc)</button>`);
+    <button class="btn-chunky ov-btn" data-act="amtOk">▶ 매수 (Enter)</button>
+    <button class="btn-chunky ov-btn alt" data-act="amtCancel">✕ 취소 (Esc)</button>`);
   updateAmountInfo();
   const n = $('amtNum'); if(n){ n.focus(); n.select(); }
 }
@@ -5363,7 +5401,56 @@ $('chartBackBtn').addEventListener('click', () => showChart('idx'));
 $('newsNextBtn').addEventListener('click', () => { const t = newsTomorrowLine(); if(t) toast(t, 'info'); });   // 터치: 누르면 알림으로
 
 Sound.attachUnlock(document);   // 브라우저 자동재생 정책: 첫 클릭·키 입력 때 AudioContext를 만든다
-document.addEventListener('click', e => { if(e.target.closest('button') && !e.target.closest('.t-item')) Sound.play('uiClick'); }, true);   // 타이틀 메뉴는 자체 선택·확정음
+document.addEventListener('click', e => { if(e.target.closest('button') && !e.target.closest('.t-item') && !(e.target.closest('.btn-chunky') && e.detail > 0)) Sound.play('uiClick'); }, true);   // 타이틀 메뉴는 자체 선택·확정음 · 묵직한 버튼은 누를 때 uiPress (키보드로 누르면 uiClick)
+
+/* (ui-tactile) 묵직한 버튼 소리: 올리면 짧은 틱(btnHoverGapMs 연타 방지) · 누르면 "턱" */
+let btnHoverEl = null, btnHoverAt = 0;
+document.addEventListener('mouseover', e => {
+  const b = e.target.closest('.btn-chunky');
+  if(b === btnHoverEl) return;
+  btnHoverEl = b;
+  if(!b || b.disabled) return;
+  const now = performance.now();
+  if(now - btnHoverAt < JUICE_CONFIG.btnHoverGapMs) return;
+  btnHoverAt = now;
+  Sound.play('uiHover');
+});
+document.addEventListener('pointerdown', e => { const b = e.target.closest('.btn-chunky'); if(b && !b.disabled && e.button === 0) Sound.play('uiPress'); }, true);
+
+/* (ui-tactile) 카드 기울기: 손패·보상·암시장 카드에 마우스 위치 따라 3D 기울기. mousemove를 rAF 한 번으로 묶고 CSS 변수(--rx·--ry·--sx)만 바꾼다
+   (transform 하나 — 레이아웃 재계산 없음, 크기는 카드에 들어갈 때 한 번만 읽는다). 대상 지정 중·드래그 중·흔들림 끔·동작 줄이기·터치 기기(hover: none)면 끔 */
+const TILT_SEL = '#handBox .card.gcard, #overlayBox .card, #shopBox .card';
+const HOVER_NONE = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
+let tiltEl = null, tiltRect = null, tiltPt = null, tiltRaf = 0;
+const tiltAllowed = () => settings.shake && !PREFERS_REDUCED_MOTION && !HOVER_NONE && selectedIdx < 0 && relicDragFrom < 0;
+function tiltClear(){
+  if(!tiltEl) return;
+  tiltEl.classList.remove('tilt');
+  ['--rx', '--ry', '--sx'].forEach(k => tiltEl.style.removeProperty(k));
+  tiltEl = null;
+}
+function tiltFrame(){
+  tiltRaf = 0;
+  const pt = tiltPt, card = pt && pt.target && pt.target.closest ? pt.target.closest(TILT_SEL) : null;
+  if(!card || card.classList.contains('disabled') || !tiltAllowed()){ tiltClear(); return; }
+  if(card !== tiltEl){
+    tiltClear();
+    if(pt.buttons) return;   // 누른 채 들어온 카드는 기울이지 않는다 (드래그)
+    tiltRect = card.getBoundingClientRect();
+    tiltEl = card;
+    card.classList.add('tilt');
+  }
+  const r = tiltRect, M = JUICE_CONFIG.tiltMaxDeg;
+  const x = Math.max(-0.5, Math.min(0.5, (pt.x - r.left) / r.width - 0.5)), y = Math.max(-0.5, Math.min(0.5, (pt.y - r.top) / r.height - 0.5));
+  card.style.setProperty('--ry', (x * 2 * M).toFixed(2) + 'deg');
+  card.style.setProperty('--rx', (-y * 2 * M).toFixed(2) + 'deg');
+  card.style.setProperty('--sx', Math.round(50 - x * 90) + '%');   // 반짝이는 기울기 반대 방향
+}
+document.addEventListener('mousemove', e => {
+  tiltPt = { x: e.clientX, y: e.clientY, target: e.target, buttons: e.buttons };
+  if(!tiltRaf) tiltRaf = requestAnimationFrame(tiltFrame);
+}, { passive: true });
+document.addEventListener('mouseout', e => { if(!e.relatedTarget){ tiltPt = null; tiltClear(); } });   // 창 밖으로
 
 document.addEventListener('keydown', e => {
   if(Fx.queueLength && (e.code === 'Space' || e.key === ' ' || e.key === 'Enter')){ e.preventDefault(); Fx.skipQueue(); return; }   // 연쇄 연출 스킵

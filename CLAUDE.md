@@ -99,6 +99,12 @@
 - 색상은 반드시 `:root`의 CSS 변수를 쓴다: `--bg`, `--panel`, `--panel2`, `--green`, `--green2`, `--green-dim`, `--red`, `--red2`, `--red-dim`, `--gold`, `--gold2`, `--purple`, `--cyan`, `--text`, `--text2`(보조 본문), `--muted`, `--line`, `--line2`. 새 hex 값을 하드코딩하지 않는다 (Canvas에서 부득이하면 같은 값을 사용). 글자색은 배경 대비 4.5:1 이상 — `--muted` #8a96c4(bg 7.07:1), `--line`·`--line2`는 테두리 전용이고 글자에 쓰지 않는다. 보조 글자를 opacity로 흐리게 하지 말고 색으로 (비활성 상태만 예외).
 - 카드 테두리: 안쪽 `--cc` = 종류 색, 바깥 `--rc` = 등급 색(일반 `--muted`·고급 `--green2`·희귀 `--blue`·전설 `--purple`·신화 `--gold`). 라벨 `.c-rar.<등급>`.
 - 테두리는 기존 픽셀 유틸리티 재사용: `.px-border`, `.px-border-gold`, `.px-border-green`, `.px-border-red`, `.px-corner-box`. `border-radius`·부드러운 그림자·그라데이션 대신 `box-shadow` 픽셀 테두리와 오프셋 그림자(`6px 6px 0 #000`).
+- 손에 잡히는 화면(ui-tactile, docs/demo `<style>` 맨 위 TACTILE 구역) — 새 UI는 이것부터 쓴다:
+  - **버튼 = `.btn-chunky`** (작은 버튼은 `.btn-chunky.sm`). 버튼 규칙에는 색(`background`·`color`)과 테두리 색 `--bk-ring`만 두고 `box-shadow`·호버 `transform`을 따로 쓰지 않는다 — 두께(옆면 `--bk-side` = 테두리 색의 어두운 톤, 깊이 `--bk-d` 4·sm 2)·윗면 1픽셀 밝은 선·호버 1칸 떠오름·누름(그림자만큼 내려앉고 그림자 0)·비활성(그림자 없이 흐림)은 공통. 소리는 자동(호버 `uiHover`·누름 `uiPress`, 이 버튼은 클릭 틱 대신). 누를 수 있을 때 숨쉬는 중요 버튼은 `.breathe`(장 시작·정산 ▶ 다음 날).
+  - **패널 = 3종**: 기본 `.px-panel`(얇은 틀, 강조색은 `--pc`) · 강조 `.px-panel-gold`(보상·정산·순자산) · 위험 `.px-panel-red`(반대매매 경고·보스 예고). 요소 규칙에 `background`·`box-shadow` 틀을 다시 쓰지 않는다. 제목 띠는 명찰 `.px-tag`(패널 왼쪽 위에 걸침).
+  - **기울기**: 손패·보상·암시장 카드는 `tiltFrame`(mousemove → rAF 한 번, CSS 변수 `--rx`·`--ry`·`--sx`만, 최대 `JUICE_CONFIG.tiltMaxDeg`)으로 `.card.tilt`. `transform` 하나만 바꾸고 레이아웃을 읽는 건 카드에 들어갈 때 한 번. 대상 지정·드래그·흔들림 끔·동작 줄이기·터치(hover: none)면 끈다. 가만히 떠 있는 움직임은 `translate` 속성(기울기 `transform`과 겹쳐도 되게).
+  - **구역 배경 무늬** `.tx-felt`(손패)·`.tx-grid`(시장)·`.tx-ledger`(포지션)·암시장 `#screen-shop::after` 체크: hard-stop(`conic-gradient`·`linear-gradient` 끊기는 색 멈춤)만, 색은 `color-mix(in srgb, var(--색) N%, transparent)`로 대비를 아주 낮게 — 그 위 글자는 4.5:1 이상(`--muted` 기준 5.3:1 이상 확인). 새 무늬는 이 네 개 중 하나를 재사용한다.
+  - 숫자(가격·금액·배수·행동력)는 VT323, 한글 라벨은 Galmuri. Press Start 2P는 큰 숫자(순자산·현금)와 짧은 영문 태그만.
 - 길이는 전부 `calc(N * var(--u))` — `--u` = `--ui` × 1px(화면 배율, 레이아웃 참고). CSS에 맨 px를 새로 쓰지 않는다 (@media 경계값·@font-face만 예외). JS가 화면에 붙이는 요소는 `getBoundingClientRect` 좌표(화면 px) 그대로, 크기는 `uiScale`을 곱한다.
 - 폰트 (글자 크기 체계, docs/demo `<style>` 맨 위): 크기는 변수로만 쓴다 — 아래 px는 배율 1 기준 (`--fs-*` = N × `--u`).
   - 한글 위주 텍스트(긴 라벨·설명)는 Galmuri만: `font-family:var(--gf-sm),monospace;font-size:var(--fs-sm)`. 크기 `--fs-xs`10 · `sm`12 · `md`15 · `m16`16 · `lg`20 · `xl`24 · `xxl`30 (Galmuri 원래 크기 또는 2배, 최소 10px), 얼굴 `--gf-*`가 짝.
