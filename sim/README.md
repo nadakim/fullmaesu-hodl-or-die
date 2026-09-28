@@ -6,6 +6,7 @@
 node sim/runner.js                                   # 전략 8종 × 500판 (약 45초)
 node sim/signal-check.js [--n 300] [--strategy random]   # 시그널 적중률·루머 판정 실측 (표시 확률 = 실제 확률)
 node sim/growth-check.js [--n 300]                       # 성장형 유물 1개 강제 지급 vs 미지급 클리어율·스택 (폭주 점검)
+node sim/boss-check.js 켬.json 끔.json [--md out.md]      # 보스별 생존율 vs 보스 없는 대조군 · 전략별 가장 치명적인 보스 (끔 = --set BOSS_WEEKS_ON=false)
 node sim/runner.js --n 2000 --seed 1 --strategies allIn3x,random --out sim/results/x.json
 node sim/runner.js --targets 10200,10800,11500,12300,13200,14300,15600,17100   # 목표 곡선 실험
 node sim/runner.js --set 'GAP_CHANCE_PER_RISK=0.02;RELIC_PAYDAY_BASE=60'        # CONFIG 상수 실험 (파일 수정 없음)

@@ -611,6 +611,34 @@ const STARTER_DECK = [
   'credit', 'short', 'stopLoss', 'takeProfit', 'hodl', 'marginTopup', 'indicators'
 ];
 
+/* ══ 보스 주간 (S9, docs/design/BOSS_WEEKS.md) ══
+   BOSS_WEEK_ROUNDS 주차는 일반 보스(한 판에 중복 없음), BOSS_FINAL_ROUND 주차는 최종 보스.
+   판 시작 때 rollBossPlan이 전부 정해 둔다(run.bossPlan) → 직전 주 결산·보상·암시장에서 nextBossId()로 예고.
+   효과는 mods 데이터. 엔진 계산 지점은 bossMod(key, 기본값) 하나로 읽는다 (보스 id로 if문을 흩뿌리지 않는다).
+   counter = 정산 카운터(D11): 곱하기 빌드를 겨냥한 보스 — 곱하기 유물이 없으면 거의 무해하다 */
+const BOSS_WEEKS_ON           = true;
+const BOSS_WEEK_ROUNDS        = [2, 4, 6];   // 일반 보스 주차
+const BOSS_FINAL_ROUND        = 8;           // 최종 보스 주차 (= MAX_ROUND)
+const BOSS_SLUSH_BONUS        = 300;         // 보스 주를 통과하면 비자금 + (만원)
+const BOSS_RELIC_CHOICE_BONUS = 1;           // 보스 주를 통과하면 유물 보상 선택지 +
+const BOSSES = [
+  { id: 'shortBan',     name: '공매도 전면 금지', icon: '🚫', desc: '이번 주 새 공매도(숏) 금지. 이미 가진 숏은 그대로.', mods: { noShort: true } },
+  { id: 'bigStep',      name: '빅스텝',           icon: '🏦', desc: '신용·대차·마통 이자 ×3.', mods: { interestMult: 3 } },
+  { id: 'delistReview', name: '상장폐지 심사',    icon: '⛔', desc: '베타가 가장 높은 종목 거래정지 — 가격이 멈추고 사고팔 수 없다.', mods: { haltTopBeta: true } },
+  { id: 'marginHike',   name: '증거금 상향',      icon: '📈', desc: '반대매매 기준 담보비율 +20%p (롱 160%·숏 150%).', mods: { maintAdd: 0.2, marginCallAdd: 0.1 } },
+  { id: 'fssCrackdown', name: '금감원 특별 단속', icon: '🚨', desc: '금감원 게이지 상승 ×2.', mods: { fssMult: 2 } },
+  { id: 'tipBomb',      name: '찌라시 폭탄',      icon: '💣', desc: '찌라시가 3배 자주, 하루 최대 4개.', mods: { tipChanceMult: 3, tipMaxPerDay: 4 } },
+  { id: 'tradeTax',     name: '거래세 인상',      icon: '🧾', desc: '모든 매도(반대매매 포함)에 매도 금액의 1% 세금.', mods: { sellTax: 0.01 } },
+  { id: 'antShakeout',  name: '개미 털기',        icon: '🧹', desc: '갭 확률 ×2, 시그널 적중률 −15%p.', mods: { gapMult: 2, signalAccAdd: -0.15 } },
+  // 정산 카운터 (D11 — 곱하기 빌드 견제)
+  { id: 'multCap',      name: '배수 상한제',      icon: '🧢', counter: true, desc: '장 마감 정산 배수 최대 ×100.', mods: { settleMultCap: 100 } },
+  { id: 'addSeal',      name: '더하기 봉인',      icon: '🔒', counter: true, desc: '정산의 더하기(+) 유물 무효 — 곱하기(×) 유물만 발동.', mods: { noAddRelics: true } },
+  { id: 'taxAudit',     name: '국세청 세무조사',  icon: '🕵️', counter: true, desc: '장 마감 정산 보너스의 50% 추징.', mods: { settlePayoutMult: 0.5 } },
+  // 최종 보스
+  { id: 'blackMonday',  name: '블랙 먼데이',      icon: '🖤', final: true, desc: '월요일 개장 직후 전 종목 −12% 폭락(인버스 +12%) + 약세장, 이번 주 갭 ×1.5.', mods: { crashDay: 1, crashPct: 0.12, gapMult: 1.5 } },
+  { id: 'bubblePeak',   name: '버블의 정점',      icon: '🫧', final: true, desc: '월~수 강세장이 이어지다 목·금은 약세장 + 갭 ×2.', mods: { bubbleUpDays: 3, bubbleGapMult: 2 } }
+];
+
 /* 지수(메인 캔들 차트) — 시장 전체 분위기 */
 let marketPrice = 1000;
 let marketState = 'NORMAL';
@@ -775,8 +803,9 @@ function updateAssetPrices(idxLogRet, pumps, live){
     r += nf.drift;
     if(pumps[s.id]) r += pumps[s.id] === PUMP_MANIP ? MANIP_DRIFT : pumps[s.id] > 0 ? PUMP_UP_DRIFT : PUMP_DOWN_DRIFT;
     const open = a.price;
-    a.price *= Math.exp(r);
-    const wick = move * s.volatility * IDIO_SCALE * nf.volMult * CANDLE_WICK_SCALE;
+    const halted = live && bossHalt(s.id);   // 상장폐지 심사: 거래정지 종목은 가격이 멈춘다 (난수는 똑같이 소비)
+    a.price *= halted ? 1 : Math.exp(r);
+    const wick = halted ? 0 : move * s.volatility * IDIO_SCALE * nf.volMult * CANDLE_WICK_SCALE;
     const cd = {
       open, close: a.price,
       high: Math.max(open, a.price) * (1 + Math.abs(gauss()) * wick),
@@ -804,6 +833,39 @@ const hasRelic = id => !!run && run.relics.indexOf(id) >= 0;
 /* 유물 칸 (RELIC_SLOTS): run.relics 순서 = 칸 순서 = 장 마감 정산 발동 순서 (왼쪽부터).
    가득 차면 gainRelic은 실패한다 — 새 유물은 replaceId(교체할 보유 유물)를 주고 얻는다. paid = 판매가 기준값 (구매가) */
 const relicSlotsFull = () => run.relics.length >= RELIC_SLOTS;
+
+/* ── 보스 주간 (S9) ── */
+const BOSS_BY_ID = {};
+BOSSES.forEach(b => { BOSS_BY_ID[b.id] = b; });
+/* 이번 주 보스의 수정자 (보스가 없거나 그 키가 없으면 기본값) — 보스 효과는 전부 이것으로 읽는다 */
+function bossMod(key, def){
+  const b = run && run.boss ? BOSS_BY_ID[run.boss] : null;
+  return b && b.mods[key] !== undefined ? b.mods[key] : def;
+}
+const nextBossId = () => (run && run.bossPlan[run.round + 1]) || '';   // 다음 주 보스 (예고용)
+/* 판 시작 때 보스 일정: 일반 보스 주차마다 남은 풀에서 하나씩 (중복 없음) + 최종 보스 하나 */
+function rollBossPlan(){
+  const plan = {};
+  if(!BOSS_WEEKS_ON) return plan;
+  const pool = BOSSES.filter(b => !b.final).map(b => b.id), finals = BOSSES.filter(b => b.final).map(b => b.id);
+  BOSS_WEEK_ROUNDS.forEach(r => { plan[r] = pool.splice(randInt(pool.length), 1)[0]; });
+  plan[BOSS_FINAL_ROUND] = finals[randInt(finals.length)];
+  return plan;
+}
+/* 상장폐지 심사: 베타가 가장 높은 종목 (같으면 앞 종목) */
+const topBetaStockId = () => STOCKS.reduce((best, s) => (s.beta > best.beta ? s : best), STOCKS[0]).id;
+const bossHalt = id => !!run && !!run.haltStock && run.haltStock === id;
+/* 이번 틱 갭 배수: 개미 털기·블랙 먼데이 gapMult, 버블의 정점은 약세 구간(bubbleUpDays 뒤)만 */
+function bossGapMult(){
+  const up = bossMod('bubbleUpDays', 0);
+  return bossMod('gapMult', 1) * (up && run.day > up ? bossMod('bubbleGapMult', 1) : 1);
+}
+/* 이번 주 보스 시작: 거래정지 종목 정하기 → emit('bossStart') */
+function startBossWeek(){
+  run.boss = run.bossPlan[run.round] || '';
+  run.haltStock = bossMod('haltTopBeta', false) ? topBetaStockId() : '';
+  if(run.boss) emit('bossStart', {id: run.boss, round: run.round, haltStock: run.haltStock});
+}
 function gainRelic(id, source, paid, replaceId){
   if(!RELIC_BY_ID[id] || hasRelic(id)) return false;
   let at = run.relics.length;
@@ -916,7 +978,7 @@ function dailyInterest(){
   if(run.interestFree) return 0;
   const credit = run.positions.filter(p => p.dir > 0).reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
   const shorts = hasRelic('shortpro') || run.shortFeeFreeToday ? 0 : run.positions.filter(p => p.dir < 0).reduce((s, p) => s + posBorrowed(p), 0);
-  return (credit * interestRate() + shorts * shortBorrowRate()) * (1 - dtreeCut());
+  return (credit * interestRate() + shorts * shortBorrowRate()) * (1 - dtreeCut()) * bossMod('interestMult', 1);   // 빅스텝
 }
 const dtreeCut = () => Math.min(DTREE_MAX_CUT, relicStacks('diamondTree') * DTREE_CUT_PER_STACK);   // 존버 나무
 const gukbapApplies = p => hasRelic('gukbap') && RELIC_GUKBAP_SECTORS.indexOf(STOCK_BY_ID[p.assetId].sector) >= 0;
@@ -964,7 +1026,8 @@ function copySource(id, i){
 }
 /* 판정 난수가 필요 없는 정산 단계 라벨 (유물이 아닌 source) */
 const SETTLE_SOURCE_LABEL = { card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
-const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : (SETTLE_SOURCE_LABEL[src] || src);
+const bossStepLabel = () => run.boss ? BOSS_BY_ID[run.boss].icon + ' ' + BOSS_BY_ID[run.boss].name : '보스';
+const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : src === 'boss' ? bossStepLabel() : (SETTLE_SOURCE_LABEL[src] || src);
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
 
 /* 순수 계산 (rand·상태 변경 없음): 포지션 p가 오늘 base만큼 벌었을 때의 정산 단계. 미리보기(previewSettlement)와 공용.
@@ -984,6 +1047,7 @@ function settleSteps(p, base, crit){
       if(!fx || (base < 0) !== fx.onLoss) return;
       const e = fx.apply(p, base);
       if(!e) return;
+      if(bossMod('noAddRelics', false) && (e.kind === 'add' || e.kind === 'mult')) return;   // 더하기 봉인 (보스)
       const label = e.label || relicStepLabel(src);
       push(e, id, src === id ? label : `${relicStepLabel(id)} ← ${label}`);
     });
@@ -993,6 +1057,8 @@ function settleSteps(p, base, crit){
     if(run.week.futures && run.week.futures !== 1) push({ kind: 'xmult', value: run.week.futures }, 'futures', `${SETTLE_SOURCE_LABEL.futures} ×${run.week.futures}`);
     if(hasRelic('infinity')){ const d = String(Math.floor(Math.abs(chips * m))).length; push({ kind: 'xmult', value: d }, 'infinity', `${relicStepLabel('infinity')} ${d}자리`); }
     if(crit > 1) push({ kind: 'xmult', value: crit }, 'crit', `${SETTLE_SOURCE_LABEL.crit} ×${crit}`);
+    const cap = bossMod('settleMultCap', 0);   // 배수 상한제 (보스): 넘은 만큼 깎는 단계 하나
+    if(cap && m > cap) push({ kind: 'xmult', value: cap / m }, 'boss', `${bossStepLabel()} ×${cap} 상한`);
   }
   return { steps, chips, mult: m, total: chips * m };
 }
@@ -1024,6 +1090,13 @@ function settleDay(){
       r.steps.push({ label: `${SETTLE_SOURCE_LABEL.timeLoop} ×${run.timeLoopToday}`, kind: 'add', value: again,
                      runningChips: r.chips + again / r.mult, runningMult: r.mult, source: 'timeLoop' });
       payout += again;
+    }
+    const keep = bossMod('settlePayoutMult', 1);   // 국세청 세무조사 (보스): 보너스의 일부 추징 — 'add' 단계 하나로 기록 (합계 = payout 유지)
+    if(payout > 0 && keep < 1){
+      const cut = payout * (1 - keep), last = r.steps[r.steps.length - 1];
+      r.steps.push({ label: `${bossStepLabel()} −${Math.round((1 - keep) * 100)}%`, kind: 'add', value: -cut,
+                     runningChips: last.runningChips - cut / last.runningMult, runningMult: last.runningMult, source: 'boss' });
+      payout -= cut;
     }
     p.upStreak = base > 0 ? limitUpStreak(p, base) : base < 0 ? 0 : (p.upStreak || 0);   // 상한가 행진
     p.todayX = [];
@@ -1111,7 +1184,7 @@ function buildSettlementChain(diamondPaid){
              steps, finalPnl: steps[steps.length - 1].runningTotal };
   });
 }
-const marginCallRatio = p => hasRelic('coldwallet') && RELIC_COLD_WALLET_STOCKS.indexOf(p.assetId) >= 0 ? RELIC_COLD_WALLET_RATIO : MARGIN_CALL_RATIO;
+const marginCallRatio = p => (hasRelic('coldwallet') && RELIC_COLD_WALLET_STOCKS.indexOf(p.assetId) >= 0 ? RELIC_COLD_WALLET_RATIO : MARGIN_CALL_RATIO) + bossMod('marginCallAdd', 0);   // 증거금 상향 (보스)
 const posPnl       = p => posEquity(p) - p.principal;
 const posReturn    = p => posPnl(p) / p.principal;
 const avgPrice     = p => p.entryExposure / p.shares;
@@ -1123,7 +1196,7 @@ const collateralRatio  = p => {
   const loan = posLoan(p);
   return loan > 0 ? exposure(p) / loan : Infinity;                                    // 롱: 평가액 ÷ 빌린 돈 (1x는 빌린 돈 없음)
 };
-const maintRatio   = p => (p.dir < 0 ? SHORT_MAINTENANCE_RATIO : MAINTENANCE_RATIO) - (coldWalletOn(p) ? RELIC_COLD_WALLET_MAINT_CUT : 0);
+const maintRatio   = p => (p.dir < 0 ? SHORT_MAINTENANCE_RATIO : MAINTENANCE_RATIO) - (coldWalletOn(p) ? RELIC_COLD_WALLET_MAINT_CUT : 0) + bossMod('maintAdd', 0);   // 증거금 상향 (보스)
 const marginHealth = p => MAINTENANCE_MARGIN_ON ? collateralRatio(p) / maintRatio(p) : marginRatio(p) / marginCallRatio(p);   // 1 미만 = 반대매매
 const marginCalled = p => marginHealth(p) < 1;
 const marginWarn   = p => MAINTENANCE_MARGIN_ON ? marginHealth(p) < MAINT_WARN_HEALTH : marginRatio(p) < MARGIN_WARN_RATIO;
@@ -1132,7 +1205,7 @@ const coldWalletSaved = p => coldWalletOn(p) && !marginCalled(p) && (MAINTENANCE
 const isMarginable = p => p.lev > 1 || p.dir < 0;          // 반대매매 대상
 const posLoan      = p => p.dir > 0 ? Math.max(0, p.entryExposure - p.principal) : 0;
 const posBorrowed  = p => p.dir > 0 ? posLoan(p) : exposure(p); // 이자가 붙는 금액: 신용대출 / 빌린 주식 전액
-const canSell      = p => !p.diamond && !run.noSellToday;
+const canSell      = p => !p.diamond && !run.noSellToday && !bossHalt(p.assetId);   // 거래정지 종목은 못 판다 (보스)
 const isProtected  = p => p.protectedToday || run.allProtectedToday;
 const isLosing     = p => posPnl(p) < 0;
 const isWinning    = p => posPnl(p) > 0;
@@ -1181,8 +1254,11 @@ function openPosition(stockId, principal, lev, dir, payCash){
 }
 
 /* 청산: 포지션순자산이 현금으로 (음수면 미수). penalty = 반대매매 투매 손실 */
+const sellTaxOn = (p, frac) => exposure(p) * frac * bossMod('sellTax', 0);   // 거래세 인상 (보스): 매도 금액 × 세율
 function closePosition(p, penalty){
-  const proceeds = posEquity(p) - penalty;
+  const tax = sellTaxOn(p, 1);
+  run.taxPaid += tax;
+  const proceeds = posEquity(p) - penalty - tax;
   const pnl = proceeds - p.principal;
   run.cash += proceeds;
   run.realized += pnl;
@@ -1192,8 +1268,10 @@ function closePosition(p, penalty){
 }
 
 function closePart(p, frac){   // 포지션의 frac만큼 시장가 매도
-  const pnl = posPnl(p) * frac;
-  run.cash += posEquity(p) * frac;
+  const tax = sellTaxOn(p, frac);
+  run.taxPaid += tax;
+  const pnl = posPnl(p) * frac - tax;
+  run.cash += posEquity(p) * frac - tax;
   run.realized += pnl;
   p.principal *= 1 - frac;
   p.shares *= 1 - frac;
@@ -1252,7 +1330,7 @@ function inverseMasterDraw(stockId){   // 인버스 장인
 /* ── 예약주문 · 반대매매 (장중 매 틱) ── */
 function checkOrders(){
   run.positions.slice().forEach(p => {
-    if(p.diamond) return;
+    if(p.diamond || bossHalt(p.assetId)) return;   // 거래정지 종목은 예약주문도 체결되지 않는다
     const r = posReturn(p);
     if(p.trailing) p.trailPeak = Math.max(p.trailPeak, r);
     let kind = '';
@@ -1776,8 +1854,24 @@ function checkPlayInner(handIdx, targetId){
   const t = resolveTarget(card, targetId);
   if(card.target && !t) return 'target';
   if(card.type === 'stock' && run.buyAmount && run.buyAmount < STOCK_BUY_MIN) return 'amount';
+  if(bossBlocks(card, t)) return 'boss';   // 보스 주간 제한 (공매도 금지·거래정지)
   if(!card.valid(t)) return 'invalid';
   return null;
+}
+
+/* 보스가 막는 카드: 공매도 금지 = 숏을 여는 카드(공매도·숏 재상장·숏 대기 중인 종목 카드), 거래정지 = 그 종목·포지션을 다루는 카드 */
+function bossBlocks(card, t){
+  if(bossMod('noShort', false)){
+    if(card.base === 'short') return true;
+    if(card.base === 'relist' && run.liquidated.length && run.liquidated[run.liquidated.length - 1].dir < 0) return true;
+    if(card.stock && run.pending.dir < 0) return true;
+  }
+  if(run.haltStock){
+    if(card.stock === run.haltStock) return true;
+    if(t && card.target === 'asset' && t.id === run.haltStock) return true;
+    if(t && card.target === 'position' && t.assetId === run.haltStock) return true;
+  }
+  return false;
 }
 
 function validTargetIds(handIdx){
@@ -1880,7 +1974,8 @@ function newRun(){
     relics: [], relicChoices: [], rewardStep: '',
     relicState: {},                          // 성장형 유물 { id: {stacks, best} }
     combo: { up: 0, down: 0 }, comboPnl: {}, // 장중 콤보 (updateCombo) · 직전 틱 포지션별 평가손익
-    shop: { singles: [], singlesBought: [], removed: 0, relics: [] }
+    shop: { singles: [], singlesBought: [], removed: 0, relics: [] },
+    bossPlan: {}, boss: '', haltStock: '', bossesBeaten: [], endBoss: '', taxPaid: 0   // 보스 주간 (S9): 주차 → 보스 id · 이번 주 보스 · 거래정지 종목 · 통과한 보스 · 파산·미달 때 보스 · 거래세 누적
   };
 }
 
@@ -1892,6 +1987,7 @@ function startNewRun(){
   initAssets();
   initDayCharts();
   run = newRun();
+  run.bossPlan = rollBossPlan();   // 보스 일정 (1주차는 보스 없음)
   initRegimes();
   run.newsTomorrow = pickNews();
   buildWeekPiles();
@@ -1945,6 +2041,10 @@ function startMarket(){
     outcome = rollMarketCard(run.marketCard);   // NORMAL = 시장이 무시 → 평소처럼 (랜덤 이벤트 가능)
     if(outcome !== 'NORMAL'){ run.forcedState = outcome; run.cardMarket = true; }
   }
+  const bubbleUp = bossMod('bubbleUpDays', 0);   // 버블의 정점 (보스): 카드로 정한 장세가 없으면 앞 며칠 강세장 → 남은 날 약세장
+  if(bubbleUp && !run.forcedState) run.forcedState = run.day <= bubbleUp ? 'BULL' : 'BEAR';
+  const crash = bossMod('crashDay', 0) === run.day;   // 블랙 먼데이 (보스): 그날은 약세장 + 개장 폭락
+  if(crash && !run.forcedState) run.forcedState = 'BEAR';
   run.marketOpenEquity = netEquity();
   if(run.newsToday){   // 뉴스 판정: 확정은 항상, 루머는 NEWS_RUMOR_CHANCE
     const n = NEWS_BY_ID[run.newsToday];
@@ -1956,6 +2056,11 @@ function startMarket(){
   const gaps = run.gapNext;                         // 작전 세력 이탈: 개장 직후 갭
   run.gapNext = [];
   gaps.forEach(g => { shockStock(g.stockId, g.pct); emit('gapOpen', {stockId: g.stockId, pct: g.pct}); });
+  if(crash){
+    const pct = bossMod('crashPct', 0);
+    STOCKS.filter(s => !bossHalt(s.id)).forEach(s => shockStock(s.id, s.beta > 0 ? -pct : pct));   // 인버스는 반대로
+    emit('bossCrash', {id: run.boss, pct});
+  }
   applyPriceLimits();
   if(run.forcedState){
     marketState = run.forcedState;
@@ -2049,7 +2154,7 @@ function rollSignal(stockId, acc){
   }
   run.signals[stockId] = { shown, acc, revealed: acc >= 1 };
 }
-function rollSignals(){ STOCKS.filter(hasRegime).forEach(s => rollSignal(s.id, SIGNAL_ACCURACY)); }
+function rollSignals(){ const acc = SIGNAL_ACCURACY + bossMod('signalAccAdd', 0); STOCKS.filter(hasRegime).forEach(s => rollSignal(s.id, acc)); }   // 개미 털기 (보스): 적중률 −
 /* 장 마감: 오늘 시그널이 맞았는지 (시세판 ✓/✗, 시뮬레이터 적중률 실측) — 추세가 바뀌기 전에 */
 function resolveSignals(){
   run.signalResults = {};
@@ -2145,6 +2250,8 @@ function tipExpectedValue(choiceIdx){
 
 /* 금감원 감시 게이지 */
 function raiseFss(gain){
+  const fssMult = bossMod('fssMult', 1);   // 금감원 특별 단속 (보스)
+  if(fssMult !== 1) gain = Math.round(gain * fssMult);
   const rawGain = gain;   // 연출용: 유물이 덜어준 양
   if(hasRelic('fssconnect')) gain = Math.round(gain * (1 - RELIC_FSS_CONNECT_CUT));   // 금감원 인맥
   if(gain < rawGain) emit('relicTriggered', {id: 'fssconnect', amount: rawGain - gain});
@@ -2209,13 +2316,13 @@ function updateMarketEvent(){
 /* ══ 찌라시: 장중 선택 이벤트. 도착하면 resolveTip()으로 고를 때까지 시장이 멈춘다 ══ */
 const TIP_BY_ID = {};
 TIP_EVENTS.forEach(e => { TIP_BY_ID[e.id] = e; });
-function tipChance(){ return TIP_EVENT_CHANCE; }
+function tipChance(){ return TIP_EVENT_CHANCE * bossMod('tipChanceMult', 1); }   // 찌라시 폭탄 (보스)
 const tipScale   = () => currentTarget() / ROUND_TARGETS[0];   // 금액을 주차 목표에 비례해 키운다
 const tipStockId = (tip, stock) => stock === '$pick' ? tip.stockId : stock;
 
 function maybeTriggerTip(){
   run.ticksSinceTip++;
-  if(run.pendingTip || run.tipsToday >= TIP_MAX_PER_DAY || run.ticksSinceTip < TIP_MIN_GAP_TICKS) return;
+  if(run.pendingTip || run.tipsToday >= bossMod('tipMaxPerDay', TIP_MAX_PER_DAY) || run.ticksSinceTip < TIP_MIN_GAP_TICKS) return;
   if(rand() >= tipChance()) return;
   const cands = TIP_EVENTS.filter(e => e.id !== run.lastTipId && !e.special);   // 같은 찌라시 연속 금지 · 조건형(세력 매집)은 제외
   openTip(cands[randInt(cands.length)].id);
@@ -2223,7 +2330,7 @@ function maybeTriggerTip(){
 
 function openTip(eventId, stockId){
   const ev = TIP_BY_ID[eventId];
-  const pool = STOCKS.filter(s => s.beta > 0);
+  const pool = STOCKS.filter(s => s.beta > 0 && !bossHalt(s.id));   // 거래정지 종목은 찌라시 대상에서 뺀다
   run.pendingTip = { eventId, stockId: stockId || (ev.pick ? pool[randInt(pool.length)].id : ''), accumUp: 0 };
   if(eventId === 'accum') run.pendingTip.accumUp = accumUpChance(run.pendingTip.stockId);
   run.tipsToday++;
@@ -2238,7 +2345,7 @@ const gapRisk   = s => s.volatility + Math.abs(s.beta) * GAP_BETA_WEIGHT;
 const gapChance = s => gapRisk(s) * GAP_CHANCE_PER_RISK * (GAP_STATE_MULT[marketState] || 1);
 /* 이번 틱 갭 확률 (상승·하락 따로): 뉴스 gapMult는 양쪽, 과열(HOT)은 하락 쪽만 GAP_HOT_MULT배 */
 function gapOdds(s){
-  const base = gapChance(s) * newsEffectFor(s.id).gapMult;
+  const base = bossHalt(s.id) ? 0 : gapChance(s) * newsEffectFor(s.id).gapMult * bossGapMult();   // 보스: 개미 털기·블랙 먼데이·버블 / 거래정지는 갭 없음
   return { up: base * GAP_UP_SHARE, down: base * (1 - GAP_UP_SHARE) * (assets[s.id].regime === 'HOT' ? GAP_HOT_MULT : 1) };
 }
 function rollGaps(){
@@ -2413,14 +2520,15 @@ function endOfRound(){
   if(eq < target) return endRun('MISSED');
   if(eq >= target * (1 + COMPOUND_EXCESS)) growRelic('compoundMonster', 1);   // 복리 괴물
   else shrinkRelic('compoundMonster', 1, 'weakWeek');
-  run.lastWeek.slush = slushEarned(eq, target);
+  run.lastWeek.slush = slushEarned(eq, target) + (run.boss ? BOSS_SLUSH_BONUS : 0);   // 보스 주 통과 보너스
   run.slush += run.lastWeek.slush;
   run.weeksCleared = run.round;
+  if(run.boss){ run.bossesBeaten.push(run.boss); emit('bossBeaten', {id: run.boss, round: run.round, slush: BOSS_SLUSH_BONUS}); }
   if(run.round >= MAX_ROUND) return endRun('VICTORY');
   run.phase = 'reward';
   run.rewardStep = 'card';                                        // 카드 보상 → 유물 보상 → 암시장
   run.rewardChoices = rollRewards(REWARD_CHOICES, run.masterDeck); // 이미 덱에 있는 카드는 제외
-  run.relicChoices = rollRelics(RELIC_REWARD_CHOICES);             // 아직 없는 유물만
+  run.relicChoices = rollRelics(RELIC_REWARD_CHOICES + (run.boss ? BOSS_RELIC_CHOICE_BONUS : 0));   // 아직 없는 유물만 (보스 주 통과 +1)
   emit('roundClear', run.lastWeek);
 }
 
@@ -2437,6 +2545,7 @@ function weekSummary(eq, target, diamondBonus, bailout){
     buys: run.buys - ws.buys, fines: run.finesPaid - ws.finesPaid, tipNet: run.tipNet - ws.tipNet, peak: run.weekPeak,
     settled: run.weekDays.reduce((sum, d) => sum + d.payout, 0),   // 이번 주 장 마감 정산 보너스 합계 (이미 현금)
     slush: 0,   // 이번 주 비자금 적립 (통과했을 때 endOfRound가 채움)
+    boss: run.boss, nextBoss: nextBossId(),   // 이번 주 보스 · 다음 주 보스 예고 (보스 주간)
     settlementChain: [],   // 결산 체인 연출용 포지션별 단계 (endOfRound가 채움)
     progress: target > ws.equity ? (eq - ws.equity) / (target - ws.equity) : 1   // 이번 주 필요 상승분 중 번 비율
   };
@@ -2781,6 +2890,7 @@ function startNextRound(){
   markWeekStart();
   buildWeekPiles();
   emit('roundStart', {round: run.round, target: currentTarget()});
+  startBossWeek();   // 보스 주간이면 보스·거래정지 종목 (bossStart)
   startDay();
 }
 
@@ -2790,6 +2900,7 @@ function endRun(reason){
   run.endEquity = netEquity();
   run.peakEquity = Math.max(run.peakEquity, run.endEquity);
   run.endCause = classifyEnd(reason);
+  run.endBoss = reason !== 'VICTORY' ? run.boss : '';   // 파산 기록 '사인': 보스 주에 끝났으면 그 보스
   emit('runOver', {reason});
   return true;
 }

@@ -128,7 +128,8 @@ function playGame(E, strat, seed){
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
     growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
     shop: shopLog,
-    weekEq: weekEquities(E, r)   // 주마다 결산 순자산 (그 주 중간에 파산했으면 그 주는 없음)
+    weekEq: weekEquities(E, r),   // 주마다 결산 순자산 (그 주 중간에 파산했으면 그 주는 없음)
+    bossPlan: r.bossPlan || {}    // 보스 주간 (S9): 주차 → 보스 id (없는 엔진·보스 끔이면 {}) — sim/boss-check.js
   };
 }
 

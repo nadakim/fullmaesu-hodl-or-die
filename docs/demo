@@ -1440,6 +1440,39 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 @media (prefers-reduced-motion: reduce){.fx-streak.c4,.fx-streak.c5,.fx-streak.bump{animation:none !important;}}
 .fx-vignette{position:fixed;inset:0;z-index:84;pointer-events:none;opacity:0;box-shadow:inset 0 0 calc(140 * var(--u)) calc(40 * var(--u)) #000;}
 
+/* (S9) 보스 주간: HUD 배지 · 예고 상자(결산·보상·암시장) · 도감 타일 · 거래정지 시세 · 중앙 경보 */
+.boss-chip{white-space:nowrap;padding:calc(2 * var(--u)) calc(6 * var(--u)) calc(1 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;
+  color:var(--red);background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--red2);cursor:help;}
+.boss-chip.final{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
+.boss-notice{margin:calc(10 * var(--u)) 0;padding:calc(8 * var(--u)) calc(10 * var(--u));text-align:left;background:#000;
+  box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;}
+.boss-notice.final{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
+.boss-notice .bn-lead{color:var(--red);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
+.boss-notice.final .bn-lead{color:var(--gold);}
+.boss-notice .bn-name{color:var(--text);font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.5;}
+.boss-notice .bn-kind{color:var(--muted);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
+.boss-notice .bn-desc{color:var(--text2);}
+.boss-notice.compact{padding:calc(5 * var(--u)) calc(8 * var(--u));margin:calc(6 * var(--u)) 0;}
+.boss-notice.compact .bn-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
+.boss-beaten{margin:calc(4 * var(--u)) 0 calc(10 * var(--u));color:var(--gold);font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;}
+.boss-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(calc(170 * var(--u)),1fr));gap:calc(12 * var(--u));margin-bottom:calc(16 * var(--u));}
+.boss-tile{background:var(--panel2);padding:calc(10 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
+  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;color:var(--text2);}
+.boss-tile.counter{box-shadow:0 0 0 calc(2 * var(--u)) var(--purple),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.boss-tile.final{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.boss-tile .bt-icon{font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);}
+.boss-tile .bt-name{color:var(--text);font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
+.boss-tile .bt-kind{color:var(--red);}
+.boss-tile.counter .bt-kind{color:var(--purple);}
+.boss-tile.final .bt-kind{color:var(--gold);}
+.quote-row.halted{opacity:.55;}
+.ending-boss{color:var(--red);}
+.rr-boss{color:var(--red);}
+.boss-alert .ga-name{font-family:var(--gf-lg),monospace;font-size:var(--fs-lg);}
+.boss-alert .ga-meme{color:var(--text);}
+.boss-alert.final .ga-box{box-shadow:0 0 0 calc(4 * var(--u)) var(--gold2),0 0 0 calc(8 * var(--u)) #000,calc(10 * var(--u)) calc(10 * var(--u)) 0 #000;}
+.boss-alert.final .ga-flash{background:var(--gold);}
+
 /* (S8-46) ?tuner=1 연출 조정 패널: 오른쪽 위 떠 있는 창 (─ = 접기) */
 .tuner{position:fixed;right:calc(8 * var(--u));top:calc(8 * var(--u));z-index:130;width:calc(320 * var(--u));max-height:calc(100dvh - 16 * var(--u));overflow-y:auto;
   background:var(--panel);color:var(--text);padding:calc(8 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.3;
@@ -1703,6 +1736,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
           <span id="roundText">WEEK 1/8</span>
           <div class="day-track"><div class="day-fill" id="dayFill"></div></div>
           <span id="dayText">DAY 1/5 · 장전</span>
+          <span class="boss-chip" id="bossChip" hidden></span>
           <div class="speed-btns" id="speedBtns" title="장중 속도 (키보드 1~4). 결과·확률은 그대로"></div>
         </div>
         <div class="fss" id="fssBox" title="시장 카드(비둘기·매파·CEO 트윗·리딩방·작전 세력)를 쓸 때마다 쌓인다. 가득 차면 제재: 과징금 / 매수 금지 / 강제 청산.">
@@ -2088,9 +2122,10 @@ const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
   invalid:'지금은 쓸 수 없는 카드입니다', target:'대상을 고르세요',
   unplayable:'사용할 수 없는 카드입니다', none:'카드가 없습니다',
-  locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번)',
+  locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번 / 거래정지)',
   banned:'☎ 금감원 제재 중 — 오늘은 신규 매수 금지',
-  amount:`매수 금액은 최소 ₩${STOCK_BUY_MIN}만입니다`
+  amount:`매수 금액은 최소 ₩${STOCK_BUY_MIN}만입니다`,
+  boss:'🛑 보스 주간 제한 — 이번 주에는 쓸 수 없습니다'
 };
 const CARD_ORDER = {};
 CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; CARD_ORDER[c.id + '+'] = i + 0.5; });   // 강화판(+)은 원래 카드 바로 뒤
@@ -2234,6 +2269,50 @@ function showGapAlert(item, ctx){
 function hideGapAlert(item){
   if(item.el){ item.el.remove(); item.el = null; }
   (item.blinks || []).forEach(r => r.classList.remove('fx-blink-up', 'fx-blink-down'));
+}
+
+/* ══ 보스 주간 (S9, docs/design/BOSS_WEEKS.md) — 엔진 BOSSES·run.boss·nextBossId()를 읽기만 한다 ══ */
+const signalAccNow = () => SIGNAL_ACCURACY + (run ? bossMod('signalAccAdd', 0) : 0);   // 시그널 적중률 (개미 털기 보스면 −15%p) — 엔진 rollSignals와 같은 값
+const bossText = id => BOSS_BY_ID[id] ? `${BOSS_BY_ID[id].icon} ${BOSS_BY_ID[id].name}` : '';
+const bossKindLabel = b => b.final ? '최종 보스' : b.counter ? '정산 카운터' : '일반 보스';
+/* 설명 + 지금 판에서 정해지는 값 (상장폐지 심사 = 거래정지될 종목) */
+const bossDescNow = b => b.desc + (b.mods.haltTopBeta ? ` (대상: ${STOCK_BY_ID[run && run.haltStock ? run.haltStock : topBetaStockId()].name})` : '');
+function bossNotice(id, lead, compact){   // 결산·보상·암시장 예고 상자
+  const b = BOSS_BY_ID[id];
+  if(!b) return '';
+  return `<div class="boss-notice ${b.final ? 'final' : ''} ${compact ? 'compact' : ''}" data-boss="${b.id}">
+    <div class="bn-lead">${lead}</div><div class="bn-name">${b.icon} ${b.name} <span class="bn-kind">${bossKindLabel(b)}</span></div>
+    <div class="bn-desc">${bossDescNow(b)}</div></div>`;
+}
+const bossTile = b => `<div class="boss-tile ${b.final ? 'final' : b.counter ? 'counter' : ''}" data-boss="${b.id}">
+    <div class="bt-icon">${b.icon}</div><div class="bt-name">${b.name}</div><div class="bt-kind">${bossKindLabel(b)}</div><div class="bt-desc">${bossDescNow(b)}</div></div>`;
+function bossRejectText(){
+  const b = BOSS_BY_ID[run.boss];
+  return b ? `${b.icon} ${b.name} — 이번 주에는 쓸 수 없는 카드입니다` : REJECT_TEXT.invalid;
+}
+/* 보스 주 시작: 중앙 경보 (막는 연출 — 스킵 가능). 갭 경보와 같은 틀 */
+const BOSS_ALERT_MS = 2200;
+function enqueueBossAlert(id){
+  const b = BOSS_BY_ID[id];
+  if(!b) return;
+  const item = { kind: 'boss', tier: 3, blocking: true, duration: BOSS_ALERT_MS, payload: { id } };
+  item.play = ctx => {
+    const el = document.createElement('div');
+    el.className = 'gap-alert down t3 boss-alert' + (b.final ? ' final' : '');
+    el.innerHTML = `<div class="ga-flash"></div><div class="ga-rays"></div>
+      <div class="ga-box">
+        <div class="ga-tape"><span>⚠ ${b.final ? 'FINAL BOSS' : 'BOSS WEEK'} ⚠</span></div>
+        <div class="ga-name">${b.icon} ${b.name}</div>
+        <div class="ga-meme">${bossDescNow(b)}</div>
+        <div class="ga-warn">WEEK ${run.round} · 통과하면 비자금 +${fmtSlush(BOSS_SLUSH_BONUS)} · 유물 선택지 +${BOSS_RELIC_CHOICE_BONUS}</div>
+      </div>`;
+    document.body.appendChild(el);
+    item.el = el;
+    Sound.play('gapAlarm', { pitch: b.final ? Sound.semis(-5) : 1 });
+    Fx.hitStop(FX_TIER[3].hs); Fx.afterStop(() => Fx.shake(b.final ? 3 : 2));
+  };
+  item.stop = item.skip = () => { if(item.el){ item.el.remove(); item.el = null; } };
+  Fx.enqueue(item);
 }
 
 /* ══ 찌라시 결과 중앙 알림 (갭 경보와 같은 틀). 순자산 변화로 상승·횡보·하락 ══ */
@@ -2778,7 +2857,14 @@ function renderStateBadge(){
 setEventListener((type, d) => onGameEvent(type, d));   // 엔진 이벤트 → 화면 (onGameEvent를 바꿔 끼워도 따라가도록 한 번 감싼다)
 function onGameEvent(type, d){
   switch(type){
-    case 'cardRejected': toast(REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
+    case 'cardRejected': toast(d.reason === 'boss' ? bossRejectText() : REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
+    case 'bossStart': enqueueBossAlert(d.id); break;
+    case 'bossBeaten': toast(`🏆 보스 격파: ${bossText(d.id)} — 비자금 +${fmtSlush(d.slush)} · 유물 선택지 +${BOSS_RELIC_CHOICE_BONUS}`, 'good'); break;
+    case 'bossCrash':
+      toast(`🖤 블랙 먼데이: 개장 직후 전 종목 −${Math.round(d.pct * 100)}%`, 'bad');
+      $('newsText').textContent = '🖤 블랙 먼데이 — 개장 직후 전 종목 폭락';
+      Sound.play('crashDown'); Fx.shake(3); Fx.glitch();
+      break;
     case 'bought':
       lastBoughtPosId = d.pos.id;
       juiceBought(d);   // 풀매수처럼 한 번에 여러 종목이면 하나씩, 효과음 반음씩 상승
@@ -3112,6 +3198,9 @@ function renderHud(){
   $('roundText').textContent = `WEEK ${run.round}/${MAX_ROUND}`;
   $('dayText').textContent = `DAY ${run.day}/${DAYS_PER_ROUND} · ${market ? '장중' : '장전'}`;
   $('dayFill').style.width = (market ? run.tickInDay / TICKS_PER_DAY * 100 : 0) + '%';
+  const bc = $('bossChip'), boss = BOSS_BY_ID[run.boss];   // (S9) 보스 주간 배지 — 호버하면 효과
+  bc.hidden = !boss;
+  if(boss){ const t = `${boss.icon} ${boss.name}`, tip = `${boss.final ? '최종 보스' : '보스 주간'} — ${bossDescNow(boss)}`; if(bc.textContent !== t) bc.textContent = t; if(bc.title !== tip) bc.title = tip; bc.classList.toggle('final', !!boss.final); }
 
   $('totalAssets').textContent = fmtMoney(eq);
   $('totalAssets').style.color = eq >= START_CASH ? 'var(--green)' : 'var(--red)';
@@ -3198,7 +3287,7 @@ function signalHtml(s){   // 시세판: 아이콘 + 적중률만 (라벨·어제
 function signalHelp(s){
   if(!hasRegime(s)) return '인버스는 추세가 따로 없고 지수를 반대로 따라간다';
   const y = run.signalResults[s.id], sg = run.signals[s.id];
-  return (sg ? `오늘 시그널: ${SIGNAL_LABEL[sg.shown]} · ${sg.revealed ? '확정 100%' : `적중률 ${Math.round(sg.acc * 100)}%`}\n` : '') + `시그널은 ${Math.round(SIGNAL_ACCURACY * 100)}% 확률로 실제 추세, 아니면 나머지 셋 중 하나.\n` +
+  return (sg ? `오늘 시그널: ${SIGNAL_LABEL[sg.shown]} · ${sg.revealed ? '확정 100%' : `적중률 ${Math.round(sg.acc * 100)}%`}\n` : '') + `시그널은 ${Math.round(signalAccNow() * 100)}% 확률로 실제 추세, 아니면 나머지 셋 중 하나.\n` +
     `추세별 하루 추가 등락: 매수세 ${fmtPct(perDay(REGIME_DRIFT.UP))} · 보합 0% · 매도세 ${fmtPct(perDay(REGIME_DRIFT.DOWN))} · 과열 ${fmtPct(perDay(REGIME_DRIFT.HOT))} (갭하락 확률 ×${GAP_HOT_MULT})` +
     (y ? `\n어제: ${SIGNAL_LABEL[y.shown]} 표시 → 실제 ${SIGNAL_LABEL[y.actual]} ${y.hit ? '✓' : '✗'}` : '');
 }
@@ -3244,6 +3333,9 @@ function renderQuotes(){
     const lim = a.limitHit;   // (S7-19) 상·하한가: 등락률 칸을 색으로 칠한다 (이름 칸은 좁아서 잘린다)
     if(lim){ ch.textContent = (lim > 0 ? '上 ' : '下 ') + ch.textContent; ch.className += lim > 0 ? ' limit-up' : ' limit-down'; ch.title = lim > 0 ? `상한가 (+${Math.round(PRICE_LIMIT * 100)}% 제한)` : `하한가 (−${Math.round(PRICE_LIMIT * 100)}% 제한)`; }
     else ch.title = '';
+    const halted = run.haltStock === s.id;   // (S9) 상장폐지 심사: 거래정지
+    row.classList.toggle('halted', halted);
+    if(halted){ ch.textContent = '停 ' + ch.textContent; ch.title = '거래정지 (보스: 상장폐지 심사) — 가격이 멈추고 사고팔 수 없다'; }
     tag.textContent = gap ? (gap > 0 ? 'GAP▲' : 'GAP▼') : !pm ? '' : run.phase !== 'market' ? '찌라시?' : pm > 0 ? '작전▲' : '설거지▼';
     tag.className = 'q-tag ' + (gap ? 'gap' : !pm ? '' : run.phase !== 'market' ? 'hidden' : pm > 0 ? 'up' : 'down');
     row.classList.toggle('targetable', targets.indexOf(s.id) >= 0);
@@ -3549,7 +3641,7 @@ $('speedBtns').addEventListener('click', e => { const b = e.target.closest('[dat
 
 /* ── (S5-23) 시그널 설명서 (≡ 메뉴). 숫자는 엔진 CONFIG 그대로 ── */
 function showSignalGuide(){
-  const acc = Math.round(SIGNAL_ACCURACY * 100);
+  const acc = Math.round(signalAccNow() * 100);
   const chip = k => `<span class="q-sig"><span class="sig-chip s-${k}">${SIGNAL_ICON[k]}</span></span>`;
   showOverlay(`
     <div class="ov-title" style="color:var(--cyan)">📖 시그널 설명서</div>
@@ -3578,6 +3670,7 @@ function showReward(d){
   showOverlay(`
     <div class="ov-title" style="color:var(--green)">WEEK ${run.round} 보상</div>
     <div class="ov-sub">카드 1장을 고르세요. 덱 ${run.masterDeck.length}장 · 다음 주 목표 <span style="color:var(--gold)">${fmtMoney(ROUND_TARGETS[run.round])}</span></div>
+    ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스', true) : ''}
     <div class="pile-title">▌ 카드 획득 — 덱에 없는 새 카드 중 1장${run.relicChoices.length ? ' (다음: 유물 선택)' : ''}</div>
     <div class="ov-cards">${run.rewardChoices.length
       ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
@@ -3601,7 +3694,8 @@ function showUpgradePick(){
 function showRelicReward(){
   showOverlay(`
     <div class="ov-title" style="color:var(--gold)">WEEK ${run.round} 결산 — 유물</div>
-    <div class="ov-sub">아직 없는 유물 ${run.relicChoices.length}개 중 1개. 한 판 동안 상시 발동합니다. 유물 칸 ${run.relics.length}/${RELIC_SLOTS}${relicSlotsFull() ? ' — 가득 차서 하나를 교체해야 합니다' : ''}.</div>
+    <div class="ov-sub">아직 없는 유물 ${run.relicChoices.length}개 중 1개${run.boss ? ` (🏆 보스 격파 +${BOSS_RELIC_CHOICE_BONUS})` : ''}. 한 판 동안 상시 발동합니다. 유물 칸 ${run.relics.length}/${RELIC_SLOTS}${relicSlotsFull() ? ' — 가득 차서 하나를 교체해야 합니다' : ''}.</div>
+    ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스', true) : ''}
     <div class="ov-cards">${run.relicChoices.map(id => relicTile(RELIC_BY_ID[id], { attrs: `data-relic-reward="${id}"` })).join('')}</div>
     <button class="ov-btn alt" data-act="skipRelic">▷ 유물 건너뛰기</button>`);
 }
@@ -3744,7 +3838,8 @@ function recordRun(n, cause){
   r.history.unshift({
     n, cause, round: run.round, day: run.day, weeks: run.weeksCleared,
     eq: Math.round(run.endEquity), peak, liq: run.liquidations,
-    relics: run.relics.length, deck: run.masterDeck.length, at: Date.now()
+    relics: run.relics.length, deck: run.masterDeck.length, at: Date.now(),
+    boss: run.endBoss || '', bosses: run.bossesBeaten.length   // (S9) 사인 보스 · 격파한 보스 수
   });
   const t = r.totals;   // 목록(최근 30판)과 달리 전체 판 누적
   t.runs = Math.max(t.runs + 1, n);   // n = '개미 N회차' 카운터 (hodl.antRuns)
@@ -3777,6 +3872,7 @@ function showRunOver(reason){
     <div class="ov-title ending-title" style="color:${e.color}" data-cause="${cause}">${e.title}</div>
     <div class="ov-sub">${e.sub}</div>
     <div class="ending-cause">${e.cause(w)}</div>
+    ${run.endBoss ? `<div class="ending-badge ending-boss">🏴 사인: ${bossText(run.endBoss)} (WEEK ${run.round} ${BOSS_BY_ID[run.endBoss].final ? '최종 ' : ''}보스)</div>` : ''}
     <div class="ending-badge">${cause === 'VICTORY' ? `개미 ${n}회차 만에 졸업` : `당신은 이제 개미 ${n}회차`} · 등급: ${antGrade(weeks)}</div>
     ${firstTime ? `<div class="ending-badge ending-new">★ 새 엔딩 해금 · 파산 기록 ${unlocked} / ${Object.keys(ENDINGS).length}</div>` : ''}
     <div class="stat-grid">
@@ -3856,8 +3952,8 @@ function stagePitch(n){   // n번째 단계의 음높이 (5음계, maxOctaves �
   const P = JUICE_CONFIG.pentatonic, oct = Math.floor(n / P.length) % (JUICE_CONFIG.maxOctaves + 1);
   return Sound.semis(P[n % P.length] + 12 * oct);
 }
-const stageChipText = st => st.kind === 'add' ? `${st.label} +${fmtMoney(st.value)}` : st.kind === 'mult' ? `${st.label} +${(+st.value).toFixed(2)}` : `${st.label} ×${fmtMultNum(st.value)}`;
-const stageChipCls  = st => st.kind === 'add' ? 'add' : st.value < 1 ? 'cut' : '';
+const stageChipText = st => st.kind === 'add' ? `${st.label} ${st.value < 0 ? fmtSigned(st.value) : '+' + fmtMoney(st.value)}` : st.kind === 'mult' ? `${st.label} +${(+st.value).toFixed(2)}` : `${st.label} ×${fmtMultNum(st.value)}`;
+const stageChipCls  = st => st.kind === 'add' ? (st.value < 0 ? 'add cut' : 'add') : st.value < 1 ? 'cut' : '';
 const fmtMultNum    = v => v >= 1e6 ? (+v).toExponential(2) : v >= 100 ? Math.round(v).toLocaleString() : (+v).toFixed(v >= 10 ? 1 : 2);
 function queueDayStage(d){
   const r = run;
@@ -4176,9 +4272,11 @@ function showRoundResult(w){
     <div class="result-kicker">WEEK ${w.round} / ${MAX_ROUND} 결산</div>
     <div class="ov-title" style="color:var(--green)">목표 달성 ✓</div>
     <div class="ov-sub">${roundResultLine(w)}</div>
+    ${w.boss ? `<div class="boss-beaten">🏆 보스 격파 — ${bossText(w.boss)} · 비자금 +${fmtSlush(BOSS_SLUSH_BONUS)} · 유물 선택지 +${BOSS_RELIC_CHOICE_BONUS}</div>` : ''}
     <div class="result-hero ${signCls(w.weekPnl)}">${fmtMoney(w.eq)}</div>
     <div class="result-bar"><i class="${w.pct >= 1 ? 'done' : ''}" style="width:${barPct}%"></i><b></b></div>
     <div class="result-pct">목표 ${fmtMoney(w.target)} 대비 <span class="${w.pct >= 1 ? 'pnl-up' : 'pnl-down'}">${(w.pct * 100).toFixed(1)}%</span></div>
+    ${w.nextBoss ? bossNotice(w.nextBoss, `⚠ WEEK ${w.round + 1} 보스 예고 — 보상·암시장에서 대비하세요`) : ''}
     <div class="stat-grid">
       ${statTile('이번 주 수익', `<span class="${signCls(w.weekPnl)}">${fmtSigned(w.weekPnl)} (${fmtPct(w.weekReturn)})</span>`)}
       ${statTile('이번 주 확정손익', `<span class="${signCls(w.realized)}">${fmtSigned(w.realized)}</span>`)}
@@ -4495,6 +4593,7 @@ function renderShop(){
         물가 상승률: 1주차 대비 <b class="infl">+${Math.round(shopInflation('pack') * 100)}%</b> (팩·낱장 · 유물 +${Math.round(shopInflation('relic') * 100)}%)</span>
       <button class="open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
     </div>
+    ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스 — 여기서 대비할 카드·유물을 사 두세요') : ''}
     <div class="shop-note">암시장은 비자금만 받습니다. 계좌 돈(순자산)은 그대로 — 비자금은 주간 목표를 넘긴 만큼 더 쌓입니다 (기본 ${fmtSlush(SLUSH_WEEKLY_BASE)} + 초과분의 ${Math.round(SLUSH_EXCESS_RATE * 100)}%).</div>
 
     <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
@@ -4656,7 +4755,11 @@ function buildCollection(){
   $('collectionSub').textContent += ` · 유물 ${RELICS.length}`;
   const count = r => CARDS.filter(c => c.type !== 'status' && c.rarity === r).length + RELICS.filter(x => x.rarity === r).length;
   $('collectionFilter').innerHTML = [''].concat(RARITIES).map(r =>
-    `<button class="${r === collectionRarity ? 'on' : ''}" data-rarity="${r}">${r ? `<span class="c-rar ${r}">${RARITY_LABEL[r]}</span> ${count(r)}` : '전체'}</button>`).join('');
+    `<button class="${r === collectionRarity ? 'on' : ''}" data-rarity="${r}">${r ? `<span class="c-rar ${r}">${RARITY_LABEL[r]}</span> ${count(r)}` : '전체'}</button>`).join('')
+    + `<button class="${collectionRarity === 'boss' ? 'on' : ''}" data-rarity="boss">👹 보스 ${BOSSES.length}</button>`;
+  const bossSec = `<div class="pile-title">▌ 보스 (${BOSSES.length}) — ${BOSS_WEEK_ROUNDS.join('·')}주차 일반 보스(한 판에 중복 없음) · ${BOSS_FINAL_ROUND}주차 최종 보스 · 직전 주 결산에서 예고</div>
+      <div class="boss-grid">${BOSSES.map(b => bossTile(b)).join('')}</div>`;
+  if(collectionRarity === 'boss'){ $('collectionBox').innerHTML = bossSec; return; }
   const show = x => !collectionRarity || x.rarity === collectionRarity;
   $('collectionBox').innerHTML = `<div class="shop-note">${critOddsText()}</div>` + TYPE_ORDER.map(t => {
     const list = CARDS.filter(c => c.type === t && (t === 'status' ? !collectionRarity : show(c)));
@@ -4664,7 +4767,7 @@ function buildCollection(){
     return `<div class="pile-title">▌ ${TYPE_LABEL[t]} (${list.length})</div>
       <div class="coll-grid">${list.map(c => cardHtml(c, {})).join('')}</div>`;
   }).join('') + (() => { const rl = RELICS.filter(show); return rl.length ? `<div class="pile-title">▌ 유물 (${rl.length})</div>
-      <div class="relic-row">${rl.map(r => relicTile(r, {})).join('')}</div>` : ''; })();
+      <div class="relic-row">${rl.map(r => relicTile(r, {})).join('')}</div>` : ''; })() + (collectionRarity ? '' : bossSec);
 }
 /* ── 환경 설정 (UI 전용 — 엔진 규칙에는 영향 없음) ── */
 const SETTINGS_KEY = 'hodl.settings';
@@ -4803,7 +4906,7 @@ function buildRecords(){
         <span>W${x.round} D${x.day}</span>
         <span class="rr-eq ${signCls(x.eq - START_CASH)}">${fmtMoney(x.eq)}</span>
         <span class="rr-when">${fmtWhen(x.at)}</span>
-        <span class="rr-stats">생존 ${x.weeks}주 · 최고 ${fmtMoney(x.peak)} · 반대매매 ${x.liq}회${x.deck !== undefined ? ` · 유물 ${x.relics}개 · 덱 ${x.deck}장` : ''}</span>
+        <span class="rr-stats">생존 ${x.weeks}주 · 최고 ${fmtMoney(x.peak)} · 반대매매 ${x.liq}회${x.deck !== undefined ? ` · 유물 ${x.relics}개 · 덱 ${x.deck}장` : ''}${x.bosses ? ` · 보스 격파 ${x.bosses}` : ''}${x.boss && BOSS_BY_ID[x.boss] ? ` · <span class="rr-boss">사인: ${bossText(x.boss)}</span>` : ''}</span>
       </div>`; }).join('')}</div>`
     : `<div class="rec-empty">아직 끝낸 판이 없습니다. 첫 반대매매는 누구에게나 찾아옵니다.</div>`;
   $('recordsBox').innerHTML = summary + tiles +
