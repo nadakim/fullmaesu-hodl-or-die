@@ -22,7 +22,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await page.locator(`#positionsBox .pos-item[data-id="${pid}"]`).first().click(); await sleep(200);
     const lev = await page.evaluate(id => run.positions.find(p => p.id === id).lev, pid);
     ok(W + ' 레버리지 ETF → 2x → 4x', lev === 4, lev);
-    const tip = await page.evaluate(() => $('multPreview').title);
+    const tip = await page.evaluate(() => $('multPreview').getAttribute('aria-label'));
     ok(W + ' 정산 칩 툴팁: 크리티컬 확률 공개', /크리티컬: 수익 포지션 정산마다 5%/.test(tip), tip.split('\n').pop());
     // 정산: 레버리지 탑(4·1·2 = ×8) × 깃발(1.5³)
     const st = await page.evaluate(id => { const p = run.positions.find(p => p.id === id); return settleSteps(p, 100, 0).steps.map(s => [s.source, +s.value.toFixed(3)]); }, pid);
