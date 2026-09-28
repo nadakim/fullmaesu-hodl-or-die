@@ -300,7 +300,9 @@ const SECTOR_LEVELS_ON      = true;   // false면 리포트 카드·리서치 �
 const SECTOR_LEVEL_CHIP_PCT = 0.02;   // 레벨 1 오를 때마다 칩 + 포지션 원금의 2%
 const SECTOR_LEVEL_MULT     = 0.25;   // 레벨 1 오를 때마다 합산 배수 +0.25
 const SECTOR_BIAS           = 0.3;    // 최고 레벨 섹터(레벨 2 이상)의 종목·리포트 카드: 등급 안 가중치 +30% (TAG_BIAS와 더한다)
-const SECTOR_REPORT_AP      = 1;      // 리포트 카드 행동력 (강화판 0)
+const SECTOR_REPORT_AP      = 0;      // 리포트 카드 행동력 — 조정안 3 (1 → 0, 사용자 결정 2026-09-28). 강화판 = 레벨 +1 + 카드 1장 드로우
+const SECTOR_REPORT_SLOTS   = 1;      // 결산 카드 보상 중 리포트 칸 수 — 조정안 1 (발라트로 상점의 행성 카드 칸처럼, 사용자 결정 2026-09-28)
+const SECTOR_REPORT_UP_DRAW = 1;      // 리포트 강화판: 레벨 +1과 함께 뽑는 카드 수
 const SECTOR_REPORT_RARITY  = 'uncommon';
 /* 섹터 목록 = STOCKS의 sector. key = 리포트 카드 id(rpt_<key>), report = 카드 이름 (밈 톤), quote = 설명 끝 한 줄 */
 const SECTORS = [
@@ -1782,7 +1784,9 @@ function defUpgrade(id, over){
 }
 const canUpgrade = id => !!CARD_BY_ID[id] && !CARD_BY_ID[id].upgraded && !!CARD_BY_ID[id + '+'];
 STOCKS.forEach(s => defUpgrade('stk_' + s.id, { ap: 0, desc: `${s.sector} · β ${s.beta} · 행동력 0` }));
-if(SECTOR_LEVELS_ON) SECTORS.forEach(x => defUpgrade('rpt_' + x.key, { ap: 0 }));   // 리포트 강화 = 행동력 0
+if(SECTOR_LEVELS_ON) SECTORS.forEach(x => defUpgrade('rpt_' + x.key, {   // 리포트 강화 = 레벨 +1 + 카드 드로우 (행동력은 이미 0)
+  desc: `${x.name} 레벨 +1 · 카드 ${SECTOR_REPORT_UP_DRAW}장 뽑기 — ${x.name} 포지션이 수익으로 장 마감하면 정산 맨 앞에서 ${sectorLevelText()}. ${x.quote}`,
+  play: () => { raiseSectorLevel(x.name, 1); drawCards(SECTOR_REPORT_UP_DRAW); } }));
 defUpgrade('credit', { desc: `다음 종목 매수를 레버리지 ${CREDIT_LEV_UP}x로. 대출금에 매일 이자.`,
   valid: () => run.pending.lev < CREDIT_LEV_UP, play: () => { run.pending.lev = CREDIT_LEV_UP; } });
 defUpgrade('yolo', { desc: `다음 매수: 원금 ${YOLO_PRINCIPAL_MULT_UP}배 + 레버리지 ${YOLO_LEV}x. 영혼까지 끌어모은다.`,
@@ -2596,7 +2600,7 @@ function endOfRound(){
   if(run.round >= MAX_ROUND) return endRun('VICTORY');
   run.phase = 'reward';
   run.rewardStep = 'card';                                        // 카드 보상 → 유물 보상 → 암시장
-  run.rewardChoices = rollRewards(REWARD_CHOICES, run.masterDeck); // 이미 덱에 있는 카드는 제외
+  run.rewardChoices = rollRewardChoices();                       // 이미 덱에 있는 카드는 제외 (N3: 마지막 칸은 리포트)
   run.relicChoices = rollRelics(RELIC_REWARD_CHOICES + (run.boss ? BOSS_RELIC_CHOICE_BONUS : 0));   // 아직 없는 유물만 (보스 주 통과 +1)
   emit('roundClear', run.lastWeek);
 }
@@ -2708,6 +2712,18 @@ function rollRewards(n, exclude = []){
     picks.push(pickTagged(cands.filter(c => c.rarity === rarity)).id);
   }
   return picks;
+}
+
+/* 결산 카드 보상 후보: 일반 칸 + (N3) 리포트 칸 SECTOR_REPORT_SLOTS개 (덱에 없는 리포트 중 최고 레벨 섹터 가중 pickTagged).
+   리포트가 다 덱에 있으면 그 칸도 일반 카드. SECTOR_LEVELS_ON이 아니면 전과 같이 rollRewards(REWARD_CHOICES) 한 번 */
+function rollRewardChoices(){
+  if(!SECTOR_LEVELS_ON || SECTOR_REPORT_SLOTS <= 0) return rollRewards(REWARD_CHOICES, run.masterDeck);
+  const picks = rollRewards(REWARD_CHOICES - SECTOR_REPORT_SLOTS, run.masterDeck);
+  for(let k = 0; k < SECTOR_REPORT_SLOTS; k++){
+    const cands = CARDS.filter(c => c.type === 'report' && picks.indexOf(c.id) < 0 && cardAllowed(c.id));
+    picks.push(cands.length ? pickTagged(cands).id : rollRewards(1, run.masterDeck.concat(picks))[0]);
+  }
+  return picks.filter(Boolean);
 }
 
 /* 1단계 카드 보상 — kind: 'take'(카드 id) | 'remove'·'upgrade'(masterDeck 인덱스) | 'skip' */

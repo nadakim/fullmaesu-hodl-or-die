@@ -20,6 +20,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(W + ' 리포트 2장 → 암호화폐 Lv.3 · 소멸 · 알림', lv[0] === 3 && lv[1] === 2 && lv[2], lv);
     const badge = await p.evaluate(() => { const r = document.querySelector('[data-q="coin"] .q-lv'), o = document.querySelector('[data-q="semi"] .q-lv'); return [!r.hidden, r.textContent, o.hidden]; });
     ok(W + ' 시세판 뱃지 (암호화폐만)', badge[0] && badge[1] === 'Lv3' && badge[2], badge);
+    // (조정안 1·3) 결산 보상 마지막 칸 = 리포트 · 리포트 행동력 0
+    const rw = await p.evaluate(() => { const c = rollRewardChoices(); return [c.length, CARD_BY_ID[c[c.length - 1]].type, CARD_BY_ID.rpt_blue.ap, cardCost(CARD_BY_ID.rpt_blue)]; });
+    ok(W + ' 보상 마지막 칸 = 리포트 · 행동력 0', rw[0] === 3 && rw[1] === 'report' && rw[2] === 0 && rw[3] === 0, rw);
     // 매수 → 예상 정산 배수 > 1
     await p.evaluate(() => { openPosition('coin', 1000, 1, 1, true); renderAll(); });
     const pv = await p.evaluate(() => [previewSettlement().mult, $('multText').textContent]);
@@ -35,7 +38,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const st = await p.evaluate(() => { const r = run.lastDay.settlement.find(x => x.assetId === 'coin'); return r ? r.steps.map(s => [s.source, s.kind, s.label]) : null; });
     ok(W + ' 정산 단계: base → 섹터 칩 → 섹터 배수 (유물보다 먼저)', !!st && st[1][0] === 'sector' && st[1][1] === 'add' && st[2][1] === 'mult' && /📊 암호화폐 Lv\.3/.test(st[1][2]), st);
     await p.waitForFunction(() => !!stage, null, { timeout: 8000 }).catch(() => {});
-    await sleep(1500);
+    await p.waitForFunction(() => document.querySelectorAll('#stageList .chain-chip').length >= 3, null, { timeout: 8000 }).catch(() => {});   // 고정 대기 대신 칩 3개(오늘 손익·섹터 칩·섹터 배수)가 나올 때까지
     const chips = await p.evaluate(() => [...document.querySelectorAll('#stageList .chain-chip')].map(c => [c.textContent, getComputedStyle(c).color]));
     ok(W + ' 정산 무대 칩: 섹터 칩 청록 · 섹터 배수 금색', chips.some(([t, c]) => /📊 암호화폐 Lv\.3/.test(t) && c === 'rgb(0, 229, 255)') && chips.some(([t, c]) => /📊 암호화폐 Lv\.3 \+/.test(t) && c === 'rgb(255, 215, 0)'), chips);
     if(W === 1920) await p.screenshot({ path: `${S}/sector-stage-${W}.png` });

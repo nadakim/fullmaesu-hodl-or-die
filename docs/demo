@@ -3785,7 +3785,7 @@ function showReward(d){
     <div class="ov-title" style="color:var(--green)">WEEK ${run.round} 보상</div>
     <div class="ov-sub">카드 1장을 고르세요. 덱 ${run.masterDeck.length}장 · 다음 주 목표 <span style="color:var(--gold)">${fmtMoney(ROUND_TARGETS[run.round])}</span></div>
     ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스', true) : ''}
-    <div class="pile-title">▌ 카드 획득 — 덱에 없는 새 카드 중 1장${run.relicChoices.length ? ' (다음: 유물 선택)' : ''}</div>
+    <div class="pile-title">▌ 카드 획득 — 덱에 없는 새 카드 중 1장${SECTOR_LEVELS_ON && SECTOR_REPORT_SLOTS > 0 ? ' · 마지막 칸은 📊 섹터 리포트' : ''}${run.relicChoices.length ? ' (다음: 유물 선택)' : ''}</div>
     <div class="ov-cards">${run.rewardChoices.length
       ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
       : '<div class="empty-note">덱에 없는 카드가 더 이상 없습니다</div>'}</div>
