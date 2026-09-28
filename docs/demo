@@ -509,6 +509,17 @@ body::after{
 .card.t-hold{--cc:var(--cyan);}
 .card.t-action{--cc:var(--purple);}
 .card.t-defense{--cc:var(--blue);}
+.card.t-report{--cc:var(--text);}   /* (N3) 섹터 리포트 */
+/* (N3) 섹터 레벨: 시세판 뱃지 · ≡ 메뉴 표 */
+.q-lv{display:inline-block;margin-left:calc(4 * var(--u));padding:0 calc(3 * var(--u));font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1.5;color:var(--bg);background:var(--gold);vertical-align:middle;cursor:help;}
+.q-lv[hidden]{display:none;}
+.sector-table{width:100%;border-collapse:collapse;text-align:left;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.5;color:var(--text2);}
+.sector-table th{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);font-weight:normal;padding:calc(4 * var(--u)) calc(6 * var(--u));box-shadow:inset 0 calc(-2 * var(--u)) 0 var(--line);}
+.sector-table td{padding:calc(5 * var(--u)) calc(6 * var(--u));box-shadow:inset 0 calc(-1 * var(--u)) 0 var(--line2);vertical-align:top;}
+.sector-table .lv{font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--text);white-space:nowrap;}
+.sector-table tr.up .lv{color:var(--gold);}
+.sector-table tr.top td:first-child{box-shadow:inset calc(3 * var(--u)) 0 0 var(--gold),inset 0 calc(-1 * var(--u)) 0 var(--line2);}
+.sector-table small{display:block;font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);}
 .card.t-status{--cc:var(--muted);cursor:not-allowed;}
 
 .c-top{display:flex;justify-content:space-between;align-items:center;}
@@ -1766,6 +1777,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
           <button data-menu="tips">📱 찌라시 기록<i class="menu-dot" id="menuTipDot" hidden></i></button>
           <button data-menu="deck">🃏 덱 확인</button>
           <button data-menu="signalGuide">📖 시그널 설명서</button>
+          <button data-menu="sectors" id="menuSectors">📊 섹터 레벨</button>
           <button data-menu="settings">⚙ 환경 설정</button>
         </div>
       </div>
@@ -2128,8 +2140,8 @@ let selectedIdx = -1;      // 대상 지정 중인 손패 카드 (-1 = 없음)
 let lastRoundClear = null; // 카드 제거 화면에서 보상 화면으로 돌아갈 때 사용
 let handSig = '', posSig = '';
 
-const TYPE_LABEL   = { stock:'종목', buy:'매수', sell:'매도', hold:'홀드', action:'행동', defense:'방어', status:'상태' };
-const TYPE_ORDER   = ['stock', 'buy', 'sell', 'hold', 'action', 'defense', 'status'];
+const TYPE_LABEL   = { stock:'종목', buy:'매수', sell:'매도', hold:'홀드', action:'행동', defense:'방어', report:'리포트', status:'상태' };
+const TYPE_ORDER   = ['stock', 'buy', 'sell', 'hold', 'action', 'defense', 'report', 'status'];
 const RARITY_LABEL = { common:'일반', uncommon:'고급', rare:'희귀', legendary:'전설', mythic:'신화' };
 const TARGET_LABEL = { position:'▶포지션', asset:'▶종목' };
 const ORDER_LABEL  = { stop:'손절 예약', take:'익절 예약', trail:'트레일링 스탑' };
@@ -3088,6 +3100,11 @@ function onGameEvent(type, d){
       enqueueTipResult(d, fromOverlay);   // 중앙 알림 → 끝나거나 스킵하면 결과 요약 오버레이
       break;
     }
+    case 'sectorLevelUp':   // (N3) 리포트 카드
+      toast(`📊 ${SECTOR_BY_NAME[d.sector].icon} ${d.sector} Lv.${d.level} — 수익 마감 정산: ${sectorEffectText(d.level)}`, 'good');
+      Sound.play('relicGain');
+      document.querySelectorAll('#quoteBox .quote-row').forEach(r => { if(STOCK_BY_ID[r.dataset.q].sector === d.sector) Fx.flash(r, 'fx-hit'); });
+      break;
     case 'relicGained':
       if(d.source === 'shop') relicClackId = d.id;   // (S8-33) 소리는 칸에 꽂힐 때 "철컥"
       else Sound.play('relicGain');
@@ -3299,7 +3316,7 @@ function showChart(target){
 function buildQuotes(){
   $('quoteBox').innerHTML = STOCKS.map(s => `
     <div class="quote-row" data-q="${s.id}">
-      <div class="q-name" title="${s.name} · ${s.sector} · β${s.beta} · 변동성 ${s.volatility}">${s.name}<span class="q-tag"></span><span class="q-sig"></span></div>
+      <div class="q-name" title="${s.name} · ${s.sector} · β${s.beta} · 변동성 ${s.volatility}">${s.name}<span class="q-lv" hidden></span><span class="q-tag"></span><span class="q-sig"></span></div>
       <canvas width="64" height="18"></canvas>
       <div class="q-price"></div>
       <div class="q-chg"></div>
@@ -3388,6 +3405,9 @@ function renderQuotes(){
     tag.className = 'q-tag ' + (gap ? 'gap' : !pm ? '' : run.phase !== 'market' ? 'hidden' : pm > 0 ? 'up' : 'down');
     row.classList.toggle('targetable', targets.indexOf(s.id) >= 0);
     row.classList.toggle('charted', chartTarget === s.id);
+    const lvEl = row.querySelector('.q-lv'), lv = sectorLevel(s.sector);   // (N3) 섹터 레벨 뱃지 (레벨 2부터)
+    lvEl.hidden = lv <= 1;
+    if(lv > 1 && lvEl.textContent !== 'Lv' + lv){ lvEl.textContent = 'Lv' + lv; lvEl.title = `${s.sector} Lv.${lv} — ${sectorEffectText(lv)} (≡ 메뉴 › 섹터 레벨)`; }
     const sigEl = row.querySelector('.q-sig'), sigHtml = signalHtml(s);
     if(sigEl.innerHTML !== sigHtml) sigEl.innerHTML = sigHtml;
     sigEl.title = signalHelp(s);
@@ -3532,6 +3552,7 @@ const SETTLE_BOOST_CARDS = ['levEtf', 'split', 'allIn', 'coinFlip', 'futures', '
 function boostsSettle(i){
   const card = CARD_BY_ID[run.hand[i].id];
   if(card.stock) return previewSettlement(hypotheticalBuy(card.stock)).mult > previewSettlement().mult + 1e-9;
+  if(card.type === 'report') return run.positions.some(p => STOCK_BY_ID[p.assetId].sector === card.sector);   // (N3) 들고 있는 섹터의 리포트
   return SETTLE_BOOST_CARDS.indexOf(card.base) >= 0 && run.positions.length > 0;
 }
 
@@ -3705,6 +3726,32 @@ function renderSpeedBtns(){
   box.innerHTML = speedKeys().map((v, i) => `<button data-speed="${v}" class="${v === settings.speed ? 'on' : ''}" title="키 ${i + 1}">${v}×</button>`).join('');
 }
 $('speedBtns').addEventListener('click', e => { const b = e.target.closest('[data-speed]'); if(b) setSpeed(+b.dataset.speed); });
+
+/* ── (N3) 섹터 레벨 (≡ 메뉴): 섹터마다 레벨·종목·지금 효과·리포트 카드. 숫자는 엔진 CONFIG·sectorBonus 그대로 ── */
+const sectorEffectText = lv => lv > 1 ? `칩 +원금의 ${+(SECTOR_LEVEL_CHIP_PCT * (lv - 1) * 100).toFixed(1)}% · 배수 +${+(SECTOR_LEVEL_MULT * (lv - 1)).toFixed(2)}` : '효과 없음 (레벨 1)';
+function showSectorLevels(){
+  const top = topSectors();
+  const rows = SECTORS.map(x => {
+    const lv = sectorLevel(x.name), stocks = STOCKS.filter(st => st.sector === x.name).map(st => st.name).join(' · ');
+    const rpt = CARD_BY_ID['rpt_' + x.key];
+    return `<tr class="${lv > 1 ? 'up' : ''} ${top.indexOf(x.name) >= 0 ? 'top' : ''}" data-sector="${x.name}"><td>${x.icon} ${x.name}<small>${stocks}</small></td><td class="lv">Lv.${lv}</td>
+      <td>${lv > 1 ? `<span class="n-chip">칩 +원금의 ${+(SECTOR_LEVEL_CHIP_PCT * (lv - 1) * 100).toFixed(1)}%</span> · <span class="n-mult">배수 +${+(SECTOR_LEVEL_MULT * (lv - 1)).toFixed(2)}</span>` : '—'}${top.indexOf(x.name) >= 0 ? `<small>보상·암시장에서 이 섹터 종목·리포트 카드 +${Math.round(SECTOR_BIAS * 100)}%</small>` : ''}</td>
+      <td>${rpt ? rpt.name : ''}</td></tr>`;
+  }).join('');
+  showOverlay(`
+    <div class="ov-title" style="color:var(--gold)">📊 섹터 레벨</div>
+    <div class="ov-sub">리포트 카드를 쓰면 그 섹터 레벨 +1. 그 섹터 포지션이 수익으로 장 마감하면 정산 맨 앞(유물보다 먼저)에서 레벨당 <span class="n-chip">칩 +원금의 ${Math.round(SECTOR_LEVEL_CHIP_PCT * 100)}%</span> · <span class="n-mult">배수 +${SECTOR_LEVEL_MULT}</span>.</div>
+    <table class="sector-table"><thead><tr><th>섹터 · 종목</th><th>레벨</th><th>지금 효과</th><th>리포트 카드</th></tr></thead><tbody>${rows}</tbody></table>
+    <button class="ov-btn" data-act="close">확인</button>`);
+}
+/* 팩 팝업: 등급 안 가중 안내 (엔진 topTags·topSectors 그대로 — packCardOdds의 확률에 이미 들어 있다) */
+function biasNoteHtml(){
+  const tags = topTags(), secs = topSectors();
+  const parts = [];
+  if(tags.length) parts.push(`빌드 태그 ${tagNames(tags)} 카드 +${Math.round(TAG_BIAS * 100)}%`);
+  if(secs.length) parts.push(`📊 최고 레벨 섹터 ${secs.join('·')}의 종목·리포트 카드 +${Math.round(SECTOR_BIAS * 100)}%`);
+  return parts.length ? `<div class="pki-note bias-note">같은 등급 안 가중치: ${parts.join(' · ')} (아래 확률에 반영됨)</div>` : '';
+}
 
 /* ── (S5-23) 시그널 설명서 (≡ 메뉴). 숫자는 엔진 CONFIG 그대로 ── */
 function showSignalGuide(){
@@ -4645,6 +4692,7 @@ function showPackInfo(packId){
     <span class="pki-sec">▌ 등급별 확률 (등급 먼저 → 등급 안에서 균등)</span>
     <div class="pki-bars">${bars}</div>
     <span class="pki-sec">▌ 구성 카드 ${cOdds.length}종 · 확률 합 ${fmtChance(total)}</span>
+    ${biasNoteHtml()}
     ${out.length ? `<div class="pki-note">흐린 카드 ${out.length}장은 덱에 이미 있거나(신화는 덱에 ${MYTHIC_DECK_LIMIT}장까지) 이번엔 나오지 않아 확률 계산에서 빠져 있습니다.</div>` : ''}
     ${pool.length ? groups : '<div class="pki-note">덱에 없는 카드가 남지 않아 지금은 살 수 없습니다.</div>'}
     <div class="pki-btns">
@@ -5191,6 +5239,7 @@ $('menuPanel').addEventListener('click', e => {
   else if(act === 'tips') showTipLog();
   else if(act === 'deck'){ if(run) showDeck(); }
   else if(act === 'signalGuide') showSignalGuide();
+  else if(act === 'sectors'){ if(run) showSectorLevels(); }
   else if(act === 'settings'){ settingsReturn = currentTab; switchTab('settings'); }
 });
 document.addEventListener('click', e => { if(menuOpen() && !e.target.closest('.menu-wrap')) closeMenu(); });
@@ -5661,6 +5710,7 @@ window.onload = () => {
     ? `담보비율 ${Math.round(MAINTENANCE_RATIO * 100)}%(숏 ${Math.round(SHORT_MAINTENANCE_RATIO * 100)}%) 미만 = 반대매매`
     : `증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% 미만 = 반대매매`;
   buildQuotes();
+  $('menuSectors').hidden = !SECTOR_LEVELS_ON;   // (N3) 플래그가 꺼져 있으면 메뉴도 없음
   buildCollection();
   renderNav();
   applySettings();

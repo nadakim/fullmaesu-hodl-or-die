@@ -293,6 +293,37 @@ const DAILY_KEEP   = 40;     // (S7-15) 일봉 기록 개수 (큰 차트 '일봉
 const STOCK_BY_ID = {};
 STOCKS.forEach(s => { STOCK_BY_ID[s.id] = s; });
 
+/* (N3) 섹터 레벨 (docs/design/SECTOR_LEVELS.md): 발라트로의 행성 카드처럼 섹터를 레벨업 → 그 섹터 포지션이 수익으로 장 마감하면
+   정산 맨 앞(유물보다 먼저)에 칩 +원금 × SECTOR_LEVEL_CHIP_PCT × (레벨−1), 합산 배수 +SECTOR_LEVEL_MULT × (레벨−1). 레벨 1 = 효과 없음.
+   레벨업 = '리포트' 카드(섹터마다 1장, 소멸). 보상·낱장·팩에서 레벨이 가장 높은 섹터의 종목·리포트 카드는 등급 안 가중치 +SECTOR_BIAS */
+const SECTOR_LEVELS_ON      = true;   // false면 리포트 카드·리서치 팩이 없고 모든 섹터 레벨 1 (= 도입 전과 같은 판)
+const SECTOR_LEVEL_CHIP_PCT = 0.02;   // 레벨 1 오를 때마다 칩 + 포지션 원금의 2%
+const SECTOR_LEVEL_MULT     = 0.25;   // 레벨 1 오를 때마다 합산 배수 +0.25
+const SECTOR_BIAS           = 0.3;    // 최고 레벨 섹터(레벨 2 이상)의 종목·리포트 카드: 등급 안 가중치 +30% (TAG_BIAS와 더한다)
+const SECTOR_REPORT_AP      = 1;      // 리포트 카드 행동력 (강화판 0)
+const SECTOR_REPORT_RARITY  = 'uncommon';
+/* 섹터 목록 = STOCKS의 sector. key = 리포트 카드 id(rpt_<key>), report = 카드 이름 (밈 톤), quote = 설명 끝 한 줄 */
+const SECTORS = [
+  { name:'우량주',   key:'blue',    icon:'🏢', report:'목표주가 상향 리포트',   quote:'매수 의견 27년 연속 유지.' },
+  { name:'암호화폐', key:'crypto',  icon:'🪙', report:'코인 리포트: 반감기 온다', quote:'이번엔 진짜 다르다.' },
+  { name:'테마주',   key:'theme',   icon:'🔥', report:'테마 발굴 리포트',       quote:'재료는 찾으면 나온다.' },
+  { name:'방어주',   key:'defense', icon:'🍚', report:'배당 귀족 리포트',       quote:'지루함이 곧 수익률.' },
+  { name:'동전주',   key:'penny',   icon:'🎲', report:'동전주 10루타 시나리오', quote:'100원이 1,000원 되면 10배잖아.' },
+  { name:'인버스',   key:'inverse', icon:'📉', report:'폭락 예언 리포트',       quote:'10년째 폭락을 예언 중.' },
+  { name:'전기차',   key:'ev',      icon:'🔋', report:'목표주가 3배 리포트',     quote:'근거는 "성장성".' },
+  { name:'바이오',   key:'bio',     icon:'🧪', report:'임상 3상 기대 리포트',   quote:'결과 발표는 늘 다음 분기.' },
+  { name:'건설',     key:'build',   icon:'🏗', report:'재건축 수혜 리포트',     quote:'삽 뜨기 전이 제일 비싸다.' },
+  { name:'게임',     key:'game',    icon:'🎮', report:'신작 흥행 리포트',       quote:'사전예약 1,000만 (봇 포함).' },
+  { name:'작전주',   key:'manip',   icon:'🕴', report:'세력 동향 보고서',       quote:'출처: 텔레그램 방.' }
+];
+const SECTOR_BY_NAME = {};
+SECTORS.forEach(x => { SECTOR_BY_NAME[x.name] = x; });
+/* 리서치 팩 (암시장, SECTOR_LEVELS_ON일 때만): 종목 카드 + 리포트 카드만 */
+const RESEARCH_PACK = { id:'research', name:'리서치 팩', icon:'📑', price:400, desc:'종목 카드와 섹터 리포트만. 한 섹터에 올인할 때.',
+  weights:{ common:40, uncommon:60, rare:0, legendary:0, mythic:0 },
+  pool: STOCKS.map(x => 'stk_' + x.id).concat(SECTORS.map(x => 'rpt_' + x.key)) };
+if(SECTOR_LEVELS_ON) SHOP_PACKS.push(RESEARCH_PACK);
+
 /* 유물 — 한 판 동안 상시 발동(패시브). 효과는 ENGINE의 계산 지점에서 hasRelic()으로 개입한다.
    획득: 매주 결산 보상에서 카드 보상 다음 단계로 2개 중 1개 선택 + 암시장 진열. */
 const RELIC_GUKBAP_SECTORS       = ['방어주', '우량주']; // 국밥 정신 적용 섹터
@@ -1030,7 +1061,7 @@ function copySource(id, i){
   return t;
 }
 /* 판정 난수가 필요 없는 정산 단계 라벨 (유물이 아닌 source) */
-const SETTLE_SOURCE_LABEL = { hold: '🪙 보유 칩', card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
+const SETTLE_SOURCE_LABEL = { sector: '📊 섹터 레벨', hold: '🪙 보유 칩', card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
 const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : (SETTLE_SOURCE_LABEL[src] || src);
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
 
@@ -1046,6 +1077,8 @@ function settleSteps(p, base, crit){
     steps.push({ label, kind: e.kind, value: e.value, runningChips: chips, runningMult: m, source });
   };
   if(base > 0 && HOLD_CHIP_PCT > 0) push({ kind: 'add', value: p.principal * HOLD_CHIP_PCT }, 'hold', SETTLE_SOURCE_LABEL.hold);   // N1-B 보유 칩
+  const sb = base > 0 ? sectorBonus(p) : null;   // (N3) 섹터 레벨: 수익 마감이면 유물보다 먼저 칩 + 합산 배수
+  if(sb){ push({ kind: 'add', value: sb.chip }, 'sector', sb.label); push({ kind: 'mult', value: sb.mult }, 'sector', sb.label); }
   if(base !== 0){
     run.relics.forEach((id, i) => {
       const src = copySource(id, i), fx = SETTLE_EFFECTS[src];
@@ -1136,7 +1169,8 @@ function previewSettlement(extra){
   try {
     let expSum = 0, gainSum = 0;
     const rows = run.positions.map(p => {
-      const e = exposure(p), m = settleSteps(p, 1).mult;
+      const e = exposure(p), sb = sectorBonus(p);
+      const m = settleSteps(p, 1).mult * (sb ? 1 + sb.chip / Math.max(1e-9, e * 0.01) : 1);   // (N3) 섹터 칩은 유리하게 1% 움직인 손익 대비 배수로 환산 (레벨 1이면 그대로)
       expSum += e;
       gainSum += e * m;
       return { posId: p.id, name: p.name, dir: p.dir, lev: p.lev, mult: m, per1pct: e * 0.01 * m };
@@ -1382,8 +1416,8 @@ function checkMarginCalls(){
 const CARDS = [];
 const CARD_BY_ID = {};
 function defCard(id, name, type, ap, rarity, target, exhaust, desc, valid, play){
-  const c = { id, name, type, ap, rarity, target, exhaust, desc, valid, play, stock: '',
-              tags: CARD_TAGS[id] || [], base: id, upgraded: false, retain: false };   // base·upgraded = 강화판(+) 구분, retain = 장 마감에 손패에 남는다
+  const c = { id, name, type, ap, rarity, target, exhaust, desc, valid, play, stock: '', sector: '',
+              tags: CARD_TAGS[id] || [], base: id, upgraded: false, retain: false };   // sector = 종목·리포트 카드의 섹터 (N3 보상 가중)   // base·upgraded = 강화판(+) 구분, retain = 장 마감에 손패에 남는다
   CARDS.push(c);
   CARD_BY_ID[id] = c;
   return c;
@@ -1421,6 +1455,7 @@ STOCKS.forEach(s => {
     () => run.cash >= stockCost(s),
     () => { buyStock(s.id); resetPending(); });
   c.stock = s.id;
+  c.sector = s.sector;
 });
 
 /* 매수 */
@@ -1725,6 +1760,16 @@ defCard('trauma', '반대매매 트라우마', 'status', 0, 'common', null, fals
   () => false,
   () => {});
 
+/* (N3) 리포트 카드: 섹터마다 1장, 쓰면 그 섹터 레벨 +1 (소멸). SECTOR_LEVELS_ON이 아니면 만들지 않는다 (보상 풀·도감에 없음) */
+const sectorLevelText = () => `레벨당 칩 +원금의 ${Math.round(SECTOR_LEVEL_CHIP_PCT * 100)}% · 배수 +${SECTOR_LEVEL_MULT}`;
+if(SECTOR_LEVELS_ON) SECTORS.forEach(x => {
+  const c = defCard('rpt_' + x.key, x.report, 'report', SECTOR_REPORT_AP, SECTOR_REPORT_RARITY, null, true,
+    `${x.name} 레벨 +1 — ${x.name} 포지션이 수익으로 장 마감하면 정산 맨 앞에서 ${sectorLevelText()}. ${x.quote}`,
+    () => true,
+    () => raiseSectorLevel(x.name, 1));
+  c.sector = x.name;
+});
+
 /* ══ 강화판(+) — 카드마다 한 가지만 좋아진다 (DECKBUILDING.md 표). CARD_BY_ID에만 넣고 CARDS(보상·도감 풀)에는 넣지 않는다.
    id = 원래 id + '+', base = 원래 id, upgraded = true. over = 바꿀 필드 (ap·desc·valid·play) ══ */
 const UPGRADES = [];
@@ -1737,6 +1782,7 @@ function defUpgrade(id, over){
 }
 const canUpgrade = id => !!CARD_BY_ID[id] && !CARD_BY_ID[id].upgraded && !!CARD_BY_ID[id + '+'];
 STOCKS.forEach(s => defUpgrade('stk_' + s.id, { ap: 0, desc: `${s.sector} · β ${s.beta} · 행동력 0` }));
+if(SECTOR_LEVELS_ON) SECTORS.forEach(x => defUpgrade('rpt_' + x.key, { ap: 0 }));   // 리포트 강화 = 행동력 0
 defUpgrade('credit', { desc: `다음 종목 매수를 레버리지 ${CREDIT_LEV_UP}x로. 대출금에 매일 이자.`,
   valid: () => run.pending.lev < CREDIT_LEV_UP, play: () => { run.pending.lev = CREDIT_LEV_UP; } });
 defUpgrade('yolo', { desc: `다음 매수: 원금 ${YOLO_PRINCIPAL_MULT_UP}배 + 레버리지 ${YOLO_LEV}x. 영혼까지 끌어모은다.`,
@@ -1937,12 +1983,34 @@ function drawCards(n){
 }
 
 /* ── 한 판 / 하루(장전 → 장중 → 장 마감) / 한 주 ── */
+/* (N3) 섹터 레벨 — 상태 run.sectorLevel, 효과는 settleSteps 맨 앞(sectorBonus), 보상 가중은 tagWeight(topSectors) */
+function newSectorLevels(){ const lv = {}; SECTORS.forEach(x => { lv[x.name] = 1; }); return lv; }
+const sectorLevel = sec => (run && run.sectorLevel && run.sectorLevel[sec]) || 1;
+function raiseSectorLevel(sec, n){
+  run.sectorLevel[sec] = sectorLevel(sec) + n;
+  emit('sectorLevelUp', {sector: sec, level: run.sectorLevel[sec]});
+}
+/* 포지션 p의 섹터 레벨 보너스 (순수): 레벨 2 이상이면 { chip, mult, label, level }, 아니면 null */
+function sectorBonus(p){
+  const sec = STOCK_BY_ID[p.assetId].sector, lv = sectorLevel(sec);
+  if(!SECTOR_LEVELS_ON || lv <= 1) return null;
+  return { chip: p.principal * SECTOR_LEVEL_CHIP_PCT * (lv - 1), mult: SECTOR_LEVEL_MULT * (lv - 1), level: lv,
+           label: `📊 ${sec} Lv.${lv}` };
+}
+/* 보상 가중을 받는 섹터: 레벨이 가장 높은 섹터들 (최고 레벨 2 이상일 때만, 동률이면 전부) */
+function topSectors(){
+  if(!run || !SECTOR_LEVELS_ON) return [];
+  const best = Math.max(...SECTORS.map(x => sectorLevel(x.name)));
+  return best > 1 ? SECTORS.filter(x => sectorLevel(x.name) === best).map(x => x.name) : [];
+}
+
 function newRun(){
   return {
     phase: 'premarket',          // premarket | market | reward | shop | over
     round: 1, day: 1, tickInDay: 0,
     cash: START_CASH, realized: 0, interestPaid: 0, overdraft: 0,
     slush: SLUSH_START,   // 비자금 (암시장 전용, 순자산 제외)
+    sectorLevel: newSectorLevels(),   // (N3) 섹터 이름 → 레벨 (1부터)
     liquidations: 0, peakEquity: START_CASH, weekPeak: START_CASH,   // 판 최고 · 이번 주 최고 순자산
     settledToday: 0, settledTotal: 0, lastDay: null, weekDays: [],   // 장 마감 정산: 오늘 보너스 · 누적 · 오늘 기록 · 이번 주 기록 (주간 체인용)
     maxSettleMult: 1, maxSettlePayout: 0,                               // 이번 판 최고 정산 배수 · 하루 최고 보너스
@@ -2610,9 +2678,10 @@ function topTags(){
   return best > 0 ? Object.keys(TAGS).filter(t => n[t] === best) : [];
 }
 /* 후보(카드·유물 객체) 하나의 등급 안 가중치: 상위 태그를 하나라도 가지면 1 + TAG_BIAS */
-const tagWeight = (x, top) => x.tags.some(t => top.indexOf(t) >= 0) ? 1 + TAG_BIAS : 1;
+const tagWeight = (x, top, secs) => (x.tags.some(t => top.indexOf(t) >= 0) ? 1 + TAG_BIAS : 1)
+  + (x.sector && (secs || topSectors()).indexOf(x.sector) >= 0 ? SECTOR_BIAS : 0);   // (N3) 최고 레벨 섹터의 종목·리포트 카드 (유물은 sector 없음)
 function pickTagged(list){   // 등급 안 가중 추첨 (rand() 한 번 — 가중치가 전부 1이면 균등)
-  const top = topTags(), w = list.map(x => tagWeight(x, top)), total = w.reduce((a, b) => a + b, 0);
+  const top = topTags(), secs = topSectors(), w = list.map(x => tagWeight(x, top, secs)), total = w.reduce((a, b) => a + b, 0);
   let roll = rand() * total;
   for(let i = 0; i < list.length; i++){ roll -= w[i]; if(roll < 0) return list[i]; }
   return list[list.length - 1];
@@ -2709,7 +2778,7 @@ function packCardOdds(pk){
   const top = topTags();
   packRarityOdds(pk).forEach(o => {
     const ids = pool.filter(id => CARD_BY_ID[id].rarity === o.rarity);
-    const w = ids.map(id => tagWeight(CARD_BY_ID[id], top)), total = w.reduce((a, b) => a + b, 0);
+    const secs = topSectors(), w = ids.map(id => tagWeight(CARD_BY_ID[id], top, secs)), total = w.reduce((a, b) => a + b, 0);
     ids.forEach((id, i) => out.push({ cardId: id, chance: o.chance * w[i] / total }));   // 상위 태그 카드는 TAG_BIAS만큼 더 (rollPack과 같은 계산)
   });
   return out;

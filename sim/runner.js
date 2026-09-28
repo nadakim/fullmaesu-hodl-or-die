@@ -125,6 +125,7 @@ function playGame(E, strat, seed){
     seed, round: r.round, day: r.day, endReason: r.endReason, endCause: r.endCause,
     endEquity: Math.round(r.endEquity), peakEquity: Math.round(r.peakEquity), liquidations: r.liquidations,
     maxSettleMult: r.maxSettleMult || 1, settledTotal: Math.round(r.settledTotal || 0), maxSettlePayout: Math.round(r.maxSettlePayout || 0),   // 장 마감 정산 (없는 엔진이면 1·0)
+    sectorMax: r.sectorLevel ? Math.max(...Object.keys(r.sectorLevel).map(k => r.sectorLevel[k])) : 1,   // (N3) 판 끝 최고 섹터 레벨 (없는 엔진이면 1)
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
     growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
     shop: shopLog,
