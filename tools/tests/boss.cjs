@@ -1,4 +1,4 @@
-// S9 보스 주간: 일정(2·4·6 일반 중복 없음 + 8 최종) · 결산/보상/암시장 예고 · 보스 주 시작 경보·HUD 배지 · 효과(공매도 금지·거래정지·배수 상한·더하기 봉인·세무조사·빅스텝·증거금 상향·찌라시·금감원·거래세·블랙 먼데이·버블) · 격파 보상 · 도감 보스 · 파산 기록 사인
+// S9 보스 주간: 일정(2·4·6 일반 중복 없음 + 8 최종) · 결산/보상/암시장 예고 · 보스 주 시작 경보·HUD 배지 · 효과(공매도 금지·거래정지·목표 상향·더하기 봉인·세무조사·빅스텝·증거금 상향·찌라시·금감원·거래세·블랙 먼데이·버블) · 격파 보상 · 도감 보스 · 파산 기록 사인
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const S = process.argv[2];
 let pass = 0, fail = 0;
@@ -81,21 +81,14 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
       closePosition(tp, 0); out.tax = Math.round((eq0 - (run.cash - cash0)) * 100) / 100; out.taxWant = Math.round(exp0 * 0.01 * 100) / 100;
       // 개미 털기
       setBoss('antShakeout'); out.gapMult = bossGapMult(); rollSignals(); out.acc = run.signals.semi.acc;
-      // 배수 상한제 (곱하기 빌드)
-      run.relics = []; ['antFlag', 'levTower'].forEach(id => gainRelic(id, 't'));
-      const ps = [1, 2, 3, 4, 5].map(k => openPosition(['semi', 'coin', 'sc', 'ev', 'bio'][k - 1], 1000, 3, 1, true));
-      run.boss = ''; out.uncapped = settleSteps(ps[0], 100).mult;
-      setBoss('multCap'); const cs = settleSteps(ps[0], 100); out.capped = cs.mult; out.capStep = cs.steps[cs.steps.length - 1].source;
+      // 목표 상향 조정: 목표 = max(원래 목표, 주 시작 순자산 × 2)
+      const ps = [openPosition('semi', 1000, 1, 1, true)];
+      run.boss = ''; out.t0 = currentTarget(); run.weekStart.equity = ROUND_TARGETS[run.round - 1] * 10;
+      setBoss('multCap'); out.t1 = currentTarget(); out.tWant = run.weekStart.equity * 2; run.boss = ''; out.t2 = currentTarget();
       // 더하기 봉인
       run.relics = []; gainRelic('dopamine', 't'); gainRelic('seal', 't'); run.combo.up = 5; ps[0].daysHeld = 9;
       run.boss = ''; out.addOn = settleSteps(ps[0], 100).steps.map(s => s.source).join();
       setBoss('addSeal'); out.addOff = settleSteps(ps[0], 100).steps.map(s => s.source).join();
-      // 세무조사: 보너스 절반, 단계 합계 = payout
-      setBoss('taxAudit'); run.relics = []; gainRelic('seal', 't');
-      run.positions = [ps[0]]; ps[0].refExp = exposure(ps[0]) / 1.1;   // 오늘 +10% 가정
-      const base = exposure(ps[0]) - ps[0].refExp; run.phase = 'market'; window.rollCrit = () => 0;
-      settleDay(); const row2 = run.lastDay.settlement[0];
-      out.audit = [Math.round(row2.payout), Math.round(base * RELIC_SEAL_BONUS * 0.5), Math.round(row2.sources.reduce((a, x) => a + x.amount, 0)), row2.sources.map(x => x.source).join()];
       run.positions = []; run.relics = []; run.boss = '';
       return out;
     });
@@ -107,10 +100,17 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
     ok(W + ' 찌라시 폭탄 ×3 · 하루 4개', fx.tipMult === 3 && fx.tipMax === 4, [fx.tipMult, fx.tipMax]);
     ok(W + ' 거래세 1%', fx.tax === fx.taxWant && fx.tax > 0, [fx.tax, fx.taxWant]);
     ok(W + ' 개미 털기: 갭 ×2 · 시그널 50%', fx.gapMult === 2 && Math.abs(fx.acc - 0.5) < 1e-9, [fx.gapMult, fx.acc]);
-    ok(W + ' 배수 상한제: ×100에서 멈춤 (보스 단계)', fx.uncapped > 100 && Math.abs(fx.capped - 100) < 1e-6 && fx.capStep === 'boss', [fx.uncapped, fx.capped]);
+    ok(W + ' 목표 상향 조정: 주 시작 순자산 ×2 (보스 없으면 원래 목표)', fx.t1 === fx.tWant && fx.t2 === fx.t0, [fx.t0, fx.t1, fx.t2]);
     ok(W + ' 더하기 봉인: 도파민(+) 사라지고 인장(×)은 남음', /dopamine/.test(fx.addOn) && !/dopamine/.test(fx.addOff) && /seal/.test(fx.addOff), [fx.addOn, fx.addOff]);
-    ok(W + ' 세무조사: 보너스 50% · 단계 합계 = 정산금', Math.abs(fx.audit[0] - fx.audit[1]) <= 1 && fx.audit[0] === fx.audit[2] && /boss/.test(fx.audit[3]), fx.audit);
 
+
+    // 세무조사: 주말 결산 통과 → 목표 초과분 50% 추징 + 결과 화면
+    const au = await p.evaluate(`(() => { Fx.skipQueue(); hideOverlay(); run.phase = 'premarket'; run.bossPlan[run.round] = 'taxAudit'; startBossWeek(); run.positions = []; run.day = 1; startDay(); ${CLEAR_BODY}
+      return { phase: run.phase, tax: run.lastWeek.auditTax, want: (run.lastWeek.eq - run.lastWeek.target) * 0.5 }; })()`);
+    ok(W + ' 세무조사: 결산 통과 시 목표 초과분 50% 추징', au.phase === 'reward' && au.tax > 0 && Math.abs(au.tax - au.want) < 1e-6, au);
+    await throughResult(p);
+    ok(W + ' 결과 화면에 추징 표시', await p.evaluate(() => /세무조사 추징/.test($('overlayBox').textContent)));
+    await p.evaluate(() => { hideOverlay(); chooseReward('skip'); chooseRelicReward(''); leaveShop(); Fx.skipQueue(); });
     // 최종 보스
     const fin = await p.evaluate(() => {
       const out = {};
@@ -149,4 +149,4 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
   console.log(`FAIL ${fail} / ${pass + fail}`); console.log('errors', JSON.stringify(errs.slice(0, 3)));
   await b.close();
 })();
-function BOSS_NAME_PLACEHOLDER(id){ return { shortBan: '공매도 전면 금지', bigStep: '빅스텝', delistReview: '상장폐지 심사', marginHike: '증거금 상향', fssCrackdown: '금감원 특별 단속', tipBomb: '찌라시 폭탄', tradeTax: '거래세 인상', antShakeout: '개미 털기', multCap: '배수 상한제', addSeal: '더하기 봉인', taxAudit: '국세청 세무조사' }[id] || '?'; }
+function BOSS_NAME_PLACEHOLDER(id){ return { shortBan: '공매도 전면 금지', bigStep: '빅스텝', delistReview: '상장폐지 심사', marginHike: '증거금 상향', fssCrackdown: '금감원 특별 단속', tipBomb: '찌라시 폭탄', tradeTax: '거래세 인상', antShakeout: '개미 털기', multCap: '목표 상향 조정', addSeal: '더하기 봉인', taxAudit: '국세청 세무조사' }[id] || '?'; }

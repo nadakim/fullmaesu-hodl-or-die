@@ -2273,6 +2273,7 @@ function hideGapAlert(item){
 
 /* ══ 보스 주간 (S9, docs/design/BOSS_WEEKS.md) — 엔진 BOSSES·run.boss·nextBossId()를 읽기만 한다 ══ */
 const signalAccNow = () => SIGNAL_ACCURACY + (run ? bossMod('signalAccAdd', 0) : 0);   // 시그널 적중률 (개미 털기 보스면 −15%p) — 엔진 rollSignals와 같은 값
+const bossModOf = (id, key) => BOSS_BY_ID[id] && BOSS_BY_ID[id].mods[key] !== undefined ? BOSS_BY_ID[id].mods[key] : 0;
 const bossText = id => BOSS_BY_ID[id] ? `${BOSS_BY_ID[id].icon} ${BOSS_BY_ID[id].name}` : '';
 const bossKindLabel = b => b.final ? '최종 보스' : b.counter ? '정산 카운터' : '일반 보스';
 /* 설명 + 지금 판에서 정해지는 값 (상장폐지 심사 = 거래정지될 종목) */
@@ -2859,6 +2860,7 @@ function onGameEvent(type, d){
   switch(type){
     case 'cardRejected': toast(d.reason === 'boss' ? bossRejectText() : REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
     case 'bossStart': enqueueBossAlert(d.id); break;
+    case 'bossTax': toast(`🕵️ 세무조사: 목표 초과분 ${Math.round(bossModOf(d.id, 'excessTax') * 100)}% 추징 −${fmtMoney(d.amount)}`, 'bad'); Sound.play('fssSanction'); break;
     case 'bossBeaten': toast(`🏆 보스 격파: ${bossText(d.id)} — 비자금 +${fmtSlush(d.slush)} · 유물 선택지 +${BOSS_RELIC_CHOICE_BONUS}`, 'good'); break;
     case 'bossCrash':
       toast(`🖤 블랙 먼데이: 개장 직후 전 종목 −${Math.round(d.pct * 100)}%`, 'bad');
@@ -4286,6 +4288,7 @@ function showRoundResult(w){
       ${Math.abs(w.settled) >= 0.5 ? statTile('💰 장 마감 정산 보너스', `<span class="${signCls(w.settled)}">${fmtSigned(w.settled)}</span>`) : ''}
       ${w.diamondBonus > 0 ? statTile('💎 다이아몬드 보너스', '+' + fmtMoney(w.diamondBonus)) : ''}
       ${w.bailout > 0 ? statTile('💌 부모님 카드', '+' + fmtMoney(w.bailout)) : ''}
+      ${w.auditTax > 0 ? statTile('🕵️ 세무조사 추징 (목표 초과분)', `<span class="pnl-down">−${fmtMoney(w.auditTax)}</span>`) : ''}
       ${statTile('비자금 적립 (암시장 전용)', `<span class="slush-amt">+${fmtSlush(w.slush)}</span> · 잔액 ${fmtSlush(run.slush)}`, 'wide')}
     </div>
     <div class="stat-caption">▌ 이번 판 누적</div>

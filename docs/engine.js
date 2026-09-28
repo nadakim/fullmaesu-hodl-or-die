@@ -631,9 +631,9 @@ const BOSSES = [
   { id: 'tradeTax',     name: '거래세 인상',      icon: '🧾', desc: '모든 매도(반대매매 포함)에 매도 금액의 1% 세금.', mods: { sellTax: 0.01 } },
   { id: 'antShakeout',  name: '개미 털기',        icon: '🧹', desc: '갭 확률 ×2, 시그널 적중률 −15%p.', mods: { gapMult: 2, signalAccAdd: -0.15 } },
   // 정산 카운터 (D11 — 곱하기 빌드 견제)
-  { id: 'multCap',      name: '배수 상한제',      icon: '🧢', counter: true, desc: '장 마감 정산 배수 최대 ×100.', mods: { settleMultCap: 100 } },
+  { id: 'multCap',      name: '목표 상향 조정',   icon: '🧢', counter: true, desc: '이번 주 목표 = 원래 목표와 주 시작 순자산 ×2 중 큰 값.', mods: { targetEquityMult: 2 } },
   { id: 'addSeal',      name: '더하기 봉인',      icon: '🔒', counter: true, desc: '정산의 더하기(+) 유물 무효 — 곱하기(×) 유물만 발동.', mods: { noAddRelics: true } },
-  { id: 'taxAudit',     name: '국세청 세무조사',  icon: '🕵️', counter: true, desc: '장 마감 정산 보너스의 50% 추징.', mods: { settlePayoutMult: 0.5 } },
+  { id: 'taxAudit',     name: '국세청 세무조사',  icon: '🕵️', counter: true, desc: '주말 결산을 통과하면 목표 초과분의 50% 추징.', mods: { excessTax: 0.5 } },
   // 최종 보스
   { id: 'blackMonday',  name: '블랙 먼데이',      icon: '🖤', final: true, desc: '월요일 개장 직후 전 종목 −12% 폭락(인버스 +12%) + 약세장, 이번 주 갭 ×1.5.', mods: { crashDay: 1, crashPct: 0.12, gapMult: 1.5 } },
   { id: 'bubblePeak',   name: '버블의 정점',      icon: '🫧', final: true, desc: '월~수 강세장이 이어지다 목·금은 약세장 + 갭 ×2.', mods: { bubbleUpDays: 3, bubbleGapMult: 2 } }
@@ -1026,8 +1026,7 @@ function copySource(id, i){
 }
 /* 판정 난수가 필요 없는 정산 단계 라벨 (유물이 아닌 source) */
 const SETTLE_SOURCE_LABEL = { card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
-const bossStepLabel = () => run.boss ? BOSS_BY_ID[run.boss].icon + ' ' + BOSS_BY_ID[run.boss].name : '보스';
-const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : src === 'boss' ? bossStepLabel() : (SETTLE_SOURCE_LABEL[src] || src);
+const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : (SETTLE_SOURCE_LABEL[src] || src);
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
 
 /* 순수 계산 (rand·상태 변경 없음): 포지션 p가 오늘 base만큼 벌었을 때의 정산 단계. 미리보기(previewSettlement)와 공용.
@@ -1057,8 +1056,6 @@ function settleSteps(p, base, crit){
     if(run.week.futures && run.week.futures !== 1) push({ kind: 'xmult', value: run.week.futures }, 'futures', `${SETTLE_SOURCE_LABEL.futures} ×${run.week.futures}`);
     if(hasRelic('infinity')){ const d = String(Math.floor(Math.abs(chips * m))).length; push({ kind: 'xmult', value: d }, 'infinity', `${relicStepLabel('infinity')} ${d}자리`); }
     if(crit > 1) push({ kind: 'xmult', value: crit }, 'crit', `${SETTLE_SOURCE_LABEL.crit} ×${crit}`);
-    const cap = bossMod('settleMultCap', 0);   // 배수 상한제 (보스): 넘은 만큼 깎는 단계 하나
-    if(cap && m > cap) push({ kind: 'xmult', value: cap / m }, 'boss', `${bossStepLabel()} ×${cap} 상한`);
   }
   return { steps, chips, mult: m, total: chips * m };
 }
@@ -1090,13 +1087,6 @@ function settleDay(){
       r.steps.push({ label: `${SETTLE_SOURCE_LABEL.timeLoop} ×${run.timeLoopToday}`, kind: 'add', value: again,
                      runningChips: r.chips + again / r.mult, runningMult: r.mult, source: 'timeLoop' });
       payout += again;
-    }
-    const keep = bossMod('settlePayoutMult', 1);   // 국세청 세무조사 (보스): 보너스의 일부 추징 — 'add' 단계 하나로 기록 (합계 = payout 유지)
-    if(payout > 0 && keep < 1){
-      const cut = payout * (1 - keep), last = r.steps[r.steps.length - 1];
-      r.steps.push({ label: `${bossStepLabel()} −${Math.round((1 - keep) * 100)}%`, kind: 'add', value: -cut,
-                     runningChips: last.runningChips - cut / last.runningMult, runningMult: last.runningMult, source: 'boss' });
-      payout -= cut;
     }
     p.upStreak = base > 0 ? limitUpStreak(p, base) : base < 0 ? 0 : (p.upStreak || 0);   // 상한가 행진
     p.todayX = [];
@@ -1212,7 +1202,8 @@ const isWinning    = p => posPnl(p) > 0;
 
 const totalBorrowed = () => run.positions.reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
 const netEquity     = () => run.cash + run.positions.reduce((s, p) => s + posEquity(p), 0) - run.overdraft;
-const currentTarget = () => ROUND_TARGETS[run.round - 1];
+/* 이번 주 목표. 목표 상향 조정(보스, 정산 카운터)이면 주 시작 순자산 × 배수와 비교해 큰 값 — 불어난 순자산을 직접 겨냥 */
+const currentTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.weekStart.equity * bossMod('targetEquityMult', 0));
 const longExposure  = () => run.positions
   .filter(p => p.dir > 0 && STOCK_BY_ID[p.assetId].beta > 0)
   .reduce((s, p) => s + exposure(p), 0);
@@ -2520,6 +2511,8 @@ function endOfRound(){
   if(eq < target) return endRun('MISSED');
   if(eq >= target * (1 + COMPOUND_EXCESS)) growRelic('compoundMonster', 1);   // 복리 괴물
   else shrinkRelic('compoundMonster', 1, 'weakWeek');
+  const auditTax = Math.max(0, eq - target) * bossMod('excessTax', 0);   // 국세청 세무조사 (보스, 정산 카운터): 목표 초과분 추징
+  if(auditTax > 0){ run.cash -= auditTax; eq -= auditTax; run.lastWeek.auditTax = auditTax; emit('bossTax', {id: run.boss, amount: auditTax}); }
   run.lastWeek.slush = slushEarned(eq, target) + (run.boss ? BOSS_SLUSH_BONUS : 0);   // 보스 주 통과 보너스
   run.slush += run.lastWeek.slush;
   run.weeksCleared = run.round;
@@ -2545,7 +2538,7 @@ function weekSummary(eq, target, diamondBonus, bailout){
     buys: run.buys - ws.buys, fines: run.finesPaid - ws.finesPaid, tipNet: run.tipNet - ws.tipNet, peak: run.weekPeak,
     settled: run.weekDays.reduce((sum, d) => sum + d.payout, 0),   // 이번 주 장 마감 정산 보너스 합계 (이미 현금)
     slush: 0,   // 이번 주 비자금 적립 (통과했을 때 endOfRound가 채움)
-    boss: run.boss, nextBoss: nextBossId(),   // 이번 주 보스 · 다음 주 보스 예고 (보스 주간)
+    boss: run.boss, nextBoss: nextBossId(), auditTax: 0,   // 이번 주 보스 · 다음 주 보스 예고 (보스 주간)
     settlementChain: [],   // 결산 체인 연출용 포지션별 단계 (endOfRound가 채움)
     progress: target > ws.equity ? (eq - ws.equity) / (target - ws.equity) : 1   // 이번 주 필요 상승분 중 번 비율
   };
