@@ -528,7 +528,7 @@ body::after{
 .card-tip b{display:block;margin-bottom:calc(4 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;color:var(--gold);font-weight:normal;}
 .card-tip .ct-meta{display:block;margin-bottom:calc(4 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;color:var(--muted);}
 .card-tip .ct-ev{display:block;margin-top:calc(5 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;}
-.card-tip .ct-ev.pos{color:var(--green);} .card-tip .ct-ev.neg{color:var(--red);} .card-tip .ct-ev.zero{color:var(--muted);}
+.card-tip .ct-ev.pos{color:var(--green);} .card-tip .ct-ev.settle{color:var(--text2);} .card-tip .ct-ev.neg{color:var(--red);} .card-tip .ct-ev.zero{color:var(--muted);}
 .c-foot{display:flex;justify-content:space-between;gap:calc(4 * var(--u));font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;color:var(--muted);}
 .card.r-common{--rc:var(--muted);}
 .card.r-uncommon{--rc:var(--green2);}
@@ -718,7 +718,7 @@ body::after{
 .relic.drop-to{box-shadow:0 0 0 calc(3 * var(--u)) var(--gold),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
 .rl-kind{position:absolute;left:calc(-5 * var(--u));top:calc(-6 * var(--u));min-width:calc(11 * var(--u));padding:calc(1 * var(--u)) calc(2 * var(--u)) 0;
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1.3;color:#000;background:var(--cyan);box-shadow:0 0 0 calc(1 * var(--u)) #000;pointer-events:none;}
-.rl-kind.xmult{background:var(--gold);}
+.rl-kind.xmult,.rl-kind.mult{background:var(--gold);} .rl-kind.copy{background:var(--text2);}
 .relic-tip .rt-move{display:flex;gap:calc(6 * var(--u));margin-top:calc(6 * var(--u));flex-wrap:wrap;align-items:center;}
 .relic-tip .rt-move button{border:none;cursor:pointer;padding:calc(4 * var(--u)) calc(8 * var(--u));background:var(--panel2);color:var(--cyan);
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}
@@ -1145,10 +1145,10 @@ body::after{
 .stat-caption{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--gold);text-align:left;margin-top:calc(12 * var(--u));}
 
 /* 결산 체인: 주간 결산 통과 때 유물·보너스가 포지션 손익을 불린 순서를 재생 (연출 전용) */
-.stage-mult{font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);color:var(--text);margin-left:auto;white-space:nowrap;}
+.stage-mult{font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);color:var(--gold);margin-left:auto;white-space:nowrap;}
 .stage-mult.f1{color:var(--gold);text-shadow:0 0 calc(4 * var(--u)) var(--gold2);}
-.stage-mult.f2{color:var(--cyan);text-shadow:0 0 calc(6 * var(--u)) var(--cyan);}
-.stage-mult.f3{color:var(--purple);text-shadow:0 0 calc(8 * var(--u)) var(--purple);animation:stageJitter .12s steps(2) infinite;}
+.stage-mult.f2{color:var(--gold);text-shadow:0 0 calc(6 * var(--u)) var(--blue);}
+.stage-mult.f3{color:var(--gold);text-shadow:0 0 calc(8 * var(--u)) var(--purple);animation:stageJitter .12s steps(2) infinite;}
 .stage-mult.f4{color:var(--gold);font-size:var(--fs-p3);text-shadow:0 0 calc(10 * var(--u)) var(--red),0 0 calc(18 * var(--u)) var(--gold);animation:stageJitter .08s steps(2) infinite;}
 @keyframes stageJitter{50%{transform:translate(calc(1 * var(--u)), calc(-1 * var(--u)));}}
 .overlay-box.stage-f3{box-shadow:0 0 0 calc(3 * var(--u)) var(--purple),0 0 calc(24 * var(--u)) var(--purple),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
@@ -1157,6 +1157,23 @@ body::after{
 .stage-reel.spin{animation:stageJitter .06s steps(2) infinite;}
 .stage-pay{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);margin-top:calc(6 * var(--u));}
 .stage-pay b{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);font-weight:normal;}
+/* N4 색 언어: 칩(오늘 손익·더하기) = 청록, 배수(합산 +·곱 ×) = 금색. 초록·빨강은 상승·하락 전용 */
+.n-chip,.relic-tip .rt-move .n-chip{color:var(--cyan);} .n-mult,.relic-tip .rt-move .n-mult{color:var(--gold);}
+.stage-formula{display:flex;align-items:center;justify-content:center;gap:calc(8 * var(--u));margin:calc(10 * var(--u)) 0 calc(4 * var(--u));flex-wrap:wrap;
+  font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1.1;color:var(--text2);}
+.sf-box{display:inline-block;min-width:calc(64 * var(--u));padding:calc(4 * var(--u)) calc(8 * var(--u)) calc(2 * var(--u));background:#000;text-align:center;white-space:nowrap;}
+.sf-box small{display:block;font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.3;color:var(--muted);}
+.sf-chip{color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.sf-mult{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.sf-amt{color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--line2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;min-width:calc(110 * var(--u));}
+.sf-amt.up{color:var(--green);} .sf-amt.down{color:var(--red);}
+.sf-box.hit{animation:sfHit .22s steps(4);}
+@keyframes sfHit{0%{transform:none;}35%{transform:translateY(calc(-6 * var(--u))) scale(1.18);}100%{transform:none;}}
+.slot-d{display:inline-block;min-width:.5em;} .slot-d.spin{color:var(--text2);}
+.overlay-box.pre-shake{animation:preShake var(--shake-ms, .2s) steps(6);}
+@keyframes preShake{20%{transform:translate(var(--amp), 0);}40%{transform:translate(calc(-1 * var(--amp)), var(--amp));}60%{transform:translate(var(--amp), calc(-1 * var(--amp)));}80%{transform:translate(calc(-1 * var(--amp)), 0);}}
+@media (prefers-reduced-motion: reduce){.sf-box.hit,.overlay-box.pre-shake{animation:none;}}
+body.no-motion .sf-box.hit,body.no-motion .overlay-box.pre-shake{animation:none;}
 @media (prefers-reduced-motion: reduce){.stage-mult.f3,.stage-mult.f4,.stage-reel.spin{animation:none;}}
 body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stage-reel.spin{animation:none;}
 .chain-list{display:flex;flex-direction:column;gap:calc(12 * var(--u));margin:calc(12 * var(--u)) 0;text-align:left;}
@@ -1179,7 +1196,8 @@ body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stag
   animation:chipDrop .4s steps(8) both;
 }
 .chain-chip.add{color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
-.chain-chip.cut{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.chain-chip.cut{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
+.chain-chip.add.cut{box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
 .chain-stamp{
   position:absolute;bottom:calc(-10 * var(--u));right:calc(-8 * var(--u));padding:calc(4 * var(--u)) calc(6 * var(--u)) calc(3 * var(--u));background:#000;
   font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.3;
@@ -3153,7 +3171,7 @@ function showCardTip(el){
   cardTipEl.innerHTML = `<b>${card.name}</b>
     <span class="ct-meta">${TYPE_LABEL[card.type]} · ${RARITY_LABEL[card.rarity]} · 행동력 ${card.type === 'status' ? '—' : ap}${card.exhaust ? ' · 소멸' : ''}${card.target ? ' · 대상 ' + TARGET_LABEL[card.target] : ''}${stock ? ` · ₩${formatKrw(idx >= 0 && run ? stockCost(stock) : stock.cost)}${idx >= 0 && run ? ` · 현재가 ${fmtPrice(assets[stock.id].price)}` : ''} · ${stock.sector} · β ${stock.beta} · 변동성 ${stock.volatility}` : ''}</span>
     ${card.tags.length ? `<span class="ct-meta">태그 ${tagNames(card.tags)}${topTags().some(t => card.tags.indexOf(t) >= 0) ? ' — 내 덱 주력 태그 (보상·암시장 +' + Math.round(TAG_BIAS * 100) + '%)' : ''}</span>` : ''}${card.upgraded ? `<span class="ct-meta">✦ 강화판 — 원래: ${CARD_BY_ID[card.base].desc}</span>` : canUpgrade(card.id) ? `<span class="ct-meta">✦ 강화하면: ${CARD_BY_ID[card.id + '+'].desc}${CARD_BY_ID[card.id + '+'].ap !== card.ap ? ` (행동력 ${CARD_BY_ID[card.id + '+'].ap})` : ''}</span>` : ''}
-    ${cardDesc(card)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
+    ${settleColor(cardDesc(card))}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
   cardTipEl.hidden = false;
   const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
   let x = r.left, y = r.top - t.height - 6;
@@ -3163,8 +3181,18 @@ function showCardTip(el){
   cardTipEl.style.left = x + 'px';
   cardTipEl.style.top = y + 'px';
 }
+function placeTip(el){
+  const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
+  let x = r.left, y = r.top - t.height - 6;
+  if(y < 4) y = r.bottom + 6;
+  cardTipEl.style.left = Math.max(4, Math.min(window.innerWidth - t.width - 4, x)) + 'px';
+  cardTipEl.style.top = Math.max(4, Math.min(window.innerHeight - t.height - 4, y)) + 'px';
+}
+function showSettleTip(el){ if(!run) return; cardTipEl.innerHTML = settleTipHtml(); cardTipEl.hidden = false; placeTip(el); }
 function hideCardTip(){ clearTimeout(cardTipTimer); cardTipEl.hidden = true; }
 document.addEventListener('mouseover', e => {
+  const mp = e.target.closest('#multPreview');
+  if(mp){ if(!(e.relatedTarget && mp.contains(e.relatedTarget))){ clearTimeout(cardTipTimer); cardTipTimer = setTimeout(() => { if(mp.isConnected) showSettleTip(mp); }, CARD_TIP_DELAY_MS); } return; }
   const el = e.target.closest('.card[data-cid]');
   if(!el || el.closest('.card-tip')) return;
   if(e.relatedTarget && el.contains(e.relatedTarget)) return;
@@ -3172,6 +3200,8 @@ document.addEventListener('mouseover', e => {
   cardTipTimer = setTimeout(() => { if(el.isConnected) showCardTip(el); }, CARD_TIP_DELAY_MS);
 });
 document.addEventListener('mouseout', e => {
+  const mp = e.target.closest('#multPreview');
+  if(mp && !(e.relatedTarget && mp.contains(e.relatedTarget))){ hideCardTip(); return; }
   const el = e.target.closest('.card[data-cid]');
   if(el && !(e.relatedTarget && el.contains(e.relatedTarget))) hideCardTip();
 });
@@ -3397,6 +3427,9 @@ function renderTurn(){
     : pre ? '카드를 눌러 사용' : '장중에는 카드 사용 불가';
 }
 
+/* N4 색 언어: 정산 설명의 배수(×N · 합산 배수 +N)는 금색 — 문구는 그대로, '정산' 이야기일 때만 칠한다 */
+const SETTLE_MULT_RE = /(×\s?(?:\d[\d.,]*|콤보 수|배수|레버리지)(?:ⁿ|\^[^\s.,)]+)?|합산 배수 \+[\d.]+)/g;
+const settleColor = text => /정산|배수/.test(text) ? text.replace(SETTLE_MULT_RE, '<span class="n-mult">$1</span>') : text;
 /* 예상 정산 배수 (엔진 previewSettlement — 판정에 쓰는 계산 그대로). 오르면 숫자가 튄다 (큰 연출은 S6) */
 const fmtMult = m => '×' + (m < 10 ? m.toFixed(2) : m < 1000 ? m.toFixed(1) : Math.round(m).toLocaleString());
 let lastMultShown = 0;
@@ -3411,7 +3444,19 @@ function renderMultPreview(){
   const tip = '오늘 예상 정산 배수 — 장 마감에 포지션이 그날 번 돈 × 배수만큼 받는다 (보너스분은 현금으로)'
     + (pv.rows.length ? '\n' + pv.rows.map(r => `${r.name} ${r.dir < 0 ? '숏 ' : ''}${r.lev}x ${fmtMult(r.mult)} · 유리하게 +1%면 ${fmtSigned(r.per1pct)}`).join('\n') : '\n포지션 없음')
     + '\n' + critOddsText();
-  if($('multPreview').title !== tip) $('multPreview').title = tip;
+  if($('multPreview').getAttribute('aria-label') !== tip) $('multPreview').setAttribute('aria-label', tip);   // 화면 툴팁은 settleTipHtml (색 언어)
+}
+/* 예상 정산 툴팁: 포지션마다 [칩 = 유리하게 1%] × [배수] = [금액] 한 줄 */
+function settleTipHtml(){
+  const pv = previewSettlement();
+  const rows = pv.rows.map(r => {
+    const p = run.positions.find(x => x.id === r.posId), chip = p ? exposure(p) * 0.01 : 0;
+    return `<span class="ct-meta">${r.name} ${r.dir < 0 ? '숏 ' : ''}${r.lev}x · <span class="n-chip">${fmtSigned(chip)}</span> × <span class="n-mult">${fmtMultNum(r.mult)}</span> = <span class="${signCls(chip * r.mult)}">${fmtSigned(chip * r.mult)}</span></span>`;
+  }).join('');
+  return `<b>오늘 예상 정산 <span class="n-mult">${fmtMult(pv.mult)}</span></b>
+    <span class="ct-meta">장 마감에 <span class="n-chip">칩</span>(그날 번 돈 + 더하기) × <span class="n-mult">배수</span>(합산 + · 곱 ×) = 금액. 보너스분(금액 − 그날 번 돈)은 현금으로</span>
+    ${rows ? `<span class="ct-meta">유리하게 1% 움직이면 — <span class="n-chip">칩</span> × <span class="n-mult">배수</span> = 금액</span>${rows}` : '<span class="ct-meta">포지션 없음</span>'}
+    <span class="ct-meta">${settleColor(critOddsText())}</span>`;
 }
 /* 반대매매 기준 문구 (엔진 플래그 MAINTENANCE_MARGIN_ON에 따라 담보비율 / 증거금률) */
 function marginText(p){
@@ -3427,7 +3472,7 @@ function critOddsText(){
 /* 종목 카드를 쓰면 배수가 어떻게 바뀌는지 (카드 툴팁) */
 function cardSettleView(stockId){
   const before = previewSettlement().mult, after = previewSettlement(hypotheticalBuy(stockId)).mult;
-  return `<span class="ct-ev ${after > before + 1e-9 ? 'pos' : 'zero'}">💰 쓰면 정산 배수 ${fmtMult(before)} → ${fmtMult(after)}</span>`;
+  return `<span class="ct-ev settle">💰 쓰면 정산 배수 <span class="n-mult">${fmtMult(before)}</span> → <span class="n-mult">${fmtMult(after)}</span>${after > before + 1e-9 ? ' ▲' : ''}</span>`;
 }
 
 /* ── 손패 ── */
@@ -3899,7 +3944,6 @@ function showRunOver(reason){
    세기는 이번 판 최고 정산 대비 비율(stageRatio), 작은 정산은 2배속 자동. 클릭·SPACE 한 번 = 빨리 감기, 두 번 = 결과로 */
 const JUICE_CONFIG = {
   stageMs: { intro: 420, row: 300, step: 480, crit: 1100, count: 800, sum: 500, coins: 700, end: 420 },   // 1배속 기준 (ms)
-  countSteps: 10,                // 카운트업 칸 수
   fireTiers: [[10000, 4], [1000, 3], [100, 2], [10, 1]],   // 누적 배수 → 불타기 단계
   smallRatio: 0.25,              // 이번 판 최고 정산의 이 비율 미만이면 '작은 정산' → 자동 배속
   smallSpeed: 2,                 // 작은 정산 배속
@@ -3911,6 +3955,13 @@ const JUICE_CONFIG = {
   nextGuardMs: 400,              // 결과가 뜬 뒤 이 시간 동안 '▶ 다음 날'·엔터 무시
   fireShake: { 1: 0, 2: 1, 3: 2, 4: 3 },   // 불타기 단계별 흔들림
   fireHitStop: 90,               // ×10,000 도달 히트스톱 (ms)
+  // ── N4 색 언어·계산식 줄 ──
+  slotSpinMs: 300,               // 금액 슬롯: 전체가 굴러가다 첫 자리가 멈출 때까지 (ms)
+  slotDigitGapMs: 90,            //           자릿수마다 멈추는 시간차 (왼쪽부터)
+  slotFrameMs: 45,               //           굴러가는 숫자 갱신 간격
+  slotMaxMs: 1400,               //           자릿수가 많아도 굴러가는 시간은 이만큼까지
+  preShakeMs: 200,               // 최종 금액이 뜨기 직전 흔들림 시간
+  preShakePx: [1, 8],            //           흔들림 폭 (이번 판 최고 정산 대비 0 → 1, × --u)
   // ── S8 TR룸 (30·31·32) ──
   dealGapMs: 70,                 // (30) 장전 드로우: 카드 한 장 간격
   dealMs: 320,                   //      한 장이 날아와 자리 잡는 시간
@@ -3956,6 +4007,24 @@ function stagePitch(n){   // n번째 단계의 음높이 (5음계, maxOctaves �
 }
 const stageChipText = st => st.kind === 'add' ? `${st.label} ${st.value < 0 ? fmtSigned(st.value) : '+' + fmtMoney(st.value)}` : st.kind === 'mult' ? `${st.label} +${(+st.value).toFixed(2)}` : `${st.label} ×${fmtMultNum(st.value)}`;
 const stageChipCls  = st => st.kind === 'add' ? (st.value < 0 ? 'add cut' : 'add') : st.value < 1 ? 'cut' : '';
+/* 금액 슬롯: 자릿수 locked개(왼쪽부터)만 최종값, 나머지 숫자는 굴러간다 (UI 연출 난수) */
+function slotHtml(text, locked){
+  let k = 0;
+  return text.replace(/\d/g, ch => k++ < locked ? ch : `<span class="slot-d spin">${Math.floor(Math.random() * 10)}</span>`);
+}
+const digitCount = text => (text.match(/\d/g) || []).length;
+function stageFormula(chips, mult, amt){   // 계산식 줄 [칩] × [배수] = [금액] (amt = null이면 '?')
+  if(chips !== undefined) $('sfChipV').textContent = fmtSigned(chips);
+  if(mult !== undefined) $('sfMultV').textContent = fmtMultNum(mult);
+  if(amt !== undefined){ const el = $('sfAmt'); $('sfAmtV').textContent = amt === null ? '?' : fmtSigned(amt); el.className = 'sf-box sf-amt' + (amt === null ? '' : amt >= 0 ? ' up' : ' down'); }
+}
+const sfHit = id => { const el = $(id); if(!el) return; el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); };
+function preShake(ratio){   // 최종 금액 직전 흔들림 — 폭 = 이번 판 기준 세기 (흔들림 끔·동작 줄이기면 CSS가 끈다)
+  const box = $('overlayBox'), P = JUICE_CONFIG.preShakePx;
+  box.style.setProperty('--amp', `calc(${(P[0] + (P[1] - P[0]) * ratio).toFixed(2)} * var(--u))`);
+  box.style.setProperty('--shake-ms', JUICE_CONFIG.preShakeMs + 'ms');
+  box.classList.remove('pre-shake'); void box.offsetWidth; box.classList.add('pre-shake');
+}
 const fmtMultNum    = v => v >= 1e6 ? (+v).toExponential(2) : v >= 100 ? Math.round(v).toLocaleString() : (+v).toFixed(v >= 10 ? 1 : 2);
 function queueDayStage(d){
   const r = run;
@@ -3973,6 +4042,11 @@ function playDayStage(d){
   showOverlay(`
     <div class="result-kicker">WEEK ${d.round} · DAY ${d.day} 장 마감</div>
     <div class="ov-title" style="color:var(--gold)">장 마감 정산</div>
+    <div class="stage-formula" id="stageFormula" title="칩(오늘 손익 + 더하기 유물) × 배수(합산 + · 곱 ×) = 금액. 정산 보너스 = 금액 − 오늘 손익">
+      <span class="sf-box sf-chip" id="sfChip"><small>칩</small><span id="sfChipV">${fmtSigned(0)}</span></span>×
+      <span class="sf-box sf-mult" id="sfMult"><small>배수</small><span id="sfMultV">1.00</span></span>=
+      <span class="sf-box sf-amt" id="sfAmt"><small>금액</small><span id="sfAmtV">?</span></span>
+    </div>
     <div class="chain-list" id="stageList">
       ${rows.map((r, i) => `<div class="chain-row pending" id="stageRow${i}">
         <div class="chain-head"><span class="chain-name">${r.posName} <small>${posLabel(r)}</small></span><span class="stage-mult" id="stageMult${i}">×1</span></div>
@@ -3991,8 +4065,8 @@ function playDayStage(d){
     const row = () => $('stageRow' + i);
     on(0, () => { document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); row().classList.remove('pending'); row().classList.add('playing'); }, true);
     t += M.row;
-    on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip add">오늘 손익 <span class="${signCls(r.base)}">${fmtSigned(r.base)}</span></span>`); }, true);
-    on(0, () => Sound.play('countTick', { pitch: stagePitch(n) }));
+    on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip add">오늘 손익 ${fmtSigned(r.base)}</span>`); stageFormula(r.base, 1, null); }, true);
+    on(0, () => { Sound.play('countTick', { pitch: stagePitch(n) }); sfHit('sfChip'); });
     t += M.row;
     stageSteps(r).forEach(st => {
       const k = n++;
@@ -4010,6 +4084,7 @@ function playDayStage(d){
         const el = $('stageMult' + i), tier = fireTier(st.runningMult);
         el.textContent = '×' + fmtMultNum(st.runningMult);
         el.className = 'stage-mult' + (tier ? ' f' + tier : '');
+        stageFormula(st.runningChips, st.runningMult);
         const box = $('overlayBox');
         box.classList.toggle('stage-f3', tier === 3); box.classList.toggle('stage-f4', tier === 4);
       }, true);
@@ -4019,24 +4094,31 @@ function playDayStage(d){
         const tier = fireTier(st.runningMult);
         if(x) Fx.shake(Math.max(1, JUICE_CONFIG.fireShake[tier] || 0));
         const el = $('stageMult' + i);
+        sfHit(st.kind === 'add' ? 'sfChip' : 'sfMult');
         Fx.punch(el, 1, x ? 0.5 + 0.1 * tier : 0.25);
         if(tier >= 2){ const rc = rectOf(el); if(rc) Fx.burst(rc.left + rc.width / 2, rc.top + rc.height / 2, 8 * tier, tier >= 3 ? ['--purple', '--gold', '--red'] : ['--cyan', '--gold']); }
         if(tier >= 4) Fx.hitStop(JUICE_CONFIG.fireHitStop);
       });
       t += isCrit ? M.step / 2 : M.step;
     });
-    // 정산 보너스 카운트업 (동전 소리가 빨라진다)
-    on(0, () => { $('stagePay' + i).classList.remove('pending'); }, true);
-    const steps = JUICE_CONFIG.countSteps, dur = M.count * (0.5 + ratio / 2);
-    for(let q = 1; q <= steps; q++){
-      const qq = q, v = r.payout * q / steps;
-      ev.push({ t: t + dur * (1 - Math.pow(1 - q / steps, 1.6)), fn: () => {
-        const el = $('stagePayV' + i); el.textContent = fmtSigned(v); el.className = 'chain-total ' + (r.payout >= 0 ? 'up' : 'down');
-        Sound.play('billFlip', { count: 2 + Math.round(qq / 3), pitch: Sound.semis(qq / 2) });
-      } });
+    // 금액 슬롯: 자릿수마다 시간차를 두고 왼쪽부터 멈춘다. 마지막 자리 직전 흔들림(세기 = 이번 판 최고 대비)
+    const last = r.steps[r.steps.length - 1], amt = last.runningChips * last.runningMult, amtText = fmtSigned(amt);
+    const rowRatio = stageBest.payout > 0 ? Math.min(1, Math.abs(r.payout) / stageBest.payout) : 1;
+    const nd = digitCount(amtText), J = JUICE_CONFIG;
+    const gap = nd > 1 ? Math.min(J.slotDigitGapMs, Math.max(0, J.slotMaxMs - J.slotSpinMs) / (nd - 1)) : 0;
+    const lockAt = q => J.slotSpinMs + gap * q, rollEnd = lockAt(Math.max(0, nd - 1));
+    for(let f = 0; f < rollEnd; f += Math.max(15, J.slotFrameMs)){
+      const ff = f; let locked = 0; while(locked < nd && lockAt(locked) <= ff) locked++;
+      ev.push({ t: t + ff, fn: () => { $('sfAmtV').innerHTML = slotHtml(amtText, locked); $('sfAmt').className = 'sf-box sf-amt'; } });
     }
-    t += dur;
-    on(0, () => { const el = $('stagePayV' + i); el.textContent = fmtSigned(r.payout); el.className = 'chain-total final ' + (r.payout >= 0 ? 'up' : 'down'); }, true);
+    for(let q = 0; q < nd; q++){
+      const qq = q;
+      ev.push({ t: t + lockAt(q) + 0.01, fn: () => Sound.play('billFlip', { count: 2 + Math.round(qq / 2), pitch: Sound.semis(qq) }) });
+    }
+    ev.push({ t: t + Math.max(0, rollEnd - J.preShakeMs), fn: () => preShake(rowRatio) });
+    t += rollEnd + 0.02;
+    on(0, () => { stageFormula(undefined, undefined, amt); sfHit('sfAmt'); $('stagePay' + i).classList.remove('pending'); const el = $('stagePayV' + i); el.textContent = fmtSigned(r.payout); el.className = 'chain-total final ' + (r.payout >= 0 ? 'up' : 'down'); }, true);
+    t += M.count * (0.3 + ratio / 2);   // 금액을 읽을 시간 (큰 정산일수록 길게)
   });
   on(0, () => { document.querySelectorAll('#stageList .pending').forEach(e => e.classList.remove('pending')); document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); }, true);
   t += M.sum;
@@ -4092,7 +4174,7 @@ function stageNext(){
 function stageClose(){
   if(!stage) return;
   cancelAnimationFrame(stage.raf);
-  $('overlayBox').classList.remove('stage-f3', 'stage-f4');
+  $('overlayBox').classList.remove('stage-f3', 'stage-f4', 'pre-shake');
   Music.unduck('stage');
   stage = null;
 }
@@ -4395,7 +4477,7 @@ function relicTile(r, o){
 }
 
 /* 정산 종류 배지: 합산 배수 + / 곱 배수 × / 칩 +. 정산에 안 쓰는 유물은 없음 */
-const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'], copy: ['⇄', 'mult', '효과 복사'] };
+const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'], copy: ['⇄', 'copy', '효과 복사'] };
 const relicKind = id => SETTLE_EFFECTS[id] ? SETTLE_EFFECTS[id].kind : '';
 function renderRelics(){
   if(relicTipId && !hasRelic(relicTipId)) relicTipId = '';
@@ -4415,10 +4497,11 @@ function renderRelics(){
   const tip = $('relicTip');
   if(relicTipId){
     const r = RELIC_BY_ID[relicTipId], i = run.relics.indexOf(relicTipId), kb = RELIC_KIND_BADGE[relicKind(relicTipId)];
-    const move = `<span class="rt-move"><span>${i + 1}번 칸${kb ? ` · 정산 ${i + 1}번째 · ${kb[2]}` : ''}</span>${arrange
+    const kbCls = kb ? (kb[1] === 'add' ? 'n-chip' : kb[1] === 'copy' ? '' : 'n-mult') : '';
+    const move = `<span class="rt-move"><span>${i + 1}번 칸${kb ? ` · 정산 ${i + 1}번째 · <span class="${kbCls}">${kb[2]}</span>` : ''}</span>${arrange
       ? `<button data-relic-move="-1" ${i > 0 ? '' : 'disabled'}>◀ 앞으로</button><button data-relic-move="1" ${i < run.relics.length - 1 ? '' : 'disabled'}>뒤로 ▶</button><span>끌어서 옮기기 · ←→</span>`
       : '<span>순서는 장전·암시장에서 바꿀 수 있다</span>'}</span>`;
-    tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${r.desc}${r.growth ? growthTipHtml(r) : ''}<i>${r.flavor}</i>${move}`;
+    tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${relicKind(r.id) ? settleColor(r.desc) : r.desc}${r.growth ? growthTipHtml(r) : ''}<i>${r.flavor}</i>${move}`;
     tip.hidden = false;
   } else tip.hidden = true;
 }
@@ -5178,7 +5261,7 @@ function updateAmountInfo(){
   const el = $('amtInfo'); if(!el || !amtCtx) return;
   const hp = hypotheticalBuy(amtCtx.stockId, amtCtx.amount), before = previewSettlement().mult, after = previewSettlement(hp).mult;
   el.innerHTML = `투입 원금 <b>${fmtMoney(hp.principal)}</b> · 노출액 <b>${fmtMoney(hp.entryExposure)}</b> · 남는 현금 <b>${fmtMoney(run.cash - hp.principal)}</b><br>
-    정산 배수 ×${before.toFixed(2)} → <b>×${after.toFixed(2)}</b> · 유리하게 1% 움직이면 <b>${fmtSigned(hp.entryExposure * 0.01 * settleSteps(hp, 1).mult)}</b>`;
+    정산 배수 <span class="n-mult">×${before.toFixed(2)}</span> → <b class="n-mult">×${after.toFixed(2)}</b> · 유리하게 1% 움직이면 <b>${fmtSigned(hp.entryExposure * 0.01 * settleSteps(hp, 1).mult)}</b>`;
 }
 function confirmAmount(){
   if(!amtCtx) return;
