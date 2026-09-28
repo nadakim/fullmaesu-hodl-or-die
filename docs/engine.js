@@ -361,6 +361,11 @@ const FUTURES_NEXT         = 0.5;   //   다음 주 정산 ×0.5
 const COIN_FLIP_CHANCE     = 0.5;   // 모 아니면 도: 성공 확률 (화면에 그대로)
 const COIN_FLIP_CHANCE_UP  = 0.6;
 const COIN_FLIP_MULT       = 10;    //   성공하면 그 포지션 오늘 정산 ×10, 실패하면 포지션 가치 0
+/* N1 정산 비중 실험 스위치 (0 = 끔 = 현행). docs/design/SETTLEMENT.md 'N1' — 사용자 결정 전까지 둘 다 0
+   SETTLE_BASE_CAP: 정산에 넣는 base를 포지션 원금 대비 하루 ±이 비율로 자른다 (평가손익은 그대로, 보너스 계산만)
+   HOLD_CHIP_PCT:   수익 마감 포지션에 base와 별개로 원금 × 이 비율을 칩으로 더한다 (작은 상승에도 배수가 일하게) */
+const SETTLE_BASE_CAP      = 0;
+const HOLD_CHIP_PCT        = 0;
 const CRIT_CHANCE          = 0.05;  // 크리티컬 정산: 수익 포지션 정산마다 5%
 const CRIT_TABLE           = [ { mult: 2, weight: 70 }, { mult: 3, weight: 25 }, { mult: 5, weight: 5 } ];   // 배수 · 가중치
 
@@ -1025,7 +1030,7 @@ function copySource(id, i){
   return t;
 }
 /* 판정 난수가 필요 없는 정산 단계 라벨 (유물이 아닌 source) */
-const SETTLE_SOURCE_LABEL = { card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
+const SETTLE_SOURCE_LABEL = { hold: '🪙 보유 칩', card: '🃏 카드', futures: '📅 선물 만기일', crit: '💥 크리티컬', timeLoop: '⏪ 타임 루프' };
 const stepLabel = src => RELIC_BY_ID[src] ? relicStepLabel(src) : (SETTLE_SOURCE_LABEL[src] || src);
 const relicStepLabel = id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name;
 
@@ -1040,6 +1045,7 @@ function settleSteps(p, base, crit){
     else m *= e.value;
     steps.push({ label, kind: e.kind, value: e.value, runningChips: chips, runningMult: m, source });
   };
+  if(base > 0 && HOLD_CHIP_PCT > 0) push({ kind: 'add', value: p.principal * HOLD_CHIP_PCT }, 'hold', SETTLE_SOURCE_LABEL.hold);   // N1-B 보유 칩
   if(base !== 0){
     run.relics.forEach((id, i) => {
       const src = copySource(id, i), fx = SETTLE_EFFECTS[src];
@@ -1075,7 +1081,9 @@ function settleDay(){
   let payoutSum = 0;
   let dayBase = 0;
   run.positions.slice().forEach(p => {
-    const base = p.dir * (exposure(p) - p.refExp);
+    const raw = p.dir * (exposure(p) - p.refExp);
+    const cap = SETTLE_BASE_CAP * p.principal;   // N1-A: 정산 입력만 원금 대비 ±cap으로 자른다 (평가손익·순자산은 그대로)
+    const base = cap > 0 ? Math.max(-cap, Math.min(cap, raw)) : raw;
     p.refExp = exposure(p);
     dayBase += base;
     const crit = base > 0 ? rollCrit() : 0;
