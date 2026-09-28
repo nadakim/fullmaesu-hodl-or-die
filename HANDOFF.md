@@ -1,12 +1,12 @@
 # Session Handoff
 
 **Date:** 2026-09-28
-**main:** S0~S9 + N1 1단계까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
+**main:** S0~S9 + N1까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
 
 ## 지금 상태 (다음 세션은 여기부터)
 
-- **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 1단계(측정 스크립트 + 실험 스위치, 이 PR).
-- **🛑 대기 중인 사용자 결정 — N1 정산 비중 조정안**: A(정산 base 원금 대비 ±15%) / B(보유 칩 원금 2%) / C(A+B) / D(현행 유지). 수치·표는 `docs/design/SETTLEMENT.md` 'N1'. 고르면 그 안만 구현(CONFIG `SETTLE_BASE_CAP`·`HOLD_CHIP_PCT` 값 설정 + 필요하면 UI 표시) → baseline 비교(`sim/runner.js`, `sim/settle-share.js`) → SETTLEMENT.md·CHANGELOG 갱신 → MASTER_PLAN §9 'N1' 체크 → PR.
+- **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 정산 비중(PR #22 측정 + 현행 유지 결정).
+- **N1 정산 비중: D 현행 유지로 결정·완료** (SETTLEMENT.md 'N1'). 스위치 `SETTLE_BASE_CAP`·`HOLD_CHIP_PCT`는 0.
 - **그 다음**: S10 메타 진행 (🛑 D12 해금 조건 목록 확인부터), S11은 **(42) 중간 저장만** (43·45 하지 않음).
 - **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. 사용자가 "머지해"라고 하면 PR 만들고 직접 머지한다. **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
 - **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
