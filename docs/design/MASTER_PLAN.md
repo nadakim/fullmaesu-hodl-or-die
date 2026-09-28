@@ -368,7 +368,7 @@ S1 → S2 → S3 → S4는 **반드시 이 순서** (앞 단계가 뒤 단계의
 - [x] 47 보스 주간 (일반 8 + 정산 카운터 3(D11) + 최종 2, `BOSSES`·`bossMod`, 예고·경보·배지·격파 보상·도감·사인, 시뮬 `sim/boss-check.js` → 대조군 대비 −5~+3%p로 약함, 곱하기 빌드 못 막음 — `BOSS_WEEKS.md` 다음 결정 후보)
 
 ### N 추가 과제
-- [ ] N1 정산 비중 (1단계 측정 완료 `sim/settle-share.js` · 🛑 A/B/C/D 사용자 결정 대기 — SETTLEMENT.md 'N1')
+- [x] N1 정산 비중 (측정 `sim/settle-share.js` → **D 현행 유지** 사용자 결정: 가격 비중 48%·시드 분산 0.56 ≪ 빌드 영향력 4.74. 스위치 `SETTLE_BASE_CAP`·`HOLD_CHIP_PCT`는 0으로 남겨 실험용)
 
 ### S10 메타
 - [ ] 35 카드·유물 해금
