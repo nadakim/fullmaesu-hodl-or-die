@@ -35,7 +35,7 @@
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
-- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 32개, 실행법·주의점은 `tools/tests/README.md`)
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 33개, 실행법·주의점은 `tools/tests/README.md`)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
@@ -108,12 +108,13 @@
   - `overflow:hidden` + 좁은 line-height 안의 한글은 윗줄이 잘린다 (Galmuri가 VT323보다 키가 크다). 이런 곳은 line-height 1.1 이상·padding-top을 준다.
 - `image-rendering: pixelated`, Canvas는 `imageSmoothingEnabled = false` 유지.
 - 상승 = `--green`, 하락 = `--red` (한국식 반대 색 쓰지 않음 — 기존 컨벤션 유지).
+- 전문용어(N2): 화면에 보이는 글자에는 "증거금률"·"담보(유지)비율"·"대차 이자"를 쓰지 않는다 — 툴팁(`title`·`#balTip`) 안에만. 화면은 쉬운 말(심지·빌린 돈·낸 이자). 카드·유물·보스 설명(엔진 문구)은 예외 — 임의로 고치지 않는다.
 - 정산 색 언어(N4): **칩(오늘 손익·더하기) = `--cyan`, 배수(합산 +·곱 ×) = `--gold`** — 정산 무대·예상 정산 툴팁(`settleTipHtml`)·카드/유물 툴팁(`settleColor`)·결산 체인·유물 종류 배지. 초록·빨강은 상승·하락에만. 글자는 `.n-chip`·`.n-mult`.
 
 ### 레이아웃 (가로 데스크톱 / 세로 모바일)
 
 - **901px 이상**: `.cabinet`이 창 전체(100vw × 100dvh)를 채운다 (고정 비율·레터박스·확대 없음, 배경 차트·격자 레이어 없음). 배율 `uiScale`(CSS `--ui`)은 `layoutUi()`가 창 높이 ÷ `UI_BASE_H`(600)를 0.25 단위로 반올림, 1~2.5 — 창 크기가 바뀌면(`resize`, rAF 한 번) 다시 정하고 `renderAll`로 캔버스·카드 잘림을 다시 그린다. '화면 크기'를 키울 때는 창이 `UI_MIN_UNITS_W × UI_MIN_UNITS_H` 칸보다 작아지지 않는 선까지만. Canvas 내부 해상도 = 화면 크기 × devicePixelRatio, 점·선 굵기 = `round(uiScale × dpr)`. fx 파티클 크기는 `Fx.setUiScale`.
-- TR룸: 폭 ≥ 1200 이고 폭/높이 ≥ 1.45면 **3단** — 상단 HUD(전체 폭) / 왼쪽 시장(뉴스 전광판 + '📰 내일' 버튼(호버로 예고)·차트(남는 높이, 장세 뱃지 `#marketStateBadge` = 엔진 `marketState`)·시세 13종목 2열 격자(이름·시그널 칩 / 가격·등락, 상·하한가는 등락 칸 上·下, 섹터·β는 종목명 호버)) / 가운데 행동(유물·행동력·칩·손패·장 시작) / 오른쪽 포지션(2줄 행 — 종목·배지·손익·매도 / 평단→현재가·원금·보유일·태그 아이콘·증거금률 미니 막대, 노출액은 행 툴팁 — 목록 스크롤·전량 매도). `.play-right`를 `display:contents`로 풀어 자식들을 `#screen-play` 그리드 영역(relic·turn·chips·ht·hand·open / pt·pos·sell)에 놓는다. 그보다 좁으면 **2단** `.play-left` | `.play-right`(포지션 최소 35vh, 모자라면 이 칸만 스크롤, 장 시작·전량 매도는 sticky). 시세표는 자동 배율에서 7행이 스크롤 없이 보여야 한다 (차트가 먼저 줄어든다). 새 UI는 이 구역 중 하나에 넣는다.
+- TR룸: 폭 ≥ 1200 이고 폭/높이 ≥ 1.45면 **3단** — 상단 HUD(전체 폭 — N2: 상시 숫자는 순자산+목표 막대·현금(💼 비자금 작게)뿐, 빌린 돈·확정손익·낸 이자는 순자산 상자 호버 툴팁 `#balTip`, 금감원 게이지는 0이면 `.fss.off`로 숨김) / 왼쪽 시장(뉴스 전광판 + '📰 내일' 버튼(호버로 예고)·차트(남는 높이, 장세 뱃지 `#marketStateBadge` = 엔진 `marketState`)·시세 13종목 2열 격자(이름·시그널 칩 / 가격·등락, 상·하한가는 등락 칸 上·下, 섹터·β는 종목명 호버)) / 가운데 행동(유물·행동력·칩·손패·장 시작) / 오른쪽 포지션(2줄 행 — 종목·배지·손익·매도 / 평단→현재가·원금·보유일·태그 아이콘·심지 게이지 `.fuse`(반대매매까지 남은 여유 `fuseLeft` = 건강도 1~`FUSE_FULL_HEALTH`, 초록 → 주황 `FUSE_WARM` → 빨강 = 엔진 `marginWarn`, 숫자·"담보비율/증거금률"은 툴팁만), 노출액은 행 툴팁 — 목록 스크롤·전량 매도). `.play-right`를 `display:contents`로 풀어 자식들을 `#screen-play` 그리드 영역(relic·turn·chips·ht·hand·open / pt·pos·sell)에 놓는다. 그보다 좁으면 **2단** `.play-left` | `.play-right`(포지션 최소 35vh, 모자라면 이 칸만 스크롤, 장 시작·전량 매도는 sticky). 시세표는 자동 배율에서 7행이 스크롤 없이 보여야 한다 (차트가 먼저 줄어든다). 새 UI는 이 구역 중 하나에 넣는다.
 - 뉴스 배너는 한 줄에 안 들어가면 `fitNews`가 전광판(`.marquee`)으로 흘리고, 흔들림 끔·동작 줄이기면 `.wrap`(줄바꿈). 유물 없음 안내는 `fitRelicEmpty`가 좁으면 '유물 없음'.
 - 게임 이름·메타는 `docs/demo` `<head>`의 `GAME_TITLE {ko, en, sub}`·`GAME_META {version, author, links}`에서만 읽는다 (탭 제목·타이틀 로고·전광판). 이름을 하드코딩하지 않는다.
 - 타이틀(`#screen-title`): 배경 `#titleChart`(엔진 `generateNextCandle`과 같은 식을 타이틀 전용 상태 `tchart` + `Math.random`으로, 그리기는 메인 차트와 공용 `drawCandles`) + CRT 노이즈 `#titleNoise`·스캔라인·청록 모서리, 왼쪽 위 로고(`buildTitleLogo` — Galmuri14·Press Start 2P 원래 크기의 정수배, 화면 폭 45~55%, 글자 상한가 `pop`·하한가 `limitdown`, 떡상 기원부적), 왼쪽 아래 [대괄호] 메뉴 `#titleMenu .t-item`(호버·↑↓ 공용 `.sel` + `uiMove`, Enter·클릭 = 번쩍 + `uiConfirm` → `TITLE_CONFIRM_MS` 뒤 원래 버튼 동작, 진행 중인 판에서 영끌 출격은 한 번 더 눌러 확인, [종료]는 `window.electronAPI.quit`이 있을 때만), 오른쪽 위 버전, 오른쪽 아래 ⚙·🌐(+ 링크). 등장 `enterTitle`: 첫 진입 `intro-full`(1.5초), 다시 들어오면 `intro-short`, 흔들림 끔·동작 줄이기면 `t-static`. 첫 입력(클릭·키)은 오디오를 켜고 연출만 끝낸다 — 메뉴 선택으로 쓰지 않는다 (Playwright 테스트는 페이지를 연 뒤 `keyboard.press('Shift')`).

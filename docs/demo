@@ -358,7 +358,7 @@ body::after{
 }
 
 .assets-grid{
-  display:grid;grid-template-columns:1fr 1fr;gap:calc(8 * var(--u));margin-bottom:calc(10 * var(--u));
+  display:grid;grid-template-columns:1fr;gap:calc(8 * var(--u));margin-bottom:calc(10 * var(--u));
 }
 .asset-card{
   background:var(--panel);
@@ -582,10 +582,16 @@ body::after{
 .p-margin{display:flex;align-items:center;gap:calc(4 * var(--u));margin-left:auto;white-space:nowrap;}
 .pos-empty small{display:block;margin-top:calc(6 * var(--u));}
 /* 증거금률 막대: 채움 = 증거금률(0~100%), 세로 선 = 반대매매 기준 */
-.mgauge{position:relative;width:calc(44 * var(--u));height:calc(6 * var(--u));background:#000;box-shadow:0 0 0 calc(1 * var(--u)) var(--line);}
-.mgauge .mg-fill{position:absolute;left:0;top:0;bottom:0;background:var(--gold);}
-.mgauge .mg-call{position:absolute;top:calc(-2 * var(--u));bottom:calc(-2 * var(--u));width:calc(2 * var(--u));margin-left:calc(-1 * var(--u));background:var(--red);}
-.mgauge.danger .mg-fill{background:var(--red);animation:blink .6s step-end infinite;}
+/* (N2) 심지 게이지: 반대매매까지 남은 여유 = 심지 길이 (짧아질수록 임박). 초록 → 주황(--gold2) → 빨강, 끝에 불꽃. 숫자는 툴팁 */
+.fuse{position:relative;display:inline-block;width:calc(48 * var(--u));height:calc(4 * var(--u));margin-right:calc(5 * var(--u));background:var(--line);cursor:help;}
+.fuse .fz-cord{position:absolute;left:0;top:0;bottom:0;background:var(--green2);}
+.fuse .fz-cord::after{content:'';position:absolute;right:calc(-4 * var(--u));top:calc(-2 * var(--u));width:calc(4 * var(--u));height:calc(8 * var(--u));background:var(--gold);box-shadow:0 0 0 calc(1 * var(--u)) #000;}
+.fuse.warm .fz-cord{background:var(--gold2);}
+.fuse.hot .fz-cord{background:var(--red);}
+.fuse.hot .fz-cord::after{background:var(--red);animation:blink .4s step-end infinite;}
+.fuse.safe .fz-cord::after{display:none;}   /* 넉넉하면 불이 안 붙어 있다 */
+body.no-motion .fuse.hot .fz-cord::after{animation:none;}
+@media (prefers-reduced-motion: reduce){.fuse.hot .fz-cord::after{animation:none;}}
 .pnl-up{color:var(--green);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #003a14;}
 .pnl-down{color:var(--red);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #5c0010;}
 
@@ -769,7 +775,22 @@ body::after{
 }
 .shop-bar b{color:var(--gold);font-weight:normal;}
 .slush-amt{color:var(--gold);font-weight:normal;}
-.slush-line{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);margin-top:calc(6 * var(--u));white-space:nowrap;}
+.slush-line{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);margin-top:calc(6 * var(--u));white-space:nowrap;cursor:help;}
+#shopSlush{font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);vertical-align:-0.1em;}   /* 비자금은 암시장·결산에서만 크게 */
+/* (N2) 순자산 상자: 호버·포커스하면 빌린 돈·확정손익·낸 이자 */
+.balance-main{position:relative;cursor:help;}
+.bal-more{color:var(--cyan);}
+.bal-tip{display:none;position:absolute;z-index:40;left:0;right:0;top:calc(100% + calc(8 * var(--u)));padding:calc(8 * var(--u)) calc(10 * var(--u));text-align:left;
+  background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;
+  font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.8;color:var(--muted);}
+.bal-tip div{display:flex;justify-content:space-between;align-items:baseline;gap:calc(10 * var(--u));white-space:nowrap;}
+.bal-tip b{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);font-weight:normal;color:var(--text);}
+.bal-tip small{display:block;margin-top:calc(4 * var(--u));line-height:1.5;color:var(--muted);}
+.balance-main:hover .bal-tip,.balance-main:focus .bal-tip,.balance-main:focus-within .bal-tip{display:block;}
+/* (N2) 금감원 게이지: 0이면 숨기고 오르기 시작하면 나타난다 */
+.fss.off{display:none;}
+.fss.appear{animation:fssAppear .4s steps(4);}
+@keyframes fssAppear{0%{opacity:0;transform:translateX(calc(-10 * var(--u)));}100%{opacity:1;transform:none;}}
 .shop-bar .open-btn{width:auto;margin:0;padding:calc(10 * var(--u)) calc(14 * var(--u));font-size:var(--fs-sm);font-family:var(--gf-sm),monospace;}
 .shop-note{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);color:var(--muted);margin:calc(6 * var(--u)) calc(2 * var(--u)) 0;}
 .pack-row{gap:calc(16 * var(--u));padding:calc(6 * var(--u)) calc(6 * var(--u)) calc(10 * var(--u));flex-wrap:wrap;overflow:visible;}
@@ -1566,7 +1587,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   /* 상단: [제목·장세 / 주차·감시] [순자산] [현금·대출·확정·이자 2×2] — 한 줄 */
   .play-top{
     grid-area:top;
-    display:grid;grid-template-columns:auto minmax(0, 1fr) calc(200 * var(--u)) calc(260 * var(--u));
+    display:grid;grid-template-columns:auto minmax(0, 1fr) calc(200 * var(--u)) calc(150 * var(--u));
     grid-template-areas:"menu hud bal assets";
     gap:calc(4 * var(--u)) calc(10 * var(--u));align-items:center;
   }
@@ -1579,10 +1600,10 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   .play-top .balance-main .total{margin-top:calc(2 * var(--u));}
   .play-top .target-line{margin-top:calc(3 * var(--u));}
   .play-top .target-track{margin-top:calc(3 * var(--u));}
-  .play-top .assets-grid{grid-area:assets;margin:0;grid-template-columns:repeat(2, minmax(0, 1fr));gap:calc(5 * var(--u));}
+  .play-top .assets-grid{grid-area:assets;margin:0;grid-template-columns:minmax(0, 1fr);gap:calc(5 * var(--u));align-self:stretch;}
   .play-top .asset-card{display:flex;flex-direction:column;justify-content:center;padding:calc(3 * var(--u)) calc(7 * var(--u));min-height:0;}
   .play-top .asset-card .label{margin:0;}
-  .play-top .asset-card .val{margin-top:calc(2 * var(--u));}
+  .play-top .asset-card .val{margin-top:calc(2 * var(--u));font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);line-height:1.2;white-space:nowrap;}   /* (N2) 상시 숫자는 순자산·현금뿐 — 현금을 한 단계 크게 */
   .play-top .asset-card .slush-line{margin-top:calc(1 * var(--u));}
   .play-left,.play-right{min-height:0;min-width:0;}
   .play-left{grid-area:left;display:flex;flex-direction:column;overflow:hidden;}
@@ -1669,7 +1690,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
       "left open  sell";
     gap:0 calc(14 * var(--u));
   }
-  .play-top{margin-bottom:calc(8 * var(--u));grid-template-columns:auto minmax(0, 1fr) calc(240 * var(--u)) calc(360 * var(--u));}
+  .play-top{margin-bottom:calc(8 * var(--u));grid-template-columns:auto minmax(0, 1fr) calc(240 * var(--u)) calc(180 * var(--u));}
   .play-right{display:contents;}
   .play-right .relic-bar{margin:0 0 calc(4 * var(--u));}
   .play-right .turn-bar{margin:0 0 calc(6 * var(--u));}
@@ -1764,30 +1785,24 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
         </div>
       </div>
 
-      <div class="balance-main px-corner-box">
-        <div class="label">▌ NET ASSETS · 순자산</div>
+      <div class="balance-main px-corner-box" id="balanceBox" tabindex="0" aria-describedby="balTip">
+        <div class="label">▌ NET ASSETS · 순자산 <span class="bal-more">ⓘ</span></div>
         <div class="total" id="totalAssets">₩ 10,000만</div>
         <div class="target-line"><span id="targetText">WEEK 1 목표</span><span id="targetPct">0%</span></div>
         <div class="target-track"><div class="target-fill" id="targetFill"></div></div>
+        <div class="bal-tip" id="balTip" role="tooltip">
+          <div>빌린 돈 (신용·대차)<b id="debtVal">₩ 0만</b></div>
+          <div>확정손익 (판 누적)<b id="realizedPnL">₩ 0만</b></div>
+          <div>낸 이자 (판 누적)<b id="interestVal">₩ 0만</b></div>
+          <small>순자산 = 현금 + 포지션 평가액 − 빌린 돈. 이자는 장 마감마다 빠져나간다 (신용·마통 이자 · 공매도 대차 이자)</small>
+        </div>
       </div>
 
       <div class="assets-grid">
         <div class="asset-card">
           <div class="label" id="cashLabel">■ CASH</div>
           <div class="val highlight" id="availableCash">₩ 10,000만</div>
-          <div class="slush-line">비자금 <b class="slush-amt" id="slushVal">💼 0만</b></div>
-        </div>
-        <div class="asset-card">
-          <div class="label">■ 대출·대차</div>
-          <div class="val" id="debtVal">₩ 0만</div>
-        </div>
-        <div class="asset-card">
-          <div class="label">■ REALIZED</div>
-          <div class="val" id="realizedPnL">₩ 0만</div>
-        </div>
-        <div class="asset-card">
-          <div class="label">■ 누적 이자</div>
-          <div class="val" id="interestVal">₩ 0만</div>
+          <div class="slush-line" title="비자금 — 암시장에서만 쓰는 돈 (순자산에 안 들어감)"><b class="slush-amt" id="slushVal">💼 0만</b></div>
         </div>
       </div>
 
@@ -1847,7 +1862,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 
       <div class="section-title pos-title">
         <span>▌ 보유 포지션</span>
-        <span id="marginRuleText">증거금률 25% 미만 = 반대매매</span>
+        <span id="marginRuleText">🧨 심지가 다 타면 반대매매</span>
       </div>
       <div class="positions-wrap" id="positionsBox"></div>
 
@@ -3256,7 +3271,8 @@ function renderHud(){
 
   const fss = run.fss / FSS_MAX;
   $('fssFill').style.width = Math.min(100, fss * 100) + '%';
-  $('fssBox').className = 'fss' + (run.fss >= FSS_WARN ? ' hot' : run.fss >= FSS_WARN / 2 ? ' warm' : '');
+  const fssOff = run.fss <= 0 && !run.buyBanToday, fb = $('fssBox'), wasOff = fb.classList.contains('off');   // (N2) 0이면 숨김, 오르기 시작하면 나타난다
+  fb.className = 'fss' + (fssOff ? ' off' : '') + (run.fss >= FSS_WARN ? ' hot' : run.fss >= FSS_WARN / 2 ? ' warm' : '') + (wasOff && !fssOff ? ' appear' : '');
   $('fssState').textContent = run.buyBanToday ? '매수 금지 중' : `${FSS_TEXT(run.fss)} ${Math.round(run.fss)}/${FSS_MAX}`;
 }
 
@@ -3458,7 +3474,12 @@ function settleTipHtml(){
     ${rows ? `<span class="ct-meta">유리하게 1% 움직이면 — <span class="n-chip">칩</span> × <span class="n-mult">배수</span> = 금액</span>${rows}` : '<span class="ct-meta">포지션 없음</span>'}
     <span class="ct-meta">${settleColor(critOddsText())}</span>`;
 }
-/* 반대매매 기준 문구 (엔진 플래그 MAINTENANCE_MARGIN_ON에 따라 담보비율 / 증거금률) */
+/* (N2) 심지 게이지: 남은 길이 = 건강도(1 = 반대매매)를 1~FUSE_FULL_HEALTH 사이로. 경고선(엔진 marginWarn)이면 빨강 */
+const FUSE_FULL_HEALTH = 2;     // 건강도가 이 이상이면 심지가 꽉 참 (= 담보유지비율 방식 화면 막대 MAINT_GAUGE_MAX와 같은 뜻)
+const FUSE_WARM = 0.3;          // 남은 심지가 이 비율 아래면 주황 (새 2x ≈ 43% = 초록, 새 3x = 엔진 경고선 아래라 빨강)
+const fuseLeft = p => Math.max(0, Math.min(1, (marginHealth(p) - 1) / (FUSE_FULL_HEALTH - 1)));
+const fuseClass = (p, f) => isProtected(p) ? 'safe' : marginWarn(p) ? 'hot' : f < FUSE_WARM ? 'warm' : f >= 1 ? 'safe' : '';
+/* 반대매매 기준 문구 (엔진 플래그 MAINTENANCE_MARGIN_ON에 따라 담보비율 / 증거금률) — 툴팁 안에만 */
 function marginText(p){
   if(!MAINTENANCE_MARGIN_ON) return `증거금률 ${Math.round(marginRatio(p) * 100)}% / 반대매매 ${Math.round(marginCallRatio(p) * 100)}%`;
   const c = collateralRatio(p);
@@ -3561,7 +3582,7 @@ function renderPositions(){
             <span class="detail" data-f="price"></span>
             <span class="detail">원금 ${formatKrw(p.principal)} · ${p.daysHeld}일째</span>
             ${orderIcons(p) ? `<span class="p-icons">${orderIcons(p)}</span>` : ''}
-            ${isMarginable(p) ? '<span class="p-margin"><span class="mgauge" data-f="gauge"><i class="mg-fill"></i><i class="mg-call"></i></span></span>' : ''}
+            ${isMarginable(p) ? '<span class="p-margin"><span class="fuse" data-f="gauge"><i class="fz-cord"></i></span></span>' : ''}
           </div>
         </div>`).join('');
   }
@@ -3581,14 +3602,13 @@ function renderPositions(){
     const pv = el.querySelector('[data-f=pnl]');
     pv.textContent = `${fmtSigned(pnl)} (${fmtPct(posReturn(p))})`;
     pv.className = 'val ' + (pnl >= 0 ? 'pnl-up' : 'pnl-down');
-    const g = el.querySelector('[data-f=gauge]');   // 증거금률 미니 막대: 0~100%, 반대매매 선(MARGIN_CALL_RATIO)에 표시선. 숫자는 호버
+    const g = el.querySelector('[data-f=gauge]');   // (N2) 심지: 반대매매까지 남은 여유. 전문용어·숫자는 툴팁
     if(g){
-      const danger = marginWarn(p) && !isProtected(p);
-      g.className = 'mgauge ' + (danger ? 'danger' : 'safe');
-      g.title = marginText(p) + (isProtected(p) ? ' · 오늘 면제' : '');
-      const [fill, line] = MAINTENANCE_MARGIN_ON ? [marginHealth(p) / MAINT_GAUGE_MAX, 1 / MAINT_GAUGE_MAX] : [marginRatio(p), MARGIN_CALL_RATIO];   // 막대 0~100% · 반대매매 선
-      g.firstElementChild.style.width = Math.max(0, Math.min(100, fill * 100)) + '%';
-      g.lastElementChild.style.left = (line * 100) + '%';
+      const f = fuseLeft(p), cls = fuseClass(p, f);
+      if(g.className !== 'fuse ' + cls) g.className = 'fuse ' + cls;
+      const tip = `심지 ${Math.round(f * 100)}% — 다 타면 반대매매\n${marginText(p)}${isProtected(p) ? ' · 오늘 면제' : ''}`;
+      if(g.title !== tip) g.title = tip;
+      g.firstElementChild.style.width = Math.round(f * 100) + '%';
     }
   });
 }
@@ -5637,7 +5657,7 @@ const tickerContent = `▶ 반도체전자 10만 전자 가즈아! &nbsp;·&nbsp
 document.getElementById('tickerText').innerHTML = tickerContent.repeat(3);
 
 window.onload = () => {
-  $('marginRuleText').textContent = MAINTENANCE_MARGIN_ON   // 반대매매 기준 안내 (엔진 수치 그대로)
+  $('marginRuleText').title = MAINTENANCE_MARGIN_ON   // 반대매매 기준 (엔진 수치 그대로) — 화면에는 '심지', 전문용어는 툴팁
     ? `담보비율 ${Math.round(MAINTENANCE_RATIO * 100)}%(숏 ${Math.round(SHORT_MAINTENANCE_RATIO * 100)}%) 미만 = 반대매매`
     : `증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% 미만 = 반대매매`;
   buildQuotes();
