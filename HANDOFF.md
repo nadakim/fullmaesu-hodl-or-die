@@ -5,11 +5,11 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
-- **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 정산 비중(PR #22 측정 + 현행 유지 결정). N4 색 언어는 PR 대기.
+- **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 정산 비중(PR #22 측정 + 현행 유지 결정). N4 색 언어(PR 머지).
 - **N1 정산 비중: D 현행 유지로 결정·완료** (SETTLEMENT.md 'N1'). 스위치 `SETTLE_BASE_CAP`·`HOLD_CHIP_PCT`는 0.
 - **N4 색 언어** (브랜치 `claude/n4-settle-colors-b9zw19`): 칩 = `--cyan`, 배수 = `--gold` 통일 + 정산 무대 계산식 줄·금액 슬롯·직전 흔들림. UI 전용(engine.js 무변경, sim/runner.js 결과 동일), 테스트 `tools/tests/settlecolors.cjs` 추가 (32개).
 - **그 다음**: S10 메타 진행 (🛑 D12 해금 조건 목록 확인부터), S11은 **(42) 중간 저장만** (43·45 하지 않음).
-- **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. 사용자가 "머지해"라고 하면 PR 만들고 직접 머지한다. **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
+- **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. **작업이 끝나면 묻지 않고 자동으로 PR을 만들어 직접 머지한다** (2026-09-28 사용자 지시). **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
 - **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
 - **검증 방법**: 테스트 32개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
 - **주의**: 셸 heredoc은 반드시 `<<'EOF'`(따옴표)로 — 따옴표 없는 heredoc에 백틱이 있으면 명령으로 실행된다. `pkill -f`는 자기 셸을 죽일 수 있다.
