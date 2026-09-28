@@ -1,8 +1,27 @@
 # Session Handoff
 
-**Date:** 2026-09-27
-**Branch:** `claude/handoff-review-status-lw9aio` (MASTER_PLAN S0 — 세션 지정 브랜치라 계획서의 `claude/s0-housekeeping` 대신 사용) → PR 올림, 사용자 승인 대기.
+**Date:** 2026-09-28
+**main:** S0~S9 + N1 1단계까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
 
+## 지금 상태 (다음 세션은 여기부터)
+
+- **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 1단계(측정 스크립트 + 실험 스위치, 이 PR).
+- **🛑 대기 중인 사용자 결정 — N1 정산 비중 조정안**: A(정산 base 원금 대비 ±15%) / B(보유 칩 원금 2%) / C(A+B) / D(현행 유지). 수치·표는 `docs/design/SETTLEMENT.md` 'N1'. 고르면 그 안만 구현(CONFIG `SETTLE_BASE_CAP`·`HOLD_CHIP_PCT` 값 설정 + 필요하면 UI 표시) → baseline 비교(`sim/runner.js`, `sim/settle-share.js`) → SETTLEMENT.md·CHANGELOG 갱신 → MASTER_PLAN §9 'N1' 체크 → PR.
+- **그 다음**: S10 메타 진행 (🛑 D12 해금 조건 목록 확인부터), S11은 **(42) 중간 저장만** (43·45 하지 않음).
+- **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. 사용자가 "머지해"라고 하면 PR 만들고 직접 머지한다. **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
+- **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
+- **검증 방법**: 테스트 31개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
+- **주의**: 셸 heredoc은 반드시 `<<'EOF'`(따옴표)로 — 따옴표 없는 heredoc에 백틱이 있으면 명령으로 실행된다. `pkill -f`는 자기 셸을 죽일 수 있다.
+
+## 단계별 결정 기록 (요약)
+
+- D1 BULL TRAP · D3 주간 체인 = 요약 · D4/D8 목표 1억200만 → 300억 · D5~D7 덱빌딩 · D9 지수 A안 · D10 새 종목 6개 · (14) 담보유지비율 롱 140%·숏 130% · D11 정산 카운터 보스 3종 → 순자산 카운터(목표 상향 조정·세무조사 초과분 50%)
+- S8: TR룸 연출(#17) · 암시장 연출(#18) · 수익 콤보 통합 + `?tuner=1`(#19)
+- S9 결과: 보스는 대조군 대비 대부분 ±5%p, 목표 상향 조정만 −34%p (`docs/design/BOSS_WEEKS.md`)
+
+---
+
+# (이전 기록)
 ## 지금 진행 방식 (2026-09-27~)
 
 `docs/design/MASTER_PLAN.md` §5대로 단계별 진행. **한 단계 = 한 브랜치 = 한 PR, 끝나면 멈추고 요약.** 🛑 결정 지점은 질문으로 정리해 묻는다.
