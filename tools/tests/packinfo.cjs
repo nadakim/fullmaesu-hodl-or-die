@@ -11,7 +11,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
     await page.evaluate(() => { run.masterDeck.push('yolo', 'antArmy'); run.slush = 600; openShop(); renderShop(); });   // 신화 1장 보유 → 나머지 신화는 한도 제외
     await page.waitForTimeout(300);
-    ok(await page.evaluate(() => !document.querySelector('.pk-detail') && document.querySelectorAll('[data-pack-info]').length === 3), W + ' 기존 <details> 제거 · ? 버튼 3개');
+    ok(await page.evaluate(() => !document.querySelector('.pk-detail') && document.querySelectorAll('[data-pack-info]').length === SHOP_PACKS.length), W + ' 기존 <details> 제거 · ? 버튼 = 팩 수 (N3 리서치 팩 포함 4개)');
     for (const id of ['junk', 'leader', 'ruin']) {
       const before = await page.evaluate(() => ({ slush: run.slush, deck: run.masterDeck.length }));
       await page.locator(`[data-pack-info="${id}"]`).click(); await page.waitForTimeout(200);

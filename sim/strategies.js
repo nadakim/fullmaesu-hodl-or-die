@@ -336,5 +336,30 @@ const antFlagBuild = {
   shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
 };
 
-module.exports = { levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
+/* ── (N3) sectorAllIn: 한 섹터(암호화폐)에 올인. 리포트로 섹터 레벨을 올리고, 신용으로 그 섹터 종목만 산다 → 정산 맨 앞의 섹터 칩·배수.
+   보상은 그 섹터 리포트·종목 카드 먼저, 암시장은 원하는 낱장 → 리서치 팩. 찌라시 B. 리포트가 없는 엔진(SECTOR_LEVELS_ON=false)이면 그냥 코인 올인 ── */
+const ALLIN_SECTOR = '암호화폐', ALLIN_REPORT = 'rpt_crypto';
+const inSector = (E, c) => { const s = stockOf(E, c); return !!s && s.sector === ALLIN_SECTOR; };
+const sectorAllIn = {
+  premarket(E){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      if(playOne(E, c => c.type === 'report', c => (c.sector === ALLIN_SECTOR ? 1 : 0))) continue;   // 리포트: 올인 섹터 먼저
+      const buyable = () => E.run.hand.some((_, i) => inSector(E, card(E, i)) && canAfford(E, card(E, i)));
+      if(E.run.pending.lev === 1 && buyable()) playOne(E, c => (c.base || c.id) === 'credit');
+      if(playOne(E, c => inSector(E, c))) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || ['coffee', 'indicators'].indexOf(c.base || c.id) >= 0)) continue;
+      break;
+    }
+  },
+  tip: () => 1,
+  cardPick: [ALLIN_REPORT, 'stk_coin', 'credit', 'timeLoop', 'futures', 'coffee'],
+  relicPick: ['coldwallet', 'hotline', 'capital', 'moonSavings', 'seal', 'talisman'],
+  shop(E){
+    shopByPriority(E, this.relicPick, this.cardPick);
+    const pk = E.SHOP_PACK_BY_ID && E.SHOP_PACK_BY_ID.research;
+    for(let k = 0; pk && k < 3 && E.run.slush >= E.packPrice(pk) && E.packPool(pk).length; k++) E.buyPack('research');
+  }
+};
+
+module.exports = { sectorAllIn, levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
                    relicSwap, arrangeRelics };
