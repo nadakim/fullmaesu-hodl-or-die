@@ -38,7 +38,7 @@ const measure = () => {
   for (const [W, H] of sizes) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(W + ' ' + e.message)); p.on('console', m => m.type() === 'error' && errs.push(W + ' ' + m.text()));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift'); await p.evaluate(() => document.fonts.ready); await sleep(300);
+    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await p.evaluate(() => document.fonts.ready); await sleep(300);
     const tag = `${W}x${H}`;
     const shot = async (name, full) => { await p.mouse.move(1, 1); await sleep(350); await p.screenshot({ path: `${S}/w/${name}-${tag}.png`, fullPage: !!full }); rows.push({ tag, name, ...(await p.evaluate(measure)) }); };
     await shot('title');

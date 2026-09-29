@@ -9,7 +9,7 @@ const ok = (n, c, i) => R.push([c ? 'PASS' : 'FAIL', n, i === undefined ? '' : (
   const ctxB = await b.newContext({ viewport: { width: 1366, height: 768 } });
   const page = await ctxB.newPage();
   page.on('pageerror', e => errs.push(e.message));
-  await page.goto('http://127.0.0.1:8765/demo.html'); await page.keyboard.press('Shift');
+  await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
   await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
   await page.reload();   // 첫 입력 전 무음을 재야 하므로 여기서는 Shift 안 누름 — 아래 첫 클릭이 오디오를 켜고(메뉴 선택으로는 안 쓰임)
   const st = () => page.evaluate(() => ({ track: Music.track, desired: Music.desired, inst: Music.instances, duck: +Music.duckLevel.toFixed(2), ctx: Sound.context && Sound.context.state }));

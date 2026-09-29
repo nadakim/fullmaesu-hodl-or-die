@@ -41,7 +41,7 @@ const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.t
   for(const [W, H] of [[1920, 1080], [1366, 768]]){
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(W + ': ' + e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await sleep(200);

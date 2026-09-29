@@ -6,7 +6,7 @@ const TITLE_WAIT = 450;   // 타이틀 메뉴 확정 뒤 전환(TITLE_CONFIRM_MS
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
   const ok = (n, c, info) => res.push(`${c ? 'PASS' : 'FAIL'} ${n}${c ? '' : ' ' + JSON.stringify(info)}`);
   const st = () => p.evaluate(() => ({ tab: currentTab, phase: run && run.phase, round: run && run.round, day: run && run.day, overlay: overlayOpen, menu: !$('menuPanel').hidden, cont: !$('continueBtn').hidden, tabnav: !!document.querySelector('.tabnav') }));
-  await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift'); await sleep(300);
+  await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await sleep(300);
   let s = await st(); ok('타이틀: 탭 없음 · 이어하기 숨김', s.tab === 'title' && !s.tabnav && !s.cont, s);
   await p.click('#startBtn'); await sleep(300);
   s = await st(); ok('출격 → TR룸 장전', s.tab === 'play' && s.phase === 'premarket', s);
