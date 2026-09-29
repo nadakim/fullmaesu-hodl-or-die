@@ -649,6 +649,28 @@ const STARTER_DECK = [
   'credit', 'short', 'stopLoss', 'takeProfit', 'hodl', 'marginTopup', 'indicators'
 ];
 
+/* ══ 온보딩: 시스템 단계 해금 (docs/design/ONBOARDING.md) ══
+   ONBOARDING_ON이면 시스템마다 SYSTEM_UNLOCK_WEEK 주차에 처음 도달할 때 열리고, 한 번 연 시스템은 영구 —
+   UI가 지금까지 도달한 최고 주차를 판 시작 때 넘긴다(startNewRun({unlockWeek})). 시뮬레이터는 넘기지 않으니 매 판 처음 하는 플레이어.
+   잠긴 시스템: 카드 사용(checkPlay 'locked')·보상·팩·낱장·변환·유물 후보에서 빠지고, 찌라시가 오지 않고, 그 시스템을 겨냥한 보스는 그 주 후보에서 빠진다.
+   시작 덱의 잠긴 카드는 빼 두었다가(run.heldCards) 해금되는 주에 덱에 넣는다(emit('systemUnlocked')). 끄면 도입 전과 같은 판 */
+const ONBOARDING_ON = true;
+const SYSTEM_UNLOCK_WEEK = { signals: 2, tips: 2, news: 2, short: 3, leverage: 3, shopTools: 3, sector: 4, fss: 4 };   // news = 화면만 (뉴스 효과는 늘 있다)
+const SYSTEM_CARDS = {   // 시스템별 카드 (기본 id — 강화판 포함). 섹터 리포트(종류 report)는 sector
+  signals:  ['indicators', 'analyst'],
+  short:    ['short', 'stk_inv', 'stk_inv2', 'hedge'],
+  leverage: ['credit', 'yolo', 'forgotPw', 'hodl', 'marginTopup', 'interestFree', 'overdraft', 'lossGuard', 'circuit', 'levEtf', 'relist', 'delever'],
+  fss:      ['pump', 'dove', 'hawk', 'ceoTweet', 'manip', 'confess', 'stk_delist', 'stk_ailab']
+};
+const SYSTEM_RELICS = {   // 시스템별 유물 (결산 보상·암시장 진열 후보)
+  tips:     ['community', 'tipCollector'],
+  short:    ['inverse', 'shortpro'],
+  leverage: ['hotline', 'capital', 'coldwallet', 'traumaSurvivor', 'levTower', 'phoenix'],
+  fss:      ['vip', 'lawyer', 'fssconnect', 'timemachine', 'fssVip']
+};
+const SYSTEM_BOSSES = { shortBan: 'short', bigStep: 'leverage', marginHike: 'leverage', fssCrackdown: 'fss', tipBomb: 'tips' };   // 잠긴 시스템을 겨냥한 보스
+const ONBOARDING_STARTER_SUBS = { stk_inv: 'stk_ev', stk_inv2: 'stk_game' };   // 시작 덱에서 잠긴 카드 대신 넣는 카드 (없으면 그냥 뺀다)
+
 /* ══ 보스 주간 (S9, docs/design/BOSS_WEEKS.md) ══
    BOSS_WEEK_ROUNDS 주차는 일반 보스(한 판에 중복 없음), BOSS_FINAL_ROUND 주차는 최종 보스.
    판 시작 때 rollBossPlan이 전부 정해 둔다(run.bossPlan) → 직전 주 결산·보상·암시장에서 nextBossId()로 예고.
@@ -886,9 +908,46 @@ function rollBossPlan(){
   const plan = {};
   if(!BOSS_WEEKS_ON) return plan;
   const pool = BOSSES.filter(b => !b.final).map(b => b.id), finals = BOSSES.filter(b => b.final).map(b => b.id);
-  BOSS_WEEK_ROUNDS.forEach(r => { plan[r] = pool.splice(randInt(pool.length), 1)[0]; });
+  BOSS_WEEK_ROUNDS.forEach(r => {   // (온보딩) 그 주에 아직 잠긴 시스템을 겨냥한 보스는 빼고 뽑는다 — 플래그를 끄면 전과 같은 추첨
+    const ok = pool.filter(id => !SYSTEM_BOSSES[id] || sysOpenAt(SYSTEM_BOSSES[id], r));
+    const id = ok[randInt(ok.length)];
+    pool.splice(pool.indexOf(id), 1);
+    plan[r] = id;
+  });
   plan[BOSS_FINAL_ROUND] = finals[randInt(finals.length)];
   return plan;
+}
+/* 온보딩 해금 판정 (순수). round = 그 주차에 열려 있나 — 판 시작 기준 주차(run.unlockBase, 지금까지 도달한 최고)와 큰 쪽 */
+function sysOpenAt(sys, round){
+  if(!ONBOARDING_ON || !sys || !SYSTEM_UNLOCK_WEEK[sys]) return true;
+  return SYSTEM_UNLOCK_WEEK[sys] <= Math.max(round, run ? run.unlockBase : 1);
+}
+const offerRound = () => run.round + (run.phase === 'reward' || run.phase === 'shop' ? 1 : 0);   // 보상·암시장은 다음 주에 쓸 것
+const sysOpen = sys => !run || sysOpenAt(sys, offerRound());
+function cardSystem(id){
+  const c = CARD_BY_ID[id];
+  if(!c) return '';
+  if(c.type === 'report') return 'sector';
+  for(const sys in SYSTEM_CARDS) if(SYSTEM_CARDS[sys].indexOf(c.base) >= 0) return sys;
+  return '';
+}
+function relicSystem(id){
+  for(const sys in SYSTEM_RELICS) if(SYSTEM_RELICS[sys].indexOf(id) >= 0) return sys;
+  return '';
+}
+const cardOpen  = id => sysOpen(cardSystem(id));
+const relicOpen = id => sysOpen(relicSystem(id));
+const packOpen  = pk => pk.id !== RESEARCH_PACK.id || sysOpen('sector');
+/* 새 주: 이번 주에 처음 열린 시스템 → 빼 둔 시작 카드를 덱에 넣고 알린다 */
+function unlockSystemsForRound(){
+  if(!ONBOARDING_ON || run.round <= run.unlockBase) return;
+  const systems = Object.keys(SYSTEM_UNLOCK_WEEK).filter(sys => SYSTEM_UNLOCK_WEEK[sys] === run.round);
+  if(!systems.length) return;
+  const open = id => sysOpenAt(cardSystem(id), run.round);   // 이번 주 기준 (startNextRound는 아직 암시장 단계라 sysOpen을 쓰지 않는다)
+  const cards = run.heldCards.filter(open);
+  run.heldCards = run.heldCards.filter(id => !open(id));
+  cards.forEach(id => run.masterDeck.push(id));
+  emit('systemUnlocked', {round: run.round, systems, cards});
 }
 /* 상장폐지 심사: 베타가 가장 높은 종목 (같으면 앞 종목) */
 const topBetaStockId = () => STOCKS.reduce((best, s) => (s.beta > best.beta ? s : best), STOCKS[0]).id;
@@ -990,7 +1049,7 @@ function updateCombo(){
 function rollRelics(n, exclude = [], weights = RELIC_RARITY_WEIGHTS){   // 등급을 먼저 뽑고(weights), 그 등급 안에서 균등. 없는 유물만 (exclude: 더 뺄 유물 — 새로고침 때 지금 진열)
   const picks = [];
   while(picks.length < n){
-    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0);
+    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0 && relicOpen(r.id));
     const rarity = rollRarity(weights, cands);
     if(!rarity) break;
     picks.push(pickTagged(cands.filter(r => r.rarity === rarity)).id);
@@ -1898,6 +1957,7 @@ function checkPlayInner(handIdx, targetId){
   if(!inst) return 'none';
   const card = CARD_BY_ID[inst.id];
   if(card.type === 'status') return 'unplayable';
+  if(!cardOpen(inst.id)) return 'sysLocked';   // 온보딩: 아직 잠긴 시스템
   if(run.buyBanToday && FSS_BAN_TYPES.indexOf(card.type) >= 0) return 'banned';
   if(run.ap < cardCost(card)) return 'ap';
   const t = resolveTarget(card, targetId);
@@ -2024,6 +2084,7 @@ function newRun(){
     misuDefault: false,   // 반대매매 미수를 현금으로 못 갚음 → 파산
     weeksCleared: 0, lastWeek: null, endCause: '',
     positions: [], nextPosId: 1, nextUid: 1,
+    unlockBase: 1, heldCards: [],   // 온보딩: 판 시작 때 이미 도달해 본 최고 주차 · 해금 전까지 빼 둔 시작 카드
     masterDeck: STARTER_DECK.slice(), drawPile: [], hand: [], discard: [], exhausted: [],
     ap: AP_PER_DAY,
     pending: { lev: 1, dir: 1, principalMult: 1 },
@@ -2050,7 +2111,7 @@ function newRun(){
   };
 }
 
-function startNewRun(){
+function startNewRun(opts){
   eventLog.length = 0;
   marketState = 'NORMAL';
   marketPrice = 1000;
@@ -2058,6 +2119,10 @@ function startNewRun(){
   initAssets();
   initDayCharts();
   run = newRun();
+  run.unlockBase = Math.max(1, (opts && opts.unlockWeek) || 1);
+  if(ONBOARDING_ON){   // 시작 덱의 잠긴 카드는 빼 두고 대체 카드로 (해금되는 주에 덱으로)
+    run.masterDeck = run.masterDeck.map(id => { if(cardOpen(id)) return id; run.heldCards.push(id); return ONBOARDING_STARTER_SUBS[id] || ''; }).filter(Boolean);
+  }
   run.bossPlan = rollBossPlan();   // 보스 일정 (1주차는 보스 없음)
   initRegimes();
   run.newsTomorrow = pickNews();
@@ -2387,7 +2452,7 @@ function updateMarketEvent(){
 /* ══ 찌라시: 장중 선택 이벤트. 도착하면 resolveTip()으로 고를 때까지 시장이 멈춘다 ══ */
 const TIP_BY_ID = {};
 TIP_EVENTS.forEach(e => { TIP_BY_ID[e.id] = e; });
-function tipChance(){ return TIP_EVENT_CHANCE * bossMod('tipChanceMult', 1); }   // 찌라시 폭탄 (보스)
+function tipChance(){ if(!sysOpen('tips')) return 0; return TIP_EVENT_CHANCE * bossMod('tipChanceMult', 1); }   // 찌라시 폭탄 (보스)
 const tipScale   = () => currentTarget() / ROUND_TARGETS[0];   // 금액을 주차 목표에 비례해 키운다
 const tipStockId = (tip, stock) => stock === '$pick' ? tip.stockId : stock;
 
@@ -2670,7 +2735,7 @@ function classifyEnd(reason){
    exclude: 후보에서 뺄 카드 id (덱에 있는 카드). 덱에 신화가 한도만큼 있으면 신화 등급 전체가 빠진다. */
 const rewardRarityWeights = () => REWARD_RARITY_BY_WEEK.find(b => run.round <= b.upTo).weights;
 const mythicCount = () => run.masterDeck.filter(id => CARD_BY_ID[id].rarity === 'mythic').length;
-const cardAllowed = id => !inDeck(id) && (CARD_BY_ID[id].rarity !== 'mythic' || mythicCount() < MYTHIC_DECK_LIMIT);
+const cardAllowed = id => !inDeck(id) && (CARD_BY_ID[id].rarity !== 'mythic' || mythicCount() < MYTHIC_DECK_LIMIT) && cardOpen(id);   // (온보딩) 잠긴 시스템 카드 제외
 /* 빌드 태그: 내 덱(카드 + 유물)에서 가장 많이 나온 태그들 (동점이면 전부, 없으면 빈 배열) */
 const cardTags = id => (CARD_BY_ID[id] && CARD_BY_ID[id].tags) || [];
 function topTags(){
@@ -2847,6 +2912,7 @@ function shopReject(reason){ emit('shopRejected', {reason}); return false; }
 function buyPack(packId){
   const pk = SHOP_PACK_BY_ID[packId];
   if(!shopOpenNow() || !pk) return shopReject('phase');
+  if(!packOpen(pk)) return shopReject('sysLocked');
   if(packPool(pk).length === 0) return shopReject('empty');
   const price = packPrice(pk);
   if(run.slush < price) return shopReject('slush');
@@ -2874,6 +2940,7 @@ function buySingle(idx){
 
 function shopRemoveCard(deckIdx){
   if(!shopOpenNow()) return shopReject('phase');
+  if(!sysOpen('shopTools')) return shopReject('sysLocked');
   if(run.masterDeck.length <= MIN_DECK_SIZE) return shopReject('deckMin');
   if(deckIdx < 0 || deckIdx >= run.masterDeck.length) return shopReject('none');
   const price = shopRemoveCost();
@@ -2901,6 +2968,7 @@ function canService(kind, deckIdx){
 }
 function shopService(kind, deckIdx){
   if(!shopOpenNow()) return shopReject('phase');
+  if(!sysOpen('shopTools')) return shopReject('sysLocked');
   if(!SHOP_SERVICE_BASE[kind]) return shopReject('none');
   if(!canService(kind, deckIdx)) return shopReject(kind === 'duplicate' ? 'mythic' : 'none');
   const price = shopServiceCost(kind);
@@ -2974,6 +3042,7 @@ function startNextRound(){
   run.day = 1;
   run.rewardChoices = [];
   markWeekStart();
+  unlockSystemsForRound();   // (온보딩) 이번 주에 열리는 시스템 → 빼 둔 시작 카드를 덱으로
   buildWeekPiles();
   emit('roundStart', {round: run.round, target: currentTarget()});
   startBossWeek();   // 보스 주간이면 보스·거래정지 종목 (bossStart)
