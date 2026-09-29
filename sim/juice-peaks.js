@@ -33,7 +33,7 @@ function countGame(E, strat, seed){
       case 'daySettled': {
         c.days++;
         if(d.payout >= 0.5) hit();
-        const eligible = d.day < E.DAYS_PER_ROUND && d.settlement.some(r => r.steps.length > 1 && Math.abs(r.payout) >= 0.5);   // 결산 연출 켬 기준
+        const eligible = d.day < E.DAYS_PER_ROUND && d.settlement.some(r => r.steps.length > 1 && Math.abs(r.payout) >= 0.5);   // 결산 연출 켬 기준 · 전체 무대만 (보정 없는 날의 간이 무대는 암전·도장이 없다)
         if(!eligible) break;
         c.stages++;
         let rows = d.settlement.filter(r => Math.abs(r.payout) >= 0.5);
