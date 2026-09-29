@@ -4321,7 +4321,7 @@ const JUICE_CONFIG = {
   multMidFrom: 10,               //      이 배수(단계 값) 이상 = 중간 → 테두리 금색 번쩍
   goldFlashMs: 360,              //      금색 번쩍 시간
   blackoutMs: 60,                //      최고 갱신: 화면 암전 (한 프레임쯤) → "쿵" + 전체 폭발
-  bestBreakFactor: 1,            //      암전 문턱: 직전 이번 판 최고 정산의 이 배수를 넘는 단계만 (1 = 갱신하면 항상. 빈도는 node sim/juice-peaks.js)
+  bestBreakFactor: 5,            //      암전 문턱: 직전 이번 판 최고 정산의 이 배수를 넘는 단계만 (사용자 결정 5 = 무대의 약 10%. 빈도는 node sim/juice-peaks.js --bestFactor)
   bestBurst: 110,                //      최고 갱신 폭발 파티클 수
   unitPopScale: 1.5,             // (A3) 금액 단위 돌파: 새 단위 글자 확대
   unitPopMs: 420,                //      튀었다 돌아오는 시간

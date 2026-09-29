@@ -8,7 +8,7 @@ const STRATEGIES = require('./strategies.js');
 const { playGame } = require('./runner.js');
 
 const args = process.argv.slice(2), arg = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
-const N = +arg('n', 200), BEST_FACTOR = +arg('bestFactor', 1);   // 조정안 실험: 직전 최고의 이 배수를 넘어야 암전 (UI 기본 1)
+const N = +arg('n', 200), BEST_FACTOR = +arg('bestFactor', 5);   // 직전 최고의 이 배수를 넘어야 암전 (UI JUICE_CONFIG.bestBreakFactor와 같게)
 const names = (arg('strategies', '') || Object.keys(STRATEGIES).filter(k => STRATEGIES[k] && STRATEGIES[k].premarket).join(',')).split(',').filter(Boolean);
 
 // docs/demo JUICE_CONFIG와 같은 값 (바꾸면 같이)
