@@ -811,6 +811,14 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .relic-tile.mythic{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) #000,calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .relic-tile[data-relic-reward]{cursor:pointer;}
 .relic-tile[data-relic-reward]:hover{transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));}
+/* 팩·유물 타일 기울기 (카드와 같은 tiltFrame — 등급 색 --rc 발광, 희귀 이상·팩은 반짝이 띠). :hover까지 적어 위 호버 이동 규칙보다 뒤에서 이긴다 */
+.relic-tile{--rc:var(--muted);} .relic-tile.uncommon{--rc:var(--green2);} .relic-tile.rare{--rc:var(--blue);} .relic-tile.legendary{--rc:var(--purple);} .relic-tile.mythic{--rc:var(--gold);}
+.pack{--rc:var(--purple);}
+.pack.tilt,.pack.tilt:hover,.relic-tile.tilt,.relic-tile.tilt:hover{position:relative;z-index:2;transform:perspective(calc(520 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.05);
+  box-shadow:0 0 0 calc(2 * var(--u)) var(--rc),0 0 0 calc(4 * var(--u)) #000,0 0 0 calc(6 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
+.pack.tilt:active,.relic-tile.tilt:active{transform:perspective(calc(520 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1);}
+.pack.tilt,.relic-tile.tilt.rare,.relic-tile.tilt.legendary,.relic-tile.tilt.mythic{
+  background-image:linear-gradient(105deg, transparent calc(var(--sx, 50%) - 4%), color-mix(in srgb, var(--rc) 24%, transparent) 0 calc(var(--sx, 50%) + 4%), transparent 0);}
 .relic-tile .rt-icon{font-size:var(--fs-v3);font-family:'VT323',var(--gv-v3),monospace;}
 .relic-tile .rt-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text);line-height:1.5;}
 .relic-tile .c-rar{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
@@ -864,7 +872,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .pack.disabled,.pack:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 .pack-col{position:relative;}
 .pk-info{   /* 팩 구성 보기 (구매와 별개) */
-  position:absolute;top:calc(-7 * var(--u));right:calc(-7 * var(--u));z-index:2;width:calc(22 * var(--u));height:calc(22 * var(--u));padding:calc(2 * var(--u)) 0 0;border:none;cursor:pointer;
+  position:absolute;top:calc(-7 * var(--u));right:calc(-7 * var(--u));z-index:3;width:calc(22 * var(--u));height:calc(22 * var(--u));padding:calc(2 * var(--u)) 0 0;border:none;cursor:pointer;
   background:#000;color:var(--cyan);--bk-ring:var(--cyan);
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1;
 }
@@ -5701,7 +5709,8 @@ document.addEventListener('pointerdown', e => { const b = e.target.closest('.btn
 
 /* (ui-tactile) 카드 기울기: 손패·보상·암시장 카드에 마우스 위치 따라 3D 기울기. mousemove를 rAF 한 번으로 묶고 CSS 변수(--rx·--ry·--sx)만 바꾼다
    (transform 하나 — 레이아웃 재계산 없음, 크기는 카드에 들어갈 때 한 번만 읽는다). 대상 지정 중·드래그 중·흔들림 끔·동작 줄이기·터치 기기(hover: none)면 끔 */
-const TILT_SEL = '#handBox .card.gcard, #overlayBox .card[data-reward], #overlayBox .card[data-upgrade], #overlayBox .card[data-remove], #shopBox .shop-item .card, #shopBox .card[data-shop-remove]';   // 고를 수 있는 카드만 (덱 확인·도감·팩 구성은 제외)
+const TILT_SEL = '#handBox .card.gcard, #overlayBox .card[data-reward], #overlayBox .card[data-upgrade], #overlayBox .card[data-remove], #shopBox .shop-item .card, #shopBox .card[data-shop-remove], '
+  + '#shopBox .pack, #shopBox .relic-row:not(.own-relics) .relic-tile, #overlayBox .relic-tile[data-relic-reward], #overlayBox .relic-tile[data-swap-pick]';   // 고를 수 있는 카드·팩·유물만 (덱 확인·도감·팩 구성·보유 유물은 제외)
 const HOVER_NONE = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
 let tiltEl = null, tiltRect = null, tiltPt = null, tiltRaf = 0;
 const tiltAllowed = () => settings.shake && !PREFERS_REDUCED_MOTION && !HOVER_NONE && selectedIdx < 0 && relicDragFrom < 0;
