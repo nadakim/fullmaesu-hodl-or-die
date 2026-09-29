@@ -75,9 +75,10 @@ const Fx = (() => {
     document.body.appendChild(scan);
     setTimeout(() => scan.remove(), FX_GLITCH_MS);
   }
-  function stamp(text, tone, size){   // 화면 가운데 큰 도장 (tone: '' 빨강 · 'up' 초록 · 'gold' / size: '' 대 · 'sm' 소)
-    if(now() - lastStampAt < 250) return;   // 한 틱에 반대매매가 여러 건이어도 도장은 한 번
-    lastStampAt = now();
+  let lastStampText = '';
+  function stamp(text, tone, size){   // 화면 가운데 큰 도장 (tone: '' 빨강 · 'up' 초록 · 'gold' · 'cyan' / size: '' 대 · 'sm' 소)
+    if(text === lastStampText && now() - lastStampAt < 250) return;   // 한 틱에 반대매매가 여러 건이어도 같은 도장은 한 번 (다른 문구는 막지 않는다)
+    lastStampAt = now(); lastStampText = text;
     const el = document.createElement('div');
     el.className = 'fx-stamp ' + (tone || '') + (size ? ' ' + size : '');
     el.textContent = text;
@@ -219,15 +220,21 @@ const Fx = (() => {
   const center = r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
   const shown = r => !!r && (r.width > 0 || r.height > 0);   // 다른 화면에 숨어 있는 요소(크기 0)에서는 파티클을 내지 않는다
 
-  // 수익 청산: 동전 픽셀이 포지션 행에서 순자산 표시 쪽으로 빨려 들어간다
-  function coinsTo(fromRect, toRect, n){
-    if(!shown(fromRect) || !shown(toRect)) return;
-    const to = center(toRect);
+  // 수익 청산: 동전 픽셀이 포지션 행에서 순자산 표시 쪽으로 빨려 들어간다 (2차 베지어 곡선).
+  // o.bills = 지폐 비율(0~1) · o.arc = 곡선을 위로 더 띄우는 높이(px) · o.gap = 한 닢 간격(초). 돌려주는 값 = 도착 시각(초, 오름차순) — 입금음·숫자 맥박을 맞춘다
+  function coinsTo(fromRect, toRect, n, o){
+    o = o || {};
+    if(!shown(fromRect) || !shown(toRect)) return [];
+    const to = center(toRect), arrive = [], gap = o.gap || 0.018, arc = o.arc || 0;
     for(let i = 0; i < n; i++){
       const x0 = rnd(fromRect.left, fromRect.right), y0 = rnd(fromRect.top, fromRect.bottom);
-      add({ seek: true, x: x0, y: y0, x0, y0, cx: x0 + rnd(-60, 60), cy: y0 - rnd(30, 90), tx: to.x + rnd(-20, 20), ty: to.y + rnd(-6, 6),
-            dur: rnd(0.45, 0.8), age: 0, life: 99, delay: i * 0.018, size: 5, color: color('--gold'), edge: color('--gold2') });
+      const bill = Math.random() < (o.bills || 0), dur = rnd(0.45, 0.8), delay = i * gap;
+      add({ seek: true, x: x0, y: y0, x0, y0, cx: x0 + rnd(-60, 60) + (to.x - x0) * 0.15, cy: Math.min(y0, to.y) - rnd(30, 90) - arc, tx: to.x + rnd(-20, 20), ty: to.y + rnd(-6, 6),
+            dur, age: 0, life: 99, delay, size: 5, color: color(bill ? '--green2' : '--gold'), edge: color(bill ? '--green-dim' : '--gold2'),
+            w: bill ? 12 : 0, h: bill ? 7 : 0, mark: bill });
+      arrive.push(delay + dur);
     }
+    return arrive.sort((a, b) => a - b);
   }
   // 찌라시 적중: 지폐가 화면 위에서 쏟아진다 (옛 cashRain의 DOM 지폐 → 파티클 캔버스). 끝에서 흐려진다
   function billRain(n){

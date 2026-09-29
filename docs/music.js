@@ -11,6 +11,8 @@
      한 패턴의 마디 수는 채널 중 가장 긴 것. 짧은 채널은 되풀이한다 (같은 반주를 여러 마디에).
      JSON으로 그대로 옮길 수 있게 문자열만 쓴다 (Unity 이식 · MIDI 변환용).
    market 적응형: 패턴의 bull / bear 덮어쓰기 + layers.octave · siren · ring · breakbeat. 전환은 다음 마디 첫 칸에서만.
+   JACKPOT 레이어(layers.jackpot, 수익 콤보 12+): 합창풍 화음 패드(마디마다 코드 3음) + 금관풍 펄스(코드 근음) — setMood({jackpot})로
+     전용 게인만 올리고 내린다 (켜짐 MUSIC_JACKPOT_IN_S, 꺼짐 MUSIC_JACKPOT_OUT_S에 걸쳐 빠짐). 음은 늘 예약해 두므로 마디를 기다리지 않는다.
 ══════════════════════════════════════════════════════════ */
 
 /* ── 곡 데이터 ─────────────────────────────────────────── */
@@ -160,7 +162,14 @@ const SONGS = {
       siren: ['B5 - - - E5 - - - B5 - - - E5 - - -'],            // 위험: p2 자리에 2음 사이렌
       ring:  ['E3 G3 E3 G3 E3 G3 . . . . . . . . . .', '. . . . . . . . E3 G3 E3 G3 E3 G3 . .'],   // 금감원 경고: 낮은 전화벨
       breakbeat: ['K . . S . K S . . K . S K . S S', 'K . S . . K . S K K . S . S K .',
-                  'K . . S K . S . . K S . K . S S', 'K S . K . S K . S . K S S K S S']   // VOLATILE 드럼
+                  'K . . S K . S . . K S . K . S S', 'K S . K . S K . S . K S S K S S'],   // VOLATILE 드럼
+      jackpot: {   // 수익 콤보 JACKPOT: 패턴 마디마다 코드 (평상시·약세 = E단조 진행, 강세 = G장조 bull 진행과 같게)
+        chords: { A: ['E4 G4 B4', 'C4 E4 G4', 'D4 F#4 A4', 'D#4 F#4 B4'], B: ['A3 C4 E4', 'B3 D#4 F#4', 'E4 G4 B4', 'E4 G4 B4'],
+                  C: ['C4 E4 G4', 'D4 F#4 A4', 'D#4 F#4 B4', 'D#4 F#4 B4'] },
+        bull:   { A: ['G4 B4 D5', 'C4 E4 G4', 'D4 F#4 A4', 'G4 B4 D5'], B: ['C4 E4 G4', 'D4 F#4 A4', 'G4 B4 D5', 'G4 B4 D5'],
+                  C: ['C4 E4 G4', 'D4 F#4 A4', 'G4 B4 D5', 'D4 F#4 A4'] },
+        brass: 'X . . X . . X . X . X . X X X .'   // 금관 펄스 리듬 (X = 코드 근음 한 옥타브 위)
+      }
     },
     order: ['A', 'B', 'A', 'C']
   },
@@ -261,9 +270,15 @@ const MUSIC_STINGER_DUCK  = 0.3;    // 스팅어가 도는 동안 BGM 볼륨 배
 const MUSIC_MUFFLE_HZ     = 650;    // 암시장: BGM 로우패스 (물속처럼)
 const MUSIC_MUFFLE_S      = 0.35;   // 로우패스 전환 시간상수 (초)
 const MUSIC_VIBRATO       = { rate: 7, depth: 0.012 };   // VOLATILE · gameOver: 주파수의 ±1.2%
+const MUSIC_JACKPOT_IN_S  = 0.25;   // JACKPOT 레이어가 올라오는 시간 (초)
+const MUSIC_JACKPOT_OUT_S = 2;      // 콤보가 끊기면 이 시간에 걸쳐 빠진다
+const MUSIC_JACKPOT_VOL   = { jp1: 0.05, jp2: 0.045, jp3: 0.04, jb: 0.07 };   // 패드 3음 · 금관
+const MUSIC_JACKPOT_LOWPASS = { jp1: 1500, jp2: 1500, jp3: 1500, jb: 2600 };
+const MUSIC_DANGER_S      = 0.4;    // 위험 로우패스 전환 시간상수 (초) — 풀릴 때는 opts.time으로 "확" 연다
 
 const Music = (() => {
   const CHANNELS = ['p1', 'p2', 'tri', 'noise', 'lead2', 'ring'];
+  const JP_CH = ['jp1', 'jp2', 'jp3', 'jb'];   // JACKPOT 레이어 (패드 3음 · 금관)
   const NOTE = { C: 0, 'C#': 1, D: 2, 'D#': 3, E: 4, F: 5, 'F#': 6, G: 7, 'G#': 8, A: 9, 'A#': 10, B: 11 };
   const noteFreq = tok => { const m = /^([A-G]#?)(-?\d)$/.exec(tok); return m ? 440 * Math.pow(2, (NOTE[m[1]] + (+m[2] + 1) * 12 - 69) / 12) : 0; };
   const bars = {};   // 파싱 캐시: 마디 문자열 → 칸 배열
@@ -276,6 +291,7 @@ const Music = (() => {
   let mood = { state: 'NORMAL', progress: 0, danger: false, fss: false };
   const ducks = {};                                    // 이름 → 볼륨 배율 (찌라시 0.5 · 결산 체인 0.2 …)
   let duckTarget = 1, skippedSteps = 0, muffleNode = null, muffled = false;   // skippedSteps: 뒤처져서 소리 없이 건너뛴 칸 (검증용)
+  let dangerHz = 0;                                    // 위험 로우패스 (0 = 없음). 암시장 로우패스와 따로 — 둘 중 낮은 주파수
   const log = [];                                      // 검증용: 마디 시작 기록 { track, t, bar, mood, bpm }
 
   /* ── 오디오 그래프 (Sound와 같은 AudioContext · 같은 컴프레서) ── */
@@ -286,7 +302,7 @@ const Music = (() => {
     ctx = c; waves = {}; instances = []; current = null; duckTarget = 1;
     out = ctx.createGain(); out.gain.value = MUSIC_MASTER_GAIN * volume; out.connect(Sound.mixBus);
     muffleNode = ctx.createBiquadFilter(); muffleNode.type = 'lowpass'; muffleNode.Q.value = 0.9;
-    muffleNode.frequency.value = muffled ? MUSIC_MUFFLE_HZ : 20000; muffleNode.connect(out);
+    muffleNode.frequency.value = muffleHz(); muffleNode.connect(out);
     duckNode = ctx.createGain(); duckNode.connect(muffleNode);   // 곡 → 덕 → 로우패스(암시장) → 마스터
     stingBus = ctx.createGain(); stingBus.connect(out);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
@@ -311,6 +327,7 @@ const Music = (() => {
     CHANNELS.forEach(c => {
       if(c === 'lead2' && !(song.layers && song.layers.octave)) return;
       if(c === 'ring' && !(song.layers && song.layers.ring)) return;
+      if(JP_CH.indexOf(c) >= 0) return;   // JACKPOT 레이어는 아래에서 따로
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = MUSIC_CH_LOWPASS[c];
       const g = ctx.createGain(); g.gain.value = 0;
       g.connect(lp); lp.connect(fade);
@@ -328,7 +345,20 @@ const Music = (() => {
       }
       ch[c] = { osc, gain: g, vol, vib, freq: 0 };
     });
-    return { name, song, loop, fade, ch, flat: song.order, patIdx: 0, bar: 0, step: 0, nextTime: ctx.currentTime + 0.06,
+    let jp = null;
+    if(song.layers && song.layers.jackpot){   // JACKPOT 레이어: 전용 게인(jp) 아래 패드 3음 + 금관 1개
+      jp = ctx.createGain(); jp.gain.value = mood.jackpot ? 1 : 0; jp.connect(fade);
+      JP_CH.forEach((c, i) => {
+        const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = MUSIC_JACKPOT_LOWPASS[c];
+        const g = ctx.createGain(); g.gain.value = 0; g.connect(lp); lp.connect(jp);
+        const osc = ctx.createOscillator();
+        if(c === 'jb') osc.setPeriodicWave(pulseWave(0.25));
+        else { osc.type = 'sawtooth'; osc.detune.value = (i - 1) * 7; }   // 살짝 어긋난 톱니 = 합창풍
+        osc.connect(g); osc.start();
+        ch[c] = { osc, gain: g, vol: MUSIC_JACKPOT_VOL[c], freq: 0 };
+      });
+    }
+    return { name, song, loop, fade, ch, jp, flat: song.order, patIdx: 0, bar: 0, step: 0, nextTime: ctx.currentTime + 0.06,
              barMood: null, stepDur: 0, done: false, endTime: 0 };
   }
   function stopInstance(inst, seconds){
@@ -349,6 +379,7 @@ const Music = (() => {
   function barTokens(inst, c){
     const song = inst.song, pat = song.patterns[inst.flat[inst.patIdx]], m = inst.barMood, L = song.layers || {};
     let list = null;
+    if(JP_CH.indexOf(c) >= 0) return jackpotTokens(inst, c);
     if(song.adaptive){
       if(c === 'p2' && m.danger && L.siren) list = L.siren;
       else if(c === 'noise' && m.state === 'VOLATILE' && L.breakbeat) list = L.breakbeat;
@@ -362,6 +393,19 @@ const Music = (() => {
     let toks = parse(list[inst.bar % list.length]);
     if(c === 'noise' && song.adaptive && m.state === 'BEAR') toks = toks.map(x => (x === 'H' || x === 'O' ? '.' : x));   // 약세장: 하이햇 제거
     return toks;
+  }
+  function jackpotTokens(inst, c){   // 마디 전체를 잇는 패드 음 / 금관 리듬 (근음 한 옥타브 위)
+    const J = inst.song.layers.jackpot, pn = inst.flat[inst.patIdx];
+    const set = inst.barMood.state === 'BULL' && J.bull ? J.bull : J.chords;
+    const bars = set[pn];
+    if(!bars) return null;
+    const notes = parse(bars[inst.bar % bars.length]), spb = inst.song.stepsPerBeat * inst.song.beatsPerBar;
+    if(c === 'jb'){
+      const m = /^([A-G]#?)(-?\d)$/.exec(notes[0]), hi = m ? m[1] + (+m[2] + 1) : notes[0];
+      return parse(J.brass).map(x => (x === 'X' ? hi : x));
+    }
+    const note = notes[+c.slice(2) - 1];
+    return note ? [note].concat(new Array(spb - 1).fill('-')) : null;
   }
   const patLength = inst => {   // 패턴 마디 수 = 채널 중 가장 긴 것
     const pat = inst.song.patterns[inst.flat[inst.patIdx]];
@@ -504,11 +548,25 @@ const Music = (() => {
   }
   const duck = (key, level) => { ducks[key] = level; applyDuck(); };
   const unduck = key => { delete ducks[key]; applyDuck(); };
-  function setMuffle(on){   // 암시장: 곡 전체를 물속처럼 (스팅어는 그대로)
-    muffled = !!on;
-    if(muffleNode) muffleNode.frequency.setTargetAtTime(muffled ? MUSIC_MUFFLE_HZ : 20000, ctx.currentTime, MUSIC_MUFFLE_S);
+  const muffleHz = () => Math.min(muffled ? MUSIC_MUFFLE_HZ : 20000, dangerHz > 0 ? dangerHz : 20000);
+  /* 로우패스 두 종류: 암시장 setMuffle(on) — 물속처럼 / 위험 setMuffle(hz, {key: 'danger', time}) — 반대매매 위험이 클수록 답답하게
+     (0이면 해제). 실제 주파수 = 둘 중 낮은 쪽. muffled(getter)는 암시장 쪽만 */
+  function setMuffle(on, opts){
+    opts = opts || {};
+    if(opts.key === 'danger') dangerHz = on > 0 ? on : 0;
+    else muffled = !!on;
+    if(muffleNode) muffleNode.frequency.setTargetAtTime(muffleHz(), ctx.currentTime, opts.time || (opts.key === 'danger' ? MUSIC_DANGER_S : MUSIC_MUFFLE_S));
   }
-  function setMood(m){ mood = Object.assign({}, mood, m); }
+  function setMood(m){
+    const was = !!mood.jackpot;
+    mood = Object.assign({}, mood, m);
+    if(!!mood.jackpot !== was && ctx) instances.forEach(inst => {   // JACKPOT 레이어: 마디를 기다리지 않고 바로 올리고, 끊기면 천천히 뺀다
+      if(!inst.jp) return;
+      const g = inst.jp.gain, t = ctx.currentTime;
+      g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(mood.jackpot ? 1 : 0, t + (mood.jackpot ? MUSIC_JACKPOT_IN_S : MUSIC_JACKPOT_OUT_S));
+    });
+  }
 
   function setEnabled(on){
     enabled = !!on;
@@ -549,5 +607,6 @@ const Music = (() => {
   return { SONGS, pump, setTrack, crossfadeTo, stinger, duck, unduck, setMood, setMuffle, setEnabled, setVolume, validate, barsOf, noteFreq,
            get track(){ return current ? current.name : null; }, get desired(){ return desired; }, get log(){ return log; },
            get instances(){ return instances.map(i => ({ name: i.name, loop: i.loop, stopping: !!i.stopping, osc: Object.keys(i.ch).filter(k => i.ch[k].osc || k === 'lfo').length })); },
-           get skippedSteps(){ return skippedSteps; }, get duckLevel(){ return duckNode ? duckNode.gain.value : 1; }, get enabled(){ return enabled; }, get mood(){ return mood; }, get muffled(){ return muffled; } };
+           get skippedSteps(){ return skippedSteps; }, get duckLevel(){ return duckNode ? duckNode.gain.value : 1; }, get enabled(){ return enabled; }, get mood(){ return mood; }, get muffled(){ return muffled; }, get dangerHz(){ return dangerHz; },
+           get jackpotLevel(){ const i = current && current.jp; return i ? i.gain.value : 0; } };
 })();

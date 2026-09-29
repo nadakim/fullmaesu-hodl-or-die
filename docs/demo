@@ -1376,6 +1376,32 @@ body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-p
 }
 .fx-stamp.up{color:var(--green);box-shadow:0 0 0 calc(4 * var(--u)) var(--green2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;}
 @keyframes fxStamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(2.6);}15%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}75%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}}
+/* ── 연출 고조 (juice-escalation) ── 흔들림 끔(body.no-motion)·동작 줄이기면 번쩍임·암전·맥동 없이 (JS motionOK도 같이 막는다) */
+.fx-screen{position:fixed;inset:0;z-index:96;pointer-events:none;}
+.fx-screen.blackout{background:var(--bg);}
+.fx-screen.survive{background:color-mix(in srgb, var(--cyan) 28%, transparent);box-shadow:inset 0 0 0 calc(6 * var(--u)) var(--cyan);animation:fadeOut var(--fx-ms, .5s) steps(5) forwards;}
+.overlay-box.gold-flash{box-shadow:0 0 0 calc(3 * var(--u)) var(--gold),0 0 0 calc(6 * var(--u)) var(--gold2),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
+.unit-pop{display:inline-block;animation:unitPop var(--pop-ms, .42s) steps(6);color:var(--gold);}
+@keyframes unitPop{0%{transform:scale(1);}30%{transform:scale(var(--pop-scale, 1.5)) translateY(calc(-2 * var(--u)));}100%{transform:scale(1);}}
+.stage-reel b{display:inline-block;min-width:calc(14 * var(--u));margin-right:calc(3 * var(--u));padding:0 calc(2 * var(--u));background:var(--bg);color:var(--red);font-weight:normal;
+  font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);line-height:1;vertical-align:middle;}
+.stage-reel i{font-style:normal;}
+.fx-stamp.cyan{color:var(--cyan);box-shadow:0 0 0 calc(4 * var(--u)) var(--cyan),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;}
+.fx-stamp.combo-slam{animation:none;font-family:'Press Start 2P',var(--gp-p3),monospace;font-size:var(--fs-p3);}
+.fx-stamp.combo-slam.jackpot{color:var(--bg);background:var(--gold);}
+.fx-speed{position:absolute;inset:0;z-index:9;pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent 0 calc(9 * var(--u)), color-mix(in srgb, var(--text) 45%, transparent) calc(9 * var(--u)) calc(10 * var(--u)));
+  -webkit-mask:linear-gradient(90deg, #000 0 12%, transparent 12% 88%, #000 88%);mask:linear-gradient(90deg, #000 0 12%, transparent 12% 88%, #000 88%);
+  animation:speedLines var(--fx-ms, .4s) steps(4) forwards;}
+@keyframes speedLines{0%{opacity:1;background-position:0 0;}100%{opacity:0;background-position:0 calc(40 * var(--u));}}
+.fx-close-edge{position:fixed;inset:0;z-index:82;pointer-events:none;opacity:0;
+  box-shadow:inset 0 0 0 calc(10 * var(--u)) var(--bg),inset 0 0 0 calc(22 * var(--u)) color-mix(in srgb, var(--bg) 60%, transparent),inset 0 0 0 calc(40 * var(--u)) color-mix(in srgb, var(--bg) 30%, transparent);}
+body.closing #dayText,body.closing #openBtn{color:var(--red);animation:blink .5s step-end infinite;}
+body.no-motion.closing #dayText,body.no-motion.closing #openBtn{animation:none;}
+#totalAssets.fx-pulse{display:inline-block;animation:totalPulse .16s steps(2);}
+@keyframes totalPulse{50%{transform:scale(1.14);}}
+body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed{display:none;}
+@media (prefers-reduced-motion: reduce){.fx-close-edge,.fx-screen,.fx-speed{display:none;} .unit-pop,body.closing #dayText,body.closing #openBtn{animation:none;}}
 .fx-hit{animation:fxHit .45s steps(4);}
 @keyframes fxHit{0%,50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--panel2);}}
 .balance-main.fx-goal{animation:fxGoal .6s steps(6);}
@@ -1969,6 +1995,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 <div class="fx-streak" id="fxStreak"></div>
 <div class="fx-vignette" id="fxVignette"></div>
 <div class="fx-danger-edge" id="fxDangerEdge"></div>
+<div class="fx-close-edge" id="fxCloseEdge"></div>
 <div class="overlay" id="overlay"><div class="overlay-box px-panel-gold" id="overlayBox"></div></div>
 
 <script src="engine.js"></script>
@@ -2070,7 +2097,7 @@ function renderChart(series){
   cctx.imageSmoothingEnabled = false;
   cctx.fillStyle = '#000';
   cctx.fillRect(0,0,cc.width,cc.height);
-  drawCandles(cctx, cc.width, cc.height, series.data, k, { slots: series.slots, grid: true, priceLine: true, refLine: series.ref });
+  drawCandles(cctx, cc.width, cc.height, series.data, k, { slots: series.slots, grid: true, priceLine: true, refLine: series.ref, geom: chartGeom });
 }
 
 /* 캔들 그리기 (메인 차트 · 타이틀 배경 공용). data를 slots칸에 왼쪽부터, offsetX(px)만큼 왼쪽으로 밀어서 그린다.
@@ -2109,6 +2136,7 @@ function drawCandles(ctx, W, H, data, k, o){
     const highY  = scaleY(c.high);
     const lowY   = scaleY(c.low);
     const isUp   = c.close >= c.open;
+    if(o.geom && i === data.length - 1){ o.geom.x = (cx + candleW / 2) / W; o.geom.y = highY / H; }   // (B5) 로켓이 뿜어 나올 자리
 
     const col    = isUp ? '#00ff41' : '#ff1a3c';
     const shadow = isUp ? '#003a14' : '#3a000e';
@@ -2270,9 +2298,9 @@ function juiceSell(pnl, fromRect){
   const i = Fx.intensity(pnl, netEquity()), lvl = Fx.level(i);
   Sound.play(pnl >= 0 ? 'sellWin' : 'sellLoss', { volume: 0.8 + 0.4 * i });
   if(pnl > 0){
-    Fx.coinsTo(fromRect || rectOf($('positionsBox')), rectOf($('totalAssets')), Math.round(6 + 26 * i));
+    cashout(fromRect || rectOf($('positionsBox')), i, 0);   // (C9) 동전 폭포 → 순자산 (도착마다 "차링" + 맥박)
     if(lvl === 3) Fx.hitStop(Math.round(50 + 40 * i));
-  } else if(pnl < 0 && lvl >= 2) Fx.shake(1);
+  } else if(pnl < 0 && lvl >= 2) Fx.shake(1);   // 손실 매도: 파티클 없이 숫자만
 }
 
 /* ══ 연쇄 연출 (fx.js 큐) — 갭 경보 · 반대매매 · 유물 조명 · 마일스톤. 한 틱에 몰리면 발생 순서대로 하나씩 + CHAIN ×n ══
@@ -2699,7 +2727,7 @@ function hideDownStreak(){   // 포지션이 없을 때: 하락 표시·가장�
   $('fxVignette').style.opacity = 0;
   if(streak.dir < 0){ $('fxStreak').className = 'fx-streak'; streak = { dir: 0, n: 0 }; }
 }
-function hideStreak(){ $('fxStreak').className = 'fx-streak'; $('fxVignette').style.opacity = 0; streak = { dir: 0, n: 0 }; combo = { run, n: 0, max: 0, tier: 0, coolTimer: 0 }; }
+function hideStreak(){ $('fxStreak').className = 'fx-streak'; $('fxVignette').style.opacity = 0; streak = { dir: 0, n: 0 }; combo = { run, n: 0, max: 0, tier: 0, coolTimer: 0 }; setJackpotMusic(false); }
 function comboHit(src){
   comboOwn();
   const J = JUICE_CONFIG, el = $('fxStreak');
@@ -2725,13 +2753,15 @@ function comboTierUp(tier){
   if(J.comboShake[tier]) Fx.shake(J.comboShake[tier]);
   if(r && r.width) Fx.burst(r.left + r.width / 2, r.top + r.height / 2, J.comboParts[tier] || 0,
     tier >= 5 ? ['--gold', '--gold2', '--text'] : tier >= 4 ? ['--gold', '--cyan', '--purple'] : ['--green', '--gold']);
-  if(tier >= 5){ Fx.stamp('JACKPOT!', 'gold'); cashRain(); }
+  if(tier >= J.comboSlamFrom) comboSlam(combo.n, tier);   // (B6) 중앙 도장 → 콤보 자리로 (단계가 오를 때만)
+  if(tier >= 5){ cashRain(); setJackpotMusic(true); }      // (B7) JACKPOT 음악 레이어
 }
 function comboBreak(){
   comboOwn();
   if(!combo.n) return;
   const n = combo.n, el = $('fxStreak');
   combo.n = 0; combo.tier = 0; streak = { dir: 0, n: 0 };
+  setJackpotMusic(false);   // (B7) 끊기면 2초에 걸쳐 빠진다
   if(n < JUICE_CONFIG.comboShowFrom){ el.className = 'fx-streak'; return; }
   el.className = 'fx-streak cool';   // 식음: 최고 기록을 남기고 금이 가며 떨어진다
   el.textContent = '최대 ×' + n;
@@ -2758,6 +2788,187 @@ function comboByGap(stockId, pct){   // 보유 종목 갭: 유리하면 +1, 불�
   const held = run.positions.filter(p => p.assetId === stockId);
   if(!held.length) return;
   if(held.some(p => p.dir * pct < 0)) comboBreak(); else comboHit('gap');
+}
+
+/* ══ 연출 고조 (juice-escalation) — UI 전용: 엔진 상태·이벤트를 읽기만 한다. 수치는 JUICE_CONFIG (?tuner=1)
+   세기 = 이번 판 기준(stageRatio·Fx.intensity), 가장 센 연출(암전·첫 단위 돌파·JACKPOT)은 드물게.
+   흔들림 끔·동작 줄이기(motionOK = false)면 흔들림·번쩍임·암전·슬로모션 없이 숫자·소리만 ══ */
+const motionOK = () => settings.shake && !PREFERS_REDUCED_MOTION;
+function screenFlash(cls, ms){   // 화면 전체 한 번 (암전 · 청록 번쩍)
+  if(!motionOK()) return;
+  const f = document.createElement('div');
+  f.className = 'fx-screen ' + cls;
+  f.style.setProperty('--fx-ms', ms + 'ms');
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), ms);
+}
+/* (A2) 정산 무대: 중간 곱 = 테두리 금색 번쩍 · 이번 판 최고 갱신 = 가장 긴 히트스톱 + 암전 한 프레임 → "쿵" + 전체 폭발 */
+function stageGoldFlash(){
+  if(!motionOK()) return;
+  const box = $('overlayBox');
+  box.classList.remove('gold-flash'); void box.offsetWidth; box.classList.add('gold-flash');
+  setTimeout(() => box.classList.remove('gold-flash'), JUICE_CONFIG.goldFlashMs);
+}
+function stageBestHit(){
+  const J = JUICE_CONFIG;
+  Fx.hitStop(J.multHitStopMs[2]);
+  screenFlash('blackout', J.blackoutMs);
+  setTimeout(() => {
+    Sound.play('bestBoom');
+    Fx.afterStop(() => Fx.shake(3));
+    if(motionOK()) Fx.burst(window.innerWidth / 2, window.innerHeight * 0.45, J.bestBurst, ['--gold', '--gold2', '--cyan', '--purple', '--text']);
+  }, J.blackoutMs);
+}
+/* (A3) 금액 단위 돌파: 가장 큰 단위 글자가 튀었다 돌아오며 "쿵". 이번 판에서 처음 닿은 단위면 도장 (fx 큐 tier 3) */
+const unitIdx = v => { v = Math.abs(v); return v < 10000 ? 0 : Math.min(KRW_UNITS.length - 1, Math.floor(Math.log10(v) / 4 + 1e-12)); };
+let unitSeen = { run: null, max: 0 };
+function unitPop(el, v){
+  if(!el) return;
+  const u = KRW_UNITS[unitIdx(v)], txt = el.textContent, at = txt.indexOf(u);
+  if(at < 0) return;
+  el.innerHTML = txt.slice(0, at) + `<span class="unit-pop">${u}</span>` + txt.slice(at + u.length);
+  el.style.setProperty('--pop-scale', JUICE_CONFIG.unitPopScale);
+  el.style.setProperty('--pop-ms', JUICE_CONFIG.unitPopMs + 'ms');
+}
+function juiceUnitBreak(el, from, to){
+  const a = unitIdx(from), b = unitIdx(to);
+  if(b <= a || to <= 0) return false;
+  unitPop(el, to);
+  Sound.play('unitBreak', { pitch: Sound.semis(-Math.min(12, b * 2)) });
+  if(unitSeen.run !== run) unitSeen = { run, max: 0 };
+  if(b > unitSeen.max && b >= JUICE_CONFIG.unitFirstFrom){
+    unitSeen.max = b;
+    const text = `첫 1${KRW_UNITS[b]} 돌파!`;
+    const item = { kind: 'unitFirst', tier: 3, blocking: false, duration: 1100, payload: { unit: b } };
+    item.play = ctx => {
+      Fx.stamp(text, 'gold');
+      Sound.play('stampWin', { pitch: chainPitch(ctx) });
+      if(motionOK()) Fx.burst(window.innerWidth / 2, window.innerHeight * 0.44, FX_TIER[3].parts, ['--gold', '--gold2', '--green']);
+    };
+    Fx.enqueue(item);
+  }
+  return true;
+}
+/* (B5) 급등 로켓: 보유(롱) 종목이 한 틱에 rocketPct 이상 오르면 — 차트에 보이면 마지막 캔들 윗꼬리 끝에서, 아니면 시세 행에서 불꽃이 위로 +
+   차트 가장자리 속도선. 보유 안 한 종목은 차트에 보이고 있을 때만 작게 */
+const chartGeom = { x: 1, y: 0.5 };   // 메인 차트 마지막 캔들 윗꼬리 끝 (캔버스 비율 0~1) — drawCandles가 채운다
+let rocketPrev = { run: null, px: {} };
+function juiceRockets(){
+  if(rocketPrev.run !== run) rocketPrev = { run, px: {} };
+  const held = new Set(run.positions.filter(p => p.dir > 0).map(p => p.assetId));
+  STOCKS.forEach(st => {
+    const a = assets[st.id], prev = rocketPrev.px[st.id];
+    rocketPrev.px[st.id] = a.price;
+    if(prev > 0 && a.price / prev - 1 >= JUICE_CONFIG.rocketPct) rocket(st.id, held.has(st.id));
+  });
+}
+function rocket(id, held){
+  const onChart = chartTarget === id, J = JUICE_CONFIG;
+  if(!held && !onChart) return false;
+  let rect = null;
+  if(onChart){
+    const r = rectOf(cc);
+    if(r) rect = { left: r.left + chartGeom.x * r.width - 4, right: r.left + chartGeom.x * r.width + 4, top: r.top + chartGeom.y * r.height, bottom: r.top + chartGeom.y * r.height + 2, width: 8, height: 2 };
+    speedLines();
+  } else rect = rectOf(quoteRowEl(id));
+  Fx.sparks(rect, 1, held ? J.rocketSparks[1] : J.rocketSparks[0], '--green');   // 초록 · 금색 섞어서 위로
+  if(held) Sound.play('gapUp', { volume: 0.45, pitch: Sound.semis(7) });
+  return true;
+}
+function speedLines(){   // 만화 속도선 (차트 가장자리, 흔들림 끔이면 없음)
+  if(!motionOK()) return;
+  const box = $('chartBox'), el = document.createElement('div');
+  el.className = 'fx-speed';
+  el.style.setProperty('--fx-ms', JUICE_CONFIG.speedLineMs + 'ms');
+  box.appendChild(el);
+  setTimeout(() => el.remove(), JUICE_CONFIG.speedLineMs);
+}
+/* (B6) 콤보 슬램: 새 단계(c3 이상)로 오르는 순간 화면 중앙 도장 → 줄어들며 콤보 표시 자리로 날아간다 (단계당 한 번) */
+function comboSlam(n, tier){
+  const el = document.createElement('div'), J = JUICE_CONFIG;
+  el.className = 'fx-stamp gold combo-slam' + (tier >= 5 ? ' jackpot' : '');
+  el.textContent = (tier >= 5 ? 'JACKPOT' : 'COMBO') + ' ×' + n;
+  document.body.appendChild(el);
+  const to = rectOf($('fxStreak')), me = el.getBoundingClientRect();
+  const dx = to && to.width ? Math.round(to.left + to.width / 2 - (me.left + me.width / 2)) : 0, dy = to && to.width ? Math.round(to.top + to.height / 2 - (me.top + me.height / 2)) : 0;
+  if(!el.animate){ setTimeout(() => el.remove(), J.comboSlamMs); return; }
+  el.animate([
+    { transform: 'translate(-50%,-50%) rotate(-6deg) scale(2.4)', opacity: 0 },
+    { transform: 'translate(-50%,-50%) rotate(-6deg) scale(1)', opacity: 1, offset: 0.18 },
+    { transform: 'translate(-50%,-50%) rotate(-6deg) scale(1.06)', opacity: 1, offset: 0.55 },
+    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(0deg) scale(0.3)`, opacity: 0.2 }
+  ], { duration: J.comboSlamMs, easing: 'steps(12)', fill: 'forwards' }).onfinish = () => el.remove();
+}
+/* (B7) JACKPOT 음악: 콤보 12+ 동안 market 곡에 합창 패드 + 금관 펄스 (끊기면 2초에 걸쳐 빠진다) */
+const setJackpotMusic = on => { if(!!Music.mood.jackpot !== !!on) Music.setMood({ jackpot: !!on }); };
+/* (B8) 마감 임박: 장중 마지막 closeTicks틱 — 드럼 롤이 빨라지고, 가장자리가 어두워지고, 틱 표시가 빨갛게 (게임 속도는 그대로) */
+function juiceClosing(){
+  const J = JUICE_CONFIG, left = run ? TICKS_PER_DAY - run.tickInDay : 0;
+  const on = !!run && run.phase === 'market' && currentTab === 'play' && left > 0 && left <= J.closeTicks;
+  document.body.classList.toggle('closing', on);
+  const edge = $('fxCloseEdge');
+  if(!on){ edge.style.opacity = 0; return; }
+  const lv = J.closeTicks - left + 1;
+  edge.style.opacity = motionOK() ? String(J.closeDark * lv / J.closeTicks) : '0';
+  Sound.play('closeRoll', { level: Math.min(3, lv), dur: TICK_MS / settings.speed / 1000 * 0.95 });
+}
+/* (C9) 수익 매도 동전 폭포: 포지션 행 → 순자산 상자 (곡선). 도착마다 "차링" + 순자산 숫자 맥박 (입금음은 최대 cashoutMaxDings번) */
+function cashout(fromRect, intensity, delayMs){
+  const J = JUICE_CONFIG, n = Math.round(J.cashoutCoins[0] + (J.cashoutCoins[1] - J.cashoutCoins[0]) * intensity);
+  setTimeout(() => {
+    const arr = Fx.coinsTo(fromRect, rectOf($('totalAssets')), n, { bills: J.cashoutBills, arc: J.cashoutArc * uiScale });
+    const m = Math.min(arr.length, J.cashoutMaxDings), picks = [];
+    for(let q = 0; q < m; q++) picks.push(arr[Math.floor(q * arr.length / m)]);
+    picks.forEach((sec, q) => setTimeout(() => { Sound.play('coinIn', { pitch: stagePitch(q) }); pulseTotal(); }, Math.round(sec * 1000)));
+  }, delayMs || 0);
+}
+function pulseTotal(){ const el = $('totalAssets'); el.classList.remove('fx-pulse'); void el.offsetWidth; el.classList.add('fx-pulse'); }
+let posPnlSnap = {};   // 포지션 id → 마지막으로 그린 평가손익 (전량 매도 때 포지션별 폭포 순서·세기)
+function juiceSellAll(d){
+  const eq = netEquity(), rows = [...$('positionsBox').querySelectorAll('.pos-item[data-id]')];
+  Sound.play(d.pnl >= 0 ? 'sellWin' : 'sellLoss', { volume: 0.8 + 0.4 * Fx.intensity(d.pnl, eq) });
+  let k = 0;
+  rows.forEach(el => {
+    const v = posPnlSnap[el.dataset.id];
+    if(v > 0) cashout(rectOf(el), Fx.intensity(v, eq), k++ * JUICE_CONFIG.cashoutRowGapMs);
+  });
+  if(!k && d.pnl > 0) cashout(rectOf($('positionsBox')), Fx.intensity(d.pnl, eq), 0);
+}
+/* (D10) SURVIVED: 위험(심지 빨강)이던 포지션이 반대매매 없이 안전 구간으로 돌아온 순간 — 청록 번쩍 + 도장 + 맑은 차임, BGM 로우패스가 확 열린다.
+   같은 포지션은 하루 1번. 위험 중엔 BGM이 점점 답답해진다 (heartLoop → Music.setMuffle(hz, {key: 'danger'})) */
+let surv = { run: null, key: '', danger: {}, done: {} };
+function juiceSurvive(){
+  const key = run.round + '/' + run.day;
+  if(surv.run !== run || surv.key !== key) surv = { run, key, danger: {}, done: {} };
+  const now = {};
+  run.positions.forEach(p => { if(posInDanger(p)) now[p.id] = true; });
+  if(run.phase === 'market') Object.keys(surv.danger).forEach(id => {
+    const p = run.positions.find(x => String(x.id) === id);
+    if(!now[id] && !surv.done[id] && p && !marginWarn(p)){ surv.done[id] = true; survived(p); }
+  });
+  surv.danger = now;
+}
+function survived(p){
+  screenFlash('survive', 520);
+  Fx.stamp('간신히 생존!', 'cyan');
+  Sound.play('survived');
+  Music.setMuffle(0, { key: 'danger', time: JUICE_CONFIG.survivedOpenMs / 1000 });
+  const r = rectOf(posRowEl(p.id));
+  if(r) Fx.sparks(r, 1, 18, '--cyan');
+  const edge = $('fxDangerEdge'); edge.classList.remove('on', 'beat');   // 심장 박동 멈춤 (heartLoop도 위험이 없으면 멈춘다)
+}
+/* (D11) 턱걸이 통과 (목표의 100~squeakMax): 결산 체인 끝에 도장 + 긴 한숨 + 짧은 슬로모션 */
+function slowMo(ms, rate){
+  if(!motionOK() || !document.getAnimations) return;
+  const anims = document.getAnimations();
+  anims.forEach(a => { try { a.playbackRate = rate; } catch(e) {} });
+  setTimeout(() => anims.forEach(a => { try { a.playbackRate = 1; } catch(e) {} }), ms);
+}
+function squeakThrough(){
+  const J = JUICE_CONFIG;
+  Fx.stamp('턱걸이 통과!', 'gold');
+  Sound.play('sigh');
+  requestAnimationFrame(() => slowMo(J.slowMoMs, J.slowMoRate));
 }
 
 /* 카드 연쇄: 한 장전에서 연달아 쓰면 2장째부터 잔상, 3장째부터 'n연속'. 풀매수처럼 한 번에 여러 종목을 사면 매수를 하나씩 */
@@ -2855,10 +3066,13 @@ function flameLevel(p){
   return s.up >= F[2] ? 3 : s.up >= F[1] ? 2 : s.up >= F[0] ? 1 : 0;
 }
 const posInDanger = p => run.phase === 'market' && isMarginable(p) && !isProtected(p) && marginWarn(p);
+function dangerT(p){   // 위험 정도: 1 = 경고선 · 0 = 반대매매 직전 (건강도 1)
+  const warn = MAINTENANCE_MARGIN_ON ? MAINT_WARN_HEALTH : MARGIN_WARN_RATIO / marginCallRatio(p);
+  return Math.max(0, Math.min(1, (marginHealth(p) - 1) / Math.max(1e-6, warn - 1)));
+}
 function heartInterval(p){   // 건강도 경고선 → 1.0 사이를 느림 → 빠름으로
-  const [slow, fast] = JUICE_CONFIG.heartMs, warn = MAINTENANCE_MARGIN_ON ? MAINT_WARN_HEALTH : MARGIN_WARN_RATIO / marginCallRatio(p);
-  const t = Math.max(0, Math.min(1, (marginHealth(p) - 1) / Math.max(1e-6, warn - 1)));
-  return Math.round(fast + (slow - fast) * t);
+  const [slow, fast] = JUICE_CONFIG.heartMs;
+  return Math.round(fast + (slow - fast) * dangerT(p));
 }
 /* 심장 박동: 장중 TR룸에서 위험 포지션이 있으면 가장 위험한 건강도로 간격을 정해 "쿵-쿵" + 가장자리 붉은 맥동 */
 function heartLoop(){
@@ -2866,6 +3080,11 @@ function heartLoop(){
   const active = currentTab === 'play' && run && run.phase === 'market' && !overlayOpen;
   const danger = active ? run.positions.filter(posInDanger) : [];
   let wait = 400;
+  const H = JUICE_CONFIG.dangerMuffleHz;
+  if(danger.length){   // (D10) 위험할수록 BGM이 답답하게 (암시장 로우패스와 따로)
+    const t = Math.min(...danger.map(dangerT));
+    Music.setMuffle(Math.round((H[1] + (H[0] - H[1]) * t) / 50) * 50, { key: 'danger' });
+  } else if(Music.dangerHz) Music.setMuffle(0, { key: 'danger' });
   if(danger.length){
     wait = Math.min(...danger.map(heartInterval));   // 가장 위험한 포지션 기준
     edge.classList.add('on');
@@ -2961,7 +3180,7 @@ function onGameEvent(type, d){
       break;
     case 'soldAll':
       comboByPnl(d.pnl, 'sell');
-      juiceSell(d.pnl, rectOf($('positionsBox')));
+      juiceSellAll(d);   // (C9) 수익 포지션마다 시간차 동전 폭포
       showPopNum('청산: ' + fmtSigned(d.pnl), d.pnl >= 0);
       if(d.pnl > 1000) cashRain();
       break;
@@ -2984,6 +3203,7 @@ function onGameEvent(type, d){
       const name = STOCK_BY_ID[d.stockId].name, txt = `${name} ${d.pct > 0 ? '갭상승' : '갭하락'} ${d.pct > 0 ? '+' : '−'}${Math.round(Math.abs(d.pct) * 100)}%!`;
       $('newsText').textContent = '⚡ ' + txt + (d.pct > 0 ? ' 숏 포지션 비상' : ' 레버리지 비상');
       comboByGap(d.stockId, d.pct);
+      if(d.pct > 0 && run.positions.some(p => p.assetId === d.stockId && p.dir > 0)) rocket(d.stockId, true);   // (B5) 유리한 갭 = 로켓
       enqueueGap(d.stockId, d.pct);   // 토스트 대신 중앙 경보
       break;
     }
@@ -3051,6 +3271,7 @@ function onGameEvent(type, d){
       break;
     case 'dayEnd':
       Sound.play('dayEnd');
+      document.body.classList.remove('closing'); $('fxCloseEdge').style.opacity = 0;   // (B8) 마감 임박 끝
       $('newsText').textContent = newsTomorrowLine();
       if(d.waived) toast('장 마감 · 오늘 이자 면제', 'good');
       else if(d.interest > 0.5) toast(`장 마감 · 이자 −${formatKrw(d.interest)}` + (d.discounted ? ' (🏦 VVIP 할인)' : ''), 'warn');
@@ -3083,7 +3304,7 @@ function onGameEvent(type, d){
       whenFxIdle(() => playSettlementChain(d.settlementChain, skipped => {   // 연쇄 연출이 끝난 뒤
         if(!skipped && !(musicOn() && Music.stinger('weekClear'))) Sound.play('weekClear');   // BGM이 켜져 있으면 효과음 대신 스팅어
         showRoundResult(d);
-      }));   // 건너뛰면 도장 소리 1번만
+      }, { squeak: d.pct >= 1 && d.pct <= JUICE_CONFIG.squeakMax }));   // 건너뛰면 도장 소리 1번만 · (D11) 턱걸이면 끝에 도장
       break;
     case 'rewardChosen':   // 보상이 끝나면 암시장으로 넘어가므로 거기서 보여준다
       pendingRewardToasts.push(d.kind === 'take' ? [`${CARD_BY_ID[d.cardId].name} 획득 · 덱 ${d.deckSize}장`, 'good']
@@ -3657,6 +3878,7 @@ function renderPositions(){
       + (isMarginable(p) ? ` · ${marginText(p)}${isProtected(p) ? ' · 면제' : ''}` : '');
     if(el.title !== tip) el.title = tip;   // 노출액은 행 툴팁으로
     const pnl = posPnl(p);
+    posPnlSnap[p.id] = pnl;   // (C9) 전량 매도 폭포용
     const pv = el.querySelector('[data-f=pnl]');
     pv.textContent = `${fmtSigned(pnl)} (${fmtPct(posReturn(p))})`;
     pv.className = 'val ' + (pnl >= 0 ? 'pnl-up' : 'pnl-down');
@@ -4093,7 +4315,37 @@ const JUICE_CONFIG = {
   comboCoolMs: 1600,             // 끊긴 뒤 '최대 ×N'이 남아 있는 시간
   // ── 손에 잡히는 화면 (ui-tactile) ──
   tiltMaxDeg: 8,                 // 카드 기울기 최대 각도 (도) — 손패·보상·암시장 카드
-  btnHoverGapMs: 60              // .btn-chunky 호버 틱 최소 간격 (연타 방지)
+  btnHoverGapMs: 60,             // .btn-chunky 호버 틱 최소 간격 (연타 방지)
+  // ── 연출 고조 (juice-escalation) — 세기는 전부 '이번 판 기준', 가장 센 연출은 10번 중 1번 ──
+  multHitStopMs: [40, 80, 170],  // (A2) 곱하기 단계 히트스톱: 작은 곱 · 중간 곱(multMidFrom 이상) · 이번 판 최고 정산 갱신
+  multMidFrom: 10,               //      이 배수(단계 값) 이상 = 중간 → 테두리 금색 번쩍
+  goldFlashMs: 360,              //      금색 번쩍 시간
+  blackoutMs: 60,                //      최고 갱신: 화면 암전 (한 프레임쯤) → "쿵" + 전체 폭발
+  bestBreakFactor: 1,            //      암전 문턱: 직전 이번 판 최고 정산의 이 배수를 넘는 단계만 (1 = 갱신하면 항상. 빈도는 node sim/juice-peaks.js)
+  bestBurst: 110,                //      최고 갱신 폭발 파티클 수
+  unitPopScale: 1.5,             // (A3) 금액 단위 돌파: 새 단위 글자 확대
+  unitPopMs: 420,                //      튀었다 돌아오는 시간
+  unitFirstFrom: 1,              //      이 단위(0 만 · 1 억 · 2 조 …)부터 '이번 판 첫 도달' 도장
+  critSpinMs: 60,                // (A4) 크리티컬 릴: 숫자가 바뀌는 간격
+  critStopGapMs: 260,            //      7이 한 칸씩 멈추는 간격
+  critFreezeMs: 100,             //      멈추기 직전 정지
+  rocketPct: 0.05,               // (B5) 급등 로켓: 한 틱 상승률 문턱 (보유 종목 · 차트에 보이는 종목)
+  rocketSparks: [8, 24],         //      불꽃 수 (차트에만 보이는 미보유 · 보유)
+  speedLineMs: 400,              //      차트 가장자리 속도선
+  comboSlamFrom: 3,              // (B6) 콤보 슬램: 이 단계(c3) 이상으로 오를 때 중앙 도장 → 콤보 자리로
+  comboSlamMs: 760,              //      도장 → 날아가는 시간
+  closeTicks: 3,                 // (B8) 마감 임박: 장중 마지막 N틱 (드럼 롤·가장자리 어둠·틱 표시 빨강)
+  closeDark: 0.45,               //      마지막 틱의 가장자리 어둠 (0~1)
+  cashoutCoins: [8, 36],         // (C9) 수익 매도 동전 폭포: 동전·지폐 수 (세기 0 → 1)
+  cashoutBills: 0.3,             //      지폐 비율
+  cashoutArc: 70,                //      곡선 높이 (× 화면 배율)
+  cashoutMaxDings: 12,           //      입금음 "차링" 최대 수
+  cashoutRowGapMs: 240,          //      전량 매도: 포지션별 시간차
+  dangerMuffleHz: [4200, 900],   // (D10) 위험 중 BGM 로우패스: 경고선 → 반대매매 직전
+  survivedOpenMs: 90,            //       SURVIVED: 로우패스가 "확" 풀리는 시간
+  squeakMax: 1.03,               // (D11) 턱걸이 통과: 목표의 100% ~ 이 비율
+  slowMoMs: 300,                 //       슬로모션 시간
+  slowMoRate: 0.3                //       슬로모션 배속
 };
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
@@ -4144,7 +4396,9 @@ function playDayStage(d){
     const sorted = rows.slice().sort((a, b) => Math.abs(b.payout) - Math.abs(a.payout));
     rows = sorted.slice(0, JUICE_CONFIG.maxRows); rest = sorted.slice(JUICE_CONFIG.maxRows);
   }
+  const prevBest = stageBest.run === run ? stageBest.payout : 0;   // (A2) 오늘 전까지 이번 판 최고 정산 — 넘는 단계만 암전 (첫 정산은 제외)
   const ratio = stageRatio(d.payout), small = ratio < JUICE_CONFIG.smallRatio;
+  let paidBefore = 0, bestDone = false;
   const restSum = rest.reduce((a, r) => a + r.payout, 0);
   showOverlay(`
     <div class="result-kicker">WEEK ${d.round} · DAY ${d.day} 장 마감</div>
@@ -4175,15 +4429,31 @@ function playDayStage(d){
     on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip add">오늘 손익 ${fmtSigned(r.base)}</span>`); stageFormula(r.base, 1, null); }, true);
     on(0, () => { Sound.play('countTick', { pitch: stagePitch(n) }); sfHit('sfChip'); });
     t += M.row;
-    stageSteps(r).forEach(st => {
+    const steps = stageSteps(r);
+    steps.forEach((st, si) => {
       const k = n++;
       const isCrit = st.source === 'crit';
-      if(isCrit){   // 크리티컬 릴: ×2·×3·×5를 돌다가 멈춘다
-        on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="stage-reel spin" id="stageReel${i}">×2</span>`); });
-        const spins = 8;
-        for(let q = 1; q < spins; q++){ const qq = q; ev.push({ t: t + M.crit * q / spins, fn: () => { const el = $('stageReel' + i); if(el) el.textContent = '×' + CRIT_TABLE[qq % CRIT_TABLE.length].mult; Sound.play('uiMove', { pitch: stagePitch(k + qq) }); } }); }
-        t += M.crit;
-        on(0, () => { const el = $('stageReel' + i); if(el){ el.classList.remove('spin'); el.textContent = '💥 ×' + st.value; } }, true);
+      const prevMult = si > 0 ? steps[si - 1].runningMult : 1;
+      const tierUp = fireTier(st.runningMult) > fireTier(prevMult);   // (A1) 배수 구간 돌파
+      const stepPay = paidBefore + st.runningChips * st.runningMult - r.base;
+      const isBest = st.kind !== 'add' && !bestDone && prevBest > 0 && stepPay > prevBest * JUICE_CONFIG.bestBreakFactor;   // (A2) 이번 판 최고 정산을 갱신하는 곱하기 단계 (하루 한 번)
+      if(isBest) bestDone = true;
+      if(isCrit){   // (A4) 크리티컬 릴: 세 칸이 돌다가 "7 7 7"로 한 칸씩 멈춘다 (멈추기 직전 잠깐 정지) → 잭팟음 + CRITICAL 도장
+        const J = JUICE_CONFIG, first = M.crit * 0.4, stopAt = q => t + first + q * J.critStopGapMs;
+        on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="stage-reel spin" id="stageReel${i}"><b>?</b><b>?</b><b>?</b><i></i></span>`); });
+        for(let f = t; f < stopAt(2); f += Math.max(20, J.critSpinMs)){
+          const ff = f;
+          const locked = [0, 1, 2].filter(q => stopAt(q) <= ff).length;
+          if(locked < 3 && ff > stopAt(locked) - J.critFreezeMs) continue;   // 다음 칸이 멈추기 직전: 정지
+          ev.push({ t: ff, fn: () => { const el = $('stageReel' + i); if(!el) return; [...el.children].slice(locked, 3).forEach(b => { b.textContent = String(Math.floor(Math.random() * 10)); }); } });
+        }
+        [0, 1, 2].forEach(q => ev.push({ t: stopAt(q), fn: () => {
+          const el = $('stageReel' + i); if(el) el.children[q].textContent = '7';
+          Sound.play(q < 2 ? 'reelStop' : 'jackpot', { pitch: stagePitch(k + q) });
+          if(q === 2){ Fx.stamp(`CRITICAL ×${st.value}`); if(el){ const rc = rectOf(el); if(rc) Fx.burst(rc.left + rc.width / 2, rc.top + rc.height / 2, 24, ['--red', '--gold', '--gold2']); } }
+        } }));
+        t = Math.max(t + M.crit, stopAt(2) + 1);
+        on(0, () => { const el = $('stageReel' + i); if(el){ el.classList.remove('spin'); [...el.children].slice(0, 3).forEach(b => { b.textContent = '7'; }); el.lastElementChild.textContent = '💥 ×' + st.value; } }, true);
       } else {
         on(0, () => row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip ${stageChipCls(st)}">${stageChipText(st)}</span>`), true);
       }
@@ -4196,15 +4466,18 @@ function playDayStage(d){
         box.classList.toggle('stage-f3', tier === 3); box.classList.toggle('stage-f4', tier === 4);
       }, true);
       on(0, () => {
-        const x = st.kind === 'xmult';
+        const x = st.kind === 'xmult', J = JUICE_CONFIG;
         Sound.play(x ? 'settleMult' : 'settleAdd', { pitch: stagePitch(k), big: fireTier(st.runningMult) >= 1 });
         const tier = fireTier(st.runningMult);
-        if(x) Fx.shake(Math.max(1, JUICE_CONFIG.fireShake[tier] || 0));
+        if(tierUp) Sound.play('tierBreak', { tier, pitch: stagePitch(k) });   // (A1) 구간 돌파: 옥타브 스윕 + 아르페지오 (음높이는 같은 5음계)
         const el = $('stageMult' + i);
         sfHit(st.kind === 'add' ? 'sfChip' : 'sfMult');
         Fx.punch(el, 1, x ? 0.5 + 0.1 * tier : 0.25);
         if(tier >= 2){ const rc = rectOf(el); if(rc) Fx.burst(rc.left + rc.width / 2, rc.top + rc.height / 2, 8 * tier, tier >= 3 ? ['--purple', '--gold', '--red'] : ['--cyan', '--gold']); }
-        if(tier >= 4) Fx.hitStop(JUICE_CONFIG.fireHitStop);
+        if(tier >= 4) Fx.hitStop(J.fireHitStop);
+        if(isBest) stageBestHit();   // (A2) 이번 판 최고 갱신: 가장 긴 히트스톱 + 암전 한 프레임 → "쿵" + 전체 폭발
+        else if(x && st.value >= J.multMidFrom){ Fx.hitStop(J.multHitStopMs[1]); Fx.afterStop(() => Fx.shake(Math.max(1, J.fireShake[tier] || 0))); stageGoldFlash(); }
+        else if(x){ Fx.hitStop(J.multHitStopMs[0]); Fx.afterStop(() => Fx.shake(Math.max(1, J.fireShake[tier] || 0))); }
       });
       t += isCrit ? M.step / 2 : M.step;
     });
@@ -4225,6 +4498,8 @@ function playDayStage(d){
     ev.push({ t: t + Math.max(0, rollEnd - J.preShakeMs), fn: () => preShake(rowRatio) });
     t += rollEnd + 0.02;
     on(0, () => { stageFormula(undefined, undefined, amt); sfHit('sfAmt'); $('stagePay' + i).classList.remove('pending'); const el = $('stagePayV' + i); el.textContent = fmtSigned(r.payout); el.className = 'chain-total final ' + (r.payout >= 0 ? 'up' : 'down'); }, true);
+    on(0, () => juiceUnitBreak($('sfAmtV'), r.base, amt));   // (A3) 금액이 새 단위(억·조·경…)를 넘었으면 단위 글자가 튀며 "쿵" (+ 이번 판 첫 도달이면 도장)
+    paidBefore += r.payout;
     t += M.count * (0.3 + ratio / 2);   // 금액을 읽을 시간 (큰 정산일수록 길게)
   });
   on(0, () => { document.querySelectorAll('#stageList .pending').forEach(e => e.classList.remove('pending')); document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); }, true);
@@ -4248,6 +4523,7 @@ function stageFrame(now){
   const s = stage;
   if(!s || s.hold) return;
   if(!$('stageList')){ stageClose(); return; }   // 다른 오버레이가 덮었으면 그만
+  if(Fx.frozenFor() > 0){ s.last = now; s.raf = requestAnimationFrame(stageFrame); return; }   // 히트스톱 동안 무대 시간도 멈춘다
   s.vt += (now - s.last) * s.speed; s.last = now;
   while(s.idx < s.events.length && s.events[s.idx].t <= s.vt) s.events[s.idx++].fn();
   if(s.idx >= s.events.length){ stageHold(); return; }
@@ -4314,8 +4590,9 @@ const chainChipText = st => st.kind === 'mult' ? `${st.label} ×${st.value.toFix
 const chainChipCls  = st => st.kind === 'add' ? 'add' : st.value < 1 ? 'cut' : '';
 
 /* 재생이 없어도(설정 끔·보정 없음) 같은 틀로 최종 손익 요약을 보여주고 '▶ 다음'을 기다린다 */
-function playSettlementChain(chain, onDone){
+function playSettlementChain(chain, onDone, opts){
   chain = chain || [];
+  opts = opts || {};
   let rows = chain, rest = [];
   if(chain.length > CHAIN_MAX_ROWS){
     const sorted = chain.slice().sort((a, b) => Math.abs(b.finalPnl) - Math.abs(a.finalPnl));
@@ -4337,7 +4614,7 @@ function playSettlementChain(chain, onDone){
       <div class="chain-sum pending">정산 합계 <span class="${signCls(sum)}">${fmtSigned(sum)}</span></div>
     </div>
     ${animate ? '<div class="chain-skip">클릭 · SPACE = 건너뛰기</div>' : ''}`);
-  chainPlay = { run, timers: [], onDone, sum, rows };
+  chainPlay = { run, timers: [], onDone, sum, rows, squeak: !!opts.squeak };
   if(!animate){ enterChainHold(false); return; }
   Music.duck('chain', 0.2);   // 결산 체인 효과음이 주인공
   const list = $('chainList');
@@ -4346,8 +4623,9 @@ function playSettlementChain(chain, onDone){
   const setTotal = (el, v) => { el.textContent = fmtSigned(v); el.className = 'chain-total ' + (v >= 0 ? 'up' : 'down'); };
   const countUp = (elFn, from, to, start, dur, semi) => {   // 8칸 카운트업 + 칸마다 블립, 마지막 칸은 정확한 값
     for(let k = 1; k <= CHAIN_COUNT_STEPS; k++) at(start + dur * k / CHAIN_COUNT_STEPS, () => {
-      setTotal(elFn(), k === CHAIN_COUNT_STEPS ? to : from + (to - from) * k / CHAIN_COUNT_STEPS);
-      Sound.play('countTick', { pitch: Sound.semis(semi + k / 4) });
+      const v = k === CHAIN_COUNT_STEPS ? to : from + (to - from) * k / CHAIN_COUNT_STEPS, prev = from + (to - from) * (k - 1) / CHAIN_COUNT_STEPS;
+      setTotal(elFn(), v);
+      if(!juiceUnitBreak(elFn(), prev, v)) Sound.play('countTick', { pitch: Sound.semis(semi + k / 4) });   // (A3) 단위를 넘는 칸은 "쿵"
     });
   };
   rows.forEach((c, i) => {
@@ -4434,6 +4712,7 @@ function enterChainHold(skipped){
   if(hint) hint.remove();
   $('overlayBox').insertAdjacentHTML('beforeend', '<button class="btn-chunky ov-btn chain-next" data-act="chainNext">▶ 다음</button>');
   chainHold = { run: cp.run, onDone: cp.onDone, skipped: !!skipped, readyAt: performance.now() + CHAIN_NEXT_GUARD_MS };
+  if(cp.squeak) squeakThrough();   // (D11) 턱걸이 통과
 }
 function chainNext(){   // '▶ 다음' · 엔터
   if(!chainHold || performance.now() < chainHold.readyAt) return;
@@ -5813,6 +6092,7 @@ window.onload = () => {
       tick();
       marketTickN++;
       notePosTicks();   // (32) 불꽃·신고가 번쩍 (표시만)
+      juiceRockets(); juiceSurvive(); juiceClosing();   // (B5·D10·B8) 급등 로켓 · 간신히 생존 · 마감 임박 (표시·소리만)
       if(!run.positions.length) hideDownStreak();
       if(settings.tickSound) Sound.play('tick', { volume: 0.6, pitch: Sound.semis(streak.dir * Math.min(12, streak.n)) });   // 틱 음높이가 보유 손익 콤보를 따라간다
       renderAll();
