@@ -11,6 +11,7 @@
 - **N2 자원 정리 1단계**: HUD 상시 = 순자산+목표·현금·행동력·정산 배수, 나머지는 순자산 호버 툴팁 `#balTip`, 금감원 게이지 0이면 숨김, 포지션 심지 게이지 `.fuse`, 화면 전문용어는 툴팁. 테스트 `tools/tests/hud.cjs` (33개).
 - **그 다음**: S10 메타 진행 (🛑 D12 해금 조건 목록 확인부터), S11은 **(42) 중간 저장만** (43·45 하지 않음).
   - **S10은 사용자 지시로 중지** ("다시 하라고 할 때까지"). D12 해금 조건 표 초안(시작 풀 카드 58·유물 20, 잠금 카드 17·유물 15 + 조건)은 채팅에만 제시, 승인 전. 브랜치 `claude/s10a-unlocks`는 커밋 없음.
+- **juice-escalation** (PR #28, PR 후 멈춤 — 머지 대기): 정산 무대 고조(구간 돌파음·곱하기 히트스톱·최고 갱신 암전·단위 돌파·크리티컬 777)·급등 로켓·콤보 슬램·JACKPOT 음악·마감 임박·동전 폭포·간신히 생존·턱걸이. UI 전용. 🛑 암전 빈도 조정안 `bestBreakFactor` 1 → 5 추천 (JUICE_BIBLE.md 빈도 표). 매 작업 뒤 데모 아티팩트(https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp)를 갱신한다(사용자 요청).
 - **ui-tactile** (브랜치 `claude/ui-tactile`, PR 후 멈춤): `.btn-chunky` 버튼 통일·패널 3종 `.px-panel`·명찰 `.px-tag`·카드 기울기(`tiltMaxDeg`)·손패 떠 있기·구역 배경 무늬·작은 숫자 VT323. UI 전용(engine.js 무변경). 규칙은 CLAUDE.md '픽셀 디자인 시스템'.
 - **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. **작업이 끝나면 묻지 않고 자동으로 PR을 만들어 직접 머지한다** (2026-09-28 사용자 지시). **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
 - **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
