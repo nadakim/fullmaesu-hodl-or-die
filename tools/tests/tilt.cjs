@@ -1,5 +1,5 @@
 // 카드 기울기·호버(ui-tactile): 고를 수 있는 카드는 어디서나 기울고(.tilt · transform) 등급 색 링이 빛난다 —
-// 손패 · 주간 보상 카드 · 보상 '카드 강화'/'카드 제거' 목록 · 암시장 낱장 · 암시장 카드 제거. 보기만 하는 카드(덱 확인)는 움직이지 않는다
+// 손패 · 주간 보상 카드 · 보상 '카드 강화'/'카드 제거' 목록 · 유물 보상 · 암시장 낱장 · 카드 제거 · 팩(리서치 팩 포함) · 유물 진열. 보기만 하는 카드(덱 확인)는 움직이지 않는다
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const S = process.argv[2];
 let pass = 0, fail = 0;
@@ -48,12 +48,21 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(W + ' 보상 카드 제거 목록 기울기', tilted(rm), rm);
     await p.locator('[data-act="backReward"]').click(); await sleep(300);
     // 암시장
-    await p.evaluate(() => { hideOverlay(); chooseReward('skip'); if(run.rewardStep === 'relic') chooseRelicReward(''); hideOverlay(); run.slush = 5000; renderAll(); });
+    await p.locator('[data-act="skip"]').click(); await sleep(400);
+    const rr = await hover('#overlayBox .relic-tile[data-relic-reward]', 'relicReward');
+    ok(W + ' 유물 보상 기울기 · 발광', !rr || (tilted(rr) && rr.glow), rr);
+    await p.evaluate(() => { hideOverlay(); if(run.rewardStep === 'card') chooseReward('skip'); if(run.rewardStep === 'relic') chooseRelicReward(''); hideOverlay(); run.slush = 5000; renderAll(); });
     await sleep(1500);
     const sg = await hover('#shopBox .shop-singles .shop-item .card', 'shop');
     ok(W + ' 암시장 낱장 기울기 · 발광', tilted(sg) && sg.glow, sg);
     const sr = await hover('#shopBox .card[data-shop-remove]');
     ok(W + ' 암시장 카드 제거 기울기', tilted(sr), sr);
+    const pk = await hover('#shopBox .pack[data-pack="research"]', 'pack');
+    ok(W + ' 암시장 리서치 팩 기울기 · 발광', tilted(pk) && pk.glow, pk);
+    const pk2 = await hover('#shopBox .pack[data-pack]');
+    ok(W + ' 암시장 팩 기울기', tilted(pk2), pk2);
+    const rl = await hover('#shopBox .relic-row:not(.own-relics) .relic-tile', 'relic');
+    ok(W + ' 암시장 유물 진열 기울기 · 발광', tilted(rl) && rl.glow, rl);
     // 보기만 하는 카드: 덱 확인은 움직이지 않는다
     await p.evaluate(() => { leaveShop(); renderAll(); showDeck && showDeck(); });
     await sleep(400);
