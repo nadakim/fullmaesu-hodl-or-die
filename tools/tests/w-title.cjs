@@ -4,7 +4,7 @@ const S = process.argv[2], sizes = (process.argv[3] || '1615x900,1366x768,1920x1
   for (const [W, H] of sizes) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(W + ' ' + e.message)); p.on('console', m => m.type() === 'error' && errs.push(W + ' ' + m.text()));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => document.fonts.ready);
+    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.evaluate(() => document.fonts.ready);
     await p.waitForTimeout(500); await p.screenshot({ path: `${S}/w/title-intro-${W}x${H}.png` });
     await p.waitForTimeout(1300);
     await p.keyboard.press('Shift'); await p.waitForTimeout(200);

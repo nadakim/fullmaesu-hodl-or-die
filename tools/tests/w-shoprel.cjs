@@ -3,7 +3,7 @@ const S = process.argv[2];
 (async () => { const b = await chromium.launch(); const errs = [];
  for (const [W,H] of [[1615,900],[1366,768],[390,844]]) {
   const p = await b.newPage({ viewport: { width: W, height: H } }); p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift'); await p.click('#startBtn'); await p.waitForTimeout(460);
+  await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await p.click('#startBtn'); await p.waitForTimeout(460);
   await p.evaluate(() => { window.tipChance = () => 0; run.cash += 5000; run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } chooseReward('skip'); if(run.relicChoices.length) chooseRelicReward(run.relicChoices[0]); run.slush = 6000; cancelSettlementChain(); hideOverlay(); switchTab('shop'); renderAll(); renderShop(); });
   await p.waitForTimeout(300);
   await p.locator('#shopBox .relic-row:not(.own-relics)').scrollIntoViewIfNeeded();

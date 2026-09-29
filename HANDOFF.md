@@ -1,10 +1,12 @@
 # Session Handoff
 
-**Date:** 2026-09-28
+**Date:** 2026-09-29
 **main:** S0~S9 + N1까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
 
 ## 지금 상태 (다음 세션은 여기부터)
 
+- **온보딩 단계 해금** (브랜치 `claude/onboarding-unlock`, PR 후 멈춤 — 밸런스 영향이라 사용자 확인 대기): `ONBOARDING_ON`·`SYSTEM_UNLOCK_WEEK`(1주 롱·정산·유물 / 2주 시그널·찌라시·뉴스 / 3주 공매도·레버리지·암시장 확장 / 4주 섹터·금감원·작전). 사용자 결정: 도달한 주차 영구 해금(`hodl.unlockWeek`), 첫 주 배수 보장은 실제 게임에 넣지 않음(나중 튜토리얼), 잠긴 시스템 겨냥 보스는 후보 제외. 설계·시뮬 표 `docs/design/ONBOARDING.md`, 테스트 `tools/tests/onboarding.cjs`(다른 테스트는 `hodl.unlockWeek = '8'`로 시작). 결과 `sim/results/baseline-before-onboarding.json`·`onboarding-on.json`.
+- **정산 무대 매일**(PR #31 머지)·**팩·유물 기울기**(PR #30 머지).
 - **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 정산 비중(PR #22 측정 + 현행 유지 결정). N4 색 언어(PR #24). N2 자원 정리 1단계(PR, 머지) — 🛑 2단계 비자금·현금 통합 사용자 결정 대기 (SHOP_ECONOMY.md 'N2 통합안').
 - **N1 정산 비중: D 현행 유지로 결정·완료** (SETTLEMENT.md 'N1'). 스위치 `SETTLE_BASE_CAP`·`HOLD_CHIP_PCT`는 0.
 - **N4 색 언어** (브랜치 `claude/n4-settle-colors-b9zw19`): 칩 = `--cyan`, 배수 = `--gold` 통일 + 정산 무대 계산식 줄·금액 슬롯·직전 흔들림. UI 전용(engine.js 무변경, sim/runner.js 결과 동일), 테스트 `tools/tests/settlecolors.cjs` 추가.
@@ -16,7 +18,7 @@
 - **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. **작업이 끝나면 묻지 않고 자동으로 PR을 만들어 직접 머지한다** (2026-09-28 사용자 지시). **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
 - **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
 - **N3 섹터 레벨업** (PR #26 머지 — 조정안 1 보상 리포트 칸 + 3 행동력 0 적용, 다음 후보는 SECTOR_LEVELS.md): 리포트 카드 11장·리서치 팩·정산 맨 앞 섹터 칩·배수·보상 가중, 플래그 `SECTOR_LEVELS_ON`. 봇 `sectorAllIn`. 테스트 `tools/tests/sector.cjs`.
-- **검증 방법**: 테스트 34개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
+- **검증 방법**: 테스트 38개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
 - **주의**: 셸 heredoc은 반드시 `<<'EOF'`(따옴표)로 — 따옴표 없는 heredoc에 백틱이 있으면 명령으로 실행된다. `pkill -f`는 자기 셸을 죽일 수 있다.
 
 ## 단계별 결정 기록 (요약)

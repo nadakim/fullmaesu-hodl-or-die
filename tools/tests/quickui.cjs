@@ -9,7 +9,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920,1080],[1366,768],[1280,1024],[390,844]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.evaluate(() => { try { localStorage.removeItem('hodl.settings'); } catch(e){} });
     await p.click('#startBtn'); await sleep(460);
     await p.evaluate(() => { window.tipChance = () => 0; clearToasts(); gainRelic('antFlag', 't'); openPosition('semi', 1000, 1, 1, true);

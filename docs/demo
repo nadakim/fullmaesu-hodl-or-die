@@ -853,6 +853,16 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .balance-main:hover .bal-tip,.balance-main:focus .bal-tip,.balance-main:focus-within .bal-tip{display:block;}
 /* (N2) 금감원 게이지: 0이면 숨기고 오르기 시작하면 나타난다 */
 .fss.off{display:none;}
+/* 온보딩: 잠긴 시스템 숨김 (body.lock-<시스템>, renderLocks) */
+body.lock-signals .q-sig,body.lock-signals #menuPanel [data-menu="signalGuide"],
+body.lock-news .news-row,body.lock-news #marketStateBadge,
+body.lock-tips #menuPanel [data-menu="tips"],
+body.lock-short .quote-row[data-q="inv"],body.lock-short .quote-row[data-q="inv2"],
+body.lock-leverage #marginRuleText,body.lock-leverage #balTip > div:nth-of-type(1),body.lock-leverage #balTip > div:nth-of-type(3),
+body.lock-sector .q-lv,body.lock-sector #menuPanel [data-menu="sectors"],
+body.lock-fss #fssBox,body.lock-fss .quote-row[data-q="delist"],body.lock-fss .quote-row[data-q="ailab"]{display:none !important;}
+.unlock-lines{margin:calc(12 * var(--u)) 0 calc(14 * var(--u));font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.5;color:var(--text);text-align:left;}
+.unlock-lines p{margin:0 0 calc(6 * var(--u));}
 .fss.appear{animation:fssAppear .4s steps(4);}
 @keyframes fssAppear{0%{opacity:0;transform:translateX(calc(-10 * var(--u)));}100%{opacity:1;transform:none;}}
 .shop-bar .open-btn{width:auto;margin:0;padding:calc(10 * var(--u)) calc(14 * var(--u));font-size:var(--fs-sm);font-family:var(--gf-sm),monospace;}
@@ -2235,7 +2245,8 @@ const SHOP_REJECT_TEXT = {
   deckMin:`덱은 ${MIN_DECK_SIZE}장 아래로 줄일 수 없습니다`, none:'카드를 고르세요',
   empty:'이 팩에서 나올 새 카드가 없습니다 (전부 덱에 있음)', owned:'이미 덱에 있는 카드입니다',
   mythic:'신화 카드는 덱에 1장만 넣을 수 있습니다',
-  slots:`유물 칸(${RELIC_SLOTS}칸)이 가득 찼습니다 — 교체할 유물을 고르세요`
+  slots:`유물 칸(${RELIC_SLOTS}칸)이 가득 찼습니다 — 교체할 유물을 고르세요`,
+  sysLocked:'🔒 아직 잠긴 기능입니다 — 주차가 지나면 열립니다'
 };
 const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
@@ -2244,7 +2255,8 @@ const REJECT_TEXT  = {
   locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번 / 거래정지)',
   banned:'☎ 금감원 제재 중 — 오늘은 신규 매수 금지',
   amount:`매수 금액은 최소 ₩${STOCK_BUY_MIN}만입니다`,
-  boss:'🛑 보스 주간 제한 — 이번 주에는 쓸 수 없습니다'
+  boss:'🛑 보스 주간 제한 — 이번 주에는 쓸 수 없습니다',
+  sysLocked:'🔒 아직 잠긴 시스템입니다 — 주차가 지나면 열립니다'
 };
 const CARD_ORDER = {};
 CARDS.forEach((c, i) => { CARD_ORDER[c.id] = i; CARD_ORDER[c.id + '+'] = i + 0.5; });   // 강화판(+)은 원래 카드 바로 뒤
@@ -3331,7 +3343,8 @@ function onGameEvent(type, d){
     case 'relicRewardChosen':
       pendingRewardToasts.push(d.relicId ? [`${RELIC_BY_ID[d.relicId].icon} 유물 획득: ${RELIC_BY_ID[d.relicId].name}`, 'good'] : ['유물 보상 건너뜀', 'info']);
       break;
-    case 'roundStart': toast(`WEEK ${d.round} 개장 — 목표 ${fmtMoney(d.target)} · DAY 1 장전`, 'good'); break;
+    case 'systemUnlocked': queueUnlockIntro(d); break;
+    case 'roundStart': saveUnlockWeek(d.round); toast(`WEEK ${d.round} 개장 — 목표 ${fmtMoney(d.target)} · DAY 1 장전`, 'good'); break;
     case 'shopOpen':
       shopPickIdx = -1;
       switchTab('shop');
@@ -3937,6 +3950,7 @@ function updateMusic(){
 
 function renderAll(){
   renderNav();
+  renderLocks();
   updateMusic();
   if(!run) return;
   if(run.phase !== 'premarket') selectedIdx = -1;
@@ -5158,7 +5172,7 @@ function renderShop(){
     <div class="shop-note">암시장은 비자금만 받습니다. 계좌 돈(순자산)은 그대로 — 비자금은 주간 목표를 넘긴 만큼 더 쌓입니다 (기본 ${fmtSlush(SLUSH_WEEKLY_BASE)} + 초과분의 ${Math.round(SLUSH_EXCESS_RATE * 100)}%).</div>
 
     <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
-    <div class="pack-row">${SHOP_PACKS.map(packHtml).join('')}</div>
+    <div class="pack-row">${SHOP_PACKS.filter(packOpen).map(packHtml).join('')}</div>
 
     <div class="shop-sec-head"><span class="section-label">▌ 낱장 구매 — 덱에 없는 카드 확정 구매 · 구매 한도 없음</span>${rerollBoxHtml('single')}</div>
     <div class="deck-list shop-singles">${sh.singles.map((id, i) => {
@@ -5185,7 +5199,7 @@ function renderShop(){
         <button class="btn-chunky buy-btn sell" data-own-sell="${id}">판매 +${fmtSlush(relicSellPrice(id))}</button></div>` });
     }).join('') : '<div class="shop-note">보유 유물 없음</div>'}</div>
 
-    <span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
+    ${sysOpen('shopTools') ? `<span class="section-label">▌ 카드 제거 — 이번 주 ${sh.removed}회 제거 · 다음 제거 <b class="rm-next" id="rmNext">${fmtSlush(nextRemove)}</b></span>
     <div class="shop-note rm-ladder">다음: ${[0, 1, 2].map(k => `<span class="${k ? '' : 'now'}">${removeCost(sh.removed + k).toLocaleString()}</span>`).join(' → ')} · 같은 주에 제거할 때마다 ×${SHOP_REMOVE_ESCALATION}, 다음 주엔 처음 가격으로 (주차마다 기본가 +${SHOP_REMOVE_PER_WEEK}만) · 덱 ${MIN_DECK_SIZE}장까지</div>
     <div class="deck-list shop-remove">${run.masterDeck.map((id, i) =>
       cardHtml(CARD_BY_ID[id], { attrs: `data-shop-remove="${i}"`, cls: i === shopPickIdx ? 'picked' : '' })).join('')}</div>
@@ -5198,7 +5212,7 @@ function renderShop(){
     <div class="shop-services">${SHOP_SERVICES.map(([kind, label, note]) => {
       const price = shopServiceCost(kind), ok = shopPickIdx >= 0 && canService(kind, shopPickIdx);
       return `<button class="btn-chunky ov-btn alt" data-service="${kind}" title="${note}" ${ok && run.slush >= price ? '' : 'disabled'}>${label} ${fmtSlush(price)}</button>`;
-    }).join('')}</div>`;
+    }).join('')}</div>` : ''}`;   // (온보딩) 카드 제거·덱 조작은 shopTools 해금 뒤
   if(relicClackId){   // (S8-33) 방금 산 유물이 칸에 "철컥"
     const i = run.relics.indexOf(relicClackId), el = box.querySelectorAll('.own-relics .relic-tile')[i];
     relicClackId = '';
@@ -5338,6 +5352,7 @@ const SETTING_OPTIONS = {
   crt:   [['off', '끄기'], ['weak', '약'], ['strong', '강']],
   sound: [[true, '켜기'], [false, '끄기']],
   chainFx: [[true, '켜기'], [false, '끄기']],
+  unlockTips: [[true, '켜기'], [false, '끄기']],
   sfxVol: [[0, '0'], [25, '25'], [50, '50'], [75, '75'], [100, '100']],
   tickSound: [[true, '켜기'], [false, '끄기']],
   hitStop: [[true, '켜기'], [false, '끄기']],
@@ -5349,7 +5364,7 @@ const SETTING_OPTIONS = {
 };
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', sound: true, chainFx: true,
+const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', sound: true, chainFx: true, unlockTips: true,
                            sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal',
                            uiSize: 'auto', fontSize: 'normal' };
 function loadSettings(){
@@ -5396,6 +5411,7 @@ function buildSettings(){
     ${settingRow('hitStop', '히트스톱', '반대매매·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
     ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·반대매매·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
     ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
+    ${settingRow('unlockTips', '해금 소개', '새 시스템(찌라시·공매도·레버리지…)이 처음 열리는 주에 짧은 소개 창을 띄웁니다. 끄면 알림 한 줄만.')}
     ${settingRow('chainFx', '결산 연출', '주간 결산을 통과하면 유물·보너스가 포지션 손익을 불린 순서를 칩으로 보여줍니다. 끄면 바로 결산 요약.')}
     ${settingRow('sound', '사운드', '칩튠 효과음 (음원 파일 없이 브라우저에서 합성).')}
     ${settingRow('sfxVol', '효과음 볼륨', '0 · 25 · 50 · 75 · 100%.', !settings.sound)}
@@ -5602,12 +5618,55 @@ function startRun(){
   handSig = ''; posSig = '';
   hideOverlay();
   resetNews();
-  startNewRun();
+  startNewRun({ unlockWeek: loadUnlockWeek() });   // (온보딩) 지금까지 도달한 최고 주차 — 그 주차까지의 시스템은 처음부터 열림
   renderAll();
   toast(`WEEK 1 개장 — 목표 ${fmtMoney(currentTarget())} · DAY 1 장전`, 'good');
 }
 
 const screens = document.querySelectorAll('.screen');
+
+/* ══ 온보딩: 시스템 단계 해금 (docs/design/ONBOARDING.md) ══
+   엔진이 판정(sysOpen·SYSTEM_UNLOCK_WEEK), UI는 잠긴 시스템을 body.lock-<시스템>으로 숨기고 처음 열릴 때 소개 한 번.
+   도달한 최고 주차는 localStorage hodl.unlockWeek — 한 번 연 시스템은 다음 판부터 처음부터 열려 있고 소개도 다시 안 뜬다 */
+let unlockWeekFallback = 1;
+function loadUnlockWeek(){
+  try { return Math.max(unlockWeekFallback, parseInt(localStorage.getItem('hodl.unlockWeek'), 10) || 1); } catch(e) { return unlockWeekFallback; }
+}
+function saveUnlockWeek(round){
+  unlockWeekFallback = Math.max(unlockWeekFallback, round);
+  try { if(round > (parseInt(localStorage.getItem('hodl.unlockWeek'), 10) || 1)) localStorage.setItem('hodl.unlockWeek', String(round)); } catch(e) {}
+}
+const UNLOCK_INTRO = {   // 한 화면 3줄 이내 · 커뮤니티 밈 톤 (금지 소재 규칙 그대로)
+  signals:   { title: '📡 시그널 해금', lines: ['종목 옆 칩 = 오늘 추세 예측. 적중률은 칩에 그대로.', '보조지표 42개가 전부 다른 말을 해도, 믿는 건 당신 몫.', '읽는 법은 ≡ 메뉴 › 📖 시그널 설명서.'] },
+  tips:      { title: '📱 찌라시 해금', lines: ['장중에 리딩방 찌라시가 날아온다.', 'A = 대박 아니면 쪽박, B = 작지만 확실.', '확률은 화면에 보이는 그대로. 설거지 조심.'] },
+  news:      { title: '📰 뉴스 해금', lines: ['전광판 속보 = 오늘 장 분위기.', '📰 내일 = 내일 뉴스 미리보기. 루머일 수도 있다.'] },
+  short:     { title: '📉 공매도·인버스 해금', lines: ['공매도 = 다음 매수를 하락 베팅으로. 인버스·곱버스는 지수가 빠지면 오른다.', '숏은 급등하면 반대매매. 숏 스퀴즈 한 방이면 깡통.', '공매도·인버스 카드가 덱에 들어왔다.'] },
+  leverage:  { title: '🔥 레버리지 해금', lines: ['신용 매수·영끌 = 빌린 돈으로 크게. 이자는 매일.', '포지션 심지가 다 타면 반대매매 — 강제 청산.', '존버·증거금 보충으로 심지를 지켜라.'] },
+  shopTools: { title: '🔧 암시장 확장', lines: ['암시장에서 카드 제거·리모델링·변환·복제 가능.', '덱을 얇게 깎을수록 좋은 카드가 자주 온다.'] },
+  sector:    { title: '📊 섹터 레벨 해금', lines: ['섹터 리포트 = 그 섹터 정산 칩·배수 레벨업.', '한 섹터에 몰빵할수록 정산이 커진다. 📑 리서치 팩도 열림.'] },
+  fss:       { title: '🚨 작전·금감원 해금', lines: ['비둘기·매파·트윗·작전 세력 카드로 시장을 흔든다.', '쓸 때마다 금감원 게이지 ↑, 가득 차면 제재.', '상폐직전테크·급등AI랩 = 하루 ±30% 작전주.'] }
+};
+let unlockQueue = [];
+function renderLocks(){   // 잠긴 시스템 화면 숨김 (엔진 판정 그대로)
+  Object.keys(SYSTEM_UNLOCK_WEEK).forEach(sys => document.body.classList.toggle('lock-' + sys, !!run && run.phase !== 'over' && !sysOpen(sys)));
+}
+function queueUnlockIntro(d){
+  if(d.cards.length) toast(`🃏 덱에 추가: ${d.cards.map(id => CARD_BY_ID[id].name).join(', ')}`, 'good');
+  if(!settings.unlockTips) return;
+  unlockQueue = unlockQueue.concat(d.systems.filter(sys => UNLOCK_INTRO[sys]));
+  setTimeout(() => whenFxIdle(showNextUnlock), 0);
+}
+function showNextUnlock(){
+  if(!unlockQueue.length || !run) return;
+  if(overlayOpen || currentTab !== 'play'){ setTimeout(() => whenFxIdle(showNextUnlock), 300); return; }   // 보스 경보·다른 창이 먼저
+  const u = UNLOCK_INTRO[unlockQueue.shift()];
+  showOverlay(`
+    <div class="result-kicker">WEEK ${run.round} · 새 시스템 해금</div>
+    <div class="ov-title" style="color:var(--gold)">${u.title}</div>
+    <div class="unlock-lines">${u.lines.map(l => `<p>${l}</p>`).join('')}</div>
+    <button class="btn-chunky ov-btn" data-act="unlockNext">▶ ${unlockQueue.length ? '다음' : '확인'}</button>`);
+  Sound.play('rareDraw');
+}
 
 function switchTab(s){
   if(s === 'shop' && !shopOpenNow()){ toast(SHOP_REJECT_TEXT.phase, 'warn'); return; }
@@ -5891,6 +5950,7 @@ $('overlay').addEventListener('click', e => {
   else if(act === 'removeMode') showRemove();
   else if(act === 'backReward'){ upgradePickMode = false; showReward(lastRoundClear); }
   else if(act === 'close') hideOverlay();
+  else if(act === 'unlockNext'){ hideOverlay(); renderAll(); showNextUnlock(); }
   else if(act === 'restart') startRun();
   else if(act === 'toReward') showReward(lastRoundClear);
   else if(act === 'restartAsk'){ b.dataset.act = 'restart'; b.textContent = '↺ 정말 처음부터? 한 번 더 누르면 새 판'; }

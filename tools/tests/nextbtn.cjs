@@ -36,7 +36,7 @@ const state = page => page.evaluate(() => ({ chainList: !!document.getElementByI
   for (const [W, H] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await sleep(200);
     // 1) 끝까지 재생 → 멈춤 → 버튼
     await setupWeek(page, WEEK);
