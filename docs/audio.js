@@ -59,6 +59,14 @@
    | settleMult  | 장 마감 정산 무대: 배수 단계 (opts.pitch · opts.big = ×10 이상이면 더 크게) | "슈욱—펑"                    |
    | settleThud  | 장 마감 정산 무대: 끝 마침표 (순자산 "쾅" 뒤)               | 저음 "둥"                              |
    | shopShuffle | shopRerolled (암시장 진열 새로고침)                         | 카드 섞는 "촤르륵" 노이즈 연타 + 끝 "탁" |
+   | tierBreak   | 정산 무대: 누적 배수가 ×10·100·1,000·10,000을 넘는 순간 (opts.tier 1~4, 높을수록 길게 · opts.pitch = stagePitch) | 한 옥타브 올려치는 스윕 + 5음계 아르페지오 |
+   | bestBoom    | 정산 무대: 이번 판 최고 정산을 갱신하는 단계 (암전 한 프레임 뒤)  | 아주 낮은 "쿵" + 긴 저음                |
+   | unitBreak   | 정산 금액이 한국 단위(억·조·경…)를 넘는 순간                | 낮은 "쿵"                                |
+   | reelStop    | 크리티컬 릴 "7 7 7" 한 칸 멈춤 (opts.pitch)                 | 딸깍 + 짧은 블립                         |
+   | coinIn      | 수익 매도 동전 폭포: 동전이 순자산 상자에 도착할 때마다 (opts.pitch) | "차링" (작고 밝게, 연타용)        |
+   | closeRoll   | 장 마감 임박: 마지막 틱마다 (opts.level 1~3 빨라짐 · opts.dur 초) | 스네어 연타, 단계마다 촘촘하게      |
+   | survived    | 위험 포지션이 반대매매 없이 안전 구간으로 (SURVIVED)       | 맑은 차임 4음                            |
+   | sigh        | 주간 결산 턱걸이 통과 (목표의 100~103%)                    | 길게 내려가는 숨 "후우~"                 |
 
    파일 덮어쓰기: docs/assets/sfx/<이름>.ogg|mp3|wav 를 docs/assets/sfx/files.js의 SFX_FILES 목록에 적으면 합성음 대신 그 파일을 튼다
    (fetch + decodeAudioData, 실패하면 조용히 합성음). crowdScream은 'scream' 파일명도 받는다 (SFX_FILE_ALIAS). 목록이 비어 있으면 요청 0번.
@@ -177,6 +185,48 @@ const Sound = (() => {
     uiClick(b, t, p){ tone(b, 'square', 2200 * p, t, 0.025, 0.08); return 0.03; },
     uiMove(b, t, p){ tone(b, 'square', 3000 * p, t, 0.015, 0.05); return 0.02; },
     uiConfirm(b, t, p){ tone(b, 'square', 1320 * p, t, 0.05, 0.1); tone(b, 'square', 1980 * p, t + 0.055, 0.08, 0.1); return 0.14; },
+    tierBreak(b, t, p, o){   // 배수 구간 돌파: 한 옥타브 올려치는 스윕 + 빠른 5음계 아르페지오 (구간이 높을수록 길게)
+      const tier = Math.max(1, Math.min(4, (o && o.tier) || 1)), f = filter(b, 'lowpass', 5200 - tier * 600);   // 높은 구간은 귀 보호
+      tone(f, 'square', midi(64) * p, t, 0.12, 0.09, { f1: midi(76) * p });
+      const P = [0, 2, 4, 7, 9], n = 3 + tier * 2, notes = [];
+      for(let i = 0; i < n; i++) notes.push(76 + P[i % 5] + 12 * Math.floor(i / 5));
+      return 0.1 + seq(f, 'square', notes, t + 0.1, 0.034, 0.05, 0.07, p);
+    },
+    bestBoom(b, t){   // 최고 정산 갱신: 암전 뒤 아주 낮은 "쿵"
+      thud(b, t, 1.1);
+      tone(b, 'sine', 48, t, 1.2, 0.4, { f1: 30, hold: 0.3 });
+      noise(b, t, 0.4, 0.25, 'lowpass', 220);
+      return 1.2;
+    },
+    unitBreak(b, t, p){   // 단위 돌파: 낮은 "쿵"
+      tone(b, 'sine', 90 * p, t, 0.35, 0.34, { f1: 45 * p });
+      noise(b, t, 0.08, 0.28, 'lowpass', 420);
+      return 0.36;
+    },
+    reelStop(b, t, p){   // 릴 한 칸 멈춤: 딸깍 + 블립
+      noise(b, t, 0.02, 0.3, 'highpass', 3000, 0, 1);
+      tone(b, 'square', midi(84) * p, t + 0.01, 0.05, 0.07);
+      return 0.07;
+    },
+    coinIn(b, t, p){   // 입금 "차링" (동전 폭포 도착마다 — 작게)
+      tone(b, 'square', midi(96) * p, t, 0.03, 0.045);
+      tone(b, 'square', midi(100) * p, t + 0.03, 0.09, 0.04);
+      return 0.12;
+    },
+    closeRoll(b, t, p, o){   // 장 마감 임박: 스네어 연타 — 단계가 오를수록 촘촘하게
+      const lv = Math.max(1, Math.min(3, (o && o.level) || 1)), dur = Math.max(0.12, Math.min(1.6, (o && o.dur) || 0.6)), n = 3 + lv * 3;
+      for(let i = 0; i < n; i++){ const k = i / n; noise(b, t + dur * (1 - Math.pow(1 - k, 1.6)), 0.03, 0.1 + 0.05 * lv + 0.06 * k, 'bandpass', 2100 * p, 0, 1.5); }
+      return dur;
+    },
+    survived(b, t, p){   // 간신히 생존: 맑은 차임
+      [72, 76, 79, 84].forEach((n, i) => bell(b, n, t + i * 0.07, 0.9, 0.09, p));
+      return 1.1;
+    },
+    sigh(b, t, p){   // 안도의 한숨 "후우~": 숨소리 노이즈가 천천히 내려앉는다
+      noise(b, t, 1.3, 0.14, 'bandpass', 1300 * p, 420 * p, 1.2);
+      tone(b, 'triangle', midi(64) * p, t + 0.05, 1.1, 0.07, { f1: midi(55) * p, hold: 0.4 });
+      return 1.3;
+    },
     uiHover(b, t, p){ tone(b, 'square', 2600 * p, t, 0.012, 0.03); return 0.015; },
     uiPress(b, t, p){ noise(b, t, 0.035, 0.22, 'lowpass', 1400 * p); tone(b, 'square', 420 * p, t, 0.04, 0.07, { f1: 260 * p }); return 0.05; },
     cardPlay(b, t, p){
