@@ -5,7 +5,7 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
-- **규칙 파괴형 유물 10종** (브랜치 , PR 후 멈춤 — 밸런스 영향): , 존버 서약서·단타 중독·물타기 장인·인간 역지표·영끌 대출·몰아주기·막차 탑승(m^1.5)·무소유 투자법(빈 칸 ×1.5)·풀매수 교주·찌라시 확신범. 봇 , 점검 , 테스트 . 🛑 조정안 4개(서약서 ▲·단타·역지표·막차 ▼) 사용자 결정 대기 — . 온보딩 PR #32는 머지됨.
+- **규칙 파괴형 유물 10종** (브랜치 `claude/rule-breaker-relics`, PR 후 멈춤 — 밸런스 영향): `RULE_BREAKER_RELICS_ON`, 존버 서약서·단타 중독·물타기 장인·인간 역지표·영끌 대출·몰아주기·막차 탑승(m^1.5)·무소유 투자법(빈 칸 ×1.5)·풀매수 교주·찌라시 확신범. 봇 `ruleBreakerBuild`(전략별 칸 정렬 `strat.arrange`), 점검 `node sim/rule-breaker-check.js 켬.json 끔.json`(러너 기록 `relicsEver`), 테스트 `tools/tests/rulebreakers.cjs`. 🛑 조정안 4개(존버 서약서 ▲ · 단타·역지표·막차 ▼) 사용자 결정 대기 — `docs/design/RULE_BREAKER_RELICS.md`. 온보딩 PR #32는 머지됨.
 - **온보딩 단계 해금** (브랜치 `claude/onboarding-unlock`, PR 후 멈춤 — 밸런스 영향이라 사용자 확인 대기): `ONBOARDING_ON`·`SYSTEM_UNLOCK_WEEK`(1주 롱·정산·유물 / 2주 시그널·찌라시·뉴스 / 3주 공매도·레버리지·암시장 확장 / 4주 섹터·금감원·작전). 사용자 결정: 도달한 주차 영구 해금(`hodl.unlockWeek`), 첫 주 배수 보장은 실제 게임에 넣지 않음(나중 튜토리얼), 잠긴 시스템 겨냥 보스는 후보 제외. 설계·시뮬 표 `docs/design/ONBOARDING.md`, 테스트 `tools/tests/onboarding.cjs`(다른 테스트는 `hodl.unlockWeek = '8'`로 시작). 결과 `sim/results/baseline-before-onboarding.json`·`onboarding-on.json`.
 - **정산 무대 매일**(PR #31 머지)·**팩·유물 기울기**(PR #30 머지).
 - **완료·머지**: S0~S8 전부, S9 보스 주간(PR #20) + 정산 카운터 순자산화(PR #21), N1 정산 비중(PR #22 측정 + 현행 유지 결정). N4 색 언어(PR #24). N2 자원 정리 1단계(PR, 머지) — 🛑 2단계 비자금·현금 통합 사용자 결정 대기 (SHOP_ECONOMY.md 'N2 통합안').
