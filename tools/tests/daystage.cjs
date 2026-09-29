@@ -1,4 +1,4 @@
-// S6 장 마감 정산 무대: 보너스 있는 날만 열림 · 유물 단계 차례 재생 · 배수 불타기 · 크리티컬 릴 · 빨리 감기/결과로 · 다음 날 · 설정 끔 · 주 마지막 날은 체인
+// S6 장 마감 정산 무대: 보정 있는 날 = 기존 무대 (없는 날은 간이 무대 → plainstage.cjs) · 유물 단계 차례 재생 · 배수 불타기 · 크리티컬 릴 · 빨리 감기/결과로 · 다음 날 · 설정 끔 · 주 마지막 날은 체인
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const S = process.argv[2];
 let pass = 0, fail = 0;
@@ -15,8 +15,10 @@ const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(
     await p.click('#startBtn'); await sleep(460);
     // 1) 보정 없는 날 → 무대 없음 (알림만)
     await p.evaluate(() => { clearToasts(); window.rollCrit = () => 0; openPosition('semi', 1000, 1, 1, true); });
-    await p.evaluate(runDay(1.002)); await sleep(1600);
-    ok(W + ' 보정 없는 날 → 무대 안 열림', await p.evaluate(() => !stage && !overlayOpen));
+    await p.evaluate(runDay(1.002));
+    await p.waitForFunction(() => !!stage, null, { timeout: 8000 }).catch(() => {});
+    ok(W + ' 보정 없는 날 → 간이 무대 (stage-every-day)', await p.evaluate(() => !!stage && stage.plain && !!document.querySelector('#stageFormula.plain')));
+    await p.evaluate(() => { if(stage){ stageSkip(); stage.readyAt = 0; stageNext(); } });
     // 2) 곱하기 유물 + 크리티컬 → 무대
     await p.evaluate(() => { ['antFlag', 'levTower'].forEach(id => gainRelic(id, 't')); openPosition('coin', 800, 2, 1, true);
       window.rollCrit = () => 3; });   // 크리티컬 릴 확인용 (엔진 rollCrit를 이 테스트에서만 고정)

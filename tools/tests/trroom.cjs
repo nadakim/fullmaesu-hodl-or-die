@@ -50,6 +50,8 @@ const snd = (p, name) => p.evaluate(n => __snd.filter(s => s[0] === n), name);
     ok(W + ' 카운트다운 뒤 장 진행', await p.evaluate(() => run.tickInDay > 0));
     // 스킵 (Space) → 즉시 사라지고 벨은 한 번
     await p.evaluate(() => { __snd = []; while(run.phase === 'market') tick(); renderAll(); dealPending = false; });
+    await p.waitForFunction(() => !!stage, null, { timeout: 5000 }).catch(() => {});   // 포지션이 있으면 매일 정산 무대 (stage-every-day) → 닫고 진행
+    await p.evaluate(() => { if(stage){ stageSkip(); stageSkip(); stage.readyAt = 0; stageNext(); } dealPending = false; });
     await sleep(300);
     await p.evaluate(() => { __snd = []; }); await p.click('#openBtn'); await sleep(200);
     await p.keyboard.press('Space'); await sleep(80);
