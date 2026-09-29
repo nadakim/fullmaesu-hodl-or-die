@@ -1301,8 +1301,9 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
 .coll-head{display:flex;justify-content:space-between;align-items:flex-start;}
 .coll-grid{display:flex;flex-wrap:wrap;gap:calc(12 * var(--u));padding:calc(6 * var(--u)) calc(4 * var(--u)) calc(10 * var(--u));}
 .coll-grid .card,.deck-list .card{cursor:default;}
-.coll-grid .card:hover,.deck-list .card:not([data-remove]):hover{transform:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),0 0 0 calc(4 * var(--u)) var(--rc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
-.deck-list .card[data-remove]{cursor:pointer;}
+/* 보기만 하는 카드(도감·덱 확인)는 호버해도 움직이지 않는다. 고를 수 있는 카드(보상 강화·제거, 암시장 낱장·제거)는 빼야 기울기·발광이 산다 */
+.coll-grid .card:hover,.deck-list:not(.shop-singles):not(.shop-remove) .card:not([data-remove]):not([data-upgrade]):hover{transform:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),0 0 0 calc(4 * var(--u)) var(--rc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.deck-list .card[data-remove],.deck-list .card[data-upgrade],.shop-singles .card{cursor:pointer;}
 
 /* 환경 설정 */
 #screen-settings{padding:calc(18 * var(--u)) calc(14 * var(--u)) calc(28 * var(--u));}
@@ -5700,7 +5701,7 @@ document.addEventListener('pointerdown', e => { const b = e.target.closest('.btn
 
 /* (ui-tactile) 카드 기울기: 손패·보상·암시장 카드에 마우스 위치 따라 3D 기울기. mousemove를 rAF 한 번으로 묶고 CSS 변수(--rx·--ry·--sx)만 바꾼다
    (transform 하나 — 레이아웃 재계산 없음, 크기는 카드에 들어갈 때 한 번만 읽는다). 대상 지정 중·드래그 중·흔들림 끔·동작 줄이기·터치 기기(hover: none)면 끔 */
-const TILT_SEL = '#handBox .card.gcard, #overlayBox .card, #shopBox .card';
+const TILT_SEL = '#handBox .card.gcard, #overlayBox .card[data-reward], #overlayBox .card[data-upgrade], #overlayBox .card[data-remove], #shopBox .shop-item .card, #shopBox .card[data-shop-remove]';   // 고를 수 있는 카드만 (덱 확인·도감·팩 구성은 제외)
 const HOVER_NONE = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
 let tiltEl = null, tiltRect = null, tiltPt = null, tiltRaf = 0;
 const tiltAllowed = () => settings.shake && !PREFERS_REDUCED_MOTION && !HOVER_NONE && selectedIdx < 0 && relicDragFrom < 0;

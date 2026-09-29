@@ -35,7 +35,7 @@
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
-- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 35개, 실행법·주의점은 `tools/tests/README.md`)
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 36개, 실행법·주의점은 `tools/tests/README.md`)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
@@ -103,7 +103,7 @@
 - 손에 잡히는 화면(ui-tactile, docs/demo `<style>` 맨 위 TACTILE 구역) — 새 UI는 이것부터 쓴다:
   - **버튼 = `.btn-chunky`** (작은 버튼은 `.btn-chunky.sm`). 버튼 규칙에는 색(`background`·`color`)과 테두리 색 `--bk-ring`만 두고 `box-shadow`·호버 `transform`을 따로 쓰지 않는다 — 두께(옆면 `--bk-side` = 테두리 색의 어두운 톤, 깊이 `--bk-d` 4·sm 2)·윗면 1픽셀 밝은 선·호버 1칸 떠오름·누름(그림자만큼 내려앉고 그림자 0)·비활성(그림자 없이 흐림)은 공통. 소리는 자동(호버 `uiHover`·누름 `uiPress`, 이 버튼은 클릭 틱 대신). 누를 수 있을 때 숨쉬는 중요 버튼은 `.breathe`(장 시작·정산 ▶ 다음 날).
   - **패널 = 3종**: 기본 `.px-panel`(얇은 틀, 강조색은 `--pc`) · 강조 `.px-panel-gold`(보상·정산·순자산) · 위험 `.px-panel-red`(반대매매 경고·보스 예고). 요소 규칙에 `background`·`box-shadow` 틀을 다시 쓰지 않는다. 제목 띠는 명찰 `.px-tag`(패널 왼쪽 위에 걸침).
-  - **기울기**: 손패·보상·암시장 카드는 `tiltFrame`(mousemove → rAF 한 번, CSS 변수 `--rx`·`--ry`·`--sx`만, 최대 `JUICE_CONFIG.tiltMaxDeg`)으로 `.card.tilt`. `transform` 하나만 바꾸고 레이아웃을 읽는 건 카드에 들어갈 때 한 번. 대상 지정·드래그·흔들림 끔·동작 줄이기·터치(hover: none)면 끈다. 가만히 떠 있는 움직임은 `translate` 속성(기울기 `transform`과 겹쳐도 되게).
+  - **기울기**: 손패·보상·암시장 카드는 `tiltFrame`(mousemove → rAF 한 번, CSS 변수 `--rx`·`--ry`·`--sx`만, 최대 `JUICE_CONFIG.tiltMaxDeg`)으로 `.card.tilt`. `transform` 하나만 바꾸고 레이아웃을 읽는 건 카드에 들어갈 때 한 번. 대상 지정·드래그·흔들림 끔·동작 줄이기·터치(hover: none)면 끈다. 대상은 `TILT_SEL`(고를 수 있는 카드만: 손패·보상 `data-reward`·강화 `data-upgrade`·제거 `data-remove`·암시장 낱장·`data-shop-remove`) — 보기 전용 목록(덱 확인·도감)의 '호버해도 안 움직임' 규칙이 고르는 카드까지 덮지 않게 한다. 가만히 떠 있는 움직임은 `translate` 속성(기울기 `transform`과 겹쳐도 되게).
   - **구역 배경 무늬** `.tx-felt`(손패)·`.tx-grid`(시장)·`.tx-ledger`(포지션)·암시장 `#screen-shop::after` 체크: hard-stop(`conic-gradient`·`linear-gradient` 끊기는 색 멈춤)만, 색은 `color-mix(in srgb, var(--색) N%, transparent)`로 대비를 아주 낮게 — 그 위 글자는 4.5:1 이상(`--muted` 기준 5.3:1 이상 확인). 새 무늬는 이 네 개 중 하나를 재사용한다.
   - 숫자(가격·금액·배수·행동력)는 VT323, 한글 라벨은 Galmuri. Press Start 2P는 큰 숫자(순자산·현금)와 짧은 영문 태그만.
 - 길이는 전부 `calc(N * var(--u))` — `--u` = `--ui` × 1px(화면 배율, 레이아웃 참고). CSS에 맨 px를 새로 쓰지 않는다 (@media 경계값·@font-face만 예외). JS가 화면에 붙이는 요소는 `getBoundingClientRect` 좌표(화면 px) 그대로, 크기는 `uiScale`을 곱한다.
