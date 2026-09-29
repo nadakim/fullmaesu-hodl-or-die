@@ -21,12 +21,12 @@ const URL = 'http://127.0.0.1:8765/demo.html';
       const seen = {};
       for(let n = 1; n <= 12; n++){ comboHit('t'); seen[n] = [$('fxStreak').className.replace(/\s*bump/, ''), $('fxStreak').textContent]; }
       return { seen, ups: __snd.filter(s => s[0] === 'comboUp').map(s => s[1]), slam: __snd.filter(s => s[0] === 'multSlam').length, jack: __snd.filter(s => s[0] === 'jackpot').length,
-               stamp: (document.querySelector('.fx-stamp') || {}).textContent };
+               stamp: [...document.querySelectorAll('.fx-stamp')].map(e => e.textContent).pop() };   // 콤보 슬램(juice-escalation): 단계마다 도장, 마지막이 JACKPOT ×12
     });
     ok(W + ' 1은 숨김, 2부터 COMBO ×n', !/on/.test(st.seen[1][0]) && st.seen[2][1] === 'COMBO ×2' && /c1/.test(st.seen[2][0]), st.seen);
     ok(W + ' 단계 c2(3) · c3(5) · c4(8) · c5 JACKPOT(12)', /c2/.test(st.seen[3][0]) && /c2/.test(st.seen[4][0]) && /c3/.test(st.seen[5][0]) && /c3/.test(st.seen[7][0]) && /c4/.test(st.seen[8][0]) && /c5/.test(st.seen[12][0]) && st.seen[12][1] === 'JACKPOT ×12');
     ok(W + ' 오를 때마다 5음계 한 칸 위 (12번)', st.ups.length === 12 && st.ups[1] > st.ups[0] && st.ups[4] > st.ups[3], st.ups.slice(0, 6));
-    ok(W + ' 단계 오름 쾅 3번 + JACKPOT 팡파르 + 도장', st.slam === 3 && st.jack === 1 && st.stamp === 'JACKPOT!', st);
+    ok(W + ' 단계 오름 쾅 3번 + JACKPOT 팡파르 + 도장', st.slam === 3 && st.jack === 1 && st.stamp === 'JACKPOT ×12', st);
     await sleep(150);
     await p.screenshot({ path: `${S}/combo-jackpot-${W}.png` });
     // 끊김 → '최대 ×12' 식음 → 사라짐
