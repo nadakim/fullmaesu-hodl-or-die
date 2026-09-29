@@ -28,7 +28,8 @@ const playAll = (E, match, score, target) => { let n = 0; while(playOne(E, match
 const isLongStock = (E, c) => { const s = stockOf(E, c); return !!s && s.beta > 0; };
 const isInvStock  = (E, c) => { const s = stockOf(E, c); return !!s && s.beta < 0; };
 const betaOf      = (E, c) => stockOf(E, c).beta;
-const canAfford   = (E, c) => E.run.cash >= E.stockCost(stockOf(E, c));
+const spendable   = E => (hasFn(E, 'buyCash') ? E.buyCash() : E.run.cash);   // 🏦 영끌 대출이 있으면 마이너스 한도까지 (없는 엔진·플래그 끔이면 현금 그대로)
+const canAfford   = (E, c) => spendable(E) >= E.stockCost(stockOf(E, c));
 const LEVER = ['yolo', 'fullBuy', 'credit'];
 
 /* 유물 칸이 가득 찼을 때 (엔진에 RELIC_SLOTS가 있을 때만): 새 유물 id를 얻으려면 무엇을 교체할지.
@@ -50,7 +51,7 @@ function buyRelicFor(E, id, prio, rng){
 }
 /* 칸 순서 정리 (엔진에 moveRelic이 있을 때만, 암시장에서): 칩 더하기 → 합산 배수 → 곱 배수 → 정산과 무관한 유물.
    정산 배수는 칸 순서대로 차례로 적용되므로 더하기를 앞에 둘수록 커진다 — 봇은 늘 최선의 순서로 둔다 */
-const KIND_ORDER = { add: 0, mult: 1, xmult: 2, copy: 3 };
+const KIND_ORDER = { add: 0, mult: 1, xmult: 2, copy: 3, last: 4 };   // last = 🚂 막차 탑승 (맨 오른쪽 칸이어야 발동)
 function arrangeRelics(E){
   if(!hasFn(E, 'moveRelic') || !E.SETTLE_EFFECTS) return;
   const key = id => { const fx = E.SETTLE_EFFECTS[id]; return fx ? KIND_ORDER[fx.kind] : 3; };
@@ -336,6 +337,56 @@ const antFlagBuild = {
   shop(E){ shopByPriority(E, this.relicPick, this.cardPick); }
 };
 
+/* ── 규칙 파괴형 유물 빌드 (docs/design/RULE_BREAKER_RELICS.md): 규칙 파괴 10종을 먼저 집고, 가진 유물의 규칙에 맞춰 논다.
+   단타 중독 → 장전에 수익 포지션을 팔아 매도 정산 · 풀매수 교주 → 한 종목만 · 물타기 장인 → 손실 포지션에 물타기 ·
+   인간 역지표 → 롱 종목에 숏 · 막차 탑승은 맨 오른쪽, 몰아주기는 가장 센 곱하기 유물 바로 오른쪽에 (그 오른쪽엔 희생 칸). 찌라시 A ── */
+const RULE_BREAKER_PICK = ['lastTrain', 'focus', 'oath', 'water', 'cult', 'yoloLoan', 'contrarian', 'tipBro', 'scalper', 'cashGang'];
+function arrangeRuleBreaker(E){
+  arrangeRelics(E);   // 더하기 → 합산 → 곱 → 복사 → 막차
+  if(!hasFn(E, 'moveRelic')) return;
+  const rel = () => E.run.relics;
+  const fi = rel().indexOf('focus');
+  if(fi >= 0){   // 몰아주기를 마지막 곱하기 유물 바로 뒤로 (곱하기가 없으면 그대로)
+    const lastX = rel().map((id, i) => ({ id, i })).filter(x => E.SETTLE_EFFECTS[x.id] && E.SETTLE_EFFECTS[x.id].kind === 'xmult').pop();
+    if(lastX && lastX.i + 1 !== fi) E.moveRelic(fi, lastX.i < fi ? lastX.i + 1 : lastX.i);
+  }
+  const li = rel().indexOf('lastTrain');
+  if(li >= 0 && li !== rel().length - 1) E.moveRelic(li, rel().length - 1);
+}
+const ruleBreakerBuild = {
+  premarket(E){
+    const has = id => hasFn(E, 'hasRelic') && E.RELIC_BY_ID[id] && E.hasRelic(id);
+    if(has('scalper')) E.run.positions.filter(p => E.posPnl(p) > 0 && E.canSell(p)).map(p => p.id).forEach(id => E.sellPosition(id));   // 매도 순간 정산
+    const heldIds = () => E.run.positions.map(p => p.assetId);
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      if(has('cult')){   // 한 종목만: 가진 종목(없으면 손패의 최고 베타)만 산다
+        const cs = E.cultStock();
+        if(playOne(E, c => isLongStock(E, c) && (!cs || stockOf(E, c).id === cs), c => betaOf(E, c))) continue;
+        if(playOne(E, c => (c.base || c.id) === 'avgDown')) continue;
+      } else {
+        if(has('contrarian') && E.run.pending.dir === 1 && E.run.positions.some(p => p.dir > 0)){   // 롱 종목에 숏 걸기
+          const longIds = heldIds().filter((id, i) => E.run.positions[i].dir > 0);
+          const inHand = E.run.hand.some((_, i) => { const st = stockOf(E, card(E, i)); return st && longIds.indexOf(st.id) >= 0 && canAfford(E, card(E, i)); });
+          if(inHand && playOne(E, c => (c.base || c.id) === 'short')){ playOne(E, c => { const st = stockOf(E, c); return !!st && longIds.indexOf(st.id) >= 0; }); continue; }
+        }
+        if(has('water') && playOne(E, c => (c.base || c.id) === 'avgDown')) continue;
+        if(has('water') && playOne(E, c => { const st = stockOf(E, c); return !!st && E.run.positions.some(p => p.assetId === st.id && E.posPnl(p) < 0); })) continue;
+        const buyable = () => E.run.hand.some((_, i) => isLongStock(E, card(E, i)) && canAfford(E, card(E, i)));
+        if(E.run.pending.lev === 1 && E.run.pending.dir === 1 && buyable()) playOne(E, c => LEVER.indexOf(c.base || c.id) >= 0, c => -LEVER.indexOf(c.base || c.id));
+        if(playOne(E, c => isLongStock(E, c), c => betaOf(E, c))) continue;
+      }
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || (c.base || c.id) === 'split', () => 0, ids => ids[0])) continue;
+      if(playOne(E, c => ['coffee', 'indicators', 'marginTopup', 'hodl'].indexOf(c.base || c.id) >= 0)) continue;
+      break;
+    }
+  },
+  tip: () => 0,
+  cardPick: ['avgDown', 'timeLoop', 'futures', 'levEtf', 'credit', 'split', 'stk_meme', 'stk_sc', 'stk_coin', 'coffee'],
+  relicPick: RULE_BREAKER_PICK.concat(['levTower', 'antFlag', 'infinity', 'phoenix', 'limitUp', 'rerun']),
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); },
+  arrange: E => arrangeRuleBreaker(E)
+};
+
 /* ── (N3) sectorAllIn: 한 섹터(암호화폐)에 올인. 리포트로 섹터 레벨을 올리고, 신용으로 그 섹터 종목만 산다 → 정산 맨 앞의 섹터 칩·배수.
    보상은 그 섹터 리포트·종목 카드 먼저, 암시장은 원하는 낱장 → 리서치 팩. 찌라시 B. 리포트가 없는 엔진(SECTOR_LEVELS_ON=false)이면 그냥 코인 올인 ── */
 const ALLIN_SECTOR = '암호화폐', ALLIN_REPORT = 'rpt_crypto';
@@ -361,5 +412,5 @@ const sectorAllIn = {
   }
 };
 
-module.exports = { sectorAllIn, levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
-                   relicSwap, arrangeRelics };
+module.exports = { ruleBreakerBuild, sectorAllIn, levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
+                   relicSwap, arrangeRelics, arrangeRuleBreaker };

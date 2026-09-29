@@ -116,7 +116,7 @@ function playGame(E, strat, seed){
       shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest,
                      rerolls: rer.length, rerollSpent: rer.reduce((s2, e) => s2 + e.data.cost, 0) });
       lastExit = run().slush;
-      arrangeRelics(E);   // 유물 칸 순서: 더하기 → 곱하기 (봇은 최선의 순서)
+      (strat.arrange || arrangeRelics)(E);   // 유물 칸 순서: 더하기 → 곱하기 (봇은 최선의 순서, 전략이 따로 정할 수 있다)
       E.leaveShop();
     } else throw new Error('알 수 없는 phase: ' + phase);
   }
@@ -127,6 +127,7 @@ function playGame(E, strat, seed){
     maxSettleMult: r.maxSettleMult || 1, settledTotal: Math.round(r.settledTotal || 0), maxSettlePayout: Math.round(r.maxSettlePayout || 0),   // 장 마감 정산 (없는 엔진이면 1·0)
     sectorMax: r.sectorLevel ? Math.max(...Object.keys(r.sectorLevel).map(k => r.sectorLevel[k])) : 1,   // (N3) 판 끝 최고 섹터 레벨 (없는 엔진이면 1)
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
+    relicsEver: [...new Set(E.eventLog.filter(e => e.type === 'relicGained').map(e => e.data.id))],   // 판 중 한 번이라도 가진 유물 (판매·교체 포함) — sim/rule-breaker-check.js
     growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
     shop: shopLog,
     weekEq: weekEquities(E, r),   // 주마다 결산 순자산 (그 주 중간에 파산했으면 그 주는 없음)
