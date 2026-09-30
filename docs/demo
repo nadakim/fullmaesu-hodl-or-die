@@ -1619,6 +1619,14 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .boss-tile .bt-kind{color:var(--red);}
 .boss-tile.counter .bt-kind{color:var(--purple);}
 .boss-tile.final .bt-kind{color:var(--gold);}
+.boss-tile.build{box-shadow:0 0 0 calc(2 * var(--u)) var(--blue),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.boss-tile.build .bt-kind{color:var(--text);}
+.b-vs{margin-top:calc(4 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;color:var(--text2);}
+.b-vs-k{display:inline-block;padding:calc(1 * var(--u)) calc(3 * var(--u)) 0;color:#000;background:var(--red);}
+.b-vs-k.ok{background:var(--green);}
+.rl-seize{position:absolute;left:calc(-4 * var(--u));right:calc(-4 * var(--u));top:40%;padding:calc(1 * var(--u)) 0 0;font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.1;color:#000;background:var(--red);box-shadow:0 0 0 calc(1 * var(--u)) #000;transform:rotate(-12deg);pointer-events:none;}
+.relic.seized{filter:grayscale(.6);}
+.rt-seize{display:block;margin:calc(4 * var(--u)) 0;color:var(--red);}
 .quote-row.halted{opacity:.55;}
 .ending-boss{color:var(--red);}
 .rr-boss{color:var(--red);}
@@ -2430,7 +2438,31 @@ function hideGapAlert(item){
 const signalAccNow = () => SIGNAL_ACCURACY + (run ? bossMod('signalAccAdd', 0) : 0);   // 시그널 적중률 (개미 털기 보스면 −15%p) — 엔진 rollSignals와 같은 값
 const bossModOf = (id, key) => BOSS_BY_ID[id] && BOSS_BY_ID[id].mods[key] !== undefined ? BOSS_BY_ID[id].mods[key] : 0;
 const bossText = id => BOSS_BY_ID[id] ? `${BOSS_BY_ID[id].icon} ${BOSS_BY_ID[id].name}` : '';
-const bossKindLabel = b => b.final ? '최종 보스' : b.counter ? '정산 카운터' : '일반 보스';
+const bossKindLabel = b => b.final ? '최종 보스' : b.build ? '빌드 카운터' : b.counter ? '정산 카운터' : '일반 보스';
+const bossKindCls = b => b.final ? 'final' : b.build ? 'build' : b.counter ? 'counter' : '';
+/* 빌드 카운터: 표적(막히는 유물)과 대비책(보상·암시장에서 구할 유물·카드) — 엔진 BOSSES[].targets·answers를 읽기만 */
+const relicNames = ids => ids.filter(id => RELIC_BY_ID[id]).map(id => RELIC_BY_ID[id].icon + ' ' + RELIC_BY_ID[id].name).join(' · ');
+const cardNames  = ids => ids.filter(id => CARD_BY_ID[id]).map(id => '🃏 ' + CARD_BY_ID[id].name).join(' · ');
+function bossVsHtml(b){
+  if(!b.build) return '';
+  const ans = [relicNames(b.answers.relics), cardNames(b.answers.cards)].filter(Boolean).join(' · ') || '유물 칸 순서 바꾸기';
+  return `<div class="b-vs"><span class="b-vs-k">표적</span> ${relicNames(b.targets)}</div><div class="b-vs"><span class="b-vs-k ok">대비책</span> ${ans}${b.mods.slot1Seized ? ' — 1번 칸에 정산과 무관한 유물을 둔다' : ''}</div>`;
+}
+/* 빌드 카운터가 막은 카드의 사유 (엔진 bossBlockKind) */
+function bossBlockText(kind){
+  if(kind === 'posCap') return `🚧 포지션 한도 규제 — 포지션 ${bossMod('positionCap', 0)}개까지만. 가진 포지션과 같은 종목·방향·레버리지 추가 매수만 됩니다`;
+  if(kind === 'levCap') return `⚖️ 레버리지 규제 — 레버리지 ETF는 ${bossMod('levCap', 0)}x까지`;
+  return '';
+}
+/* 손패 카드가 보스 때문에 못 쓰는지 → 사유 (없으면 '') */
+function handBossBlock(idx){
+  if(!run || !run.boss || idx < 0 || !run.hand[idx] || run.phase !== 'premarket') return '';
+  const card = CARD_BY_ID[run.hand[idx].id];
+  const ts = card.target === 'position' ? run.positions : card.target === 'asset' ? STOCKS : [null];
+  if(!ts.length || !ts.every(t => checkPlay(idx, t ? t.id : null) === 'boss')) return '';
+  const kind = bossBlockKind(card, ts[0]);
+  return bossBlockText(kind) || bossRejectText();
+}
 /* 설명 + 지금 판에서 정해지는 값 (상장폐지 심사 = 거래정지될 종목) */
 const bossDescNow = b => b.desc + (b.mods.haltTopBeta ? ` (대상: ${STOCK_BY_ID[run && run.haltStock ? run.haltStock : topBetaStockId()].name})` : '');
 function bossNotice(id, lead, compact){   // 결산·보상·암시장 예고 상자
@@ -2438,13 +2470,14 @@ function bossNotice(id, lead, compact){   // 결산·보상·암시장 예고 �
   if(!b) return '';
   return `<div class="boss-notice px-panel-red ${b.final ? 'final' : ''} ${compact ? 'compact' : ''}" data-boss="${b.id}">
     <div class="bn-lead">${lead}</div><div class="bn-name">${b.icon} ${b.name} <span class="bn-kind">${bossKindLabel(b)}</span></div>
-    <div class="bn-desc">${bossDescNow(b)}</div></div>`;
+    <div class="bn-desc">${bossDescNow(b)}</div>${compact ? '' : bossVsHtml(b)}</div>`;
 }
-const bossTile = b => `<div class="boss-tile ${b.final ? 'final' : b.counter ? 'counter' : ''}" data-boss="${b.id}">
-    <div class="bt-icon">${b.icon}</div><div class="bt-name">${b.name}</div><div class="bt-kind">${bossKindLabel(b)}</div><div class="bt-desc">${bossDescNow(b)}</div></div>`;
+const bossTile = b => `<div class="boss-tile ${bossKindCls(b)}" data-boss="${b.id}">
+    <div class="bt-icon">${b.icon}</div><div class="bt-name">${b.name}</div><div class="bt-kind">${bossKindLabel(b)}</div><div class="bt-desc">${bossDescNow(b)}</div>${bossVsHtml(b)}</div>`;
 function bossRejectText(){
   const b = BOSS_BY_ID[run.boss];
-  return b ? `${b.icon} ${b.name} — 이번 주에는 쓸 수 없는 카드입니다` : REJECT_TEXT.invalid;
+  if(!b) return REJECT_TEXT.invalid;
+  return bossBlockText(b.mods.positionCap ? 'posCap' : b.mods.levCap ? 'levCap' : '') || `${b.icon} ${b.name} — 이번 주에는 쓸 수 없는 카드입니다`;
 }
 /* 보스 주 시작: 중앙 경보 (막는 연출 — 스킵 가능). 갭 경보와 같은 틀 */
 const BOSS_ALERT_MS = 2200;
@@ -3524,7 +3557,7 @@ function showCardTip(el){
   cardTipEl.innerHTML = `<b>${card.name}</b>
     <span class="ct-meta">${TYPE_LABEL[card.type]} · ${RARITY_LABEL[card.rarity]} · 행동력 ${card.type === 'status' ? '—' : ap}${card.exhaust ? ' · 소멸' : ''}${card.target ? ' · 대상 ' + TARGET_LABEL[card.target] : ''}${stock ? ` · ₩${formatKrw(idx >= 0 && run ? stockCost(stock) : stock.cost)}${idx >= 0 && run ? ` · 현재가 ${fmtPrice(assets[stock.id].price)}` : ''} · ${stock.sector} · β ${stock.beta} · 변동성 ${stock.volatility}` : ''}</span>
     ${card.tags.length ? `<span class="ct-meta">태그 ${tagNames(card.tags)}${topTags().some(t => card.tags.indexOf(t) >= 0) ? ' — 내 덱 주력 태그 (보상·암시장 +' + Math.round(TAG_BIAS * 100) + '%)' : ''}</span>` : ''}${card.upgraded ? `<span class="ct-meta">✦ 강화판 — 원래: ${CARD_BY_ID[card.base].desc}</span>` : canUpgrade(card.id) ? `<span class="ct-meta">✦ 강화하면: ${CARD_BY_ID[card.id + '+'].desc}${CARD_BY_ID[card.id + '+'].ap !== card.ap ? ` (행동력 ${CARD_BY_ID[card.id + '+'].ap})` : ''}</span>` : ''}
-    ${settleColor(cardDesc(card))}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
+    ${settleColor(cardDesc(card))}${cardBossNote(card, idx)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
   cardTipEl.hidden = false;
   const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
   let x = r.left, y = r.top - t.height - 6;
@@ -3533,6 +3566,12 @@ function showCardTip(el){
   y = Math.max(4, Math.min(window.innerHeight - t.height - 4, y));
   cardTipEl.style.left = x + 'px';
   cardTipEl.style.top = y + 'px';
+}
+function cardBossNote(card, idx){
+  const block = handBossBlock(idx);
+  if(block) return `<span class="ct-ev neg">🛑 ${block}</span>`;
+  if(idx >= 0 && run && card.stock && capLev(run.pending.lev) < run.pending.lev) return `<span class="ct-ev neg">⚖️ 레버리지 규제 — ${run.pending.lev}x 대신 ${capLev(run.pending.lev)}x로 산다</span>`;
+  return '';
 }
 function placeTip(el){
   const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
@@ -3848,7 +3887,7 @@ function cardUsable(idx){
 function renderHand(){
   const box = $('handBox');
   const usable = run.hand.map((_, i) => cardUsable(i) ? '1' : '0').join('');
-  const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + selectedIdx + '|' + run.pending.principalMult + '|' + run.pending.lev
+  const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + run.boss + '|' + selectedIdx + '|' + run.pending.principalMult + '|' + run.pending.lev
     + '|' + run.marketCard + '|' + run.positions.map(p => p.id + ':' + Math.round(exposure(p))).join();   // 기대값이 포지션·대기 시장 카드에 따라 바뀐다
   const deal = dealReady();
   if(sig !== handSig || deal){
@@ -3858,7 +3897,7 @@ function renderHand(){
     const cells = cols * HAND_GRID_ROWS;
     box.innerHTML = run.hand.map((inst, i) => {
           const card = CARD_BY_ID[inst.id];
-          const cls = (usable[i] === '1' ? '' : 'disabled') + (i === selectedIdx ? ' selected' : '') + (usable[i] === '1' && boostsSettle(i) ? ' boost' : '');
+          const cls = (usable[i] === '1' ? '' : 'disabled' + (handBossBlock(i) ? ' boss-blocked' : '')) + (i === selectedIdx ? ' selected' : '') + (usable[i] === '1' && boostsSettle(i) ? ' boost' : '');
           const cost = card.stock ? stockCost(STOCK_BY_ID[card.stock]) : 0;
           return handCardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, ap: cardCost(card) });
         }).join('') + '<div class="g-slot"></div>'.repeat(Math.max(0, cells - run.hand.length));   // 빈 칸 = 점선 슬롯
@@ -5141,7 +5180,8 @@ const relicKind = id => SETTLE_EFFECTS[id] ? SETTLE_EFFECTS[id].kind : '';
 function renderRelics(){
   if(relicTipId && !hasRelic(relicTipId)) relicTipId = '';
   const arrange = canArrangeRelics();
-  const sig = run.relics.join() + '|' + relicTipId + '|' + arrange + '|' + run.relics.map(id => Math.round(relicStacks(id))).join();
+  const seized = run.boss && bossMod('slot1Seized', false) ? 0 : -1;   // 유물 압류 (보스): 1번 칸
+  const sig = run.relics.join() + '|' + relicTipId + '|' + arrange + '|' + seized + '|' + run.relics.map(id => Math.round(relicStacks(id))).join();
   if(sig === relicSig) return;
   relicSig = sig;
   const slots = run.relics.map((id, i) => { const r = RELIC_BY_ID[id];
@@ -5149,7 +5189,8 @@ function renderRelics(){
       const badge = r.growth && st >= 1 ? `<span class="rl-stk">${money ? Math.round(st) : st}</span>` : '';
       const kb = RELIC_KIND_BADGE[relicKind(id)], kind = kb ? `<span class="rl-kind ${kb[1]}">${kb[0]}</span>` : '';
       const glow = !r.growth || money ? '' : st >= 25 ? 'g4' : st >= 10 ? 'g3' : st >= 5 ? 'g2' : '';
-      return `<button class="relic ${r.rarity} ${glow} ${id === relicTipId ? 'on' : ''}" data-relic="${id}" data-slot="${i}" ${arrange ? 'draggable="true"' : ''} title="${i + 1}번 칸 · ${r.name}" aria-label="${i + 1}번 칸 ${r.name}">${r.icon}${kind}${badge}</button>`; }).join('')
+      const sz = i === seized;
+      return `<button class="relic ${r.rarity} ${glow} ${id === relicTipId ? 'on' : ''} ${sz ? 'seized' : ''}" data-relic="${id}" data-slot="${i}" ${arrange ? 'draggable="true"' : ''} title="${i + 1}번 칸 · ${r.name}${sz ? ' · 🏷️ 압류 — 이번 주 정산 효과 무효' : ''}" aria-label="${i + 1}번 칸 ${r.name}">${r.icon}${kind}${badge}${sz ? '<span class="rl-seize">압류</span>' : ''}</button>`; }).join('')
     + '<span class="relic-slot" title="빈 칸 — 매주 결산 보상이나 암시장에서 얻는다"></span>'.repeat(Math.max(0, RELIC_SLOTS - run.relics.length));
   $('relicBar').innerHTML = `<span class="relic-label" title="정산은 왼쪽 칸부터 차례로 발동 — 더하기(+)를 앞에, 곱하기(×)를 뒤에 둘수록 커진다">▌ 유물 ${run.relics.length}/${RELIC_SLOTS}</span>` + slots;
   fitRelicEmpty();
@@ -5157,7 +5198,8 @@ function renderRelics(){
   if(relicTipId){
     const r = RELIC_BY_ID[relicTipId], i = run.relics.indexOf(relicTipId), kb = RELIC_KIND_BADGE[relicKind(relicTipId)];
     const kbCls = kb ? (kb[1] === 'add' ? 'n-chip' : kb[1] === 'copy' ? '' : 'n-mult') : '';
-    const move = `<span class="rt-move"><span>${i + 1}번 칸${kb ? ` · 정산 ${i + 1}번째 · <span class="${kbCls}">${kb[2]}</span>` : ''}</span>${arrange
+    const seizeNote = i === seized ? '<span class="rt-seize">🏷️ 유물 압류 (보스) — 이번 주 이 칸의 정산 효과는 무효. 순서를 바꾸면 다른 유물이 1번 칸으로 간다</span>' : '';
+    const move = `${seizeNote}<span class="rt-move"><span>${i + 1}번 칸${kb ? ` · 정산 ${i + 1}번째 · <span class="${kbCls}">${kb[2]}</span>` : ''}</span>${arrange
       ? `<button class="btn-chunky sm" data-relic-move="-1" ${i > 0 ? '' : 'disabled'}>◀ 앞으로</button><button class="btn-chunky sm" data-relic-move="1" ${i < run.relics.length - 1 ? '' : 'disabled'}>뒤로 ▶</button><span>끌어서 옮기기 · ←→</span>`
       : '<span>순서는 장전·암시장에서 바꿀 수 있다</span>'}</span>`;
     tip.innerHTML = `<b>${r.icon} ${r.name}</b> <span class="c-rar ${r.rarity}">${RARITY_LABEL[r.rarity]}</span><br>${relicKind(r.id) ? settleColor(r.desc) : r.desc}${r.growth ? growthTipHtml(r) : ''}<i>${r.flavor}</i>${move}`;
