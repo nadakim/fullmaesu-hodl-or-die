@@ -3,6 +3,8 @@
    node sim/runner.js [--n 500] [--seed 1] [--strategies allIn3x,random] [--out sim/results/xxx.json]
                       [--targets 10500,11000,...]   (ROUND_TARGETS를 파일 수정 없이 바꿔서 실험, 길이 = MAX_ROUND)
                       [--set DAILY_INTEREST=0.003;SEAL=...]   (CONFIG 상수 한 줄을 바꿔서 실험, ';'로 여러 개)
+                      [--force-relics antFlag,levTower]   (판 시작 때 장착 — 보스 카운터 '대비책 있음' 실험)
+                      [--boss-adapt 1]   (빌드 카운터 보스 주에 대비책 행동: 한도 규제 → 가진 포지션 키우기, 레버리지 규제 → 분할, 압류 → 1번 칸에 정산 무관 유물)
                       [--engine /tmp/before/engine.js]   (다른 엔진 파일 — 변경 전/후 비교: git show HEAD:docs/engine.js > /tmp/before/engine.js)
 
    한 판: setSeed(시드) → startNewRun() → [장전: 전략이 카드 사용 → startMarket() → tick() 반복(찌라시는 전략이 resolveTip)
@@ -30,7 +32,7 @@ const ALL_CAUSES = [].concat(END_CAUSES.win, END_CAUSES.bust, END_CAUSES.miss);
 const MAX_STEPS = 200000;   // 무한 루프 방지 (한 판은 보통 수백 걸음)
 
 function parseArgs(argv){
-  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES).filter(k => STRATEGIES[k].premarket), out: '', targets: null, set: {}, engine: undefined, forceRelics: [] };
+  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES).filter(k => STRATEGIES[k].premarket), out: '', targets: null, set: {}, engine: undefined, forceRelics: [], bossAdapt: false };
   for(let i = 0; i < argv.length; i += 2){
     const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
     if(k === 'n' || k === 'seed') o[k] = parseInt(v, 10);
@@ -39,6 +41,7 @@ function parseArgs(argv){
     else if(k === 'engine') o.engine = v;
     else if(k === 'set') v.split(';').forEach(kv => { const i = kv.indexOf('='); o.set[kv.slice(0, i).trim()] = kv.slice(i + 1); });
     else if(k === 'targets') o.targets = v.split(',').map(Number);
+    else if(k === 'boss-adapt') o.bossAdapt = v === '1';
     else if(k === 'force-relics') o.forceRelics = v.split(',').filter(Boolean);   // 판 시작 때 장착할 유물 (보스 카운터 '대비책 있음' 실험용)
     else throw new Error('알 수 없는 옵션: ' + argv[i]);
   }
@@ -87,6 +90,28 @@ function cheapestOffer(E){
   sh.relics.forEach(id => { if(!E.hasRelic(id)) prices.push(newPrices ? E.relicPrice(id) : E.RELIC_PRICE[E.RELIC_BY_ID[id].rarity]); });
   return prices.length ? Math.min.apply(null, prices) : 0;
 }
+/* --boss-adapt: 빌드 카운터 보스 주의 대비책 행동 (엔진 rand() 안 씀, 기본 꺼짐 — 끄면 기존 봇 그대로).
+   포지션 한도 규제 → 레버리지 ETF·물타기로 가진 포지션 키우기 · 레버리지 규제 → 가장 높은 레버리지 포지션 분할 (레버리지 탑 곱이 늘어난다) ·
+   유물 압류 → 정산과 무관한 유물을 1번 칸으로 (없으면 그대로) */
+const bossAdaptMod = (E, k) => { try { return E.bossMod(k, 0); } catch(e){ return 0; } };
+function playOnPos(E, ids, pick){
+  for(let guard = 0; guard < 20; guard++){
+    const i = E.run.hand.findIndex(c => ids.indexOf(E.CARD_BY_ID[c.id].base || c.id) >= 0 && E.validTargetIds(E.run.hand.indexOf(c)).length);
+    if(i < 0) return;
+    const t = pick(E.validTargetIds(i).map(id => E.run.positions.find(p => p.id === id)));
+    if(!t || !E.playCard(i, t.id)) return;
+  }
+}
+function seizeArrange(E){
+  const i = E.run.relics.findIndex(id => !E.SETTLE_EFFECTS[id]);
+  if(i > 0 && E.canArrangeRelics()) E.moveRelic(i, 0);
+}
+function bossAdapt(E){
+  if(!E.run.boss) return;
+  if(bossAdaptMod(E, 'slot1Seized')) seizeArrange(E);
+  if(bossAdaptMod(E, 'positionCap')) playOnPos(E, ['levEtf', 'avgDown'], ps => ps.sort((a, b) => E.exposure(b) - E.exposure(a))[0]);
+  if(bossAdaptMod(E, 'levCap')) playOnPos(E, ['split'], ps => ps.sort((a, b) => b.lev - a.lev)[0]);
+}
 const SHOP_BUY_EVENTS = ['packOpened', 'singleBought', 'shopRemoved'];
 
 /* 판 한 번. opts.forceRelics = 판 시작 때 장착할 유물 id (이미 있으면 그대로, rand() 없음) */
@@ -107,6 +132,7 @@ function playGame(E, strat, seed, opts){
     if(++steps > MAX_STEPS) throw new Error(`시드 ${seed}: ${MAX_STEPS}걸음 안에 끝나지 않음 (phase ${run().phase})`);
     const phase = run().phase;
     if(phase === 'premarket'){
+      if(opts && opts.bossAdapt) bossAdapt(E);
       strat.premarket(E, rng);
       E.startMarket();
     } else if(phase === 'market'){
@@ -230,7 +256,7 @@ function main(){
   const results = {}, games = {};
   const t0 = Date.now();
   for(const name of opt.strategies){
-    games[name] = seeds.map(s => playGame(E, STRATEGIES[name], s, { forceRelics: opt.forceRelics }));
+    games[name] = seeds.map(s => playGame(E, STRATEGIES[name], s, { forceRelics: opt.forceRelics, bossAdapt: opt.bossAdapt }));
     results[name] = summarize(games[name], maxRound, STRATEGIES[name]);
     process.stderr.write(`  ${name}: ${opt.n}판 (${((Date.now() - t0) / 1000).toFixed(1)}s)\n`);
   }
@@ -286,7 +312,7 @@ function main(){
   const out = opt.out || path.join(__dirname, 'results', `run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify({
-    meta: { n: opt.n, seed: opt.seed, forceRelics: opt.forceRelics, engine: opt.engine || 'docs/engine.js', overrides: opt.set, strategies: opt.strategies, maxRound, targets: E.ROUND_TARGETS, date: new Date().toISOString(),
+    meta: { n: opt.n, seed: opt.seed, forceRelics: opt.forceRelics, bossAdapt: opt.bossAdapt, engine: opt.engine || 'docs/engine.js', overrides: opt.set, strategies: opt.strategies, maxRound, targets: E.ROUND_TARGETS, date: new Date().toISOString(),
             note: '클리어율이 다른 전략보다 비정상적으로 높은 전략 = 그 전략이 쓴 카드/유물이 과하게 강하다는 신호' },
     summary: results, games
   }, null, 1));

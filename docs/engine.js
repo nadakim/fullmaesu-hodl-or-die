@@ -722,7 +722,7 @@ const SYSTEM_RELICS = {   // 시스템별 유물 (결산 보상·암시장 진�
   leverage: ['hotline', 'capital', 'coldwallet', 'traumaSurvivor', 'levTower', 'phoenix', 'yoloLoan'],
   fss:      ['vip', 'lawyer', 'fssconnect', 'timemachine', 'fssVip']
 };
-const SYSTEM_BOSSES = { shortBan: 'short', bigStep: 'leverage', marginHike: 'leverage', fssCrackdown: 'fss', tipBomb: 'tips' };   // 잠긴 시스템을 겨냥한 보스
+const SYSTEM_BOSSES = { shortBan: 'short', bigStep: 'leverage', marginHike: 'leverage', fssCrackdown: 'fss', tipBomb: 'tips', levCap: 'leverage' };   // 잠긴 시스템을 겨냥한 보스
 const ONBOARDING_STARTER_SUBS = { stk_inv: 'stk_ev', stk_inv2: 'stk_game' };   // 시작 덱에서 잠긴 카드 대신 넣는 카드 (없으면 그냥 뺀다)
 
 /* ══ 보스 주간 (S9, docs/design/BOSS_WEEKS.md) ══
@@ -735,6 +735,16 @@ const BOSS_WEEK_ROUNDS        = [2, 4, 6];   // 일반 보스 주차
 const BOSS_FINAL_ROUND        = 8;           // 최종 보스 주차 (= MAX_ROUND)
 const BOSS_SLUSH_BONUS        = 300;         // 보스 주를 통과하면 비자금 + (만원)
 const BOSS_RELIC_CHOICE_BONUS = 1;           // 보스 주를 통과하면 유물 보상 선택지 +
+/* 빌드 카운터 보스 4종 (docs/design/BOSS_WEEKS.md '빌드 카운터') — 특정 빌드를 막아 적응을 강요한다.
+   끄면(BOSS_COUNTERS_ON=false) BOSSES에 안 들어가고 일정 보장도 없다 = 도입 전과 같은 판 (난수 소비 그대로) */
+const BOSS_COUNTERS_ON        = false;   // 2026-09-30 보류 (BOSS_WEEKS.md '빌드 카운터 — 결정') — 목표 구조가 정해지면 재측정
+const BOSS_COUNTER_MIN        = 1;           // 한 판 일반 보스 칸(BOSS_WEEK_ROUNDS) 중 빌드 카운터 최소 개수
+const BOSS_POSITION_CAP       = 3;           // 포지션 한도 규제: 포지션 최대 개수 (넘기는 새 포지션 금지)
+const BOSS_LEV_CAP            = 2;           // 레버리지 규제: 새 포지션·레버리지 ETF 상한 (x)
+/* 조정안 실험용 손잡이 (기본 0·false = 꺼짐, 켜지 않으면 판 결과 그대로): 빌드 카운터 주에 목표 = max(원래 목표, 주 시작 순자산 × 배수) — 목표 상향 조정과 같은 식.
+   HELD = true면 표적 유물을 가진 판에만 건다 */
+const BOSS_COUNTER_TARGET_MULT = 0;
+const BOSS_COUNTER_TARGET_HELD = false;
 const BOSSES = [
   { id: 'shortBan',     name: '공매도 전면 금지', icon: '🚫', desc: '이번 주 새 공매도(숏) 금지. 이미 가진 숏은 그대로.', mods: { noShort: true } },
   { id: 'bigStep',      name: '빅스텝',           icon: '🏦', desc: '신용·대차·마통 이자 ×3.', mods: { interestMult: 3 } },
@@ -752,6 +762,21 @@ const BOSSES = [
   { id: 'blackMonday',  name: '블랙 먼데이',      icon: '🖤', final: true, desc: '월요일 개장 직후 전 종목 −12% 폭락(인버스 +12%) + 약세장, 이번 주 갭 ×1.5.', mods: { crashDay: 1, crashPct: 0.12, gapMult: 1.5 } },
   { id: 'bubblePeak',   name: '버블의 정점',      icon: '🫧', final: true, desc: '월~수 강세장이 이어지다 목·금은 약세장 + 갭 ×2.', mods: { bubbleUpDays: 3, bubbleGapMult: 2 } }
 ];
+/* 빌드 카운터 (build: true): targets = 표적 유물(점검·도감), answers = 대비책 유물·카드 (도감·예고에 보여 준다 — 전부 보상·암시장 풀에 있는 것) */
+if(BOSS_COUNTERS_ON) BOSSES.splice(BOSSES.findIndex(b => b.final), 0,
+  { id: 'posCap',      name: '포지션 한도 규제', icon: '🚧', build: true,
+    desc: `포지션 ${BOSS_POSITION_CAP}개까지만 — 넘기는 새 포지션 금지 (종목 매수·주식 분할·재상장·공모주·따라잡기). 가진 포지션과 같은 종목·방향·레버리지 추가 매수는 된다.`,
+    mods: { positionCap: BOSS_POSITION_CAP, targetEquityMult: BOSS_COUNTER_TARGET_MULT, targetIfHeld: BOSS_COUNTER_TARGET_HELD }, targets: ['antFlag', 'sectorSet'], answers: { relics: ['levTower', 'cult', 'water'], cards: ['levEtf', 'avgDown', 'allIn'] } },
+  { id: 'levCap',      name: '레버리지 규제',    icon: '⚖️', build: true,
+    desc: `새로 사는 포지션 레버리지 최대 ${BOSS_LEV_CAP}x (신용·영끌·재상장도 ${BOSS_LEV_CAP}x로), 레버리지 ETF는 ${BOSS_LEV_CAP}x까지. 이미 가진 포지션은 그대로.`,
+    mods: { levCap: BOSS_LEV_CAP, targetEquityMult: BOSS_COUNTER_TARGET_MULT, targetIfHeld: BOSS_COUNTER_TARGET_HELD }, targets: ['levTower', 'yoloLoan'], answers: { relics: ['antFlag', 'sectorSet'], cards: ['split', 'timeLoop'] } },
+  { id: 'streakReset', name: '기록 리셋',        icon: '🔄', build: true,
+    desc: '주 시작과 장 마감마다 모든 포지션의 보유 일수·연속 상승이 0으로 — 존버·연상 기록이 쌓이지 않는다.',
+    mods: { streakReset: true, targetEquityMult: BOSS_COUNTER_TARGET_MULT, targetIfHeld: BOSS_COUNTER_TARGET_HELD }, targets: ['limitUp', 'oath', 'seal', 'diamondTree'], answers: { relics: ['moonSavings', 'phoenix', 'ccompound'], cards: ['timeLoop', 'futures'] } },
+  { id: 'seize',       name: '유물 압류',        icon: '🏷️', build: true,
+    desc: '빨간 딱지: 정산에서 1번 칸 유물 효과 무효 (1번 칸을 복사·반복하는 효과도). 칸은 그대로, 순서 바꾸기·판매는 된다.',
+    mods: { slot1Seized: true, targetEquityMult: BOSS_COUNTER_TARGET_MULT, targetIfHeld: BOSS_COUNTER_TARGET_HELD }, targets: ['rerun', 'focus'], answers: { relics: ['capital', 'hotline'], cards: [] } }
+);
 
 /* 지수(메인 캔들 차트) — 시장 전체 분위기 */
 let marketPrice = 1000;
@@ -968,8 +993,23 @@ function rollBossPlan(){
     pool.splice(pool.indexOf(id), 1);
     plan[r] = id;
   });
+  if(BOSS_COUNTERS_ON) ensureBossCounters(plan);   // 플래그 끔이면 난수를 더 쓰지 않는다
   plan[BOSS_FINAL_ROUND] = finals[randInt(finals.length)];
   return plan;
+}
+/* 빌드 카운터가 BOSS_COUNTER_MIN개보다 적으면: 카운터가 아닌 칸 하나를 골라 아직 안 쓴 카운터로 바꾼다 (그 주에 잠긴 시스템 겨냥 보스는 제외) */
+function ensureBossCounters(plan){
+  const isCounter = id => !!BOSS_BY_ID[id] && !!BOSS_BY_ID[id].build;
+  let have = BOSS_WEEK_ROUNDS.filter(r => isCounter(plan[r])).length;
+  while(have < BOSS_COUNTER_MIN){
+    const slots = BOSS_WEEK_ROUNDS.filter(r => !isCounter(plan[r]));
+    if(!slots.length) return;
+    const r = slots[randInt(slots.length)], used = BOSS_WEEK_ROUNDS.map(x => plan[x]);
+    const ok = BOSSES.filter(b => b.build && used.indexOf(b.id) < 0 && (!SYSTEM_BOSSES[b.id] || sysOpenAt(SYSTEM_BOSSES[b.id], r))).map(b => b.id);
+    if(!ok.length) return;
+    plan[r] = ok[randInt(ok.length)];
+    have++;
+  }
 }
 /* 온보딩 해금 판정 (순수). round = 그 주차에 열려 있나 — 판 시작 기준 주차(run.unlockBase, 지금까지 도달한 최고)와 큰 쪽 */
 function sysOpenAt(sys, round){
@@ -1011,10 +1051,25 @@ function bossGapMult(){
   const up = bossMod('bubbleUpDays', 0);
   return bossMod('gapMult', 1) * (up && run.day > up ? bossMod('bubbleGapMult', 1) : 1);
 }
+/* 기록 리셋 (보스): 모든 포지션의 보유 일수·연속 상승 → 0 */
+function resetStreaks(){
+  if(!bossMod('streakReset', false)) return;
+  run.positions.forEach(p => { p.daysHeld = 0; p.upStreak = 0; });
+}
+/* 레버리지 규제 (보스): 새 포지션 레버리지 상한 */
+const capLev = lev => { const cap = bossMod('levCap', 0); return cap && lev > cap ? cap : lev; };
+/* 포지션 한도 규제 (보스): 이 매수(종목·레버리지·방향)가 새 포지션을 n개 만들어 한도를 넘기나 — 같은 포지션에 합쳐지면 괜찮다 */
+function overPositionCap(stockId, lev, dir, n){
+  const cap = bossMod('positionCap', 0);
+  if(!cap) return false;
+  if(stockId && findSamePosition(stockId, capLev(lev), dir)) return false;
+  return run.positions.length + (n || 1) > cap;
+}
 /* 이번 주 보스 시작: 거래정지 종목 정하기 → emit('bossStart') */
 function startBossWeek(){
   run.boss = run.bossPlan[run.round] || '';
   run.haltStock = bossMod('haltTopBeta', false) ? topBetaStockId() : '';
+  resetStreaks();   // 기록 리셋 (보스): 들고 들어온 포지션도 0부터
   if(run.boss) emit('bossStart', {id: run.boss, round: run.round, haltStock: run.haltStock});
 }
 function gainRelic(id, source, paid, replaceId){
@@ -1211,8 +1266,10 @@ function settleSteps(p, base, crit, opts){
   const sb = base > 0 ? sectorBonus(p) : null;   // (N3) 섹터 레벨: 수익 마감이면 유물보다 먼저 칩 + 합산 배수
   if(sb){ push({ kind: 'add', value: sb.chip }, 'sector', sb.label); push({ kind: 'mult', value: sb.mult }, 'sector', sb.label); }
   if(base !== 0){
+    const seized = bossMod('slot1Seized', false) ? 0 : -1;   // 유물 압류 (보스): 1번 칸 효과 무효 — 그 칸을 복사·반복해도 무효
     const applyRelic = (id, i, owner) => {   // owner = 발동을 일으킨 칸의 유물 (몰아주기가 왼쪽 칸을 다시 발동)
       const src = copySource(id, i), fx = SETTLE_EFFECTS[src];
+      if(i === seized || (src !== id && run.relics.indexOf(src) === seized)) return;
       if(!fx || (base < 0) !== fx.onLoss) return;
       const e = fx.apply(p, base);
       if(!e) return;
@@ -1221,7 +1278,8 @@ function settleSteps(p, base, crit, opts){
       push(e, owner, src === owner ? label : `${relicStepLabel(owner)} ← ${label}`);
     };
     run.relics.forEach((id, i) => {
-      if(i > 0 && run.relics[i - 1] === 'focus') return;   // 🧲 몰아주기: 바로 오른쪽 칸은 꺼진다
+      if(i === seized) return;
+      if(i > 0 && run.relics[i - 1] === 'focus' && i - 1 !== seized) return;   // 🧲 몰아주기: 바로 오른쪽 칸은 꺼진다 (압류된 몰아주기는 효과 없음)
       if(id === 'focus'){ if(i > 0) for(let k = 0; k < FOCUS_EXTRA; k++) applyRelic(run.relics[i - 1], i - 1, 'focus'); return; }
       if(id === 'lastTrain'){   // 🚂 막차 탑승: 맨 오른쪽 칸이면 m → m^POW, 아니면 ×PENALTY (수익만)
         if(base <= 0) return;
@@ -1325,7 +1383,7 @@ function previewSettlement(extra){
 }
 /* 종목 카드를 쓰면 생길 포지션 (미리보기용, run에 넣지 않음) */
 function hypotheticalBuy(stockId, amount){
-  const s = STOCK_BY_ID[stockId], principal = (amount || s.cost) * run.pending.principalMult, lev = run.pending.lev, exp = principal * lev;
+  const s = STOCK_BY_ID[stockId], principal = (amount || s.cost) * run.pending.principalMult, lev = capLev(run.pending.lev), exp = principal * lev;
   return { id: -1, assetId: s.id, name: s.name, dir: run.pending.dir, lev, principal,
            shares: exp / assets[s.id].price, entryExposure: exp, refExp: exp, daysHeld: 0 };
 }
@@ -1389,7 +1447,9 @@ const isWinning    = p => posPnl(p) > 0;
 const totalBorrowed = () => run.positions.reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
 const netEquity     = () => run.cash + run.positions.reduce((s, p) => s + posEquity(p), 0) - run.overdraft;
 /* 이번 주 목표. 목표 상향 조정(보스, 정산 카운터)이면 주 시작 순자산 × 배수와 비교해 큰 값 — 불어난 순자산을 직접 겨냥 */
-const currentTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.weekStart.equity * bossMod('targetEquityMult', 0));
+const currentTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.weekStart.equity * (bossMod('targetIfHeld', false) && !bossTargetHeld() ? 0 : bossMod('targetEquityMult', 0)));
+/* 이번 주 보스의 표적 유물을 가졌나 (빌드 카운터 조정안 targetIfHeld) */
+const bossTargetHeld = () => { const b = run.boss ? BOSS_BY_ID[run.boss] : null; return !!b && !!b.targets && b.targets.some(id => hasRelic(id)); };
 const longExposure  = () => run.positions
   .filter(p => p.dir > 0 && STOCK_BY_ID[p.assetId].beta > 0)
   .reduce((s, p) => s + exposure(p), 0);
@@ -1412,6 +1472,7 @@ const findSamePosition = (stockId, lev, dir) =>
 
 function openPosition(stockId, principal, lev, dir, payCash){
   const s = STOCK_BY_ID[stockId];
+  lev = capLev(lev);   // 레버리지 규제 (보스)
   const exp = principal * lev;
   if(payCash) run.cash -= principal;
   const same = findSamePosition(stockId, lev, dir);
@@ -1658,6 +1719,7 @@ defCard('fullBuy', '풀매수', 'buy', 2, 'legendary', null, false,
     run.hand.filter(i => CARD_BY_ID[i.id].type === 'stock').forEach(inst => {
       const s = STOCK_BY_ID[CARD_BY_ID[inst.id].stock];
       if(buyCash() < stockCost(s)) return;   // 현금이 모자라면 손패에 남긴다
+      if(overPositionCap(s.id, run.pending.lev, run.pending.dir)) return;   // 포지션 한도 규제 (보스): 손패에 남긴다
       buyStock(s.id);
       run.pending.principalMult = 1;          // 영끌 원금 배수는 첫 종목에만
       run.hand.splice(run.hand.indexOf(inst), 1);
@@ -2088,6 +2150,7 @@ function bossBlocks(card, t){
     if(card.base === 'relist' && run.liquidated.length && run.liquidated[run.liquidated.length - 1].dir < 0) return true;
     if(card.stock && run.pending.dir < 0) return true;
   }
+  if(bossBlockKind(card, t)) return true;
   if(run.haltStock){
     if(card.stock === run.haltStock) return true;
     if(t && card.target === 'asset' && t.id === run.haltStock) return true;
@@ -2095,6 +2158,20 @@ function bossBlocks(card, t){
   }
   return false;
 }
+
+/* 빌드 카운터가 막는 카드 → 'posCap' | 'levCap' | '' (UI 사유 툴팁도 이것을 읽는다) */
+function bossBlockKind(card, t){
+  const base = card.base || card.id;
+  if(bossMod('positionCap', 0)){
+    if(card.stock && overPositionCap(card.stock, run.pending.lev, run.pending.dir)) return 'posCap';
+    if(base === 'hedge' && overPositionCap(HEDGE_STOCK, 1, 1)) return 'posCap';
+    if(base === 'split' && overPositionCap('', 1, 1, (card.id === 'split' ? SPLIT_WAYS : SPLIT_WAYS_UP) - 1)) return 'posCap';
+    if(POSITION_CAP_CARDS.indexOf(base) >= 0 && overPositionCap('', 1, 1)) return 'posCap';   // 무작위·되살리기 종목 = 새 포지션으로 본다
+  }
+  if(bossMod('levCap', 0) && base === 'levEtf' && t && t.lev * LEV_ETF_MULT > bossMod('levCap', 0)) return 'levCap';
+  return '';
+}
+const POSITION_CAP_CARDS = ['ipo', 'chaseLimit', 'relist'];
 
 function validTargetIds(handIdx){
   const inst = run.hand[handIdx];
@@ -2731,6 +2808,7 @@ function endOfDay(){
   run.hand = run.hand.filter(c => CARD_BY_ID[c.id].retain);
   settleDay();   // 장 마감 정산 (존버의 인장은 오늘 전까지 넘긴 장 마감 수로 판정)
   run.positions.forEach(p => { p.daysHeld++; });   // 존버의 인장: 장 마감을 넘긴 횟수
+  resetStreaks();   // 기록 리셋 (보스)
   const interest = dailyInterest();
   run.cash -= interest;
   run.interestPaid += interest;

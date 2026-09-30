@@ -5,6 +5,8 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
+- **빌드 카운터 보스 4종 — 보류** (`claude/boss-counters`, 🛑 PR 후 멈춤 — 기본 꺼짐으로 머지 대기): 사용자 결정 = 조정안 1~3 모두 불채택, `BOSS_COUNTERS_ON` 기본 false(손잡이 `BOSS_COUNTER_TARGET_MULT`·`_HELD`도 꺼짐), 기본 상태 = main 결과 동일. 코드·도구(`sim/boss-split.js`·`sim/boss-counter-check.js`·runner `--boss-adapt`)·테스트(`bosscounter.cjs`는 플래그를 켜서 회귀) 보존. 재개 조건: 목표 구조 결정 후 표적/비표적 재측정, 남은 후보 = 표적 판정을 지난 주 정산 비중으로 (BOSS_WEEKS.md '결정').
+- **다음 작업: 목표 성장률 실험** — `ROUND_TARGETS` 구조(주 성장 배수 요구)를 `--targets`·`metrics.js`(주간 여유·주 성장 배수 표)로 실험. 결정되면 빌드 카운터를 `--set BOSS_COUNTERS_ON=true`로 재측정.
 - **플레이테스트 킷** (`claude/playtest-kit`, UI 전용 — 자동 머지): `?playtest=1`(설문 포함) 또는 설정 '플레이테스트 모드'(복사만) → 게임오버·졸업 화면 '📋 판 기록 복사', `hodl.playtestLog`, ≡ '전체 기록 복사'. 절차·지표·CSV `docs/playtest/PROTOCOL.md`. 테스트 `tools/tests/playtest.cjs`. 다음: 테스터 5~10명 결과를 받아 PROTOCOL.md 집계표로 정리 → 봇 지표(BALANCE_METRICS.md)와 비교.
 - **밸런스 측정 도구** (`claude/sim-metrics`, sim 전용 — 자동 머지): `sim/metrics.js`(운 의존도 `xmultWeek`·주간 여유·주 성장·상점 의미 있는 구매·천장), 러너 `--force-relics`, `compare.js`/`boss-check.js --metrics`. 기준값 `sim/results/metrics-baseline.json` + `docs/design/BALANCE_METRICS.md`. 결론: 곱하기 유물을 2주 안에 얻느냐가 승패 대부분(못 얻으면 0%), 후반 암시장은 돈이 남고 살 게 없음(7주 69% 의미 있는 구매 0회). 다음: 보스 카운터·목표 성장률·상점 희소성 작업의 판정에 이 표를 쓴다.
 - **규칙 파괴형 유물 조정 반영** (PR #33 머지): 단타 중독 풀 제외(`RULE_BREAKER_POOL_EXCLUDE`, 재설계 대기 — 장중 거래와 함께), 역지표 ×5, 막차 비오른쪽 효과 없음. 관찰 대상: 영끌 대출·찌라시 확신범. 다음: `claude/sim-metrics`(밸런스 측정 도구).
@@ -23,7 +25,7 @@
 - **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. **작업이 끝나면 묻지 않고 자동으로 PR을 만들어 직접 머지한다** (2026-09-28 사용자 지시). **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
 - **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
 - **N3 섹터 레벨업** (PR #26 머지 — 조정안 1 보상 리포트 칸 + 3 행동력 0 적용, 다음 후보는 SECTOR_LEVELS.md): 리포트 카드 11장·리서치 팩·정산 맨 앞 섹터 칩·배수·보상 가중, 플래그 `SECTOR_LEVELS_ON`. 봇 `sectorAllIn`. 테스트 `tools/tests/sector.cjs`.
-- **검증 방법**: 테스트 40개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
+- **검증 방법**: 테스트 41개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
 - **주의**: 셸 heredoc은 반드시 `<<'EOF'`(따옴표)로 — 따옴표 없는 heredoc에 백틱이 있으면 명령으로 실행된다. `pkill -f`는 자기 셸을 죽일 수 있다.
 
 ## 단계별 결정 기록 (요약)

@@ -20,9 +20,9 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
     await p.click('#startBtn'); await sleep(460);
     // 일정
     const plan = await p.evaluate(() => ({ plan: run.bossPlan, boss: run.boss, chip: $('bossChip').hidden,
-      finals: BOSSES.filter(b => b.final).map(b => b.id), counters: BOSSES.filter(b => b.counter).map(b => b.id), n: BOSSES.length }));
+      finals: BOSSES.filter(b => b.final).map(b => b.id), counters: BOSSES.filter(b => b.counter).map(b => b.id), builds: BOSSES.filter(b => b.build).length, flag: BOSS_COUNTERS_ON, n: BOSSES.length }));
     const regs = [plan.plan[2], plan.plan[4], plan.plan[6]];
-    ok(W + ' 보스 13종 (정산 카운터 3) · 일정 2·4·6 일반(중복 없음) + 8 최종 · 1주차 없음', plan.n === 13 && plan.counters.length === 3 && new Set(regs).size === 3 && regs.every(id => plan.finals.indexOf(id) < 0) && plan.finals.indexOf(plan.plan[8]) >= 0 && !plan.boss && plan.chip, plan);
+    ok(W + ' 보스 13종 + 빌드 카운터(플래그 켬이면 4) (정산 카운터 3) · 일정 2·4·6 일반(중복 없음) + 8 최종 · 1주차 없음', plan.n === 13 + plan.builds && plan.builds === (plan.flag ? 4 : 0) && plan.counters.length === 3 && new Set(regs).size === 3 && regs.every(id => plan.finals.indexOf(id) < 0) && plan.finals.indexOf(plan.plan[8]) >= 0 && !plan.boss && plan.chip, plan);
     // 1주 결산 → 결과·보상·유물·암시장 예고
     await p.evaluate(CLEAR_WEEK); await throughResult(p);
     ok(W + ' 결산 결과에 다음 주 보스 예고', await p.evaluate(id => !!document.querySelector(`#overlayBox .boss-notice[data-boss="${id}"]`), plan.plan[2]));
@@ -139,7 +139,7 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
     // 도감 보스 필터
     await p.evaluate(() => { hideOverlay(); switchTab('collection'); });
     await p.locator('#collectionFilter [data-rarity="boss"]').click(); await sleep(150);
-    ok(W + ' 도감 👹 보스: 13개 (최종 2 · 정산 카운터 3)', await p.evaluate(() => [document.querySelectorAll('#collectionBox .boss-tile').length, document.querySelectorAll('#collectionBox .boss-tile.final').length, document.querySelectorAll('#collectionBox .boss-tile.counter').length].join()) === '13,2,3');
+    ok(W + ' 도감 👹 보스: 전부 (최종 2 · 정산 카운터 3 · 빌드 카운터는 플래그 켬일 때 4)', await p.evaluate(() => [document.querySelectorAll('#collectionBox .boss-tile').length, document.querySelectorAll('#collectionBox .boss-tile.final').length, document.querySelectorAll('#collectionBox .boss-tile.counter').length, document.querySelectorAll('#collectionBox .boss-tile.build').length].join() === [BOSSES.length, 2, 3, BOSS_COUNTERS_ON ? 4 : 0].join()));
     await p.screenshot({ path: `${S}/boss-collection-${W}.png` });
     await p.evaluate(() => switchTab('records'));
     ok(W + ' 파산 기록 목록에 사인', await p.evaluate(() => /사인: 📈 증거금 상향/.test($('recordsBox').textContent)));
@@ -149,4 +149,4 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
   console.log(`FAIL ${fail} / ${pass + fail}`); console.log('errors', JSON.stringify(errs.slice(0, 3)));
   await b.close();
 })();
-function BOSS_NAME_PLACEHOLDER(id){ return { shortBan: '공매도 전면 금지', bigStep: '빅스텝', delistReview: '상장폐지 심사', marginHike: '증거금 상향', fssCrackdown: '금감원 특별 단속', tipBomb: '찌라시 폭탄', tradeTax: '거래세 인상', antShakeout: '개미 털기', multCap: '목표 상향 조정', addSeal: '더하기 봉인', taxAudit: '국세청 세무조사' }[id] || '?'; }
+function BOSS_NAME_PLACEHOLDER(id){ return { shortBan: '공매도 전면 금지', bigStep: '빅스텝', delistReview: '상장폐지 심사', marginHike: '증거금 상향', fssCrackdown: '금감원 특별 단속', tipBomb: '찌라시 폭탄', tradeTax: '거래세 인상', antShakeout: '개미 털기', multCap: '목표 상향 조정', addSeal: '더하기 봉인', taxAudit: '국세청 세무조사', posCap: '포지션 한도 규제', levCap: '레버리지 규제', streakReset: '기록 리셋', seize: '유물 압류' }[id] || '?'; }
