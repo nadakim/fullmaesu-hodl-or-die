@@ -67,11 +67,11 @@ function growthTable(res, only){
 function shopTable(res, only){
   const rows = {};
   namesOf(res, only).forEach(s => res.games[s].forEach(g => (g.shop || []).forEach(x => { (rows[x.week] = rows[x.week] || []).push(x); })));
-  const out = ['| 주차 | 입장 판 | 입장 비자금 평균 | 구매 수 | 의미 있는 구매 | 리롤 | 퇴장 잔액 평균 | 이월 비율 (잔액 ÷ 입장) | 의미 있는 구매 0회 판 |', '|---|---|---|---|---|---|---|---|---|'];
+  const out = ['| 주차 | 입장 판 | 입장 비자금 중앙 / 평균 | 구매 수 | 의미 있는 구매 | 리롤 | 퇴장 잔액 평균 | 이월 비율 (잔액 ÷ 입장) | 의미 있는 구매 0회 판 |', '|---|---|---|---|---|---|---|---|---|'];
   Object.keys(rows).map(Number).sort((a, b) => a - b).forEach(w => {
     const xs = rows[w], n = xs.length, avg = f => xs.reduce((a, x) => a + f(x), 0) / n;
     const hasM = 'meaningful' in xs[0];
-    out.push(`| ${w} | ${n} | ${fx(avg(x => x.entry))} | ${avg(x => x.buys).toFixed(2)} | ${hasM ? avg(x => x.meaningful).toFixed(2) : '-'} | ${avg(x => x.rerolls || 0).toFixed(2)} | ${fx(avg(x => x.exit))} | ${pct(avg(x => (x.entry > 0 ? x.exit / x.entry : 0)))} | ${hasM ? pct(xs.filter(x => !x.meaningful).length / n) : '-'} |`);
+    out.push(`| ${w} | ${n} | ${fx(q(xs.map(x => x.entry), 0.5))} / ${fx(avg(x => x.entry))} | ${avg(x => x.buys).toFixed(2)} | ${hasM ? avg(x => x.meaningful).toFixed(2) : '-'} | ${avg(x => x.rerolls || 0).toFixed(2)} | ${fx(avg(x => x.exit))} | ${pct(avg(x => (x.entry > 0 ? x.exit / x.entry : 0)))} | ${hasM ? pct(xs.filter(x => !x.meaningful).length / n) : '-'} |`);
   });
   return out.join('\n');
 }
