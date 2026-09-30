@@ -5,6 +5,7 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
+- **목표 성장률 실험** (`claude/target-growth`, 🛑 PR 후 멈춤 — 기본 꺼짐, 자동 머지 안 함): `TARGET_GROWTH_ON`·`TARGET_GROWTH_K`, 목표 = max(고정, 주 시작 순자산 × K) 주 시작 확정, K ≤ 1 = 없음, 목표 비례 규칙은 `baseTarget`(되먹임 방지), 데모 `?growth=1`. 결과: S1~S4 모두 제안 기준 미달(S1도 곱하기 빌드 7~27%, levTower 꼬리 3~9%) — 분산 큰 빌드를 벌한다. 빌드 카운터 재측정: 기록 리셋 −21%p, 압류 −15%p(비표적도 −10), 한도·레버리지 ±5. 꼼수: 일부러 반대매매 → 재상장. 🛑 채택 여부·조정안(K 1.1~1.15 / 여러 주 기준 / 보스 주에만) 사용자 결정 대기 (`docs/design/TARGET_GROWTH.md`). 빌드 카운터 PR #36 머지(기본 꺼짐).
 - **빌드 카운터 보스 4종 — 보류** (`claude/boss-counters`, 🛑 PR 후 멈춤 — 기본 꺼짐으로 머지 대기): 사용자 결정 = 조정안 1~3 모두 불채택, `BOSS_COUNTERS_ON` 기본 false(손잡이 `BOSS_COUNTER_TARGET_MULT`·`_HELD`도 꺼짐), 기본 상태 = main 결과 동일. 코드·도구(`sim/boss-split.js`·`sim/boss-counter-check.js`·runner `--boss-adapt`)·테스트(`bosscounter.cjs`는 플래그를 켜서 회귀) 보존. 재개 조건: 목표 구조 결정 후 표적/비표적 재측정, 남은 후보 = 표적 판정을 지난 주 정산 비중으로 (BOSS_WEEKS.md '결정').
 - **다음 작업: 목표 성장률 실험** — `ROUND_TARGETS` 구조(주 성장 배수 요구)를 `--targets`·`metrics.js`(주간 여유·주 성장 배수 표)로 실험. 결정되면 빌드 카운터를 `--set BOSS_COUNTERS_ON=true`로 재측정.
 - **플레이테스트 킷** (`claude/playtest-kit`, UI 전용 — 자동 머지): `?playtest=1`(설문 포함) 또는 설정 '플레이테스트 모드'(복사만) → 게임오버·졸업 화면 '📋 판 기록 복사', `hodl.playtestLog`, ≡ '전체 기록 복사'. 절차·지표·CSV `docs/playtest/PROTOCOL.md`. 테스트 `tools/tests/playtest.cjs`. 다음: 테스터 5~10명 결과를 받아 PROTOCOL.md 집계표로 정리 → 봇 지표(BALANCE_METRICS.md)와 비교.
@@ -25,7 +26,7 @@
 - **작업 규칙(사용자 지시)**: 최신 main에서 새 브랜치, 한 PR = 한 목적, PR 설명에 요약·파일·플레이테스트·기획 문서 항목. **작업이 끝나면 묻지 않고 자동으로 PR을 만들어 직접 머지한다** (2026-09-28 사용자 지시). **PR·수정마다 플레이 데모 아티팩트 재게시** (아래).
 - **플레이 데모 아티팩트**: https://claude.ai/artifact/87p2qHpf3e8D9rtNUr4fTp — `docs/demo`를 `index.html`로 복사(`<title></title>` → `<title>BULL TRAP</title>`), `engine.js`·`audio.js`·`music.js`·`fx.js`·`assets/sfx/files.js`를 `files`로 함께 게시. 다른 세션이면 먼저 `Artifact read` 후 `url`로 게시(폰트는 기존 아티팩트에 있음).
 - **N3 섹터 레벨업** (PR #26 머지 — 조정안 1 보상 리포트 칸 + 3 행동력 0 적용, 다음 후보는 SECTOR_LEVELS.md): 리포트 카드 11장·리서치 팩·정산 맨 앞 섹터 칩·배수·보상 가중, 플래그 `SECTOR_LEVELS_ON`. 봇 `sectorAllIn`. 테스트 `tools/tests/sector.cjs`.
-- **검증 방법**: 테스트 41개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
+- **검증 방법**: 테스트 42개 `tools/tests/*.cjs` (README의 사이트 복사 + `python3 -m http.server 8765`), 헤드리스 시뮬 `node sim/runner.js --n 500`, 비교 `node sim/compare.js 전.json 후.json`, 보스 `node sim/boss-check.js 켬.json 끔.json`, 정산 비중 `node sim/settle-share.js`.
 - **주의**: 셸 heredoc은 반드시 `<<'EOF'`(따옴표)로 — 따옴표 없는 heredoc에 백틱이 있으면 명령으로 실행된다. `pkill -f`는 자기 셸을 죽일 수 있다.
 
 ## 단계별 결정 기록 (요약)
