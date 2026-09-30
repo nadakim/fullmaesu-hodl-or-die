@@ -5,6 +5,7 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
+- **밸런스 측정 도구** (`claude/sim-metrics`, sim 전용 — 자동 머지): `sim/metrics.js`(운 의존도 `xmultWeek`·주간 여유·주 성장·상점 의미 있는 구매·천장), 러너 `--force-relics`, `compare.js`/`boss-check.js --metrics`. 기준값 `sim/results/metrics-baseline.json` + `docs/design/BALANCE_METRICS.md`. 결론: 곱하기 유물을 2주 안에 얻느냐가 승패 대부분(못 얻으면 0%), 후반 암시장은 돈이 남고 살 게 없음(7주 69% 의미 있는 구매 0회). 다음: 보스 카운터·목표 성장률·상점 희소성 작업의 판정에 이 표를 쓴다.
 - **규칙 파괴형 유물 조정 반영** (PR #33 머지): 단타 중독 풀 제외(`RULE_BREAKER_POOL_EXCLUDE`, 재설계 대기 — 장중 거래와 함께), 역지표 ×5, 막차 비오른쪽 효과 없음. 관찰 대상: 영끌 대출·찌라시 확신범. 다음: `claude/sim-metrics`(밸런스 측정 도구).
 - **규칙 파괴형 유물 측정 보정** (같은 브랜치·PR #33 후속, 2026-09-30): 아키타입 봇 4종 + `scalperBot`, 러너 장중 훅 `strat.market`·`relicFilter`·`weekRelics`, `sim/rule-breaker-check.js`에 3주차 보유 기준 열·아키타입 봇 표. 결론: 존버 서약서만 플러스, 단타 중독은 설계상 약점(장중 매도 봇도 −28~−34%p), 역지표·막차 약함 → 🛑 조정안 A/B 사용자 결정 대기 (RULE_BREAKER_RELICS.md '측정 보정'). 시드 묶음은 1~500·1001~1500 (`--seed`는 시작 번호).
 - **규칙 파괴형 유물 10종** (브랜치 `claude/rule-breaker-relics`, PR 후 멈춤 — 밸런스 영향): `RULE_BREAKER_RELICS_ON`, 존버 서약서·단타 중독·물타기 장인·인간 역지표·영끌 대출·몰아주기·막차 탑승(m^1.5)·무소유 투자법(빈 칸 ×1.5)·풀매수 교주·찌라시 확신범. 봇 `ruleBreakerBuild`(전략별 칸 정렬 `strat.arrange`), 점검 `node sim/rule-breaker-check.js 켬.json 끔.json`(러너 기록 `relicsEver`), 테스트 `tools/tests/rulebreakers.cjs`. 🛑 조정안 4개(존버 서약서 ▲ · 단타·역지표·막차 ▼) 사용자 결정 대기 — `docs/design/RULE_BREAKER_RELICS.md`. 온보딩 PR #32는 머지됨.
