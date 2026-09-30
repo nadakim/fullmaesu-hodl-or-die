@@ -10,6 +10,11 @@ const START_CASH        = 10000;   // 시작 자금 (만원) = 1억
 const TICK_MS           = 800;     // 캔들 1개 = 0.8초
 const TICKS_PER_DAY     = 12;      // 장중 = 캔들 12개 (약 10초)
 const DAYS_PER_ROUND    = 5;       // 1주(라운드) = 5거래일
+/* 목표 성장률 (docs/design/TARGET_GROWTH.md, 실험 — 기본 꺼짐): 목표 = max(고정 곡선 ROUND_TARGETS, 주 시작 순자산 × TARGET_GROWTH_K[주]).
+   주 시작에 확정(run.week.growthTarget)해 주 중에 바뀌지 않는다. K ≤ 1(1~2주차 1.0)이면 성장 목표 없음 = 고정 곡선 그대로. 끄면 도입 전과 같은 판.
+   UI는 startNewRun({targetGrowth: true})로도 켤 수 있다 (데모 ?growth=1) */
+const TARGET_GROWTH_ON  = false;
+const TARGET_GROWTH_K   = [1, 1, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3];   // 후보 S1 (실험 후보 S1~S4는 TARGET_GROWTH.md)
 const ROUND_TARGETS     = [10200, 12000, 15000, 25000, 50000, 150000, 600000, 3000000]; // 주차별 순자산 목표 (만원). D8(사용자 결정): 곱하기 배수는 그대로 두고 목표를 거침없이 올린다 — 1억 200만 → 300억. 배수 빌드(레버리지 탑·개미 군단 깃발)만 끝까지 가고 곱하기 없는 빌드·nothing은 0~5% (sim/runner.js, MULTIPLIERS.md)
 const MAX_ROUND         = ROUND_TARGETS.length;
 
@@ -1447,7 +1452,15 @@ const isWinning    = p => posPnl(p) > 0;
 const totalBorrowed = () => run.positions.reduce((s, p) => s + posBorrowed(p), 0) + run.overdraft;
 const netEquity     = () => run.cash + run.positions.reduce((s, p) => s + posEquity(p), 0) - run.overdraft;
 /* 이번 주 목표. 목표 상향 조정(보스, 정산 카운터)이면 주 시작 순자산 × 배수와 비교해 큰 값 — 불어난 순자산을 직접 겨냥 */
-const currentTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.weekStart.equity * (bossMod('targetIfHeld', false) && !bossTargetHeld() ? 0 : bossMod('targetEquityMult', 0)));
+/* 목표 성장률 (순수): round주차를 순자산 eq로 시작하면 그 주 성장 목표 (꺼짐이면 0).
+   K ≤ 1이면 성장 목표 없음 = 고정 곡선 그대로 (eq × 1.0을 목표로 두면 '그 주 손해 금지'가 되어 기존과 달라진다) */
+const growthTargetFor = (round, eq) => { const k = TARGET_GROWTH_K[round - 1] || 0; return run && run.targetGrowth && k > 1 ? eq * k : 0; };
+const fixedTarget = round => ROUND_TARGETS[round - 1] || 0;
+/* 이번 주 성장 목표가 고정 목표보다 큰가 (= 성장 목표가 걸림) */
+const growthBinding = () => !!run && run.week.growthTarget > fixedTarget(run.round);
+/* 다음 주 목표 미리보기 (결산·보상·암시장 — 지금 순자산으로 다음 주를 시작한다고 보고). 보스 목표 상향은 그 주에 따로 */
+const nextTarget = () => Math.max(fixedTarget(run.round + 1), growthTargetFor(run.round + 1, netEquity()));
+const currentTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.week.growthTarget || 0, run.weekStart.equity * (bossMod('targetIfHeld', false) && !bossTargetHeld() ? 0 : bossMod('targetEquityMult', 0)));
 /* 이번 주 보스의 표적 유물을 가졌나 (빌드 카운터 조정안 targetIfHeld) */
 const bossTargetHeld = () => { const b = run.boss ? BOSS_BY_ID[run.boss] : null; return !!b && !!b.targets && b.targets.some(id => hasRelic(id)); };
 const longExposure  = () => run.positions
@@ -2281,7 +2294,7 @@ function newRun(){
     pending: { lev: 1, dir: 1, principalMult: 1 },
     // 오늘만 유효한 효과 (startDay에서 초기화)
     forcedState: '', pumps: {}, noSellToday: false, allProtectedToday: false, interestFree: false,
-    week: { antArmy: false, topSpotter: false, valueGod: false, sanctioned: false, futures: 1, cultAdds: 0 },   // 이번 주 효과 (startNextRound에서 초기화)
+    week: { antArmy: false, topSpotter: false, valueGod: false, sanctioned: false, futures: 1, cultAdds: 0, growthTarget: 0 },   // 이번 주 효과 (startNextRound에서 초기화)
     futuresNext: 1, timeLoopToday: 0, liqToday: 0, liquidated: [],   // 선물 만기일 다음 주 배수 · 타임 루프 · 오늘 반대매매 수 · 반대매매 기록(재상장)
     buyAmount: 0,                            // 종목 카드 입력 금액 (playCard 안에서만, 평소 0)
     lossGuardToday: false, shortFeeFreeToday: false, sellDiscountUsed: false, dayRoll: 0, circuitToday: false, circuitTripped: false, marketOpenEquity: 0,
@@ -2311,6 +2324,7 @@ function startNewRun(opts){
   initDayCharts();
   run = newRun();
   run.unlockBase = Math.max(1, (opts && opts.unlockWeek) || 1);
+  run.targetGrowth = TARGET_GROWTH_ON || !!(opts && opts.targetGrowth);   // 목표 성장률 (실험)
   if(ONBOARDING_ON){   // 시작 덱의 잠긴 카드는 빼 두고 대체 카드로 (해금되는 주에 덱으로)
     run.masterDeck = run.masterDeck.map(id => { if(cardOpen(id)) return id; run.heldCards.push(id); return ONBOARDING_STARTER_SUBS[id] || ''; }).filter(Boolean);
   }
@@ -3256,12 +3270,13 @@ function leaveShop(){
 
 function startNextRound(){
   run.round++;
-  run.week = { antArmy: false, topSpotter: false, valueGod: false, sanctioned: false, futures: run.futuresNext, cultAdds: 0 };
+  run.week = { antArmy: false, topSpotter: false, valueGod: false, sanctioned: false, futures: run.futuresNext, cultAdds: 0, growthTarget: 0 };
   run.futuresNext = 1;
   decayFss(FSS_WEEKLY_DECAY);
   run.day = 1;
   run.rewardChoices = [];
   markWeekStart();
+  run.week.growthTarget = growthTargetFor(run.round, run.weekStart.equity);   // 목표 성장률: 주 시작 순자산으로 이번 주 목표 확정
   unlockSystemsForRound();   // (온보딩) 이번 주에 열리는 시스템 → 빼 둔 시작 카드를 덱으로
   buildWeekPiles();
   emit('roundStart', {round: run.round, target: currentTarget()});
