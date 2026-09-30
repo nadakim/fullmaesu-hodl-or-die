@@ -39,14 +39,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await fresh();
   const ct = await p.evaluate(() => { gainRelic('contrarian', 't'); openPosition('semi', 1000, 1, 1, true); const s2 = openPosition('semi', 1000, 1, -1, true);
     nextRegimes(); const st = settleSteps(s2, 100).steps.find(x => x.source === 'contrarian'); return { regime: assets.semi.regime, v: st && st.value }; });
-  ok('🐜 인간 역지표: 롱 종목 추세 = 매도세 · 같은 종목 숏 ×3', ct.regime === 'DOWN' && ct.v === 3, ct);
+  ok('🐜 인간 역지표: 롱 종목 추세 = 매도세 · 같은 종목 숏 ×5', ct.regime === 'DOWN' && ct.v === 5, ct);
   // 5) 🏦 영끌 대출: 현금 0에서도 매수 · 빚 → 합산 배수 · 주말 이자
   await fresh();
-  const ln = await p.evaluate(() => { gainRelic('yoloLoan', 't'); run.cash = 500; run.hand = ['stk_semi'].map(newCard);
+  const ln = await p.evaluate(() => { gainRelic('yoloLoan', 't'); run.cash = 500; openPosition('gukbap', 5000, 1, 1, false); /* 순자산 여유 (장중 급락으로 파산하지 않게) */ run.hand = ['stk_semi'].map(newCard);
     const r = checkPlay(0, undefined, { amount: 1000 }); playCard(0, undefined, { amount: 1000 });
-    const q = run.positions[0], st = q && settleSteps(q, 100).steps.find(x => x.source === 'yoloLoan');
-    run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(0); tick(); }
-    return { r, cash: Math.round(run.cash), max: stockMaxAmount(), mult: st && +st.value.toFixed(3), interest: eventLog.some(e => e.type === 'loanInterest') }; });
+    const q = run.positions.find(x => x.assetId === 'semi'), st = q && settleSteps(q, 100).steps.find(x => x.source === 'yoloLoan'), cashAfter = Math.round(run.cash);
+    run.cash = -3000; run.day = DAYS_PER_ROUND; /* 주말 이자 확인: 빚을 확실히 남긴다 (순자산은 국밥제약 5000으로 플러스) */ startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(0); tick(); }
+    return { r, cash: cashAfter, max: stockMaxAmount(), mult: st && +st.value.toFixed(3), interest: eventLog.some(e => e.type === 'loanInterest') }; });
   ok('🏦 영끌 대출: 현금보다 큰 매수 → 마이너스 현금 · 빚만큼 합산 배수 · 주말 이자', ln.r === null && ln.mult > 0 && ln.interest, ln);
   await p.evaluate(() => { Fx.skipQueue(); hideOverlay(); });
   // 6) 🧲 몰아주기: 왼쪽 칸 2번 더 · 오른쪽 칸 꺼짐
@@ -58,7 +58,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await fresh();
   const lt = await p.evaluate(() => { ['antFlag', 'lastTrain'].forEach(id => gainRelic(id, 't')); openPosition('coin', 1000, 1, 1, true); const q = openPosition('semi', 1000, 1, 1, true);
     const a = settleSteps(q, 100).mult; moveRelic(1, 0); const bb = settleSteps(q, 100).mult; return { a, want: Math.pow(2.25, 1.5), b: bb }; });
-  ok('🚂 막차 탑승: 맨 오른쪽 ×2.25 → ×3.375 · 맨 오른쪽 아니면 ×0.5', Math.abs(lt.a - lt.want) < 1e-9 && Math.abs(lt.b - 2.25 * 0.5) < 1e-9, lt);
+  ok('🚂 막차 탑승: 맨 오른쪽 ×2.25 → ×3.375 · 맨 오른쪽 아니면 효과 없음(×2.25)', Math.abs(lt.a - lt.want) < 1e-9 && Math.abs(lt.b - 2.25) < 1e-9, lt);
   // 8) 🕳️ 무소유 투자법: 빈 칸당 ×1.5 · 결산 유물 보상 대신 비자금
   await fresh();
   const cg = await p.evaluate(() => { gainRelic('cashGang', 't'); const q = openPosition('semi', 1000, 1, 1, true); const m = settleSteps(q, 100).mult;
@@ -93,10 +93,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   ok('정산 무대: 규칙 파괴 유물 이름이 계산식 줄 아래 (배수 = gold)', !sr.hidden && sr.text.includes('막차 탑승') && sr.gold, sr);
   await p.screenshot({ path: `${S}/rulebreaker-stage-1920.png` });
   await p.evaluate(() => { stageSkip(); stageSkip(); stage.readyAt = 0; stageNext(); });
+  // ⚡ 단타 중독: 결산 보상·암시장 유물 풀에서 제외 (튜너 장착은 된다)
+  const pool = await p.evaluate(() => { run.relics = []; let seen = false; for(let k = 0; k < 400; k++){ if(rollRelics(3).indexOf('scalper') >= 0) seen = true; } return { seen, ex: RULE_BREAKER_POOL_EXCLUDE }; });
+  ok('⚡ 단타 중독: 유물 풀 제외 (400번 뽑아도 안 나옴)', !pool.seen && pool.ex.indexOf('scalper') >= 0, pool);
   // 튜너: 유물 장착
   await fresh();
-  await p.selectOption('#tunerRelic', 'lastTrain'); await p.click('[data-tn-act="relic"]'); await sleep(200);
-  ok('튜너(?tuner=1): 유물 장착 (규칙 파괴형이 목록 맨 위)', await p.evaluate(() => hasRelic('lastTrain') && document.querySelector('#tunerRelic option').textContent.startsWith('⚠')));
+  await p.selectOption('#tunerRelic', 'scalper'); await p.click('[data-tn-act="relic"]'); await sleep(200);
+  ok('튜너(?tuner=1): 유물 장착 — 풀에서 뺀 단타 중독도 장착된다 (규칙 파괴형이 목록 맨 위)', await p.evaluate(() => hasRelic('scalper') && document.querySelector('#tunerRelic option').textContent.startsWith('⚠')));
   // 플래그 끔
   const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
   await ctx.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace('const RULE_BREAKER_RELICS_ON = true', 'const RULE_BREAKER_RELICS_ON = false') }); });

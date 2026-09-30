@@ -409,17 +409,18 @@ const OATH_MAX_DAYS         = 12;    //    최대 12일 (×1.5¹² ≈ ×130)
 const SCALP_MULT_STEP       = 0.5;   // ⚡ 단타 중독: 오늘 k번째 수익 매도 정산에 합산 배수 +0.5k
 const WATER_X_PER_STACK     = 2;     // 🌊 물타기 장인: 손실 중 추가 매수마다 물 +1 → 수익 마감 정산 ×2^물
 const WATER_MAX             = 6;     //    물 최대 6 (×64)
-const CONTRARIAN_SHORT_MULT = 3;     // 🐜 인간 역지표: 롱으로 가진 종목에 건 숏 포지션 정산 ×3
+const CONTRARIAN_SHORT_MULT = 5;     // 🐜 인간 역지표: 롱으로 가진 종목에 건 숏 포지션 정산 ×5 (3 → 5, 사용자 결정 2026-09-30 — 측정 보정 A안)
 const YOLO_LOAN_LIMIT       = 0.5;   // 🏦 영끌 대출: 현금 마이너스 한도 = 이번 주 목표 × 0.5
 const YOLO_LOAN_WEEKLY_RATE = 0.2;   //    주말 결산 때 마이너스 현금의 20% 이자
 const YOLO_LOAN_MULT_UNIT   = 0.1;   //    빚이 이번 주 목표의 10%만큼 늘 때마다 정산 합산 배수 +1
 const FOCUS_EXTRA           = 2;     // 🧲 몰아주기: 바로 왼쪽 칸 유물 효과를 이 칸에서 2번 더 (오른쪽 칸은 꺼짐)
 const LAST_TRAIN_POW        = 1.5;   // 🚂 막차 탑승: 맨 오른쪽 칸이면 누적 배수 m → m^1.5 (사용자 결정 — 제곱 대신)
-const LAST_TRAIN_PENALTY    = 0.5;   //    맨 오른쪽이 아니면 정산 ×0.5
+const LAST_TRAIN_PENALTY    = 1;     //    맨 오른쪽이 아니면 정산 ×1 = 효과 없음 (0.5 → 1, 사용자 결정 2026-09-30 — 측정 보정 A안)
 const CASHGANG_PER_EMPTY    = 1.5;   // 🕳️ 무소유 투자법: 빈 유물 칸 1개당 정산 ×1.5 (사용자 결정 — 1.8 대신)
 const CASHGANG_SLUSH        = 300;   //    결산 유물 보상 대신 비자금 +300
 const CULT_BLOCKED_CARDS    = ['ipo', 'chaseLimit', 'hedge', 'fullBuy', 'relist'];   // 🙏 풀매수 교주: 다른 종목을 살 수 있는 카드 (포지션이 있으면 막힘)
 const TIPBRO_JACKPOT_SCALE  = 0.5;   // 🎰 찌라시 확신범: 대박 효과는 절반 (쪽박은 뒤집힘)
+const RULE_BREAKER_POOL_EXCLUDE = ['scalper'];   // 결산 보상·암시장 유물 풀에서 뺀다 (코드·튜너 장착은 그대로). ⚡ 단타 중독: 장중 매도 봇으로도 −28~−34%p = 정산 구조 문제 → 장중 거래 설계와 함께 재설계 (사용자 결정 2026-09-30)
 const RULE_BREAKER_IDS = ['oath', 'scalper', 'water', 'contrarian', 'yoloLoan', 'focus', 'lastTrain', 'cashGang', 'cult', 'tipBro'];
 
 const RELICS = [
@@ -560,7 +561,7 @@ if(RULE_BREAKER_RELICS_ON) RELICS.push(   // ── 규칙 파괴형 (rule: true
     desc:`정산에서 바로 왼쪽 칸 유물의 효과가 이 칸에서 ${FOCUS_EXTRA}번 더 발동한다. 대신 바로 오른쪽 칸 유물은 꺼진다.`,
     flavor:'한 놈만 팬다. 옆 놈은 굶는다.' },
   { id:'lastTrain', icon:'🚂', name:'막차 탑승', rarity:'legendary', rule:true,
-    desc:`맨 오른쪽 유물 칸에 있으면 그때까지 쌓인 정산 배수 m → m^${LAST_TRAIN_POW}. 맨 오른쪽이 아니면 수익 정산 ×${LAST_TRAIN_PENALTY}.`,
+    desc:`맨 오른쪽 유물 칸에 있으면 그때까지 쌓인 정산 배수 m → m^${LAST_TRAIN_POW}. ${LAST_TRAIN_PENALTY < 1 ? `맨 오른쪽이 아니면 수익 정산 ×${LAST_TRAIN_PENALTY}.` : '맨 오른쪽이 아니면 효과 없음.'}`,
     flavor:'"여기가 꼭대기일 리 없어." 기관사도 모른다.' },
   { id:'cashGang', icon:'🕳️', name:'무소유 투자법', rarity:'uncommon', rule:true,
     desc:`빈 유물 칸 1개당 수익 정산 ×${CASHGANG_PER_EMPTY}. 대신 결산 유물 보상을 받을 수 없다 (비자금 +${CASHGANG_SLUSH}로 대신). 암시장 유물은 살 수 있다.`,
@@ -1102,7 +1103,7 @@ function updateCombo(){
 function rollRelics(n, exclude = [], weights = RELIC_RARITY_WEIGHTS){   // 등급을 먼저 뽑고(weights), 그 등급 안에서 균등. 없는 유물만 (exclude: 더 뺄 유물 — 새로고침 때 지금 진열)
   const picks = [];
   while(picks.length < n){
-    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0 && relicOpen(r.id));
+    const cands = RELICS.filter(r => !hasRelic(r.id) && picks.indexOf(r.id) < 0 && exclude.indexOf(r.id) < 0 && relicOpen(r.id) && RULE_BREAKER_POOL_EXCLUDE.indexOf(r.id) < 0);
     const rarity = rollRarity(weights, cands);
     if(!rarity) break;
     picks.push(pickTagged(cands.filter(r => r.rarity === rarity)).id);
@@ -1225,7 +1226,7 @@ function settleSteps(p, base, crit, opts){
       if(id === 'lastTrain'){   // 🚂 막차 탑승: 맨 오른쪽 칸이면 m → m^POW, 아니면 ×PENALTY (수익만)
         if(base <= 0) return;
         if(i === run.relics.length - 1){ if(m > 1) push({ kind: 'xmult', value: Math.pow(m, LAST_TRAIN_POW - 1) }, 'lastTrain', `${relicStepLabel('lastTrain')} ×${fmtMultEngine(m)}^${LAST_TRAIN_POW}`); }
-        else push({ kind: 'xmult', value: LAST_TRAIN_PENALTY }, 'lastTrain', `${relicStepLabel('lastTrain')} 맨 오른쪽 아님`);
+        else if(LAST_TRAIN_PENALTY !== 1) push({ kind: 'xmult', value: LAST_TRAIN_PENALTY }, 'lastTrain', `${relicStepLabel('lastTrain')} 맨 오른쪽 아님`);
         return;
       }
       applyRelic(id, i, id);
