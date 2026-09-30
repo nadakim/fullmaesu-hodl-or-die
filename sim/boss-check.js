@@ -16,9 +16,9 @@ const mdOut = mdIdx >= 0 ? args.splice(mdIdx, 2)[1] : '';
 const [withFile, withoutFile] = args;
 if(!withFile) throw new Error('사용법: node sim/boss-check.js <보스 켬.json> [<보스 끔.json>] [--md out.md]');
 const loadEngine = require('./load-engine.js');
-const E = loadEngine();
-const BOSS = {}; E.BOSSES.forEach(b => { BOSS[b.id] = b; });
 const A = JSON.parse(fs.readFileSync(withFile, 'utf8'));
+const E = loadEngine(undefined, (A.meta && A.meta.overrides) || {});   // 켬 결과의 --set을 그대로 (예: BOSS_COUNTERS_ON=true면 빌드 카운터 목록도)
+const BOSS = {}; E.BOSSES.forEach(b => { BOSS[b.id] = b; });
 const B = withoutFile ? JSON.parse(fs.readFileSync(withoutFile, 'utf8')) : null;
 const strategies = A.meta.strategies;
 const MIN_N = 10;   // 이보다 적게 들어간 칸은 '-' (표본 부족)

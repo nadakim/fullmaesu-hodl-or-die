@@ -1220,7 +1220,7 @@ const SETTLE_EFFECTS = {
   phoenix:   { kind: 'xmult', onLoss: false, apply: p => relicStacks('phoenix') > 0 ? { kind: 'xmult', value: Math.pow(PHOENIX_PER_STACK, relicStacks('phoenix')), label: `${relicStepLabel('phoenix')} ${relicStacks('phoenix')}스택` } : null },
   dopamine:  { kind: 'mult',  onLoss: false, apply: p => { const c = run.combo.up; return c <= 0 ? null : c >= DOPAMINE_X_COMBO ? { kind: 'xmult', value: c, label: `${relicStepLabel('dopamine')} 콤보 ${c}` } : { kind: 'mult', value: c * DOPAMINE_PER_COMBO, label: `${relicStepLabel('dopamine')} 콤보 ${c}` }; } },
   fssVip:    { kind: 'xmult', onLoss: false, apply: p => run.week.sanctioned ? { kind: 'xmult', value: FSS_VIP_MULT } : null },
-  brink:     { kind: 'xmult', onLoss: false, apply: p => netEquity() < currentTarget() * BRINK_RATIO ? { kind: 'xmult', value: BRINK_MULT } : null },
+  brink:     { kind: 'xmult', onLoss: false, apply: p => netEquity() < baseTarget() * BRINK_RATIO ? { kind: 'xmult', value: BRINK_MULT } : null },
   copycat:   { kind: 'copy',  onLoss: false, apply: () => null },   // 효과는 settleSteps가 복사 대상으로 대신 (copySource)
   rerun:     { kind: 'copy',  onLoss: false, apply: () => null },
   infinity:  { kind: 'xmult', onLoss: false, apply: () => null },   // 정산 맨 마지막에 settleSteps가 따로
@@ -1228,14 +1228,14 @@ const SETTLE_EFFECTS = {
   oath:       { kind: 'xmult', onLoss: false, apply: p => { const n = Math.min(OATH_MAX_DAYS, p.daysHeld); return n > 0 ? { kind: 'xmult', value: Math.pow(OATH_X_PER_DAY, n), label: `${relicStepLabel('oath')} ${n}일` } : null; } },
   water:      { kind: 'xmult', onLoss: false, apply: p => p.water > 0 ? { kind: 'xmult', value: Math.pow(WATER_X_PER_STACK, p.water), label: `${relicStepLabel('water')} 물 ${p.water}` } : null },
   contrarian: { kind: 'xmult', onLoss: false, apply: p => p.dir < 0 && run.positions.some(q => q.dir > 0 && q.assetId === p.assetId) ? { kind: 'xmult', value: CONTRARIAN_SHORT_MULT } : null },
-  yoloLoan:   { kind: 'mult',  onLoss: false, apply: () => { const v = loanDebt() / (currentTarget() * YOLO_LOAN_MULT_UNIT); return v > 0 ? { kind: 'mult', value: v, label: `${relicStepLabel('yoloLoan')} 빚 +${v.toFixed(2)}` } : null; } },
+  yoloLoan:   { kind: 'mult',  onLoss: false, apply: () => { const v = loanDebt() / (baseTarget() * YOLO_LOAN_MULT_UNIT); return v > 0 ? { kind: 'mult', value: v, label: `${relicStepLabel('yoloLoan')} 빚 +${v.toFixed(2)}` } : null; } },
   focus:      { kind: 'copy',  onLoss: false, apply: () => null },
   lastTrain:  { kind: 'last',  onLoss: false, apply: () => null },
   cashGang:   { kind: 'xmult', onLoss: false, apply: () => { const n = RELIC_SLOTS - run.relics.length; return n > 0 ? { kind: 'xmult', value: Math.pow(CASHGANG_PER_EMPTY, n), label: `${relicStepLabel('cashGang')} 빈 칸 ${n}` } : null; } },
   cult:       { kind: 'xmult', onLoss: false, apply: () => run.week.cultAdds > 0 ? { kind: 'xmult', value: 1 + run.week.cultAdds, label: `${relicStepLabel('cult')} 추가 매수 ${run.week.cultAdds}` } : null }
 };
 /* 🏦 영끌 대출: 매수에 쓸 수 있는 돈 = 현금 + 마이너스 한도 (없으면 현금 그대로) */
-const loanRoom = () => hasRelic('yoloLoan') ? currentTarget() * YOLO_LOAN_LIMIT : 0;
+const loanRoom = () => hasRelic('yoloLoan') ? baseTarget() * YOLO_LOAN_LIMIT : 0;
 const buyCash  = () => run.cash + loanRoom();
 const loanDebt = () => hasRelic('yoloLoan') ? Math.max(0, -run.cash) : 0;
 /* S4 정산 보조 (순수) */
@@ -1460,7 +1460,9 @@ const fixedTarget = round => ROUND_TARGETS[round - 1] || 0;
 const growthBinding = () => !!run && run.week.growthTarget > fixedTarget(run.round);
 /* 다음 주 목표 미리보기 (결산·보상·암시장 — 지금 순자산으로 다음 주를 시작한다고 보고). 보스 목표 상향은 그 주에 따로 */
 const nextTarget = () => Math.max(fixedTarget(run.round + 1), growthTargetFor(run.round + 1, netEquity()));
-const currentTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.week.growthTarget || 0, run.weekStart.equity * (bossMod('targetIfHeld', false) && !bossTargetHeld() ? 0 : bossMod('targetEquityMult', 0)));
+/* 성장 목표를 뺀 목표 (고정 곡선 + 보스 목표 상향) — 목표에 비례하는 다른 규칙(찌라시 금액·영끌 대출 한도·벼랑 끝 전술)은 이것을 읽는다. 성장 목표로 이들이 순자산에 비례해 되먹임하지 않게 */
+const currentTarget = () => Math.max(baseTarget(), run.week.growthTarget || 0);
+const baseTarget = () => Math.max(ROUND_TARGETS[run.round - 1], run.weekStart.equity * (bossMod('targetIfHeld', false) && !bossTargetHeld() ? 0 : bossMod('targetEquityMult', 0)));
 /* 이번 주 보스의 표적 유물을 가졌나 (빌드 카운터 조정안 targetIfHeld) */
 const bossTargetHeld = () => { const b = run.boss ? BOSS_BY_ID[run.boss] : null; return !!b && !!b.targets && b.targets.some(id => hasRelic(id)); };
 const longExposure  = () => run.positions
@@ -2661,7 +2663,7 @@ function updateMarketEvent(){
 const TIP_BY_ID = {};
 TIP_EVENTS.forEach(e => { TIP_BY_ID[e.id] = e; });
 function tipChance(){ if(!sysOpen('tips')) return 0; return TIP_EVENT_CHANCE * bossMod('tipChanceMult', 1); }   // 찌라시 폭탄 (보스)
-const tipScale   = () => currentTarget() / ROUND_TARGETS[0];   // 금액을 주차 목표에 비례해 키운다
+const tipScale   = () => baseTarget() / ROUND_TARGETS[0];   // 금액을 주차 목표에 비례해 키운다
 const tipStockId = (tip, stock) => stock === '$pick' ? tip.stockId : stock;
 
 function maybeTriggerTip(){
