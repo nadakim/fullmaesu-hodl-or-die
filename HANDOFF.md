@@ -5,7 +5,8 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
-- **목표 성장률 실험** (`claude/target-growth`, 🛑 PR 후 멈춤 — 기본 꺼짐, 자동 머지 안 함): `TARGET_GROWTH_ON`·`TARGET_GROWTH_K`, 목표 = max(고정, 주 시작 순자산 × K) 주 시작 확정, K ≤ 1 = 없음, 목표 비례 규칙은 `baseTarget`(되먹임 방지), 데모 `?growth=1`. 결과: S1~S4 모두 제안 기준 미달(S1도 곱하기 빌드 7~27%, levTower 꼬리 3~9%) — 분산 큰 빌드를 벌한다. 빌드 카운터 재측정: 기록 리셋 −21%p, 압류 −15%p(비표적도 −10), 한도·레버리지 ±5. 꼼수: 일부러 반대매매 → 재상장. 🛑 채택 여부·조정안(K 1.1~1.15 / 여러 주 기준 / 보스 주에만) 사용자 결정 대기 (`docs/design/TARGET_GROWTH.md`). 빌드 카운터 PR #36 머지(기본 꺼짐).
+- **목표 성장률 실험 — 미채택, 코드 보존** (`claude/target-growth`, PR #37, 🛑 기본 꺼짐으로 머지 대기): 사용자 결정 = 채택 안 함(후보 4개 기준 미달·꼬리 붕괴·94~100% 주 구속·운 의존도 불변·재상장 꼼수). `TARGET_GROWTH_ON` 기본 false, 기본 상태 = main 결과 동일, `?growth=1`·설정 토글·`sim/target-growth-check.js`·`targetgrowth.cjs` 보존. 재개 조건: 사람 테스트에서 후반이 쉽다고 확인될 때 (TARGET_GROWTH.md '결정').
+- **다음 작업: 시험 주간 보장 실험** (보스 주에만 성장 요구, 빌드 카운터와 묶지 않음) — **단, 사람 테스트(PROTOCOL.md) 결과를 먼저 확인한 뒤**.
 - **빌드 카운터 보스 4종 — 보류** (`claude/boss-counters`, 🛑 PR 후 멈춤 — 기본 꺼짐으로 머지 대기): 사용자 결정 = 조정안 1~3 모두 불채택, `BOSS_COUNTERS_ON` 기본 false(손잡이 `BOSS_COUNTER_TARGET_MULT`·`_HELD`도 꺼짐), 기본 상태 = main 결과 동일. 코드·도구(`sim/boss-split.js`·`sim/boss-counter-check.js`·runner `--boss-adapt`)·테스트(`bosscounter.cjs`는 플래그를 켜서 회귀) 보존. 재개 조건: 목표 구조 결정 후 표적/비표적 재측정, 남은 후보 = 표적 판정을 지난 주 정산 비중으로 (BOSS_WEEKS.md '결정').
 - **다음 작업: 목표 성장률 실험** — `ROUND_TARGETS` 구조(주 성장 배수 요구)를 `--targets`·`metrics.js`(주간 여유·주 성장 배수 표)로 실험. 결정되면 빌드 카운터를 `--set BOSS_COUNTERS_ON=true`로 재측정.
 - **플레이테스트 킷** (`claude/playtest-kit`, UI 전용 — 자동 머지): `?playtest=1`(설문 포함) 또는 설정 '플레이테스트 모드'(복사만) → 게임오버·졸업 화면 '📋 판 기록 복사', `hodl.playtestLog`, ≡ '전체 기록 복사'. 절차·지표·CSV `docs/playtest/PROTOCOL.md`. 테스트 `tools/tests/playtest.cjs`. 다음: 테스터 5~10명 결과를 받아 PROTOCOL.md 집계표로 정리 → 봇 지표(BALANCE_METRICS.md)와 비교.
