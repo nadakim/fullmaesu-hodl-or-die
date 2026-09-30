@@ -62,6 +62,17 @@ async function toShopAndLeave(p, shot){
     ok(W + ' 보스 목표 상향 조정(×2)과 max로 합침', boss.t === boss.want && boss.t > boss.g, boss);
     await p.close();
   }
+  // 설정 '목표 성장률 (실험)' 켜기 = ?growth=1과 같다 (아티팩트처럼 주소를 못 바꾸는 곳용)
+  { const p = await b.newPage({ viewport: { width: 1366, height: 768 } }); p.on('pageerror', e => errs.push(e.message));
+    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.evaluate(() => { switchTab('settings'); buildSettings(); });
+    await p.locator('[data-set="growth"][data-val="true"]').click();
+    const saved = await p.evaluate(() => { try { return JSON.parse(localStorage.getItem('hodl.settings')).growth; } catch(e) { return null; } });
+    await p.evaluate(() => { switchTab('title'); }); await p.click('#startBtn'); await sleep(460);
+    const on = await p.evaluate(() => run.targetGrowth);
+    ok("설정 '목표 성장률 (실험)' 켬 → 새 판에서 켜짐 (저장됨)", on === true && saved === true, { on, saved });
+    await p.evaluate(() => { settings.growth = false; saveSettings(); });
+    await p.close(); }
   ok('페이지 에러 없음', errs.length === 0, errs.slice(0, 3));
   console.log(`FAIL ${fail} / ${pass + fail}`); console.log('errors', JSON.stringify(errs.slice(0, 3)));
   await b.close();

@@ -5572,6 +5572,7 @@ const SETTING_OPTIONS = {
   chainFx: [[true, '켜기'], [false, '끄기']],
   unlockTips: [[true, '켜기'], [false, '끄기']],
   playtest: [[false, '끄기'], [true, '켜기']],
+  growth: [[false, '끄기'], [true, '켜기']],
   sfxVol: [[0, '0'], [25, '25'], [50, '50'], [75, '75'], [100, '100']],
   tickSound: [[true, '켜기'], [false, '끄기']],
   hitStop: [[true, '켜기'], [false, '끄기']],
@@ -5583,7 +5584,7 @@ const SETTING_OPTIONS = {
 };
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', sound: true, chainFx: true, unlockTips: true, playtest: false,
+const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', sound: true, chainFx: true, unlockTips: true, playtest: false, growth: false,
                            sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal',
                            uiSize: 'auto', fontSize: 'normal' };
 function loadSettings(){
@@ -5631,6 +5632,7 @@ function buildSettings(){
     ${settingRow('hitStop', '히트스톱', '반대매매·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
     ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·반대매매·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
     ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
+    ${settingRow('growth', '목표 성장률 (실험)', '다음 판부터: 3주차부터 목표 = 주 시작 순자산 × K (docs/design/TARGET_GROWTH.md). 밸런스 실험용 — 주소 ?growth=1과 같다.')}
     ${settingRow('playtest', '플레이테스트 모드', '테스터용. 판이 끝나면 📋 판 기록 복사 버튼이 뜨고 기록이 쌓인다 (≡ 메뉴 › 전체 기록 복사). 설문은 주소에 ?playtest=1을 붙였을 때만.')}
     ${settingRow('unlockTips', '해금 소개', '새 시스템(찌라시·공매도·레버리지…)이 처음 열리는 주에 짧은 소개 창을 띄웁니다. 끄면 알림 한 줄만.')}
     ${settingRow('chainFx', '결산 연출', '주간 결산을 통과하면 유물·보너스가 포지션 손익을 불린 순서를 칩으로 보여줍니다. 끄면 바로 결산 요약.')}
@@ -5842,7 +5844,7 @@ function startRun(){
   hideOverlay();
   resetNews();
   playtestBeforeRun();   // (플레이테스트 모드만) 시드·시작 시각
-  startNewRun({ unlockWeek: loadUnlockWeek(), targetGrowth: /[?&]growth=1(&|$)/.test(location.search) });   // ?growth=1 = 목표 성장률 실험 켜기
+  startNewRun({ unlockWeek: loadUnlockWeek(), targetGrowth: /[?&]growth=1(&|$)/.test(location.search) || !!settings.growth });   // ?growth=1 또는 설정 = 목표 성장률 실험 켜기
   playtest.run = run;   // (온보딩) 지금까지 도달한 최고 주차 — 그 주차까지의 시스템은 처음부터 열림
   renderAll();
   toast(`WEEK 1 개장 — 목표 ${fmtMoney(currentTarget())} · DAY 1 장전`, 'good');
