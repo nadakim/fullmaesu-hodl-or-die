@@ -387,6 +387,148 @@ const ruleBreakerBuild = {
   arrange: E => arrangeRuleBreaker(E)
 };
 
+/* ── 규칙 파괴형 아키타입 봇 (측정 보정, RULE_BREAKER_RELICS.md '측정 보정'): 한 빌드에 맞는 규칙 파괴 유물만 집고(relicFilter로 나머지 9종·충돌 조합 제외),
+   원하는 게 없으면 기존 곱하기 유물. 칸 6개 안에서 의도한 순서로 둔다 (strat.arrange). 장중 매도가 필요한 빌드는 strat.market ── */
+const ruleIds = E => RULE_BREAKER_PICK.filter(id => E.RELIC_BY_ID[id]);   // 플래그 끔이면 빈 목록
+const avoidRules = keep => (E, id) => ruleIds(E).indexOf(id) < 0 || keep.indexOf(id) >= 0;   // keep 밖의 규칙 파괴 유물은 안 집는다
+const hasR = (E, id) => !!E.RELIC_BY_ID[id] && E.hasRelic(id);
+const bigPos = E => ids => ids.slice().sort((a, b) => E.exposure(posById(E, b)) - E.exposure(posById(E, a)))[0];
+/* 칸 순서를 가능한 순열 중 '보유 포지션이 +1% 오를 때 정산 합'이 가장 큰 것으로 (몰아주기·막차처럼 위치가 규칙인 유물용, 순수 계산만) */
+function bestArrange(E){
+  const rel = E.run.relics.slice(), ps = E.run.positions;
+  if(rel.length < 2 || !ps.length || !hasFn(E, 'moveRelic')){ arrangeRuleBreaker(E); return; }
+  const score = order => { const keep = E.run.relics; E.run.relics = order;
+    const v = ps.reduce((sum, p) => sum + E.settleSteps(p, Math.max(1, E.exposure(p) * 0.01)).total, 0); E.run.relics = keep; return v; };
+  let best = rel, bestV = score(rel);
+  const perm = (arr, k) => { if(k === arr.length){ const v = score(arr.slice()); if(v > bestV){ bestV = v; best = arr.slice(); } return; }
+    for(let i = k; i < arr.length; i++){ [arr[k], arr[i]] = [arr[i], arr[k]]; perm(arr, k + 1); [arr[k], arr[i]] = [arr[i], arr[k]]; } };
+  perm(rel.slice(), 0);
+  best.forEach((id, i) => { const from = E.run.relics.indexOf(id); if(from !== i) E.moveRelic(from, i); });
+}
+const MULT_FALLBACK = ['levTower', 'antFlag', 'limitUp', 'infinity', 'sectorSet', 'ccompound', 'phoenix', 'moonSavings', 'seal', 'rerun'];
+/* oathHold: 존버 서약서 + 물타기 장인 + 성장형. 1x 롱을 사서 절대 팔지 않고, 손실 포지션엔 물타기. 찌라시 B */
+const OATH_CORE = ['oath', 'water'];
+const oathHold = {
+  premarket(E){
+    const losing = () => E.run.positions.filter(p => E.posPnl(p) < 0).map(p => p.assetId);
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      if(playOne(E, c => (c.base || c.id) === 'avgDown', () => 0, bigPos(E))) continue;
+      if(hasR(E, 'water') && playOne(E, c => { const st = stockOf(E, c); return !!st && st.beta > 0 && losing().indexOf(st.id) >= 0; })) continue;   // 물타기
+      if(playOne(E, c => isLongStock(E, c), c => -Math.abs(betaOf(E, c) - 1.5))) continue;   // 중간 베타
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || ['split', 'hodlWins', 'dividend', 'compound', 'valueGod', 'diamond'].indexOf(c.base || c.id) >= 0, () => 0, bigPos(E))) continue;
+      if(playOne(E, c => ['coffee', 'indicators'].indexOf(c.base || c.id) >= 0)) continue;
+      break;
+    }
+  },
+  tip: () => 1,
+  cardPick: ['avgDown', 'hodlWins', 'compound', 'valueGod', 'dividend', 'split', 'timeLoop', 'futures', 'stk_semi', 'stk_ev', 'stk_bio', 'stk_coin'],
+  relicPick: OATH_CORE.concat(['compoundMonster', 'moonSavings', 'diamondTree', 'ccompound', 'limitUp', 'seal', 'traumaSurvivor'], MULT_FALLBACK),
+  relicFilter: avoidRules(OATH_CORE),
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); },
+  arrange: E => arrangeRelics(E)
+};
+/* yoloLoanLev: 영끌 대출 + 레버리지 탑 + 레버리지 ETF. 빚으로 고베타 신용 롱 → 레버리지 ETF. 반대매매 관리: 장전에 가장 위험한 포지션에 존버·증거금 보충,
+   심지가 거의 탄 포지션(건강도 < 1.15)은 장중에 먼저 판다 (투매 손실 대신 시장가). 찌라시 A */
+const LOAN_CORE = ['yoloLoan'];
+const LOAN_SELL_HEALTH = 1.15;
+const riskiest = E => ids => ids.slice().sort((a, b) => E.marginHealth(posById(E, a)) - E.marginHealth(posById(E, b)))[0];
+const yoloLoanLev = {
+  premarket(E){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      if(E.run.positions.some(p => E.marginWarn(p)) && playOne(E, c => ['hodl', 'marginTopup'].indexOf(c.base || c.id) >= 0, () => 0, riskiest(E))) continue;
+      const buyable = () => E.run.hand.some((_, i) => isLongStock(E, card(E, i)) && canAfford(E, card(E, i)));
+      if(E.run.pending.lev === 1 && buyable()) playOne(E, c => LEVER.indexOf(c.base || c.id) >= 0, c => -LEVER.indexOf(c.base || c.id));
+      if(playOne(E, c => isLongStock(E, c), c => betaOf(E, c))) continue;
+      if(playOne(E, c => (c.base || c.id) === 'levEtf' || (c.base || c.id) === 'relist', () => 0, bigPos(E))) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0)) continue;
+      if(playOne(E, c => ['coffee', 'indicators'].indexOf(c.base || c.id) >= 0)) continue;
+      break;
+    }
+  },
+  market(E){ E.run.positions.filter(p => p.lev > 1 && E.marginHealth(p) < LOAN_SELL_HEALTH && E.canSell(p)).map(p => p.id).forEach(id => E.sellPosition(id)); },
+  tip: () => 0,
+  cardPick: ['levEtf', 'relist', 'credit', 'yolo', 'timeLoop', 'futures', 'marginTopup', 'hodl', 'stk_meme', 'stk_sc', 'stk_coin'],
+  relicPick: LOAN_CORE.concat(['levTower', 'phoenix', 'traumaSurvivor', 'hotline', 'coldwallet', 'capital', 'limitUp', 'infinity', 'rerun']),
+  relicFilter: avoidRules(LOAN_CORE),
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); },
+  arrange: E => arrangeRelics(E)
+};
+/* cultFocus: 풀매수 교주 + 몰아주기 + 막차 탑승. 한 종목(첫날 손패 최고 베타)에 신용으로 몰빵 → 같은 종목 추가 매수(행동력 0)·물타기·레버리지 ETF.
+   칸 순서는 순열 중 정산이 가장 큰 것 (몰아주기 왼쪽 = 가장 센 곱하기, 막차 = 맨 오른쪽). 찌라시 B */
+const CULT_CORE = ['cult', 'focus', 'lastTrain'];
+const cultFocus = {
+  premarket(E){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      const cs = hasFn(E, 'cultStock') ? E.cultStock() : '';
+      const mine = c => { const st = stockOf(E, c); return !!st && st.beta > 0 && (!cs || st.id === cs); };
+      const buyable = () => E.run.hand.some((_, i) => mine(card(E, i)) && canAfford(E, card(E, i)));
+      if(E.run.pending.lev === 1 && !E.run.positions.length && buyable()) playOne(E, c => (c.base || c.id) === 'credit');
+      if(playOne(E, mine, c => betaOf(E, c))) continue;
+      if(playOne(E, c => ['avgDown', 'levEtf'].indexOf(c.base || c.id) >= 0, () => 0, bigPos(E))) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0)) continue;
+      if(playOne(E, c => ['coffee', 'indicators', 'hodl', 'marginTopup'].indexOf(c.base || c.id) >= 0, () => 0, bigPos(E))) continue;
+      break;
+    }
+  },
+  tip: () => 1,
+  cardPick: ['credit', 'avgDown', 'levEtf', 'timeLoop', 'futures', 'antArmy', 'stk_sc', 'stk_coin', 'stk_meme', 'hodl'],
+  relicPick: CULT_CORE.concat(['levTower', 'limitUp', 'seal', 'moonSavings', 'ccompound', 'phoenix', 'infinity', 'dopamine']),
+  relicFilter: avoidRules(CULT_CORE),
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); },
+  arrange: E => bestArrange(E)
+};
+/* cashGangMin: 무소유 투자법 + 소수 정예(최대 CASHGANG_BOT_MAX칸). 빈 칸을 남긴다 — 암시장에서도 칸 제한까지만. 깃발식으로 여러 종목 1x. 찌라시 B */
+const CASHGANG_CORE = ['cashGang'];
+const CASHGANG_BOT_MAX = 3;   // 무소유 + 정예 2개 → 빈 칸 3 (×3.4)
+const cashGangMin = {
+  premarket(E){
+    const held = id => E.run.positions.some(p => p.assetId === id);
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      if(playOne(E, c => isLongStock(E, c) && !held(stockOf(E, c).id), c => -betaOf(E, c))) continue;
+      if(playOne(E, c => (c.base || c.id) === 'split', () => 0, bigPos(E))) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || ['antArmy', 'rotation', 'ipo', 'fullBuy'].indexOf(c.base || c.id) >= 0)) continue;
+      if(playOne(E, c => isLongStock(E, c), c => -betaOf(E, c))) continue;
+      break;
+    }
+  },
+  tip: () => 1,
+  cardPick: ['split', 'timeLoop', 'futures', 'ipo', 'fullBuy', 'antArmy', 'rotation', 'stk_semi', 'stk_gukbap', 'stk_coin'],
+  relicPick: CASHGANG_CORE.concat(['antFlag', 'levTower', 'infinity', 'limitUp', 'sectorSet']),
+  relicFilter(E, id){ return avoidRules(CASHGANG_CORE)(E, id) && (id === 'cashGang' || E.run.relics.length < CASHGANG_BOT_MAX - (E.hasRelic('cashGang') || !E.RELIC_BY_ID.cashGang ? 0 : 1)); },   // 무소유 자리는 남겨 둔다
+  shop(E){
+    const s = E.run.shop;
+    this.relicPick.forEach(id => { if(s.relics.indexOf(id) >= 0 && !E.hasRelic(id) && this.relicFilter(E, id)) buyRelicFor(E, id, this.relicPick); });
+    this.cardPick.forEach(id => { const i = s.singles.indexOf(id); if(i >= 0) E.buySingle(i); });
+  },
+  arrange: E => arrangeRelics(E)
+};
+/* scalperBot: 단타 중독 전용. 장전에 고베타 롱(신용) → 장중에 매도 정산: 산 뒤 +SCALP_BOT_TAKE 이상 오르면 바로, 마지막 틱엔 수익 포지션 전부 판다
+   (장 마감 보유 정산은 보너스가 없으니까). 러너의 장중 훅(strat.market)을 쓴다. 찌라시 B */
+const SCALPER_CORE = ['scalper'];
+const SCALP_BOT_TAKE = 0.02;
+const scalperBot = {
+  premarket(E){
+    for(let plays = 0; plays < SIM_MAX_PLAYS_PER_DAY; plays++){
+      const buyable = () => E.run.hand.some((_, i) => isLongStock(E, card(E, i)) && canAfford(E, card(E, i)));
+      if(E.run.pending.lev === 1 && buyable()) playOne(E, c => (c.base || c.id) === 'credit');
+      if(playOne(E, c => isLongStock(E, c), c => betaOf(E, c))) continue;
+      if(playOne(E, c => MULT_ALWAYS.indexOf(c.base || c.id) >= 0 || ['split', 'coffee', 'indicators'].indexOf(c.base || c.id) >= 0, () => 0, bigPos(E))) continue;
+      break;
+    }
+  },
+  market(E){
+    if(!hasR(E, 'scalper')) return;
+    const last = E.run.tickInDay >= E.TICKS_PER_DAY - 1;
+    E.run.positions.filter(p => E.canSell(p) && p.dir * (E.exposure(p) - p.refExp) > (last ? 0 : p.refExp * SCALP_BOT_TAKE)).map(p => p.id).forEach(id => E.sellPosition(id));
+  },
+  tip: () => 1,
+  cardPick: ['credit', 'split', 'timeLoop', 'futures', 'coffee', 'stk_coin', 'stk_sc', 'stk_meme', 'stk_bio'],
+  relicPick: SCALPER_CORE.concat(['antFlag', 'levTower', 'sectorSet', 'dopamine', 'moonSavings', 'infinity', 'rerun', 'daytrader']),
+  relicFilter: avoidRules(SCALPER_CORE),
+  shop(E){ shopByPriority(E, this.relicPick, this.cardPick); },
+  arrange: E => arrangeRelics(E)
+};
+
 /* ── (N3) sectorAllIn: 한 섹터(암호화폐)에 올인. 리포트로 섹터 레벨을 올리고, 신용으로 그 섹터 종목만 산다 → 정산 맨 앞의 섹터 칩·배수.
    보상은 그 섹터 리포트·종목 카드 먼저, 암시장은 원하는 낱장 → 리서치 팩. 찌라시 B. 리포트가 없는 엔진(SECTOR_LEVELS_ON=false)이면 그냥 코인 올인 ── */
 const ALLIN_SECTOR = '암호화폐', ALLIN_REPORT = 'rpt_crypto';
@@ -412,5 +554,5 @@ const sectorAllIn = {
   }
 };
 
-module.exports = { ruleBreakerBuild, sectorAllIn, levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
+module.exports = { oathHold, yoloLoanLev, cultFocus, cashGangMin, scalperBot, ruleBreakerBuild, sectorAllIn, levTowerBuild, antFlagBuild, allIn3x, inverseHedge, shortSeller, manipSpam, gukbapDefense, signalFollower, random, growthFirst, deckThinner, nothing, GROWTH_RELICS,
                    relicSwap, arrangeRelics, arrangeRuleBreaker };
