@@ -16,6 +16,8 @@ node sim/compare.js sim/results/전.json sim/results/후.json                   
 
 - `load-engine.js` — `docs/engine.js`를 `vm` 컨텍스트에 불러와 `E.run`, `E.playCard(...)`처럼 쓰게 한다.
 - `strategies.js` — 전략 6종: `allIn3x` · `inverseHedge` · `shortSeller` · `manipSpam` · `gukbapDefense` · `signalFollower`(시그널·뉴스 추종, 찌라시는 기대값 높은 쪽) · `growthFirst`(random + 성장형 유물 최우선) · `sectorAllIn`(N3 — 암호화폐 리포트 우선·신용으로 대장코인만·리서치 팩, 게임 기록 `sectorMax` = 판 끝 최고 섹터 레벨) · 대조군 `random`(무작위)·`nothing`(카드 0장). 장전 카드 사용, 찌라시 A/B, 보상·유물 우선순위, 암시장.
+  - 규칙 파괴형 유물(RULE_BREAKER_RELICS.md): `ruleBreakerBuild`(10종 전부 우선 — 비교용) · 아키타입 `oathHold`(존버 서약서·물타기, 안 판다) · `yoloLoanLev`(영끌 대출·레버리지 탑, 위험 포지션 장중 선매도) · `cultFocus`(교주·몰아주기·막차, 칸 순서 순열 탐색 `bestArrange`) · `cashGangMin`(무소유 + 정예 2칸) · `scalperBot`(단타 중독, 장중 매도 정산).
+  - 전략 훅 (선택, 없으면 전과 같은 결과): `market(E, rng)` 장중 틱 직전(매도 등) · `relicFilter(E, id)` 유물 보상 후보 거르기 · `arrange(E)` 암시장 뒤 칸 정렬(기본 `arrangeRelics`). 게임 기록 `relicsEver`(한 번이라도 가진 유물)·`weekRelics[k]`(k+1주차 시작 때 유물).
 - `runner.js` — 한 판 = `setSeed` → `startNewRun` → (장전 → `startMarket` → `tick` 반복 → 결산 → 보상 → 암시장) × 주. 결과: 클리어·파산·목표미달 비율, 엔딩 16종 빈도, 주차별 통과율·탈락, 판마다 주간 결산 순자산 `weekEq`, 평균 반대매매·순자산, 장 마감 정산 지표(판당 최고 순자산 분포 중앙값·상위 10%·최대, 하루 최대 정산 배수 `maxSettleMult`, 판당 정산 보너스 `settledTotal`) → 콘솔 표 + `results/*.json`.
 - `juice-peaks.js` — 연출 고조 빈도: 봇 판마다 엔진 이벤트를 UI 규칙대로 따라가 '가장 센 연출'(최고 정산 갱신 암전·첫 단위 도장·JACKPOT·콤보 슬램)을 센다. `--bestFactor N` = 암전 문턱 조정안 실험 (JUICE_BIBLE.md).
 - `compare.js` — 결과 JSON 두 개를 판 목록(games)에서 다시 계산해 전후 비교 마크다운 표로 (PR 보고용, 옛 결과 파일도 됨).

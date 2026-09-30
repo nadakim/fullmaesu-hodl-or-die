@@ -781,7 +781,15 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .relic.drop-to{box-shadow:0 0 0 calc(3 * var(--u)) var(--gold),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
 .rl-kind{position:absolute;left:calc(-5 * var(--u));top:calc(-6 * var(--u));min-width:calc(11 * var(--u));padding:calc(1 * var(--u)) calc(2 * var(--u)) 0;
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1.3;color:#000;background:var(--cyan);box-shadow:0 0 0 calc(1 * var(--u)) #000;pointer-events:none;}
-.rl-kind.xmult,.rl-kind.mult{background:var(--gold);} .rl-kind.copy{background:var(--text2);}
+.rl-kind.xmult,.rl-kind.mult,.rl-kind.last{background:var(--gold);} .rl-kind.copy{background:var(--text2);}
+/* 규칙 파괴형 유물 발동: 정산 계산식 줄 아래 이름 (N4 색 언어 — 칩 cyan · 배수 gold) */
+.sf-rule{margin:calc(2 * var(--u)) auto calc(6 * var(--u));width:max-content;max-width:100%;padding:calc(2 * var(--u)) calc(10 * var(--u));background:#000;
+  font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.3;box-shadow:0 0 0 calc(2 * var(--u)) currentColor,calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.sf-rule.hit{animation:sfHit .22s steps(4);}
+body.no-motion .sf-rule.hit{animation:none;} @media (prefers-reduced-motion: reduce){.sf-rule.hit{animation:none;}}
+.choice.locked-choice{opacity:.45;cursor:not-allowed;}
+.ch-lock{display:block;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--gold);}
+.tn-sel{max-width:100%;background:var(--panel);color:var(--text);font:inherit;}
 .relic-tip .rt-move{display:flex;gap:calc(6 * var(--u));margin-top:calc(6 * var(--u));flex-wrap:wrap;align-items:center;}
 .relic-tip .rt-move button{border:none;cursor:pointer;padding:calc(4 * var(--u)) calc(8 * var(--u));background:var(--panel2);color:var(--cyan);
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);}
@@ -2252,7 +2260,8 @@ const REJECT_TEXT  = {
   phase:'카드는 장전(개장 전)에만 쓸 수 있습니다', ap:'행동력이 부족합니다',
   invalid:'지금은 쓸 수 없는 카드입니다', target:'대상을 고르세요',
   unplayable:'사용할 수 없는 카드입니다', none:'카드가 없습니다',
-  locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번 / 거래정지)',
+  locked:'지금은 매도할 수 없습니다 (다이아몬드 핸드 / 계좌 비번 / 거래정지 / 존버 서약서 / 물타기 장인)',
+  relicRule:'🙏 풀매수 교주 — 지금 가진 종목만 살 수 있습니다',
   banned:'☎ 금감원 제재 중 — 오늘은 신규 매수 금지',
   amount:`매수 금액은 최소 ₩${STOCK_BUY_MIN}만입니다`,
   boss:'🛑 보스 주간 제한 — 이번 주에는 쓸 수 없습니다',
@@ -3397,12 +3406,24 @@ function onGameEvent(type, d){
       break;
     case 'relicTriggered':
       if(stageSources && stageSources.has(d.id)) break;   // 오늘 정산 무대가 이 유물을 차례대로 보여준다 (따로 연출하면 중복)
+      if(d.id === 'cashGang'){ toast(`🕳️ 무소유 투자법: 유물 보상 대신 비자금 +${fmtSlush(d.amount)}`, 'good'); break; }
       if(d.id === 'payday') toast(`🪙 월급날: +₩${formatKrw(d.amount)} (벌써 반은 카드값)`, 'good');
       if(d.id === 'parents') toast(`💌 부모님 카드 발동: +₩${formatKrw(d.amount)}. 이번이 진짜 마지막이란다.`, 'warn');
       if(RELIC_BIG_TRIGGER.indexOf(d.id) >= 0) enqueueRelicBig(d.id, `${RELIC_BY_ID[d.id].name} +₩${formatKrw(d.amount)}!`);
       else enqueueRelic(d);
       break;
     case 'relicGrew': enqueueRelicGrow(d); break;
+    case 'sellSettled':   // ⚡ 단타 중독: 매도 순간 정산
+      if(d.payout >= 0.5){
+        const rule = d.steps.filter(x => x.source !== 'base').map(x => x.label).slice(-2).join(' · ');
+        toast(`⚡ 단타 정산 ${d.nth}번째 · ${d.posName} +${formatKrw(d.payout)} (×${fmtMultNum(d.mult)})${rule ? ' — ' + rule : ''}`, 'good');
+        Fx.chip('×' + fmtMultNum(d.mult), rectOf($('positionsBox')), 'gold');
+        Sound.play('settleMult', { pitch: stagePitch(d.nth) });
+        comboHit('settle');
+      }
+      break;
+    case 'waterAdded': toast(`🌊 물타기 장인: ${d.pos.name} 물 ${d.water} → 수익 마감 정산 ×${Math.pow(WATER_X_PER_STACK, d.water)}`, 'info'); break;
+    case 'loanInterest': toast(`🏦 영끌 대출 주말 이자 −${formatKrw(d.amount)} (빚 ${formatKrw(d.debt)})`, 'bad'); break;
     case 'relicReplaced': toast(`${RELIC_BY_ID[d.id].icon} ${RELIC_BY_ID[d.id].name} 버림 → ${RELIC_BY_ID[d.by].icon} ${RELIC_BY_ID[d.by].name}`, 'warn'); break;
     case 'relicSold': toast(`${RELIC_BY_ID[d.id].icon} ${RELIC_BY_ID[d.id].name} 판매 +${fmtSlush(d.price)}`, 'good'); Sound.play('sellWin'); break;
     case 'relicMoved': Sound.play('uiMove'); break;
@@ -4415,6 +4436,15 @@ function stageFormula(chips, mult, amt){   // 계산식 줄 [칩] × [배수] = 
   if(mult !== undefined) $('sfMultV').textContent = fmtMultNum(mult);
   if(amt !== undefined){ const el = $('sfAmt'); $('sfAmtV').textContent = amt === null ? '?' : fmtSigned(amt); el.className = 'sf-box sf-amt' + (amt === null ? '' : amt >= 0 ? ' up' : ' down'); }
 }
+/* 규칙 파괴형 유물 단계면 계산식 줄 아래에 이름 (칩 = cyan · 배수 = gold) */
+function stageRuleName(st){
+  const r = RELIC_BY_ID[st.source], el = $('sfRule');
+  if(!el || !r || !r.rule) return;
+  el.hidden = false;
+  el.className = 'sf-rule ' + (st.kind === 'add' ? 'n-chip' : 'n-mult');
+  el.textContent = `⚠ 규칙 파괴 · ${st.label}`;
+  void el.offsetWidth; el.classList.add('hit');
+}
 const sfHit = id => { const el = $(id); if(!el) return; el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); };
 function preShake(ratio){   // 최종 금액 직전 흔들림 — 폭 = 이번 판 기준 세기 (흔들림 끔·동작 줄이기면 CSS가 끈다)
   const box = $('overlayBox'), P = JUICE_CONFIG.preShakePx;
@@ -4447,6 +4477,7 @@ function playDayStage(d){
       <span class="sf-box sf-mult" id="sfMult"><small>배수</small><span id="sfMultV">1.00</span></span>=
       <span class="sf-box sf-amt" id="sfAmt"><small>금액</small><span id="sfAmtV">?</span></span>
     </div>
+    <div class="sf-rule" id="sfRule" hidden></div>
     <div class="chain-list" id="stageList">
       ${rows.map((r, i) => `<div class="chain-row pending" id="stageRow${i}">
         <div class="chain-head"><span class="chain-name">${r.posName} <small>${posLabel(r)}</small></span><span class="stage-mult" id="stageMult${i}">×1</span></div>
@@ -4501,6 +4532,7 @@ function playDayStage(d){
         el.textContent = '×' + fmtMultNum(st.runningMult);
         el.className = 'stage-mult' + (tier ? ' f' + tier : '');
         stageFormula(st.runningChips, st.runningMult);
+        stageRuleName(st);
         const box = $('overlayBox');
         box.classList.toggle('stage-f3', tier === 3); box.classList.toggle('stage-f4', tier === 4);
       }, true);
@@ -4900,19 +4932,20 @@ function tipCardHtml(tip, wrap){
   const body = `
     <div class="noti-headline">${fillTip(ev.headline, tip.stockId)}</div>
     <div class="noti-body">${fillTip(ev.body, tip.stockId, tip)}</div>
-    ${ev.choices.map((c, i) => `
-      <button class="choice px-panel ${i === 0 ? 'risky' : 'safe'}" data-tip-choice="${i}">
+    ${ev.choices.map((c, i) => { const lock = i > 0 && hasRelic('tipBro');   // 🎰 찌라시 확신범: B 불가
+      return `
+      <button class="choice px-panel ${i === 0 ? 'risky' : 'safe'}${lock ? ' locked-choice' : ''}" data-tip-choice="${i}" ${lock ? 'disabled' : ''}>
         <span class="ch-label">${'AB'[i]}. ${fillTip(c.label, tip.stockId)}</span>
         <span class="ch-meta">${tipChoiceMeta(tip, c, i)}</span>
-        ${tipEvHtml(i)}
-      </button>`).join('')}`;
+        ${lock ? '<span class="ch-lock">🎰 찌라시 확신범 — B는 못 고른다 (A 쪽박은 뒤집힘 · 대박은 절반)</span>' : tipEvHtml(i)}
+      </button>`; }).join('')}`;
   return wrap ? `<div class="phone-noti px-panel-gold">${body}</div>` : body;
 }
 
 function tipResultHtml(r){
   const ev = TIP_BY_ID[r.eventId], outcome = ev.choices[r.choiceIdx].outcomes[r.outcomeIdx];
   const cls = Math.abs(r.delta) < 0.5 ? 'flat' : r.delta > 0 ? 'up' : 'down';
-  return `<div class="tip-result ${cls}">${fillTip(outcome.text, r.stockId)}
+  return `<div class="tip-result ${cls}">${r.flipped ? '🎰 찌라시 확신범: 쪽박이 뒤집혔다! ' : ''}${fillTip(outcome.text, r.stockId)}
     <b>순자산 ${Math.abs(r.delta) < 0.5 ? '±0만' : fmtSigned(r.delta)}${r.slushDelta > 0 ? ` · 비자금 +${fmtSlush(r.slushDelta)}` : ''}</b></div>`;
 }
 
@@ -4965,7 +4998,7 @@ function relicTile(r, o){
 }
 
 /* 정산 종류 배지: 합산 배수 + / 곱 배수 × / 칩 +. 정산에 안 쓰는 유물은 없음 */
-const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'], copy: ['⇄', 'copy', '효과 복사'] };
+const RELIC_KIND_BADGE = { add: ['＋', 'add', '칩 더하기'], mult: ['+', 'mult', '합산 배수 (+)'], xmult: ['×', 'xmult', '곱 배수 (×)'], copy: ['⇄', 'copy', '효과 복사'], last: ['⤓', 'last', '맨 오른쪽 칸 전용'] };
 const relicKind = id => SETTLE_EFFECTS[id] ? SETTLE_EFFECTS[id].kind : '';
 function renderRelics(){
   if(relicTipId && !hasRelic(relicTipId)) relicTipId = '';
@@ -5562,6 +5595,7 @@ function buildTuner(){
   box.innerHTML = `<div class="tn-head"><span>JUICE TUNER</span><button class="tn-btn" data-tn-act="fold">─</button></div>
     <div class="tn-body">
       <div class="tn-btns"><button class="tn-btn" data-tn-act="combo">콤보 테스트</button><button class="tn-btn" data-tn-act="copy">값 복사</button><button class="tn-btn" data-tn-act="reset">기본값</button></div>
+      <div class="tn-btns"><select class="tn-sel" id="tunerRelic">${RELICS.slice().sort((a, b) => (b.rule ? 1 : 0) - (a.rule ? 1 : 0)).map(r => `<option value="${r.id}">${r.rule ? '⚠ ' : ''}${r.icon} ${r.name}</option>`).join('')}</select><button class="tn-btn" data-tn-act="relic">유물 장착</button></div>
       <textarea class="tn-out" id="tunerOut" readonly hidden></textarea>
       ${rows}
     </div>`;
@@ -5580,6 +5614,7 @@ function buildTuner(){
     if(act === 'combo') tunerComboTest();
     if(act === 'copy') tunerCopy();
     if(act === 'reset') tunerReset();
+    if(act === 'relic'){ const id = $('tunerRelic').value; toast(window.__debug.giveRelic(id) ? `${RELIC_BY_ID[id].icon} ${RELIC_BY_ID[id].name} 장착` : '장착 실패 (판 없음 · 이미 있음 · 칸 가득)', 'info'); }
   });
 }
 function tunerComboTest(){   // 가짜 수익 이벤트 1→20 → 끊김 (단계·음높이·JACKPOT·'최대 ×N' 확인용)
