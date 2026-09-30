@@ -737,7 +737,7 @@ const BOSS_SLUSH_BONUS        = 300;         // 보스 주를 통과하면 비�
 const BOSS_RELIC_CHOICE_BONUS = 1;           // 보스 주를 통과하면 유물 보상 선택지 +
 /* 빌드 카운터 보스 4종 (docs/design/BOSS_WEEKS.md '빌드 카운터') — 특정 빌드를 막아 적응을 강요한다.
    끄면(BOSS_COUNTERS_ON=false) BOSSES에 안 들어가고 일정 보장도 없다 = 도입 전과 같은 판 (난수 소비 그대로) */
-const BOSS_COUNTERS_ON        = true;
+const BOSS_COUNTERS_ON        = false;   // 2026-09-30 보류 (BOSS_WEEKS.md '빌드 카운터 — 결정') — 목표 구조가 정해지면 재측정
 const BOSS_COUNTER_MIN        = 1;           // 한 판 일반 보스 칸(BOSS_WEEK_ROUNDS) 중 빌드 카운터 최소 개수
 const BOSS_POSITION_CAP       = 3;           // 포지션 한도 규제: 포지션 최대 개수 (넘기는 새 포지션 금지)
 const BOSS_LEV_CAP            = 2;           // 레버리지 규제: 새 포지션·레버리지 ETF 상한 (x)

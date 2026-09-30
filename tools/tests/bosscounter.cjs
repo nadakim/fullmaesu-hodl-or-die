@@ -1,6 +1,7 @@
 // 빌드 카운터 보스 4종: 일정 보장(한 판에 최소 1개) · 포지션 한도 규제(새 포지션 차단·합치는 매수 허용·분할/공모주 차단·풀매수 건너뜀·사유 툴팁) ·
 // 레버리지 규제(신용·영끌 → 2x·레버리지 ETF 2x까지·가진 포지션 그대로·툴팁) · 기록 리셋(주 시작·장 마감 보유 일수·연속 상승 0) ·
 // 유물 압류(1번 칸 정산 무효·재방송·몰아주기·순서 바꾸면 풀림·칸 표시) · 경보·배지·예고·도감 표적/대비책 (1920·1366·1280×800)
+// 기본값은 꺼짐(보류) → 이 테스트는 engine.js를 받아 올 때 BOSS_COUNTERS_ON만 true로 바꿔 켠 상태의 회귀를 본다. 끝에 기본 상태(꺼짐 = 보스 13종·보장 없음)도 확인
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const S = process.argv[2];
 let pass = 0, fail = 0;
@@ -11,6 +12,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920,1080],[1366,768],[1280,800]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
+    await p.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace(/const BOSS_COUNTERS_ON\s*=\s*false;/, 'const BOSS_COUNTERS_ON = true;') }); });
     await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     await p.evaluate(() => { window.tipChance = () => 0; settings.chainFx = false; });   // 장 마감 정산 무대는 이 테스트 밖 (daystage·plainstage)
@@ -164,6 +166,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(W + ' 도감 타일 넘침 없음', overflow === 0, overflow);
     await p.close();
   }
+  // 기본 상태 (플래그 꺼짐): 빌드 카운터 없음 · 일정 보장 없음
+  { const p = await b.newPage({ viewport: { width: 1366, height: 768 } });
+    p.on('pageerror', e => errs.push(e.message));
+    await p.goto('http://127.0.0.1:8765/demo.html');
+    const d = await p.evaluate(() => { let c = 0; for(let s = 1; s <= 60; s++){ setSeed(s); startNewRun({ unlockWeek: 8 }); c += BOSS_WEEK_ROUNDS.filter(r => BOSS_BY_ID[run.bossPlan[r]].build).length; } setSeed(null);
+      return { flag: BOSS_COUNTERS_ON, n: BOSSES.length, builds: BOSSES.filter(b => b.build).length, planned: c, mult: BOSS_COUNTER_TARGET_MULT, held: BOSS_COUNTER_TARGET_HELD }; });
+    ok('기본 상태: BOSS_COUNTERS_ON 꺼짐 · 보스 13종 · 일정에 카운터 없음 · 손잡이 꺼짐', !d.flag && d.n === 13 && d.builds === 0 && d.planned === 0 && d.mult === 0 && !d.held, d);
+    await p.close(); }
   ok('페이지 에러 없음', errs.length === 0, errs.slice(0, 3));
   console.log(`FAIL ${fail} / ${pass + fail}`); console.log('errors', JSON.stringify(errs.slice(0, 3)));
   await b.close();
