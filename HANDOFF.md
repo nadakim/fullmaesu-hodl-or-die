@@ -5,6 +5,7 @@
 
 ## 지금 상태 (다음 세션은 여기부터)
 
+- **규칙 파괴형 유물 조정 반영** (PR #33 머지): 단타 중독 풀 제외(`RULE_BREAKER_POOL_EXCLUDE`, 재설계 대기 — 장중 거래와 함께), 역지표 ×5, 막차 비오른쪽 효과 없음. 관찰 대상: 영끌 대출·찌라시 확신범. 다음: `claude/sim-metrics`(밸런스 측정 도구).
 - **규칙 파괴형 유물 측정 보정** (같은 브랜치·PR #33 후속, 2026-09-30): 아키타입 봇 4종 + `scalperBot`, 러너 장중 훅 `strat.market`·`relicFilter`·`weekRelics`, `sim/rule-breaker-check.js`에 3주차 보유 기준 열·아키타입 봇 표. 결론: 존버 서약서만 플러스, 단타 중독은 설계상 약점(장중 매도 봇도 −28~−34%p), 역지표·막차 약함 → 🛑 조정안 A/B 사용자 결정 대기 (RULE_BREAKER_RELICS.md '측정 보정'). 시드 묶음은 1~500·1001~1500 (`--seed`는 시작 번호).
 - **규칙 파괴형 유물 10종** (브랜치 `claude/rule-breaker-relics`, PR 후 멈춤 — 밸런스 영향): `RULE_BREAKER_RELICS_ON`, 존버 서약서·단타 중독·물타기 장인·인간 역지표·영끌 대출·몰아주기·막차 탑승(m^1.5)·무소유 투자법(빈 칸 ×1.5)·풀매수 교주·찌라시 확신범. 봇 `ruleBreakerBuild`(전략별 칸 정렬 `strat.arrange`), 점검 `node sim/rule-breaker-check.js 켬.json 끔.json`(러너 기록 `relicsEver`), 테스트 `tools/tests/rulebreakers.cjs`. 🛑 조정안 4개(존버 서약서 ▲ · 단타·역지표·막차 ▼) 사용자 결정 대기 — `docs/design/RULE_BREAKER_RELICS.md`. 온보딩 PR #32는 머지됨.
 - **온보딩 단계 해금** (브랜치 `claude/onboarding-unlock`, PR 후 멈춤 — 밸런스 영향이라 사용자 확인 대기): `ONBOARDING_ON`·`SYSTEM_UNLOCK_WEEK`(1주 롱·정산·유물 / 2주 시그널·찌라시·뉴스 / 3주 공매도·레버리지·암시장 확장 / 4주 섹터·금감원·작전). 사용자 결정: 도달한 주차 영구 해금(`hodl.unlockWeek`), 첫 주 배수 보장은 실제 게임에 넣지 않음(나중 튜토리얼), 잠긴 시스템 겨냥 보스는 후보 제외. 설계·시뮬 표 `docs/design/ONBOARDING.md`, 테스트 `tools/tests/onboarding.cjs`(다른 테스트는 `hodl.unlockWeek = '8'`로 시작). 결과 `sim/results/baseline-before-onboarding.json`·`onboarding-on.json`.
