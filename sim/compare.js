@@ -1,8 +1,9 @@
 /* 두 결과 JSON(sim/runner.js --out) 비교 → 마크다운 표 (PR 보고용)
-   node sim/compare.js 변경전.json 변경후.json
+   node sim/compare.js 변경전.json 변경후.json [--metrics]
    판 목록(games)에서 다시 계산하므로 지표가 없던 옛 결과 파일도 비교된다. */
 const fs = require('fs');
-const [a, b] = process.argv.slice(2).map(f => JSON.parse(fs.readFileSync(f, 'utf8')));
+const argv = process.argv.slice(2), withMetrics = argv.indexOf('--metrics') >= 0;   // --metrics: 운 의존도·주간 여유 배수 표도 (sim/metrics.js)
+const [a, b] = argv.filter(x => !x.startsWith('--')).map(f => JSON.parse(fs.readFileSync(f, 'utf8')));
 if(!a || !b){ console.error('사용법: node sim/compare.js before.json after.json'); process.exit(1); }
 
 const BUST = ['YOLO_BUST', 'MARGIN_CALL', 'SHORT_SQUEEZE', 'DEBT_SPIRAL'];
@@ -39,3 +40,13 @@ names.forEach(s => ['a', 'b'].forEach(k => {
 }));
 console.log('| 엔딩 | 변경 전 | 변경 후 |\n|---|---|---|');
 Object.keys(all).sort((p, r) => all[r].b - all[p].b).forEach(e => { if(all[e].a !== all[e].b) console.log(`| ${e} | ${all[e].a} | ${all[e].b} |`); });
+
+if(withMetrics){
+  const M = require('./metrics.js');
+  [['변경 전', a], ['변경 후', b]].forEach(([label, r]) => {
+    console.log(`\n### ${label} — 운 의존도 (곱하기 유물 첫 획득 주차별 클리어율)\n`);
+    console.log(M.luckTable(r, names));
+    console.log(`\n### ${label} — 주간 여유 배수 (주 결산 순자산 ÷ 고정 목표)\n`);
+    console.log(M.marginTable(r, names));
+  });
+}

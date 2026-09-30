@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /* 보스 주간 점검 (S9-47): runner 결과 JSON으로 보스별 생존율을 잰다.
-   node sim/boss-check.js <보스 켬 결과.json> [<보스 끔 결과.json>] [--md 표.md]
+   node sim/boss-check.js <보스 켬 결과.json> [<보스 끔 결과.json>] [--md 표.md] [--metrics]
    - 보스 켬 결과: node sim/runner.js --n 500 --out sim/results/xxx.json
    - 보스 끔 결과(대조): node sim/runner.js --n 500 --set BOSS_WEEKS_ON=false --out sim/results/yyy.json
    생존율 = 그 보스 주에 들어간 판 중 그 주 결산을 통과한 비율. 대조 = 보스 없이 같은 주차에 들어간 판의 통과율.
    판정 기준 (MASTER_PLAN S9): 모든 전략 생존 90%↑ = 약함, 20%↓ = 강함 */
 const fs = require('fs');
 const args = process.argv.slice(2);
+const metIdx = args.indexOf('--metrics'), withMetrics = metIdx >= 0;   // --metrics: 운 의존도·주간 여유 배수 표도 (sim/metrics.js)
+if(withMetrics) args.splice(metIdx, 1);
 const mdIdx = args.indexOf('--md');
 const mdOut = mdIdx >= 0 ? args.splice(mdIdx, 2)[1] : '';
 const [withFile, withoutFile] = args;
@@ -83,3 +85,11 @@ strategies.forEach(st => {
 const out = `## 보스별 생존율 (${A.meta.n}판 × 전략 ${strategies.length}개, 표본 ${MIN_N}판 미만 = '-')\n\n${lines.join('\n')}\n\n## 전략별 가장 치명적인 보스\n\n${worst.join('\n')}\n`;
 console.log(out);
 if(mdOut) fs.writeFileSync(mdOut, out);
+
+if(withMetrics){
+  const M = require('./metrics.js');
+  [['보스 켬', A], ['보스 끔', B]].forEach(([label, r]) => {
+    if(!r) return;
+    console.log(`\n### ${label} — 운 의존도\n\n${M.luckTable(r)}\n\n### ${label} — 주간 여유 배수\n\n${M.marginTable(r)}`);
+  });
+}

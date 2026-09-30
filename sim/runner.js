@@ -30,7 +30,7 @@ const ALL_CAUSES = [].concat(END_CAUSES.win, END_CAUSES.bust, END_CAUSES.miss);
 const MAX_STEPS = 200000;   // 무한 루프 방지 (한 판은 보통 수백 걸음)
 
 function parseArgs(argv){
-  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES).filter(k => STRATEGIES[k].premarket), out: '', targets: null, set: {}, engine: undefined };
+  const o = { n: 500, seed: 1, strategies: Object.keys(STRATEGIES).filter(k => STRATEGIES[k].premarket), out: '', targets: null, set: {}, engine: undefined, forceRelics: [] };
   for(let i = 0; i < argv.length; i += 2){
     const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
     if(k === 'n' || k === 'seed') o[k] = parseInt(v, 10);
@@ -39,6 +39,7 @@ function parseArgs(argv){
     else if(k === 'engine') o.engine = v;
     else if(k === 'set') v.split(';').forEach(kv => { const i = kv.indexOf('='); o.set[kv.slice(0, i).trim()] = kv.slice(i + 1); });
     else if(k === 'targets') o.targets = v.split(',').map(Number);
+    else if(k === 'force-relics') o.forceRelics = v.split(',').filter(Boolean);   // 판 시작 때 장착할 유물 (보스 카운터 '대비책 있음' 실험용)
     else throw new Error('알 수 없는 옵션: ' + argv[i]);
   }
   o.strategies.forEach(s => { if(!STRATEGIES[s] || !STRATEGIES[s].premarket) throw new Error('알 수 없는 전략: ' + s); });
@@ -61,6 +62,16 @@ function pickReward(strat, choices, priority, rng, fallbackFirst){
   return hit || (fallbackFirst && choices.length ? choices[0] : '');
 }
 
+/* 곱하기 유물을 처음 얻은 주차: 이벤트 로그를 따라가며 roundStart로 주차를 센다. 결산 보상·암시장은 그 주(결산한 주) 번호 */
+function firstXmultWeek(E){
+  let round = 1, opened = false;
+  for(const e of E.eventLog){
+    if(e.type === 'roundStart') round = e.data.round;
+    else if(e.type === 'marketOpen') opened = true;
+    else if(e.type === 'relicGained'){ const fx = E.SETTLE_EFFECTS && E.SETTLE_EFFECTS[e.data.id]; if(fx && fx.kind === 'xmult') return opened ? round : 0; }
+  }
+  return null;
+}
 function weekEquities(E, r){
   const eq = E.eventLog.filter(e => e.type === 'roundClear').map(e => Math.round(e.data.eq));
   if(r.lastWeek && r.lastWeek.round > eq.length) eq.push(Math.round(r.lastWeek.eq));   // 미달·승리한 마지막 결산
@@ -78,11 +89,15 @@ function cheapestOffer(E){
 }
 const SHOP_BUY_EVENTS = ['packOpened', 'singleBought', 'shopRemoved'];
 
-function playGame(E, strat, seed){
+/* 판 한 번. opts.forceRelics = 판 시작 때 장착할 유물 id (이미 있으면 그대로, rand() 없음) */
+const SHOP_MEANINGFUL_RARITY = ['rare', 'legendary', 'mythic'];   // '의미 있는 구매' 낱장 기준 (희귀 이상)
+function playGame(E, strat, seed, opts){
   const rng = mulberry32(seed ^ 0x9E3779B9);
   E.setSeed(seed);
   E.startNewRun();
   if(strat.onStart) strat.onStart(E);   // 실험용 (예: 유물 강제 지급). rand()를 부르지 않는다
+  ((opts && opts.forceRelics) || []).forEach(id => { if(E.RELIC_BY_ID[id] && !E.hasRelic(id)) E.gainRelic(id, 'force', 0); });
+  const weekStartEq = [Math.round(E.netEquity())];   // 주 시작 순자산 (1주차 = 시작 자금) — sim/metrics.js 성장 배수
   const run = () => E.run;
   let steps = 0;
   const shopLog = [];   // 주마다 암시장: { week, income(지난 암시장 이후 적립), entry(들어갈 때 잔액), spent, exit, buys, cheapest }
@@ -118,12 +133,15 @@ function playGame(E, strat, seed){
       const buys = E.eventLog.slice(ev0).filter(e => SHOP_BUY_EVENTS.indexOf(e.type) >= 0 || (e.type === 'relicGained' && e.data.source === 'shop')).length;
       const removes = E.eventLog.slice(ev0).filter(e => e.type === 'shopRemoved').length;
       const rer = E.eventLog.slice(ev0).filter(e => e.type === 'shopRerolled');
-      shopLog.push({ week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest,
+      const meaningful = E.eventLog.slice(ev0).filter(e => (e.type === 'relicGained' && e.data.source === 'shop') || e.type === 'packOpened' || e.type === 'shopRemoved'
+        || (e.type === 'singleBought' && SHOP_MEANINGFUL_RARITY.indexOf(E.CARD_BY_ID[e.data.cardId].rarity) >= 0)).length;   // 유물·희귀 이상 낱장·팩·카드 제거 (리롤 제외)
+      shopLog.push({ meaningful, week: run().round, income: entry - lastExit, entry, spent: entry - run().slush, exit: run().slush, buys, removes, deck: run().masterDeck.length, cheapest,
                      rerolls: rer.length, rerollSpent: rer.reduce((s2, e) => s2 + e.data.cost, 0) });
       lastExit = run().slush;
       (strat.arrange || arrangeRelics)(E);   // 유물 칸 순서: 더하기 → 곱하기 (봇은 최선의 순서, 전략이 따로 정할 수 있다)
       E.leaveShop();
       weekRelics.push(run().relics.slice());   // 다음 주 시작 때 가진 유물
+      if(run().phase !== 'over') weekStartEq.push(Math.round(E.netEquity()));
     } else throw new Error('알 수 없는 phase: ' + phase);
   }
   const r = run();
@@ -133,7 +151,8 @@ function playGame(E, strat, seed){
     maxSettleMult: r.maxSettleMult || 1, settledTotal: Math.round(r.settledTotal || 0), maxSettlePayout: Math.round(r.maxSettlePayout || 0),   // 장 마감 정산 (없는 엔진이면 1·0)
     sectorMax: r.sectorLevel ? Math.max(...Object.keys(r.sectorLevel).map(k => r.sectorLevel[k])) : 1,   // (N3) 판 끝 최고 섹터 레벨 (없는 엔진이면 1)
     weeksCleared: r.weeksCleared, relics: r.relics.slice(), deckSize: r.masterDeck.length,
-    weekRelics,
+    weekRelics, weekStartEq,
+    xmultWeek: firstXmultWeek(E),   // 곱하기(xmult) 유물을 처음 얻은 주차 (0 = 판 시작 전, null = 못 얻음) — sim/metrics.js 운 의존도
     relicsEver: [...new Set(E.eventLog.filter(e => e.type === 'relicGained').map(e => e.data.id))],   // 판 중 한 번이라도 가진 유물 (판매·교체 포함) — sim/rule-breaker-check.js
     growth: E.RELICS.filter(x => x.growth && r.relics.indexOf(x.id) >= 0).map(x => ({ id: x.id, stacks: r.relicState[x.id].stacks, best: r.relicState[x.id].best })),
     shop: shopLog,
@@ -211,7 +230,7 @@ function main(){
   const results = {}, games = {};
   const t0 = Date.now();
   for(const name of opt.strategies){
-    games[name] = seeds.map(s => playGame(E, STRATEGIES[name], s));
+    games[name] = seeds.map(s => playGame(E, STRATEGIES[name], s, { forceRelics: opt.forceRelics }));
     results[name] = summarize(games[name], maxRound, STRATEGIES[name]);
     process.stderr.write(`  ${name}: ${opt.n}판 (${((Date.now() - t0) / 1000).toFixed(1)}s)\n`);
   }
@@ -267,7 +286,7 @@ function main(){
   const out = opt.out || path.join(__dirname, 'results', `run-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, JSON.stringify({
-    meta: { n: opt.n, seed: opt.seed, engine: opt.engine || 'docs/engine.js', overrides: opt.set, strategies: opt.strategies, maxRound, targets: E.ROUND_TARGETS, date: new Date().toISOString(),
+    meta: { n: opt.n, seed: opt.seed, forceRelics: opt.forceRelics, engine: opt.engine || 'docs/engine.js', overrides: opt.set, strategies: opt.strategies, maxRound, targets: E.ROUND_TARGETS, date: new Date().toISOString(),
             note: '클리어율이 다른 전략보다 비정상적으로 높은 전략 = 그 전략이 쓴 카드/유물이 과하게 강하다는 신호' },
     summary: results, games
   }, null, 1));
