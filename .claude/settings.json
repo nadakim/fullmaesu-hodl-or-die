@@ -9,7 +9,10 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/tools/hooks/engine-guard.sh", "timeout": 120 }]
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/tools/hooks/content-guard.sh" },
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/tools/hooks/engine-guard.sh", "timeout": 120 }
+        ]
       }
     ]
   }

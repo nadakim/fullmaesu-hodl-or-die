@@ -33,8 +33,8 @@
 - `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP(`tools/mcp-playwright.sh`: 사전 설치 Chromium이 있으면 전역 playwright 내장 MCP, 없으면 `@playwright/mcp`)
-- `.claude/settings.json` — 훅: `tools/hooks/engine-guard.sh`(engine.js 수정 후 DOM·`Math.random` 검사 + 시뮬 스모크), `protect-files.sh`(폰트·sfx·`sim/results` 직접 수정 차단)
-- `.claude/agents/` — `engine-purity-reviewer`(공통 규칙 diff 검토)·`regression-runner`(회귀 테스트 요약). 스킬 `verify-ui`(`tools/verify-ui.sh [테스트…|all]`)·`balance-compare`(전/후 시뮬 비교)
+- `.claude/settings.json` — 훅: `tools/hooks/engine-guard.sh`(engine.js 수정 후 DOM·`Math.random` 검사 + 시뮬 스모크), `protect-files.sh`(폰트·sfx·`sim/results` 직접 수정 차단), `content-guard.sh`(게임 소스에 금지 소재 — 자해 연상 표현·실존 기업명/티커 — 검사)
+- `.claude/agents/` — `engine-purity-reviewer`(공통 규칙 diff 검토)·`regression-runner`(회귀 테스트 요약). 스킬 `verify-ui`(`tools/verify-ui.sh [테스트…|all]`)·`balance-compare`(전/후 시뮬 비교)·`add-content`(카드·유물·보스·찌라시·뉴스·엔딩·효과음 추가 체크리스트)·`new-test`(회귀 테스트 템플릿)·`pr-prepare`(PR 전 점검·설명 초안)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
 - `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 41개, 실행법·주의점은 `tools/tests/README.md`)
