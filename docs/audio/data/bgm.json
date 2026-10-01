@@ -812,7 +812,7 @@
     "baselineGrDb": 0,
     "peakGrDb": 0,
     "deltaGrDb": 0,
-    "recoverS": 0.75,
+    "recoverS": 1.35,
     "bgmPostRmsDb": -22.94
    },
    {
@@ -848,7 +848,7 @@
     "baselineGrDb": 0,
     "peakGrDb": 0,
     "deltaGrDb": 0,
-    "recoverS": 0.5,
+    "recoverS": 3.78,
     "bgmPostRmsDb": -22.94
    },
    {
@@ -866,7 +866,7 @@
     "baselineGrDb": 0,
     "peakGrDb": 0,
     "deltaGrDb": 0,
-    "recoverS": 2.13,
+    "recoverS": 0.95,
     "bgmPostRmsDb": -22.94
    },
    {
