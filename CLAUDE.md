@@ -32,7 +32,7 @@
 - `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`·`streak`, 캔버스 한 장)·`chip`, **연출 큐** `Fx.enqueue({kind, tier, blocking, duration, play, stop, skip})` — 한 틱에 몰린 이벤트를 발생 순서대로 하나씩(두 번째부터 연쇄 수 `Fx.chain` — 효과음 반음씩, 'CHAIN ×n' 표시는 `setChainCounter`로 끌 수 있고 demo는 수익 콤보로 대신해 끈다), blocking 항목이 있으면 `Fx.queueBusy` → 게임 루프가 tick을 미룬다, 클릭·Space·Enter = `Fx.skipQueue`.
 - `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
-- `.mcp.json` — Playwright MCP(`tools/mcp-playwright.sh`: 사전 설치 Chromium이 있으면 전역 playwright 내장 MCP, 없으면 `@playwright/mcp`) + context7
+- `.mcp.json` — Playwright MCP(`tools/mcp-playwright.sh`: 사전 설치 Chromium이 있으면 전역 playwright 내장 MCP, 없으면 `@playwright/mcp`)
 - `.claude/settings.json` — 훅: `tools/hooks/engine-guard.sh`(engine.js 수정 후 DOM·`Math.random` 검사 + 시뮬 스모크), `protect-files.sh`(폰트·sfx·`sim/results` 직접 수정 차단)
 - `.claude/agents/` — `engine-purity-reviewer`(공통 규칙 diff 검토)·`regression-runner`(회귀 테스트 요약). 스킬 `verify-ui`(`tools/verify-ui.sh [테스트…|all]`)·`balance-compare`(전/후 시뮬 비교)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
