@@ -57,7 +57,7 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 (고정 �
       const out = {};
       const setBoss = id => { run.bossPlan[run.round] = id; startBossWeek(); };
       Fx.skipQueue();
-      run.phase = 'premarket'; run.ap = 9;
+      run.phase = 'premarket'; run.ap = 9; run.day = 1;   // 1일차로 — 주 마지막 날(5)에서 장을 돌리면 주가 통째로 끝나 결산 화면이 하나 더 쌓이고, 뒤의 세무조사 검사가 그 화면을 읽어 간헐 실패했다
       // 공매도 금지
       setBoss('shortBan'); run.hand = ['short', 'stk_semi'].map(newCard);
       out.short = checkPlay(0, null); out.stockOk = checkPlay(1, null);

@@ -14,7 +14,8 @@ node tools/tests/run-all.cjs --repeat 5 --json r.json   # 같은 스위트 5회 
 - 실패한 테스트는 끝에 **단독으로 1회 재실행**한다(`--no-retry`로 끔). 재실행에서 통과하면 '불안정(FLAKY)'으로 요약에 남긴다 — 통과로 치지만 원인을 찾아 고칠 대상이다. 재실행 뒤에도 실패가 있으면 종료 코드 1.
 - 테스트는 환경 변수 `TEST_BASE`(러너가 `http://127.0.0.1:<포트>`로 넣는다)를 읽는다. 단독으로 직접 돌릴 때는 예전처럼 8765에 서버를 띄우고 `node tools/tests/<이름>.cjs <폴더>`.
 - **새 테스트 작성 규칙** (간헐 실패 원인이었던 것):
-  - 장을 반복문으로 끝까지 돌릴 때는 `while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }` — `window.tipChance = () => 0`은 일반 찌라시만 끈다. **세력 매집 찌라시(`maybeAccumTip`)는 따로 열려** 반복문이 무한히 돈다(sector.cjs 무결과).
+  - 장을 반복문으로 끝까지 돌릴 때는 `while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }` — `window.tipChance = () => 0`을 안 둔 테스트에서 찌라시가 열리면 `tick()`이 멈춰 반복문이 무한히 돈다(결과 줄 없음).
+  - 결과를 읽을 때 null·빈 배열을 가드한다 — 검사식에서 예외가 나면 스크립트가 결과 줄 없이 죽는다(sector.cjs: 그날 갭으로 손실 마감 → 섹터 단계 없음 → `st[1][0]` TypeError).
   - 고정 `sleep` 대신 상태 대기(`waitForFunction`·`waitForSelector`) — 연출·결과 화면은 부하가 크면 늦게 뜬다. `.catch(() => {})`로 대기 실패를 삼키지 말고 다음 단계 상태(주차·phase)로 확인한다.
   - 무작위 일정(보스·시장)에 기대는 검사는 고정한다 (`run.bossPlan[2] = …`, `setSeed`).
   - 짧은 연출(히트스톱 등)은 몇 ms 뒤 샘플하지 말고 함수를 감싸 호출을 센다.

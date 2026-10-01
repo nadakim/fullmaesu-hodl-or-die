@@ -15,7 +15,8 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
       await page.evaluate(([ch, k]) => { window.tipChances = () => ch; Sound.stats.played = {}; if(k !== 'flat') run.cash = 6000; openTip('mom'); renderAll(); }, [chances, kind]);
       await page.waitForTimeout(250);
       await page.locator(`#overlayBox [data-tip-choice="${choice}"]`).click();
-      await page.waitForSelector(`.gap-alert.tip-res.${kind}`, { timeout: 5000 }).catch(() => {});   // 고정 대기 대신 그 결과 알림이 뜰 때까지 (짧은 알림은 부하가 크면 700ms 안에 지나가 버렸다)
+      await page.waitForSelector(`.gap-alert.tip-res.${kind}`, { timeout: 5000 }).catch(() => {});
+      if (kind === 'up') await page.waitForFunction(() => !!Sound.stats.played.billFlip, null, { timeout: 3000 }).catch(() => {});   // 지폐 넘김은 동전 뒤에 온다   // 고정 대기 대신 그 결과 알림이 뜰 때까지 (짧은 알림은 부하가 크면 700ms 안에 지나가 버렸다)
       const st = await page.evaluate(() => { const el = document.querySelector('.gap-alert.tip-res');
         return el && { cls: el.className, tape: el.querySelector('.ga-tape').textContent, name: el.querySelector('.ga-name').textContent, amt: el.querySelector('.ga-pct').textContent,
           slush: (el.querySelector('.ga-slush') || {}).textContent || '', meme: el.querySelector('.ga-meme').textContent, busy: Fx.queueBusy, overlay: overlayOpen,

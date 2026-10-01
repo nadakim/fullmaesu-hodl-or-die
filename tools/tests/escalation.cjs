@@ -33,7 +33,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
       stageBest = { run, payout: 1 }; unitSeen = { run, max: 0 }; __snd.length = 0; __stamps.length = 0; __screens.length = 0;
       startMarket(); run.allProtectedToday = true;   // 시장 난수로 반대매매가 끼지 않게 (오늘 전 포지션 면제)
       while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); ['coin', 'semi', 'meme'].forEach(id => { assets[id].price *= 1.004; }); tick(); } renderAll(); });
-    await p.waitForFunction(() => !!stage, null, { timeout: 8000 });
+    await p.waitForFunction(() => !!stage, null, { timeout: 20000 });   // 부하가 크면 무대가 8초 넘게 걸렸다
     const reelDone = await p.waitForFunction(() => { const e = document.querySelector('.stage-reel'); return e && !e.classList.contains('spin') ? e.textContent : false; }, null, { timeout: 15000 }).then(h => h.jsonValue()).catch(() => null);
     if(W === 1920) await p.screenshot({ path: `${S}/esc-crit-${W}.png` });
     await p.waitForFunction(() => stage && stage.hold, null, { timeout: 20000 }).catch(() => {});

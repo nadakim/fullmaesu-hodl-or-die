@@ -14,8 +14,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 판마다 새로: 유물·포지션 비우고 시작
   // 직전 장면이 판을 끝냈으면(파산 → runOver) 게임오버 화면이 연출 큐 뒤에 미뤄져 있다 — 큐를 비우고 결과 화면을 닫은 뒤 새 판 (안 그러면 새 판 위에서 showRunOver가 돌아 page error)
   const fresh = async () => {
-    await p.evaluate(() => { for(let i = 0; i < 50 && Fx.queueBusy; i++) Fx.skipQueue(); });
-    await p.waitForTimeout(50);
+    await p.evaluate(() => { for(let i = 0; i < 50 && Fx.queueLength; i++) Fx.skipQueue(); });
+    await p.waitForFunction(() => !Fx.queueLength, null, { timeout: 5000 }).catch(() => {});
+    if(await p.evaluate(() => run.phase === 'over')) await p.waitForSelector('.ending-title', { timeout: 5000 }).catch(() => {});   // whenFxIdle는 80ms마다 확인 → 게임오버 화면이 뜬 걸 본 뒤에 새 판
+    await p.waitForTimeout(100);
     await p.evaluate(() => { hideOverlay(); window.tipChance = () => 0; setSeed(7); startRun(); clearToasts(); run.relics = []; run.relicState = {}; run.cash = 1e6; renderAll(); });
   };
   const ev = (type) => p.evaluate(t => eventLog.filter(e => e.type === t).map(e => e.data), type);
