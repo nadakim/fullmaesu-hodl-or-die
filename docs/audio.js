@@ -101,7 +101,7 @@ const Sound = (() => {
   let buffers = {};                // 덮어쓰기 파일: SFX 이름 → AudioBuffer
   let voices = [];                 // 울리는 중: { name, bus, base, boost, end }
   let lastByName = {};             // 이름 → { at(ms), voice } — 중복 합치기용
-  const stats = { played: {}, merged: 0, stolen: 0 };   // 검증·디버그용 카운터
+  const stats = { played: {}, merged: 0, stolen: 0, stolenBy: {}, peakVoices: 0 };   // 검증·디버그용 카운터 (관찰 전용 — 소리·발음 규칙에 영향 없음). stolenBy = 끊긴 소리의 이름별 횟수, peakVoices = 동시 발음 최대
 
   const midi = n => 440 * Math.pow(2, (n - 69) / 12);
   const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -658,7 +658,7 @@ const Sound = (() => {
       stats.merged++;
       return true;
     }
-    while(voices.length >= SFX_MAX_VOICES){ kill(voices.shift()); stats.stolen++; }
+    while(voices.length >= SFX_MAX_VOICES){ const gone = voices.shift(); kill(gone); stats.stolen++; stats.stolenBy[gone.name] = (stats.stolenBy[gone.name] || 0) + 1; }
     const bus = ctx.createGain();
     const base = Math.max(0, Math.min(2, opts.volume === undefined ? 1 : opts.volume));
     bus.gain.value = base;
@@ -667,6 +667,7 @@ const Sound = (() => {
     const len = buffers[name] ? playBuffer(bus, t, opts.pitch || 1, buffers[name]) : SFX[name](bus, t, opts.pitch || 1, opts);
     const v = { name, bus, base, boost: 1, end: t + len };
     voices.push(v);
+    if(voices.length > stats.peakVoices) stats.peakVoices = voices.length;
     lastByName[name] = { at, voice: v };
     stats.played[name] = (stats.played[name] || 0) + 1;
     return true;

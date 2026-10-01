@@ -18,7 +18,7 @@ argument-hint: "<card|relic|boss|tip|news|ending|sfx> [이름]"
 | **찌라시** | `TIP_EVENTS`에 `{id, headline, body, choices:[{label, outcomes:[{chance, tag, text, effects}]}]}` — 데이터만 | effect kind: cash·buy·shock·pump·market·sellStock·protect·slush · 확률은 합 1 · `tipExpectedValue`가 같은 식을 읽는다 |
 | **뉴스** | `NEWS_EVENTS`에 `{id, text, target:'stock:…', effect:{volMult, drift, gapMult}, reliability:'confirmed'\|'rumor'}` | 적중률 실측 `node sim/signal-check.js` |
 | **엔딩** | UI `docs/demo`의 `ENDINGS[endCause]`(title·color·group·hint·sub·cause) + 엔진 `classifyEnd` 판정(`END_*` 상수) | 파산 기록 `hint`(미해금 조건 문구) |
-| **효과음** | `docs/audio.js`의 `SFX` 사전 + **파일 맨 위 이름→이벤트 표**에 한 줄 | 부르는 곳은 `onGameEvent`·UI 연출 함수뿐 (엔진에 `Sound` 금지) · 파일 덮어쓰기 `assets/sfx/files.js` |
+| **효과음** | `docs/audio.js`의 `SFX` 사전 + **파일 맨 위 이름→이벤트 표**에 한 줄 + **`docs/soundlab.js`의 `SOUND_CATEGORY_OF`에 카테고리** (옵션이 있으면 `SOUND_OPTION_VARIANTS`) | 부르는 곳은 `onGameEvent`·UI 연출 함수뿐 (엔진에 `Sound` 금지) · 파일 덮어쓰기 `assets/sfx/files.js` · 카테고리를 빼먹으면 `tools/tests/soundlab.cjs`가 실패 · 추가 뒤 `node tools/audio/audit.cjs --sfx`로 음량·스펙트럼을 재고 Sound Lab(`?soundlab=1`)에서 직접 듣는다 |
 
 ## 규칙 (어기면 훅·리뷰가 잡는다)
 - **금지 소재**: 한강·투신·수온 등 자해 연상, 실존 기업명·티커(삼성전자·NVDA·TSLA…) 금지. 문구·이름·flavor는 재정적 파산 소재(반대매매·깡통계좌·영끌 실패)로만. `content-guard` 훅이 검사한다.

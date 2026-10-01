@@ -4,7 +4,7 @@
 # 설계 문서(*.md)·CLAUDE.md는 규칙 설명에 이 단어가 나오므로 검사하지 않는다.
 f=$(jq -r '.tool_input.file_path // empty')
 case "$f" in
-  */docs/demo|*/docs/engine.js|*/docs/audio.js|*/docs/music.js|*/docs/fx.js) ;;
+  */docs/demo|*/docs/engine.js|*/docs/audio.js|*/docs/music.js|*/docs/fx.js|*/docs/soundlab.js) ;;
   *) exit 0 ;;
 esac
 [ -f "$f" ] || exit 0

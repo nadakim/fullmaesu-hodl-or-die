@@ -6,7 +6,7 @@ set -u
 cd "$(dirname "$0")/.."
 OUT=${OUT:-/tmp/hodl-test}; PORT=8765
 rm -rf "$OUT/site"; mkdir -p "$OUT/site" "$OUT/w" "$OUT/v"
-cp docs/demo "$OUT/site/demo.html" && cp docs/*.js "$OUT/site/" && cp -r docs/assets "$OUT/site/"
+cp docs/demo "$OUT/site/demo.html" && cp docs/*.js "$OUT/site/" && cp -r docs/assets docs/audio "$OUT/site/"
 python3 -m http.server $PORT --bind 127.0.0.1 -d "$OUT/site" >/dev/null 2>&1 &
 SRV=$!; trap 'kill $SRV 2>/dev/null' EXIT; sleep 1
 
