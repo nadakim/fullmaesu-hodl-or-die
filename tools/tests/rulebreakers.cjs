@@ -89,8 +89,8 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       steps: [{ label: '오늘 손익', kind: 'base', value: 100, runningChips: 100, runningMult: 1, source: 'base' },
               { label: '🚂 막차 탑승 ×4.00^1.5', kind: 'xmult', value: 2, runningChips: 100, runningMult: 4, source: 'lastTrain' }], sources: [] }] }); });
   await p.waitForFunction(() => stage && stage.hold, null, { timeout: 8000 }).catch(() => {});
-  const sr = await p.evaluate(() => { const el = $('sfRule'); return { hidden: el.hidden, text: el.textContent, gold: el.classList.contains('n-mult') }; });
-  ok('정산 무대: 규칙 파괴 유물 이름이 계산식 줄 아래 (배수 = gold)', !sr.hidden && sr.text.includes('막차 탑승') && sr.gold, sr);
+  const sr = await p.evaluate(() => ({ line: !!$('sfRule') || !!document.querySelector('.sf-rule'), text: $('overlayBox').textContent.includes('규칙 파괴 ·'), hit: ['sfChip', 'sfMult'].some(id => $(id).classList.contains('hit')) }));
+  ok('정산 무대: 규칙 파괴 이름 줄 없음 (칩·배수 칸 번쩍임은 남음)', !sr.line && !sr.text && sr.hit, sr);
   await p.screenshot({ path: `${S}/rulebreaker-stage-1920.png` });
   await p.evaluate(() => { stageSkip(); stageSkip(); stage.readyAt = 0; stageNext(); });
   // ⚡ 단타 중독: 결산 보상·암시장 유물 풀에서 제외 (튜너 장착은 된다)
