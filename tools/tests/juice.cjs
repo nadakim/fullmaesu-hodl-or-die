@@ -93,10 +93,10 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
              hitstop: document.body.classList.contains('fx-hitstop') }, sfx: __sfx.map(x => x[0]), liq: run.liquidations };
   });
   await page.screenshot({ path: S + '/j-margincall-1920.png' });
-  ok('반대매매 발생', liq.liq === 1, liq.liq);
-  ok('반대매매 순간: 히트스톱(80~120ms) · 빨간 번쩍임 · 파편 파티클', liq.at0.hitstop && liq.at0.frozen >= 60 && liq.at0.frozen <= 120 && liq.at0.flash && liq.at0.parts >= 30, liq.at0);
-  ok('히트스톱 뒤: 강한 흔들림 + 글리치 + 스캔라인 + 반대매매 도장', /shake-3/.test(liq.after.cls) && /fx-glitch/.test(liq.after.cls) && liq.after.scan && liq.after.stamp === '반대매매' && !liq.after.hitstop, liq.after);
-  ok('반대매매 소리 marginCall', liq.sfx.includes('marginCall'), liq.sfx);
+  ok('청산 발생', liq.liq === 1, liq.liq);
+  ok('청산 순간: 히트스톱(80~120ms) · 빨간 번쩍임 · 파편 파티클', liq.at0.hitstop && liq.at0.frozen >= 60 && liq.at0.frozen <= 120 && liq.at0.flash && liq.at0.parts >= 30, liq.at0);
+  ok('히트스톱 뒤: 강한 흔들림 + 글리치 + 스캔라인 + 청산 도장', /shake-3/.test(liq.after.cls) && /fx-glitch/.test(liq.after.cls) && liq.after.scan && liq.after.stamp === '청산' && !liq.after.hitstop, liq.after);
+  ok('청산 소리 marginCall', liq.sfx.includes('marginCall'), liq.sfx);
 
   // ── C. 히트스톱이 있어도 엔진 결과는 같다: 같은 시드로 (1) 실제 게임 루프 + 연출 (2) 연출 없이 tick 반복
   //    반대매매·보유 종목 갭이 실제로 일어나는 시드를 골라서 비교한다 (히트스톱이 여러 번 끼도록)
@@ -122,7 +122,7 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
   const rLoop = await replay(true);
   const rFast = await replay(false);
   console.log('C seed', pickSeed, 'loop', JSON.stringify(rLoop).slice(0, 300));
-  ok('실제 루프(히트스톱 ' + rLoop.hs + '회) vs 연출 없는 tick 반복: 현금·확정손익·반대매매·이자·이벤트 순서 동일',
+  ok('실제 루프(히트스톱 ' + rLoop.hs + '회) vs 연출 없는 tick 반복: 현금·확정손익·청산·이자·이벤트 순서 동일',
      pickSeed > 0 && rLoop.hs > 0 && JSON.stringify({ ...rLoop, hs: 0 }) === JSON.stringify({ ...rFast, hs: 0 }), { seed: pickSeed, hs: rLoop.hs, liq: [rLoop.liq, rFast.liq], events: rLoop.events.split(',').length });
   await page.evaluate(() => { settings.speed = 1; });
 

@@ -434,7 +434,7 @@ const RELICS = [
     desc:`리딩방 찌라시 급등 확률 ${Math.round(PUMP_UP_CHANCE * 100)}% → ${Math.round(RELIC_VIP_PUMP_CHANCE * 100)}%.`,
     flavor:'월 99만원. 무료방보다 3초 빨리 알려준다.' },
   { id:'hotline', icon:'📞', name:'증권사 담당자 핫라인', rarity:'uncommon',
-    desc:`반대매매 때 투매 손실(노출액 ${Math.round(LIQUIDATION_PENALTY * 100)}%)이 ${Math.round(RELIC_HOTLINE_PENALTY_CUT * 100)}% 면제된다.`,
+    desc:`청산 때 투매 손실(노출액 ${Math.round(LIQUIDATION_PENALTY * 100)}%)이 ${Math.round(RELIC_HOTLINE_PENALTY_CUT * 100)}% 면제된다.`,
     flavor:'담보 부족 문자보다 전화가 먼저 온다.' },
   { id:'capital',  icon:'🏦', name:'캐피탈 VVIP 카드', rarity:'common',
     desc:`신용·대차·마이너스 통장 이자 ${Math.round(RELIC_CAPITAL_INTEREST_CUT * 100)}% 할인.`,
@@ -455,8 +455,8 @@ const RELICS = [
     desc:`인버스 종목(지수 인버스·곱버스)을 카드로 살 때마다 카드 ${RELIC_INVERSE_DRAW}장을 뽑는다.`,
     flavor:'"모두가 탐욕스러울 때 곱버스." 3년째 물려 있다.' },
   { id:'coldwallet', icon:'🧊', name:'콜드월렛',      rarity:'common',
-    desc: MAINTENANCE_MARGIN_ON ? `대장코인·밈코인 포지션의 담보유지비율 ${Math.round(MAINTENANCE_RATIO * 100)}% → ${Math.round((MAINTENANCE_RATIO - RELIC_COLD_WALLET_MAINT_CUT) * 100)}% (반대매매가 늦게 온다).`
-      : `대장코인·밈코인 포지션의 반대매매 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
+    desc: MAINTENANCE_MARGIN_ON ? `대장코인·밈코인 포지션의 담보유지비율 ${Math.round(MAINTENANCE_RATIO * 100)}% → ${Math.round((MAINTENANCE_RATIO - RELIC_COLD_WALLET_MAINT_CUT) * 100)}% (청산이 늦게 온다).`
+      : `대장코인·밈코인 포지션의 청산 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
     flavor:'시드 문구는 냉장고에 붙여 놨다.' },
   { id:'theme',    icon:'🔥', name:'테마주 헌터',     rarity:'uncommon',
     desc:`${RELIC_THEME_SECTORS.join('·')} 포지션의 장 마감 정산 ×${1 + RELIC_THEME_BONUS}.`,
@@ -482,12 +482,12 @@ const RELICS = [
     reset:`하락 콤보 ${MOON_RESET_DOWN} → 0스택`,
     flavor:'"적금은 복리래." 이율은 차트가 정한다.' },
   { id:'tearJar', icon:'🐷', name:'개미의 눈물 저금통', rarity:'uncommon', growth:'money',
-    desc:`손실로 청산할 때마다 손실액의 ${Math.round(TEARJAR_RATE * 100)}% 적립. 상승 콤보 ${TEARJAR_PAYOUT_COMBO}에 전액 현금 지급. 반대매매 당하면 절반 증발.`,
-    reset:`반대매매 → 적립금 ${Math.round((1 - TEARJAR_MARGIN_KEEP) * 100)}% 증발`,
+    desc:`손실로 청산할 때마다 손실액의 ${Math.round(TEARJAR_RATE * 100)}% 적립. 상승 콤보 ${TEARJAR_PAYOUT_COMBO}에 전액 현금 지급. 강제청산 당하면 절반 증발.`,
+    reset:`강제청산 → 적립금 ${Math.round((1 - TEARJAR_MARGIN_KEEP) * 100)}% 증발`,
     flavor:'눈물 젖은 돼지. 배를 가르면 조금 덜 슬프다.' },
-  { id:'traumaSurvivor', icon:'🩹', name:'반대매매 생존자', rarity:'legendary', growth:'count',
-    desc:`반대매매를 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 장 마감 정산 ×${TRAUMA_XMULT_PER_STACK} (곱).`,
-    reset:'초기화 없음 — 대신 반대매매 자체가 고통',
+  { id:'traumaSurvivor', icon:'🩹', name:'청산 생존자', rarity:'legendary', growth:'count',
+    desc:`청산을 당할 때마다 +1스택 (트라우마 카드는 그대로). 스택당 레버리지·숏 포지션 장 마감 정산 ×${TRAUMA_XMULT_PER_STACK} (곱).`,
+    reset:'초기화 없음 — 대신 청산 자체가 고통',
     flavor:'"한 번 털려 봐야 안다." 세 번 털린 사람이 말했다.' },
   { id:'tipCollector', icon:'📂', name:'찌라시 수집가', rarity:'rare', growth:'count',
     desc:`찌라시 A(고위험)를 고를 때마다 +1스택 (결과 무관). 스택당 A 대박 확률 +${Math.round(TIPCOL_PER_STACK * 100)}%p (최대 +${Math.round(TIPCOL_MAX_BONUS * 100)}%p). B를 고르면 초기화.`,
@@ -503,7 +503,7 @@ const RELICS = [
     flavor:'아인슈타인이 말했다던 그것. 말한 적은 없다.' },
   // ── 곱하기 (S4) ──
   { id:'levTower', icon:'🗼', name:'레버리지 탑', rarity:'rare',
-    desc:'장 마감 정산 × 보유 포지션 레버리지를 전부 곱한 값 (3x·2x·2x → ×12). 오늘 반대매매가 났으면 그날은 효과 없음.',
+    desc:'장 마감 정산 × 보유 포지션 레버리지를 전부 곱한 값 (3x·2x·2x → ×12). 오늘 청산이 났으면 그날은 효과 없음.',
     flavor:'한 층 올라갈 때마다 전망이 좋아진다. 내려올 땐 엘리베이터가 없다.' },
   { id:'sectorSet', icon:'🧩', name:'섹터 풀세트', rarity:'uncommon',
     desc:'장 마감 정산 × 보유한 서로 다른 섹터 수.',
@@ -518,8 +518,8 @@ const RELICS = [
   { id:'limitUp', icon:'🚀', name:'상한가 행진', rarity:'legendary',
     desc:`포지션이 장 마감 기준으로 연속 상승한 날 수 n(오늘 포함, 최대 ${LIMITUP_MAX_STREAK}) → 그 포지션 정산 ×${LIMITUP_BASE}ⁿ. 하락 마감하면 리셋.`,
     flavor:'점상 → 점상 → 점상. 네 번째 날 아침이 제일 무섭다.' },
-  { id:'phoenix', icon:'🐦‍🔥', name:'반대매매 불사조', rarity:'rare', growth:'count',
-    desc:`반대매매를 당할 때마다 영구 +1스택. 모든 포지션 정산 ×${PHOENIX_PER_STACK}^스택.`,
+  { id:'phoenix', icon:'🐦‍🔥', name:'청산 불사조', rarity:'rare', growth:'count',
+    desc:`청산을 당할 때마다 영구 +1스택. 모든 포지션 정산 ×${PHOENIX_PER_STACK}^스택.`,
     reset:'초기화 없음',
     flavor:'깡통에서 다시 태어난다. 몇 번째인지는 세지 않는다.' },
   { id:'copycat', icon:'🦜', name:'리딩방 따라쟁이', rarity:'rare',
@@ -543,7 +543,7 @@ const RELICS = [
 ];
 if(RULE_BREAKER_RELICS_ON) RELICS.push(   // ── 규칙 파괴형 (rule: true — 정산 무대 계산식 줄에 이름이 뜬다) ──
   { id:'oath', icon:'💎', name:'존버 서약서', rarity:'rare', rule:true,
-    desc:`직접 매도 전부 불가 (매도 버튼·전량 매도·매도 카드). 대신 포지션이 장 마감을 넘긴 날 n마다 그 포지션 정산 ×${OATH_X_PER_DAY}ⁿ (최대 ${OATH_MAX_DAYS}일). 예약주문·반대매매는 그대로.`,
+    desc:`직접 매도 전부 불가 (매도 버튼·전량 매도·매도 카드). 대신 포지션이 장 마감을 넘긴 날 n마다 그 포지션 정산 ×${OATH_X_PER_DAY}ⁿ (최대 ${OATH_MAX_DAYS}일). 예약주문·청산은 그대로.`,
     flavor:'"팔면 지는 거다." 서명은 인감도장으로.' },
   { id:'scalper', icon:'⚡', name:'단타 중독', rarity:'rare', rule:true,
     desc:`장 마감 정산에서 보유 포지션은 보너스 없음. 대신 수익 매도하는 순간 그 매도분을 바로 정산한다 (유물 칸 순서대로) — 오늘 k번째 수익 매도면 합산 배수 +${SCALP_MULT_STEP}k.`,
@@ -627,7 +627,7 @@ const TIP_EVENTS = [
         { chance:0.5, tag:'대박', text:'폭락장 개막! 곱버스 파티', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:0.08 }, { kind:'market', state:'BEAR' }] },
         { chance:0.5, tag:'쪽박', text:'"배제 안 한다"는 "안 한다"였다. 반등장', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:-0.08 }, { kind:'market', state:'BULL' }] } ] },
       { label:'레버리지 포지션 방어', outcomes:[
-        { chance:1, tag:'회피', text:'오늘 모든 포지션 반대매매 면제. 담보부터 챙겼다', effects:[{ kind:'protect' }] } ] } ] },
+        { chance:1, tag:'회피', text:'오늘 모든 포지션 청산 면제. 담보부터 챙겼다', effects:[{ kind:'protect' }] } ] } ] },
   { id:'youtuber', headline:'[찌라시] 구독자 300만 유튜버 "인생 종목" 공개', body:'썸네일: 빨간 화살표 3개, 놀란 얼굴, "{stock} 이거 모르면 손해".', pick:true,
     choices:[
       { label:'구독, 좋아요, 풀매수', outcomes:[
@@ -749,10 +749,10 @@ const BOSSES = [
   { id: 'shortBan',     name: '공매도 전면 금지', icon: '🚫', desc: '이번 주 새 공매도(숏) 금지. 이미 가진 숏은 그대로.', mods: { noShort: true } },
   { id: 'bigStep',      name: '빅스텝',           icon: '🏦', desc: '신용·대차·마통 이자 ×3.', mods: { interestMult: 3 } },
   { id: 'delistReview', name: '상장폐지 심사',    icon: '⛔', desc: '베타가 가장 높은 종목 거래정지 — 가격이 멈추고 사고팔 수 없다.', mods: { haltTopBeta: true } },
-  { id: 'marginHike',   name: '증거금 상향',      icon: '📈', desc: '반대매매 기준 담보비율 +20%p (롱 160%·숏 150%).', mods: { maintAdd: 0.2, marginCallAdd: 0.1 } },
+  { id: 'marginHike',   name: '증거금 상향',      icon: '📈', desc: '청산 기준 담보비율 +20%p (롱 160%·숏 150%).', mods: { maintAdd: 0.2, marginCallAdd: 0.1 } },
   { id: 'fssCrackdown', name: '금감원 특별 단속', icon: '🚨', desc: '금감원 게이지 상승 ×2.', mods: { fssMult: 2 } },
   { id: 'tipBomb',      name: '찌라시 폭탄',      icon: '💣', desc: '찌라시가 3배 자주, 하루 최대 4개.', mods: { tipChanceMult: 3, tipMaxPerDay: 4 } },
-  { id: 'tradeTax',     name: '거래세 인상',      icon: '🧾', desc: '모든 매도(반대매매 포함)에 매도 금액의 1% 세금.', mods: { sellTax: 0.01 } },
+  { id: 'tradeTax',     name: '거래세 인상',      icon: '🧾', desc: '모든 매도(청산 포함)에 매도 금액의 1% 세금.', mods: { sellTax: 0.01 } },
   { id: 'antShakeout',  name: '개미 털기',        icon: '🧹', desc: '갭 확률 ×2, 시그널 적중률 −15%p.', mods: { gapMult: 2, signalAccAdd: -0.15 } },
   // 정산 카운터 (D11 — 곱하기 빌드 견제)
   { id: 'multCap',      name: '목표 상향 조정',   icon: '🧢', counter: true, desc: '이번 주 목표 = 원래 목표와 주 시작 순자산 ×2 중 큰 값.', mods: { targetEquityMult: 2 } },
@@ -1693,7 +1693,7 @@ defCard('yolo', '영끌', 'buy', 1, 'legendary', null, false,
   () => run.pending.principalMult === 1,
   () => { run.pending.lev = YOLO_LEV; run.pending.principalMult = YOLO_PRINCIPAL_MULT; });
 defCard('short', '공매도', 'buy', 1, 'uncommon', null, false,
-  `다음 종목 매수를 숏(하락 베팅)으로. 대차 이자 매일 ${(SHORT_BORROW_RATE * 100).toFixed(1)}%, 급등하면 반대매매.`,
+  `다음 종목 매수를 숏(하락 베팅)으로. 대차 이자 매일 ${(SHORT_BORROW_RATE * 100).toFixed(1)}%, 급등하면 청산.`,
   () => run.pending.dir === 1,
   () => { run.pending.dir = -1; });
 defCard('avgDown', '물타기', 'buy', 1, 'common', 'position', false,
@@ -1796,7 +1796,7 @@ defCard('topSpotter', '상투 감별사', 'sell', 2, 'mythic', null, true,
 
 /* 홀드 */
 defCard('hodl', '존버', 'hold', 1, 'common', 'position', false,
-  '오늘 하루 이 포지션(레버리지/숏)은 반대매매되지 않는다.',
+  '오늘 하루 이 포지션(레버리지/숏)은 청산되지 않는다.',
   p => isMarginable(p) && !p.protectedToday,
   p => { p.protectedToday = true; });
 defCard('diamond', '다이아몬드 핸드', 'hold', 1, 'rare', 'position', false,
@@ -1812,7 +1812,7 @@ defCard('dividend', '배당주 마인드', 'hold', 0, 'uncommon', null, false,
   () => run.positions.length > 0,
   () => { run.cash += Math.min(run.positions.length, DIVIDEND_MAX_POS) * DIVIDEND_PER_POS; });
 defCard('forgotPw', '계좌 비번 까먹기', 'hold', 1, 'uncommon', null, false,
-  '오늘 모든 포지션 반대매매 면제. 대신 오늘은 수동 매도 불가(예약주문은 체결).',
+  '오늘 모든 포지션 청산 면제. 대신 오늘은 수동 매도 불가(예약주문은 체결).',
   () => !run.noSellToday,
   () => { run.noSellToday = true; run.allProtectedToday = true; });
 defCard('hodlWins', '존버는 승리한다', 'hold', 2, 'legendary', null, true,
@@ -1916,11 +1916,11 @@ defCard('delever', '디레버리징', 'defense', 1, 'rare', null, false,
   () => run.positions.some(p => p.dir > 0 && posLoan(p) > 0),
   () => { run.positions.filter(p => p.dir > 0 && posLoan(p) > 0).forEach(deleverPosition); });
 defCard('lossGuard', '손실 보전 약정', 'defense', 1, 'legendary', null, false,
-  `오늘 반대매매 손실의 ${pct(LOSS_GUARD_REFUND)} 환급. ※ 실제로는 불법입니다.`,
+  `오늘 청산 손실의 ${pct(LOSS_GUARD_REFUND)} 환급. ※ 실제로는 불법입니다.`,
   () => !run.lossGuardToday,
   () => { run.lossGuardToday = LOSS_GUARD_REFUND; });
 defCard('circuit', '서킷브레이커', 'defense', 1, 'mythic', null, true,
-  `오늘 순자산 −${pct(CIRCUIT_DROP)}(개장 대비)면 즉시 장 마감. 반대매매 면제. 소멸.`,
+  `오늘 순자산 −${pct(CIRCUIT_DROP)}(개장 대비)면 즉시 장 마감. 청산 면제. 소멸.`,
   () => !run.circuitToday,
   () => { run.circuitToday = CIRCUIT_DROP; run.allProtectedToday = true; });   // circuitToday = 장 마감 하락폭
 
@@ -1940,7 +1940,7 @@ defCard('split', '주식 분할', 'hold', 1, 'uncommon', 'position', false,
   '포지션 하나를 똑같은 두 포지션으로 나눈다 (합계 그대로). 포지션 수를 세는 효과에 두 번 잡힌다.',
   p => true, p => { splitPosition(p, SPLIT_WAYS); });
 defCard('levEtf', '레버리지 ETF', 'buy', 1, 'rare', 'position', false,
-  `포지션 레버리지 ×${LEV_ETF_MULT} (지금 가격으로 빌려서 더 산다, 중첩 가능, 최대 ${LEV_ETF_MAX_LEV}x). 반대매매 위험도 ×${LEV_ETF_MULT}.`,
+  `포지션 레버리지 ×${LEV_ETF_MULT} (지금 가격으로 빌려서 더 산다, 중첩 가능, 최대 ${LEV_ETF_MAX_LEV}x). 청산 위험도 ×${LEV_ETF_MULT}.`,
   p => p.lev * LEV_ETF_MULT <= LEV_ETF_MAX_LEV, p => { levUpPosition(p, LEV_ETF_MULT); });
 defCard('reinvest', '배당 재투자', 'hold', 1, 'uncommon', 'position', false,
   '오늘 장 마감 정산금 전액을 현금 대신 그 포지션 원금에 추가한다 (같은 레버리지로 더 산다).',
@@ -1971,7 +1971,7 @@ function coinFlip(p, chance){
   emit('coinFlip', {pos: p, win, chance});
 }
 defCard('relist', '재상장', 'buy', 1, 'rare', null, true,
-  '마지막으로 반대매매 당한 포지션을 원래 원금·레버리지·방향으로 되살린다 (현금 안 듦). 소멸.',
+  '마지막으로 청산 당한 포지션을 원래 원금·레버리지·방향으로 되살린다 (현금 안 듦). 소멸.',
   () => run.liquidated.length > 0,
   () => {
     const x = run.liquidated.pop();
@@ -1981,7 +1981,7 @@ defCard('relist', '재상장', 'buy', 1, 'rare', null, true,
   });
 
 /* 상태 (보상 풀에 나오지 않음) */
-defCard('trauma', '반대매매 트라우마', 'status', 0, 'common', null, false,
+defCard('trauma', '청산 트라우마', 'status', 0, 'common', null, false,
   '사용 불가. 손패 자리만 차지한다. 주간 결산 때 사라진다.',
   () => false,
   () => {});
@@ -2015,7 +2015,7 @@ defUpgrade('credit', { desc: `다음 종목 매수를 레버리지 ${CREDIT_LEV_
   valid: () => run.pending.lev < CREDIT_LEV_UP, play: () => { run.pending.lev = CREDIT_LEV_UP; } });
 defUpgrade('yolo', { desc: `다음 매수: 원금 ${YOLO_PRINCIPAL_MULT_UP}배 + 레버리지 ${YOLO_LEV}x. 영혼까지 끌어모은다.`,
   play: () => { run.pending.lev = YOLO_LEV; run.pending.principalMult = YOLO_PRINCIPAL_MULT_UP; } });
-defUpgrade('short', { desc: `다음 종목 매수를 숏(하락 베팅)으로. 오늘은 대차 이자 면제, 급등하면 반대매매.`,
+defUpgrade('short', { desc: `다음 종목 매수를 숏(하락 베팅)으로. 오늘은 대차 이자 면제, 급등하면 청산.`,
   play: () => { run.pending.dir = -1; run.shortFeeFreeToday = true; } });
 defUpgrade('avgDown', { desc: `손실 중인 포지션에 원금의 ${pct(AVG_DOWN_RATIO_UP)}를 같은 레버리지로 추가 매수.`,
   valid: p => isLosing(p) && buyCash() >= p.principal * AVG_DOWN_RATIO_UP,
@@ -2076,8 +2076,8 @@ defUpgrade('overdraft', { desc: `현금 +₩${OVERDRAFT_AMOUNT_UP.toLocaleString
 defUpgrade('confess', { desc: `금감원 감시 게이지 −${FSS_CONFESS_CUT_UP}. "반성문 제출했습니다." 소멸.`, play: () => { run.fss = Math.max(0, run.fss - FSS_CONFESS_CUT_UP); } });
 defUpgrade('savings', { desc: `현금 +₩${SAVINGS_AMOUNT_UP}만.`, play: () => { run.cash += SAVINGS_AMOUNT_UP; } });
 defUpgrade('delever', { ap: 0 });
-defUpgrade('lossGuard', { desc: `오늘 반대매매 손실의 ${pct(LOSS_GUARD_REFUND_UP)} 환급. ※ 실제로는 불법입니다.`, play: () => { run.lossGuardToday = LOSS_GUARD_REFUND_UP; } });
-defUpgrade('circuit', { desc: `오늘 순자산 −${pct(CIRCUIT_DROP_UP)}(개장 대비)면 즉시 장 마감. 반대매매 면제. 소멸.`,
+defUpgrade('lossGuard', { desc: `오늘 청산 손실의 ${pct(LOSS_GUARD_REFUND_UP)} 환급. ※ 실제로는 불법입니다.`, play: () => { run.lossGuardToday = LOSS_GUARD_REFUND_UP; } });
+defUpgrade('circuit', { desc: `오늘 순자산 −${pct(CIRCUIT_DROP_UP)}(개장 대비)면 즉시 장 마감. 청산 면제. 소멸.`,
   play: () => { run.circuitToday = CIRCUIT_DROP_UP; run.allProtectedToday = true; } });
 ['levEtf', 'reinvest', 'allIn', 'relist'].forEach(id => defUpgrade(id, { ap: 0 }));
 defUpgrade('split', { desc: `포지션 하나를 똑같은 ${SPLIT_WAYS_UP}개 포지션으로 나눈다 (합계 그대로).`, play: p => { splitPosition(p, SPLIT_WAYS_UP); } });

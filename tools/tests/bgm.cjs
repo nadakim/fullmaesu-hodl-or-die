@@ -52,7 +52,7 @@ const ok = (n, c, i) => R.push([c ? 'PASS' : 'FAIL', n, i === undefined ? '' : (
   const firstDanger = logA.find(e => e.mood.danger);
   const barLen = 60 / 128 * 4;
   const aligned = logA.every((e, i) => i === 0 || Math.abs(((e.t - logA[0].t) / barLen) - Math.round((e.t - logA[0].t) / barLen)) < 0.02 || e.bpm !== 128);
-  ok('증거금률 경고 상태 (반대매매 전)', dz.ratio < dz.warn && dz.ratio > dz.call && dz.mood.danger, dz);
+  ok('증거금률 경고 상태 (청산 전)', dz.ratio < dz.warn && dz.ratio > dz.call && dz.mood.danger, dz);
   ok('사이렌 레이어는 설정 시각 이후 첫 마디 경계에서 시작', firstDanger && firstDanger.t >= dz.setAt && firstDanger.t - dz.setAt <= barLen + 0.15 && logA.filter(e => e.t < dz.setAt).every(e => !e.mood.danger),
      { setAt: +dz.setAt.toFixed(3), firstDangerBar: firstDanger && +firstDanger.t.toFixed(3), barLen });
   ok('마디 시작 시각이 전부 같은 격자 위', aligned, logA.slice(-4).map(e => +e.t.toFixed(3)));

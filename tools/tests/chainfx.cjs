@@ -69,12 +69,12 @@ const FIND = `(want) => {
       await sleep(250);
       await page.screenshot({ path: `${S}/gap-chain2-${W}.png` });
       const stampTxt = await page.evaluate(() => (document.querySelector('.fx-stamp') || {}).textContent);
-      ok('갭 → 반대매매 같은 틱: 큐에 순서대로 연쇄 2번째 (CHAIN 표시 없음 — 콤보 숫자 하나만)', gl && chainTxt === 'chain 2' && !chainShown, { seed: gl && gl.seed, ev: gl && gl.ev, pending: kinds, chainTxt, chainShown, stampTxt });
+      ok('갭 → 청산 같은 틱: 큐에 순서대로 연쇄 2번째 (CHAIN 표시 없음 — 콤보 숫자 하나만)', gl && chainTxt === 'chain 2' && !chainShown, { seed: gl && gl.seed, ev: gl && gl.ev, pending: kinds, chainTxt, chainShown, stampTxt });
       await sleep(1600);
       const trauma = await page.evaluate(() => [...document.querySelectorAll('.fx-chip')].map(e => e.textContent));
       await page.keyboard.press('Space'); await sleep(200);
       const liqSfx = await page.evaluate(() => __sfx.filter(x => x[0] === 'marginCall' || x[0] === 'gapAlarm' || x[0] === 'gapDown' || x[0] === 'gapUp').slice(-4));
-      ok('반대매매 소리는 체인 피치 +1반음 (갭 다음)', liqSfx.some(x => x[0] === 'marginCall' && x[1] >= 1), liqSfx);
+      ok('청산 소리는 체인 피치 +1반음 (갭 다음)', liqSfx.some(x => x[0] === 'marginCall' && x[1] >= 1), liqSfx);
 
       // 3) 유물 조명: 장 마감에 캐피탈·존버의 인장·테마주 헌터 → 하나씩 순서대로
       const rel = await page.evaluate(async () => {

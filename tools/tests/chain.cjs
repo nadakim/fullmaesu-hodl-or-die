@@ -79,7 +79,7 @@ const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.t
     const res = await page.evaluate(() => ({ hero: (document.querySelector('.result-hero') || {}).textContent, cash: run.cash, realized: run.realized, eq: netEquity(), liq: run.liquidations }));
     ok(W + ' 연출 끝 → 결산 요약 화면', !!res.hero, res.hero);
     ok(W + ' 결산 화면 순자산 = 실제 순자산', res.hero === fmtMoney(res.eq) && Math.abs(res.eq - s1.w.eq) < 1e-6, res.hero + ' / ' + fmtMoney(s1.w.eq));
-    ok(W + ' 연출 전후 cash·realized·반대매매 불변', res.cash === s1.cash && res.realized === s1.realized && res.liq === s1.before.liq);
+    ok(W + ' 연출 전후 cash·realized·청산 불변', res.cash === s1.cash && res.realized === s1.realized && res.liq === s1.before.liq);
     if(W === 1920) await page.screenshot({ path: S + '/chain-result.png' });
 
     // 2) 클릭 스킵 + 연타 방지

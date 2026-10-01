@@ -600,6 +600,18 @@ body.no-motion .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s s
 .c-rar.rare{color:var(--blue);}
 .c-rar.legendary{color:var(--purple);}
 .c-rar.mythic{color:var(--gold);text-shadow:0 0 calc(4 * var(--u)) var(--gold2);}
+/* 주식 용어집 오버레이 (≡ 메뉴 '📖 용어집'): 카테고리 필터(.coll-filter 재사용) + 스크롤 목록. 잠긴 시스템 항목은 🔒만 */
+#overlayBox:has(.gloss){max-width:min(92vw, calc(640 * var(--u)));}
+.gloss .coll-filter{justify-content:center;margin-top:calc(4 * var(--u));}
+.gloss-list{max-height:calc(330 * var(--u));overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:calc(8 * var(--u));padding:calc(2 * var(--u));margin:calc(8 * var(--u)) 0;}
+.gloss-item{padding:calc(8 * var(--u)) calc(10 * var(--u));--pc:var(--line2);}
+.gloss-item.locked{--pc:var(--line);}
+.gloss-term{font-family:var(--gf-md),monospace;font-size:var(--fs-md);color:var(--gold);line-height:1.4;}
+.gloss-alias{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);margin-left:calc(8 * var(--u));}
+.gloss-short{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text);line-height:1.7;margin-top:calc(2 * var(--u));}
+.gloss-detail{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);line-height:1.7;margin-top:calc(4 * var(--u));}
+.gloss-meme{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);line-height:1.6;margin-top:calc(4 * var(--u));}
+.gloss-lock{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--muted);margin-top:calc(2 * var(--u));}
 .coll-filter{display:flex;flex-wrap:wrap;gap:calc(6 * var(--u));margin:calc(10 * var(--u)) 0 calc(4 * var(--u));}
 .coll-filter button{
   font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);padding:calc(6 * var(--u)) calc(8 * var(--u));cursor:pointer;
@@ -1946,6 +1958,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
           <button data-menu="tips">📱 찌라시 기록<i class="menu-dot" id="menuTipDot" hidden></i></button>
           <button data-menu="deck">🃏 덱 확인</button>
           <button data-menu="signalGuide">📖 시그널 설명서</button>
+          <button data-menu="glossary">📖 용어집</button>
           <button data-menu="sectors" id="menuSectors">📊 섹터 레벨</button>
           <button data-menu="settings">⚙ 환경 설정</button>
           <button data-menu="playtestLog" id="menuPlaytest">📋 전체 기록 복사<small>플레이테스트 모드 · 지금까지 끝난 판 전부</small></button>
@@ -2044,7 +2057,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 
       <div class="section-title pos-title">
         <span class="px-tag">보유 포지션</span>
-        <span id="marginRuleText">🧨 심지가 다 타면 반대매매</span>
+        <span id="marginRuleText">🧨 심지가 다 타면 청산</span>
       </div>
       <div class="positions-wrap px-panel tx-ledger" id="positionsBox"></div>
 
@@ -2113,6 +2126,106 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 <script src="music.js"></script>
 <script src="fx.js"></script>
 <script>
+/* ══ 주식 용어집 (≡ 메뉴 '📖 용어집') — UI 전용 데이터. 게임 규칙·수치는 엔진 CONFIG를 그대로 읽는다 (여기에 숫자를 박지 않는다).
+   term = 화면에서 흔히 쓰는 말 · alias = 정식 용어·다른 말(정식 용어는 이 화면에서만 보인다 — N2 예외) · cat = 카테고리 · short = 실제 시장에서의 뜻 한 줄
+   detail() = 이 게임에서의 규칙(HTML 가능) · meme = 밈 한 줄(선택) · sys = 온보딩 시스템(아직 안 열렸으면 🔒 표시, 설명은 숨김) ══ */
+const GLOSS_CATS = [['trade', '매매'], ['lev', '레버리지·청산'], ['market', '시장'], ['game', '게임']];
+const gP = r => Math.round(r * 100) + '%';
+const GLOSSARY = [
+  // ── 매매 ──
+  { term: '롱', alias: '매수 포지션', cat: 'trade', short: '사서 오르면 이익을 보는 쪽에 서는 것.',
+    detail: () => '이 게임의 기본 매수가 롱입니다. 산 뒤 오르면 번 돈이 늘고 내리면 줄어듭니다. 레버리지 없이 산 롱은 산 돈 이상을 잃지 않습니다.' },
+  { term: '숏', alias: '공매도', cat: 'trade', sys: 'short', short: '주식을 빌려 먼저 팔고, 나중에 싸게 사서 갚아 차익을 노리는 것. 내리면 이익, 오르면 손실입니다.',
+    detail: () => `'공매도' 카드를 쓰면 다음 매수가 하락 베팅이 됩니다. 대차 이자가 매일 붙고, 급등해서 담보가 모자라면 청산됩니다. 오를수록 손실에 끝이 없는 쪽이라 위험합니다.`,
+    meme: '숏 스퀴즈에 털렸습니다.' },
+  { term: '평단', alias: '평균 매수 단가', cat: 'trade', short: '같은 종목을 여러 번 샀을 때 산 가격의 평균.',
+    detail: () => `같은 종목·방향·레버리지를 또 사면 한 포지션으로 합쳐지고 평단이 평균으로 바뀝니다. 포지션 줄의 '평단 → 현재가'가 그 값입니다.` },
+  { term: '물타기', alias: '추가 매수로 평단 낮추기', cat: 'trade', short: '내린 종목을 더 사서 평단을 낮추는 것. 본전은 가까워지지만 계속 내리면 손실도 같이 커집니다.',
+    detail: () => `같은 종목을 더 사면 한 포지션으로 합쳐져 평단이 내려갑니다. '물타기 장인' 유물은 이 규칙을 건드립니다.`,
+    meme: '물타기는 물에 빠진 사람 발목에 돌 매다는 일.' },
+  { term: '손절', alias: '손실 확정 매도', cat: 'trade', short: '손실이 더 커지기 전에 손해를 보고 파는 것.',
+    detail: () => `'손절 예약' 카드: 손실이 −${pct(STOP_LOSS_PCT)}에 닿으면 자동으로 팝니다.` },
+  { term: '익절', alias: '수익 확정 매도', cat: 'trade', short: '오른 종목을 팔아 수익을 확정하는 것.',
+    detail: () => `'익절 예약' 카드: 수익이 +${pct(TAKE_PROFIT_PCT)}에 닿으면 자동으로 팝니다. 수익 중인 포지션을 바로 파는 카드는 수익의 ${pct(TAKE_PROFIT_BONUS)}를 보너스로 줍니다.` },
+  { term: '존버', alias: '버티기 (존나 버티기)', cat: 'trade', short: '떨어져도 팔지 않고 끝까지 들고 가는 것.',
+    detail: () => `'존버' 카드를 레버리지·숏 포지션에 쓰면 오늘 하루는 청산되지 않습니다. 버틴다고 늘 회복하지는 않습니다.`,
+    meme: '존버는 승리한다. (승리하지 않을 때도 있다)' },
+  { term: '풀매수', alias: '전액 매수', cat: 'trade', short: '가진 현금을 한 종목에 전부 넣는 것.',
+    detail: () => `종목 카드의 매수 금액 창에서 '전액'을 고르면 풀매수입니다. 게임 이름도 여기서 왔습니다.` },
+  { term: '영끌', alias: '영혼까지 끌어모으기', cat: 'trade', sys: 'leverage', short: '대출까지 포함해 쓸 수 있는 돈을 전부 끌어모아 투자하는 것.',
+    detail: () => `'영끌' 카드: 다음 매수의 원금을 ${YOLO_PRINCIPAL_MULT}배로, 레버리지를 ${YOLO_LEV}x로 올립니다. 잘되면 크지만 심지가 순식간에 탑니다.`,
+    meme: '영혼까지 끌어모았는데, 영혼까지 청산됐습니다.' },
+  { term: '빚투', alias: '빚내서 투자', cat: 'trade', sys: 'leverage', short: '대출·신용융자로 빌린 돈으로 투자하는 것.',
+    detail: () => `'신용 매수' 카드: 다음 매수를 레버리지 ${CREDIT_LEV}x로 합니다. 빌린 돈에는 장 마감마다 이자가 붙습니다.` },
+  // ── 레버리지·청산 ──
+  { term: '레버리지', alias: '지렛대 · 배율', cat: 'lev', sys: 'leverage', short: '빌린 돈을 더해 투자 규모를 키우는 것. 2x면 오르내림이 2배로 불어납니다.',
+    detail: () => {
+      const dn = L => `${L}x는 약 −${Math.round((1 - MAINTENANCE_RATIO * (L - 1) / L) * 100)}%`;
+      return `포지션 줄에 2x·3x로 표시됩니다. 이익도 손실도 배율만큼 커지고, 배율이 높을수록 청산이 빨리 옵니다.` +
+        (MAINTENANCE_MARGIN_ON ? ` 지금 기준이면 ${dn(2)}, ${dn(3)} 하락에서 청산됩니다.` : '');
+    } },
+  { term: '청산', alias: '반대매매 · 강제청산', cat: 'lev', sys: 'leverage', short: '담보가 모자라면 증권사·거래소가 내 포지션을 강제로 팔아 버리는 것. 주식에서는 반대매매, 코인 선물에서는 청산이라고 부릅니다.',
+    detail: () => (MAINTENANCE_MARGIN_ON
+        ? `롱은 담보비율이 ${gP(MAINTENANCE_RATIO)} 미만, 숏은 ${gP(SHORT_MAINTENANCE_RATIO)} 미만이면 청산됩니다.`
+        : `증거금률이 ${gP(MARGIN_CALL_RATIO)} 미만이면 청산됩니다.`) +
+      ` 청산될 때 노출액의 ${gP(LIQUIDATION_PENALTY)}를 투매 손실로 더 잃고, 덱에 '청산 트라우마' 카드가 섞입니다. 존버·증거금 보충 같은 카드로 막을 수 있습니다.`,
+    meme: '청산당함. 청산각이 보이면 이미 늦다.' },
+  { term: '심지', alias: '청산까지 남은 여유', cat: 'lev', sys: 'leverage', short: '(게임 용어) 청산까지 남은 여유를 보여 주는 게이지. 폭죽 심지처럼 타들어 갑니다.',
+    detail: () => `포지션 줄의 심지가 짧아질수록 청산이 가깝습니다. 초록 → 주황 → 빨강으로 변하고, 빨강이면 심장 박동 소리가 납니다. 정확한 숫자는 줄에 마우스를 올리면 나옵니다.` },
+  { term: '증거금', alias: '증거금률', cat: 'lev', sys: 'leverage', short: '레버리지·공매도 거래를 할 때 담보로 맡겨 두는 돈. 증거금률은 그 담보가 거래 규모에서 차지하는 비율입니다.',
+    detail: () => `증거금률 = 포지션 순자산 ÷ 노출액(포지션 크기). 이 게임은 기본적으로 아래 담보유지비율로 청산을 판정하고, '증거금 보충' 카드는 현금 ₩${MARGIN_TOPUP}만으로 대출을 갚아 여유를 늘립니다.` },
+  { term: '담보유지비율', alias: '담보비율 · 유지비율', cat: 'lev', sys: 'leverage', short: '빌린 돈 대비 담보(내 주식 평가액)의 비율. 이 선 아래로 떨어지면 청산됩니다.',
+    detail: () => MAINTENANCE_MARGIN_ON
+      ? `롱: 담보비율 = 포지션 평가액 ÷ 빌린 돈, ${gP(MAINTENANCE_RATIO)} 미만이면 청산. 숏: ${gP(SHORT_MAINTENANCE_RATIO)} 미만. '콜드월렛' 유물이나 보스 '증거금 상향'이 이 기준을 바꿉니다.`
+      : `지금은 담보유지비율 방식이 꺼져 있고, 증거금률 ${gP(MARGIN_CALL_RATIO)} 미만이면 청산됩니다.` },
+  { term: '미수', alias: '미수금', cat: 'lev', sys: 'leverage', short: '결제할 돈이 모자란 채로 거래해서 생기는 외상.',
+    detail: () => `청산이 갭 뒤의 가격으로 체결되면 포지션 순자산이 음수가 될 수 있고, 그 모자란 돈이 미수입니다. 그 뒤 현금이 ₩${MISU_CASH_FLOOR}만 미만이면 파산입니다.` },
+  { term: '신용·마통 이자', alias: '신용융자 이자 · 마이너스통장 이자', cat: 'lev', sys: 'leverage', short: '빌린 돈에 시간이 지날수록 붙는 이자.',
+    detail: () => `장 마감마다 빌린 돈의 ${(DAILY_INTEREST * 100).toFixed(1)}%가 현금에서 빠집니다 (게임용으로 크게 과장한 값). '캐피탈 VVIP 카드' 유물이 줄여 줍니다. 낸 이자는 순자산 상자에 마우스를 올리면 보입니다.` },
+  { term: '대차 이자', alias: '대차 수수료', cat: 'lev', sys: 'short', short: '공매도하려고 빌린 주식에 내는 빌린 값.',
+    detail: () => `장 마감마다 빌린 주식 노출액의 ${(SHORT_BORROW_RATE * 100).toFixed(1)}%를 냅니다. '캐피탈 VVIP 카드' 유물이 줄여 줍니다.` },
+  // ── 시장 ──
+  { term: '상한가·하한가', alias: '가격제한폭', cat: 'market', sys: 'fss', short: '하루 동안 오르내릴 수 있는 한도에 닿은 가격. 한국 주식은 전일 종가 기준 ±30%입니다.',
+    detail: () => `작전주 종목은 전일 종가 ±${gP(PRICE_LIMIT)}에서 가격이 멈추고, 시세표 등락 칸에 上(상한가)·下(하한가)가 붙습니다.` },
+  { term: '갭', alias: '갭상승 · 갭하락', cat: 'market', short: '전날 종가와 다음 날 시가 사이가 벌어져 가격이 뚝 건너뛰는 것.',
+    detail: () => `이 게임에서는 장중에도 한 번에 가격이 튑니다(갭 경보). 변동이 큰 종목과 약세·변동성 장세에서 더 잦습니다. 청산은 갭 뒤의 가격으로 체결되므로 갭 한 방에 담보를 넘어 미수가 날 수 있습니다.` },
+  { term: '장세', alias: '강세장 · 약세장', cat: 'market', sys: 'news', short: '시장 전체의 분위기. 오르는 장이 강세장(불마켓), 내리는 장이 약세장(베어마켓)입니다.',
+    detail: () => `지수 위 뱃지에 보통·강세·약세·변동성으로 나옵니다. 약세·변동성 장세에서는 갭이 더 잦습니다. 비둘기·매파·CEO 트윗 같은 시장 카드가 장세를 바꿀 수 있습니다.` },
+  { term: '지수', alias: '시장 지수', cat: 'market', short: '여러 종목을 묶어 시장 전체의 흐름을 하나의 숫자로 보여 주는 것.',
+    detail: () => `차트에 IDX로 나오는 값입니다. 종목은 각자의 베타만큼 지수를 따라 움직이고, 인버스는 반대로 갑니다.` },
+  { term: '인버스 ETF', alias: '인버스 · 곱버스', cat: 'market', sys: 'short', short: '지수가 내리면 오르도록 설계된 상품. 곱버스는 그 2배입니다. 오래 들고 있으면 구조상 가치가 깎입니다.',
+    detail: () => `'지수 인버스' 종목은 지수와 반대로 움직입니다. 이자·청산이 없는 대신 매일 조금씩 녹습니다. 숏보다 안전한 하락 베팅입니다.` },
+  { term: '작전주', alias: '시세조종 종목', cat: 'market', sys: 'fss', short: '세력이 일부러 가격을 끌어올렸다가 팔고 나가는 종목. 실제로는 불법인 시세조종입니다.',
+    detail: () => `시세표의 '작전주' 섹터 종목은 변동성이 크고 상·하한가가 있습니다. '작전 세력'·'리딩방 찌라시' 카드는 금감원 게이지를 올립니다.`,
+    meme: '급등AI랩은 AI가 아니라 작전입니다.' },
+  { term: '거래정지', alias: '매매정지', cat: 'market', short: '회사 사정이나 거래소 조치로 매매가 한동안 막힌 상태.',
+    detail: () => `보스 주간에 종목이 거래정지되면 가격이 고정되고 사고팔 수 없습니다. 시세표에 '停'이 붙습니다.` },
+  { term: '시그널', alias: '추세 힌트', cat: 'market', sys: 'signals', short: '(게임 용어) 종목의 숨은 추세를 짐작하게 해 주는 색 칩.',
+    detail: () => `시세표 종목 이름 옆에 붙습니다. 적중률은 ${gP(signalAccNow())}이고 아침에 정해지며, 틀릴 수 있습니다. ≡ 메뉴의 '시그널 설명서'에 자세히 있습니다.` },
+  { term: '찌라시', alias: '증권가 소문', cat: 'market', sys: 'tips', short: '증권가에 도는 출처 불분명한 소문 정보지.',
+    detail: () => `장중에 갑자기 오는 선택 이벤트입니다. 선택지를 고르면 확률로 결과가 갈립니다. 지난 결과는 ≡ 메뉴의 '찌라시 기록'에서 다시 봅니다.`,
+    meme: '"지인이 아는데…"로 시작하면 설거지.' },
+  { term: '리딩방', alias: '유사투자자문 단체방', cat: 'market', sys: 'fss', short: '종목을 찍어 준다며 회원을 모으는 온라인 단체방. 유료 가입을 부추기거나 불법 사기인 경우가 많습니다.',
+    detail: () => `'리딩방 찌라시' 카드: 종목 하나를 골라 오늘 작전을 겁니다. ${gP(PUMP_UP_CHANCE)} 확률로 급등(+${gP(PUMP_UP_PCT)}), 아니면 설거지(−${gP(PUMP_DOWN_PCT)}). 금감원 게이지 +${FSS_GAIN.pump}.` },
+  { term: '금감원', alias: '금융감독원 · 감시 게이지', cat: 'market', sys: 'fss', short: '불공정거래와 시세조종을 감시하고 제재하는 기관.',
+    detail: () => `시장 카드를 쓸 때마다 감시 게이지가 오릅니다(최대 ${FSS_MAX}). 가득 차면 과징금(순자산의 ${gP(FSS_FINE_PCT)}) · 다음 날 매수 금지 · 가장 큰 포지션 강제 청산 중 하나가 걸립니다. 장 마감마다 ${FSS_DAILY_DECAY}, 새 주마다 ${FSS_WEEKLY_DECAY} 줄고 '자진 신고' 카드로 ${FSS_CONFESS_CUT} 줄일 수 있습니다.` },
+  // ── 게임 ──
+  { term: '정산', alias: '장 마감 정산', cat: 'game', short: '(게임 용어) 장이 끝날 때마다 오늘 손익에 유물 효과를 곱해 보너스를 받는 단계.',
+    detail: () => `<span class="n-chip">칩</span> × <span class="n-mult">배수</span> = 금액. 금액에서 오늘 손익을 뺀 만큼이 정산 보너스로 현금에 들어옵니다. 유물은 칸 순서대로 적용됩니다.` },
+  { term: '칩과 배수', alias: '', cat: 'game', short: '(게임 용어) 정산을 이루는 두 숫자.',
+    detail: () => `<span class="n-chip">칩</span>은 오늘 손익에 더하기 효과를 더한 값, <span class="n-mult">배수</span>는 합산(+)과 곱(×) 효과로 오른 값입니다. 더하기가 곱하기보다 먼저 계산되어서 유물 순서가 결과를 바꿉니다. 칩은 청록색, 배수는 금색입니다.` },
+  { term: '크리티컬', alias: '', cat: 'game', short: '(게임 용어) 수익 정산에서 가끔 터지는 보너스 배수.',
+    detail: () => { const tot = CRIT_TABLE.reduce((a, c) => a + c.weight, 0);
+      return `수익이 난 포지션의 정산마다 ${gP(CRIT_CHANCE)} 확률로 터집니다. 배수는 ${CRIT_TABLE.map(c => `×${c.mult}(${gP(c.weight / tot)})`).join(' · ')} 중 하나입니다.`; } },
+  { term: '유물 칸·순서', alias: '', cat: 'game', short: '(게임 용어) 유물을 끼우는 자리와 그 순서.',
+    detail: () => `유물은 ${RELIC_SLOTS}칸입니다. 왼쪽 칸부터 차례로 정산에 적용되어 순서가 결과를 바꿉니다. 장전·암시장에서 끌거나 ◀▶로 옮기고, 가득 차면 하나를 교체해야 합니다. 암시장에서 팔면 산 값의 ${gP(RELIC_SELL_RATE)}을 받습니다.` },
+  { term: '보스 주간', alias: '', cat: 'game', short: '(게임 용어) 규칙이 바뀌는 특별한 주.',
+    detail: () => `${BOSS_WEEK_ROUNDS.join('·')}주차는 일반 보스, ${BOSS_FINAL_ROUND}주차는 최종 보스가 나옵니다. 보스마다 그 주의 규칙이 바뀌며, 직전 주의 결산·보상·암시장에서 미리 알려 줍니다.` },
+  { term: '비자금', alias: '', cat: 'game', short: '(게임 용어) 계좌 현금과 따로 쌓이는 돈. 암시장에서만 씁니다.',
+    detail: () => `주간 결산을 통과하면 기본 ₩${SLUSH_WEEKLY_BASE}만에 목표 초과분의 ${gP(SLUSH_EXCESS_RATE)}가 더해집니다. 순자산에는 들어가지 않습니다.` },
+  { term: '암시장', alias: '', cat: 'game', short: '(게임 용어) 주간 결산 뒤에 열리는 가게.',
+    detail: () => `비자금으로 카드 팩·낱장·유물을 사고, 카드를 지우거나 강화·변환·복제할 수 있습니다. 가격은 주가 갈수록 오릅니다.` }
+];
 
 
 /* ══ 화면 배율 --ui ══
@@ -2465,7 +2578,7 @@ function showGapAlert(item, ctx){
       <div class="ga-name">${name}</div>
       <div class="ga-pct">${list.length > 1 ? list.map(x => (x.pct > 0 ? '+' : '−') + Math.round(Math.abs(x.pct) * 100) + '%').join(' · ') : (up ? '+' : '−') + '0%'}</div>
       <div class="ga-meme">${g.meme}</div>
-      ${g.danger ? '<div class="ga-warn">⚠ 반대매매 위험!</div>' : ''}
+      ${g.danger ? '<div class="ga-warn">⚠ 청산 위험!</div>' : ''}
     </div>`;
   document.body.appendChild(el);
   item.el = el;
@@ -2644,7 +2757,7 @@ function enqueueLiquidation(d){
     if(settings.shake){ const f = document.createElement('div'); f.className = 'red-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 600); }
     Fx.shatter(item.payload.rect, T.parts);
     Fx.afterStop(() => { Fx.shake(3); Fx.glitch(); });
-    item.timers.push(setTimeout(() => Fx.stamp('반대매매'), Math.round(ctx.duration * 0.2)));
+    item.timers.push(setTimeout(() => Fx.stamp('청산'), Math.round(ctx.duration * 0.2)));
     item.timers.push(setTimeout(() => flyTrauma(), Math.round(ctx.duration * 0.55)));
   };
   item.stop = item.skip = () => item.timers.forEach(clearTimeout);
@@ -2675,7 +2788,7 @@ const RELIC_FX = {   // 유물 → [도착 요소, 칩 문구]
   payday:     [() => $('availableCash'), a => `+₩${formatKrw(a)}`],
   parents:    [() => $('totalAssets'),   a => `+₩${formatKrw(a)}`],
   hotline:    [() => $('totalAssets'),   a => `투매 손실 −${formatKrw(a)} 면제`],
-  coldwallet: [() => $('positionsBox'),  () => '반대매매 회피'],
+  coldwallet: [() => $('positionsBox'),  () => '청산 회피'],
   inverse:    [() => $('handBox'),       a => `카드 +${a}장`],
   daytrader:  [() => $('apText'),        a => `행동력 −${a}`],
   fssconnect: [() => $('fssBox'),        a => `감시 −${Math.round(a)}`],
@@ -3331,7 +3444,7 @@ function onGameEvent(type, d){
       comboByPnl(d.pnl, 'order');
       break;
     case 'marginCall':
-      toast(`⚠ 반대매매! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (` +
+      toast(`⚠ 청산! ${d.pos.name} ${posLabel(d.pos)} ${fmtSigned(d.pnl)} (` +
         (d.saved > 0 ? `📞 투매 손실 ${formatKrw(d.saved)} 면제` : `투매 −${formatKrw(d.penalty)}`) + ' · 트라우마 +1)', 'bad');
       if(d.deficit) toast('🧾 미수 발생! 현금으로 못 갚아 계좌 동결', 'bad');
       if(d.refund > 0) toast(`🤝 손실 보전 약정: +${formatKrw(d.refund)} 환급 (※ 실제로는 불법)`, 'warn');
@@ -3855,7 +3968,7 @@ function renderTurn(){
   if(run.revertTicksLeft > 0) chips.push(`<span class="chip">차익실현 매물 대기 (개장 후 ${run.revertTicksLeft}틱)</span>`);
   if(run.buyBanToday) chips.push('<span class="chip short">☎ 금감원 제재: 오늘 신규 매수 금지</span>');
   if(run.interestFree) chips.push('<span class="chip">오늘 이자 면제</span>');
-  if(run.noSellToday) chips.push('<span class="chip mod">계좌 잠금: 매도 불가 · 반대매매 면제</span>');
+  if(run.noSellToday) chips.push('<span class="chip mod">계좌 잠금: 매도 불가 · 청산 면제</span>');
   if(run.week.antArmy) chips.push('<span class="chip buy">개미 군단: 이번 주 종목 카드 행동력 0 · 쓰면 1장 드로우</span>');
   if(run.week.topSpotter) chips.push('<span class="chip buy">상투 감별사: 이번 주 익절·트레일링 행동력 0 · 체결 수익 +30%</span>');
   if(run.week.valueGod) chips.push('<span class="chip buy">가치투자의 신: 이번 주 장 마감마다 장기 보유 배당</span>');
@@ -3866,8 +3979,8 @@ function renderTurn(){
     });
     STOCKS.filter(st => run.pumps[st.id] === 1 || run.pumps[st.id] === -1).forEach(st => chips.push(`<span class="chip mod">🕰️ ${st.name} ${run.pumps[st.id] > 0 ? '급등' : '설거지'}</span>`));
   }
-  if(run.lossGuardToday) chips.push(`<span class="chip">손실 보전 약정: 오늘 반대매매 손실 ${pct(run.lossGuardToday)} 환급</span>`);
-  if(run.circuitToday) chips.push(`<span class="chip">서킷브레이커: 오늘 −${pct(run.circuitToday)}에서 장 마감 · 반대매매 면제${run.circuitTripped ? ' (발동)' : ''}</span>`);
+  if(run.lossGuardToday) chips.push(`<span class="chip">손실 보전 약정: 오늘 청산 손실 ${pct(run.lossGuardToday)} 환급</span>`);
+  if(run.circuitToday) chips.push(`<span class="chip">서킷브레이커: 오늘 −${pct(run.circuitToday)}에서 장 마감 · 청산 면제${run.circuitTripped ? ' (발동)' : ''}</span>`);
   $('chipBox').innerHTML = chips.join('');
   // 내일 뉴스 예고: 배너 옆 '📰 내일' 버튼 (호버 = 제목, 누르면 알림)
   const tmr = newsTomorrowLine(), nb = $('newsNextBtn');
@@ -3921,9 +4034,9 @@ const fuseLeft = p => Math.max(0, Math.min(1, (marginHealth(p) - 1) / (FUSE_FULL
 const fuseClass = (p, f) => isProtected(p) ? 'safe' : marginWarn(p) ? 'hot' : f < FUSE_WARM ? 'warm' : f >= 1 ? 'safe' : '';
 /* 반대매매 기준 문구 (엔진 플래그 MAINTENANCE_MARGIN_ON에 따라 담보비율 / 증거금률) — 툴팁 안에만 */
 function marginText(p){
-  if(!MAINTENANCE_MARGIN_ON) return `증거금률 ${Math.round(marginRatio(p) * 100)}% / 반대매매 ${Math.round(marginCallRatio(p) * 100)}%`;
+  if(!MAINTENANCE_MARGIN_ON) return `증거금률 ${Math.round(marginRatio(p) * 100)}% / 청산 ${Math.round(marginCallRatio(p) * 100)}%`;
   const c = collateralRatio(p);
-  return `담보비율 ${isFinite(c) ? Math.round(c * 100) + '%' : '—'} / 반대매매 ${Math.round(maintRatio(p) * 100)}% 미만`;
+  return `담보비율 ${isFinite(c) ? Math.round(c * 100) + '%' : '—'} / 청산 ${Math.round(maintRatio(p) * 100)}% 미만`;
 }
 /* 크리티컬 정산 확률 (엔진 CRIT_* 그대로) — 정산 칩 툴팁·도감 */
 function critOddsText(){
@@ -3997,7 +4110,7 @@ function orderIcons(p){
   if(p.stopLoss)       t.push(['✂', `손절 예약 ${fmtPct(p.stopLoss)}`, 'stop']);
   if(p.takeProfit)     t.push(['🎯', `익절 예약 ${fmtPct(p.takeProfit)}`, 'take']);
   if(p.trailing)       t.push(['〰', `트레일링 스탑 ${Math.round(TRAIL_GAP * 100)}%p`, 'trail']);
-  if(p.protectedToday) t.push(['🛡', '존버: 오늘 반대매매 면제', 'hodl']);
+  if(p.protectedToday) t.push(['🛡', '존버: 오늘 청산 면제', 'hodl']);
   if(p.diamond)        t.push(['💎', `다이아몬드 핸드: 이번 주 매도 불가 · 결산 보너스 ${pct(p.diamond)}`, 'diamond']);
   if(gukbapApplies(p)) t.push(['🍲', `국밥 정신: 그날 손실의 ${Math.round(RELIC_GUKBAP_LOSS_CUT * 100)}%를 장 마감 정산에서 환급`, 'relic-on']);
   if(sealApplies(p))   t.push(['🔏', `존버의 인장: 장 마감 정산 ×${1 + RELIC_SEAL_BONUS}`, 'relic-on']);
@@ -4050,7 +4163,7 @@ function renderPositions(){
     if(g){
       const f = fuseLeft(p), cls = fuseClass(p, f);
       if(g.className !== 'fuse ' + cls) g.className = 'fuse ' + cls;
-      const tip = `심지 ${Math.round(f * 100)}% — 다 타면 반대매매\n${marginText(p)}${isProtected(p) ? ' · 오늘 면제' : ''}`;
+      const tip = `심지 ${Math.round(f * 100)}% — 다 타면 청산\n${marginText(p)}${isProtected(p) ? ' · 오늘 면제' : ''}`;
       if(g.title !== tip) g.title = tip;
       g.firstElementChild.style.width = Math.round(f * 100) + '%';
     }
@@ -4197,10 +4310,30 @@ function showSignalGuide(){
     <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
 }
 
+/* 주식 용어집: 카테고리 필터 + 항목 목록. 잠긴 시스템(sysOpen)은 🔒 N주차에 열림만 보여 주고 설명은 숨긴다. 장은 오버레이가 열려 있는 동안 멈춘다 */
+let glossaryOpen = false;
+function glossItemHtml(g){
+  const locked = g.sys && !sysOpen(g.sys);
+  if(locked) return `<div class="gloss-item px-panel locked" data-gloss="${g.term}"><div class="gloss-term">${g.term}</div><div class="gloss-lock">🔒 ${SYSTEM_UNLOCK_WEEK[g.sys]}주차에 열림</div></div>`;
+  return `<div class="gloss-item px-panel" data-gloss="${g.term}"><div class="gloss-term">${g.term}${g.alias ? `<span class="gloss-alias">${g.alias}</span>` : ''}</div>
+    <div class="gloss-short">${g.short}</div><div class="gloss-detail">${g.detail()}</div>${g.meme ? `<div class="gloss-meme">“${g.meme}”</div>` : ''}</div>`;
+}
+function showGlossary(cat){
+  cat = cat || 'all';
+  showOverlay(`
+    <div class="gloss">
+      <div class="ov-title" style="color:var(--gold)">📖 용어집</div>
+      <div class="coll-filter">${[['all', '전체']].concat(GLOSS_CATS).map(([k, n]) => `<button class="btn-chunky sm${k === cat ? ' on' : ''}" data-gloss-cat="${k}">${n}</button>`).join('')}</div>
+      <div class="gloss-list" id="glossList">${GLOSSARY.filter(g => cat === 'all' || g.cat === cat).map(glossItemHtml).join('')}</div>
+    </div>
+    <button class="btn-chunky ov-btn" data-act="close">확인 (Esc)</button>`);
+  glossaryOpen = true;
+}
+
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
 function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && (currentTab === 'play' || currentTab === 'shop')); }
-function showOverlay(html){ $('overlay').classList.remove('pk-dark'); $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); }
-function hideOverlay(){ $('overlay').classList.remove('pk-dark'); overlayOpen = false; syncOverlay(); }
+function showOverlay(html){ glossaryOpen = false; $('overlay').classList.remove('pk-dark'); $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); }
+function hideOverlay(){ glossaryOpen = false; $('overlay').classList.remove('pk-dark'); overlayOpen = false; syncOverlay(); }
 function statRow(label, value){ return `<div>${label}<b>${value}</b></div>`; }
 const sortedCardIds = ids => ids.slice().sort((a, b) => CARD_ORDER[a] - CARD_ORDER[b]);
 
@@ -4277,27 +4410,27 @@ function showDeck(){
 const shortfallShare = (w, amount) => Math.round(amount / (w.target - w.eq) * 100);   // 손실이 부족분에서 차지한 비율
 const bustWhy = () => run.misuDefault ? '갭 가격에 체결돼 미수 발생 — 현금으로 못 갚아 계좌 동결.' : '순자산이 0 아래로.';
 const ENDINGS = {
-  YOLO_BUST:     { title:'영끌 실패',              color:'var(--red)', group:'bust', hint:'영끌 3배 포지션이 반대매매되며 파산',
+  YOLO_BUST:     { title:'영끌 실패',              color:'var(--red)', group:'bust', hint:'영끌 3배 포지션이 청산되며 파산',
                    sub:'영혼까지 끌어모았는데, 영혼까지 청산됐습니다.',
-                   cause:() => '3배 레버리지 포지션이 반대매매되며 ' + bustWhy() },
-  SHORT_SQUEEZE: { title:'숏 스퀴즈에 털렸습니다', color:'var(--red)', group:'bust', hint:'숏 포지션이 급등에 반대매매되며 파산',
+                   cause:() => '3배 레버리지 포지션이 청산되며 ' + bustWhy() },
+  SHORT_SQUEEZE: { title:'숏 스퀴즈에 털렸습니다', color:'var(--red)', group:'bust', hint:'숏 포지션이 급등에 청산되며 파산',
                    sub:'"떨어진다"에 걸었는데 로켓이 떴습니다. 공매도의 손실엔 천장이 없습니다.',
-                   cause:() => '숏 포지션이 급등에 반대매매되며 ' + bustWhy() },
-  MARGIN_CALL:   { title:'반대매매 당했습니다',    color:'var(--red)', group:'bust', hint:'신용 포지션이 반대매매되며 파산',
+                   cause:() => '숏 포지션이 급등에 청산되며 ' + bustWhy() },
+  MARGIN_CALL:   { title:'청산 당했습니다',    color:'var(--red)', group:'bust', hint:'신용 포지션이 청산되며 파산',
                    sub:'증권사가 당신 대신 매도 버튼을 눌렀습니다. 담보비율은 기다려주지 않습니다.',
-                   cause:() => '신용 포지션이 반대매매되며 ' + bustWhy() },
-  DEBT_SPIRAL:   { title:'계좌가 녹았습니다',      color:'var(--red)', group:'bust', hint:'반대매매 없이 빚과 이자로 파산',
+                   cause:() => '신용 포지션이 청산되며 ' + bustWhy() },
+  DEBT_SPIRAL:   { title:'계좌가 녹았습니다',      color:'var(--red)', group:'bust', hint:'청산 없이 빚과 이자로 파산',
                    sub:'이자에 미수에 마이너스 통장까지. 잔고가 조용히 0을 뚫었습니다.',
-                   cause:() => `반대매매 없이 빚과 이자로 파산 (누적 이자 ${fmtMoney(run.interestPaid)}).` },
+                   cause:() => `청산 없이 빚과 이자로 파산 (누적 이자 ${fmtMoney(run.interestPaid)}).` },
   NEAR_MISS:     { title:'아깝다, 강제 은퇴',      color:'var(--gold)', group:'miss', hint:'수익을 내고도 목표에 한 끗 모자람',
                    sub:'한 틱만 더 올랐어도… 차트는 당신이 떠난 다음 날 올랐습니다.',
                    cause:w => `목표까지 ${fmtMoney(w.target - w.eq)} 모자람 (달성률 ${Math.floor(w.pct * 100)}%).` },
   HODL_FAIL:     { title:'존버 실패',              color:'var(--gold)', group:'miss', hint:'평가손실을 안고 결산에서 미달',
                    sub:'"언젠가 오른다"의 언젠가는 이번 주가 아니었습니다.',
                    cause:w => `평가손실 ${fmtMoney(-w.unrealized)}을 안고 결산 — 부족분의 대부분이 물린 돈.` },
-  LIQ_ADDICT:    { title:'반대매매 단골손님',      color:'var(--gold)', group:'miss', hint:`한 판에 반대매매 ${END_LIQ_ADDICT}회 이상 당하고 미달`,
+  LIQ_ADDICT:    { title:'청산 단골손님',      color:'var(--gold)', group:'miss', hint:`한 판에 청산 ${END_LIQ_ADDICT}회 이상 당하고 미달`,
                    sub:'증권사 VIP 등극. 담보 부족 문자는 이제 알림음만 들어도 압니다.',
-                   cause:() => `이번 판 반대매매 ${run.liquidations}회. 그래도 레버리지는 못 끊었습니다.` },
+                   cause:() => `이번 판 청산 ${run.liquidations}회. 그래도 레버리지는 못 끊었습니다.` },
   SIDELINED:     { title:'관망의 신',              color:'var(--gold)', group:'miss', hint:'한 주 동안 아무것도 사지 않고 미달',
                    sub:'현금이 최고의 포지션이라더니, 목표도 현금처럼 제자리.',
                    cause:w => `이번 주 매수 0회. 목표까지 ${fmtMoney(w.target - w.eq)} 모자람.` },
@@ -4539,7 +4672,7 @@ function showRunOver(reason){
       ${statTile('최종 순자산', `<span class="${signCls(run.endEquity - START_CASH)}">${fmtMoney(run.endEquity)}</span>`)}
       ${statTile('최고 순자산', fmtMoney(run.peakEquity))}
       ${statTile('생존 라운드', `${weeks} / ${MAX_ROUND}주`)}
-      ${statTile('반대매매', run.liquidations + '회')}
+      ${statTile('청산', run.liquidations + '회')}
       ${statTile('확정손익', `<span class="${signCls(run.realized)}">₩ ${fmtSigned(run.realized)}</span>`)}
       ${statTile('누적 이자', fmtMoney(run.interestPaid))}
       ${statTile('수익률 (시작 대비)', `<span class="${signCls(run.endEquity - START_CASH)}">${fmtPct(run.endEquity / START_CASH - 1)}</span>`)}
@@ -5002,7 +5135,7 @@ function roundResultLine(w){
   if(w.bailout > 0) return '부모님 카드로 겨우 통과. 다음 주엔 기댈 곳이 없습니다.';
   if(w.pct >= 1.5) return '떡상! 리딩방에서 스카우트 연락이 올 수준.';
   if(w.pct >= 1.2) return '여유 있게 통과. 오늘만큼은 개미 탈출.';
-  return '턱걸이 통과. 심장은 이미 반대매매 당했습니다.';
+  return '턱걸이 통과. 심장은 이미 청산 당했습니다.';
 }
 
 /* ── 결산 체인: 통과한 결산에서 유물·보너스가 포지션 손익을 불린 순서를 재생 ──
@@ -5185,7 +5318,7 @@ function showRoundResult(w){
     <div class="stat-grid">
       ${statTile('이번 주 수익', `<span class="${signCls(w.weekPnl)}">${fmtSigned(w.weekPnl)} (${fmtPct(w.weekReturn)})</span>`)}
       ${statTile('이번 주 확정손익', `<span class="${signCls(w.realized)}">${fmtSigned(w.realized)}</span>`)}
-      ${statTile('이번 주 반대매매', w.liquidations + '회')}
+      ${statTile('이번 주 청산', w.liquidations + '회')}
       ${statTile('이번 주 이자', fmtMoney(w.interest))}
       ${statTile('이월 포지션', `${w.positions}개 · 평가 <span class="${signCls(w.unrealized)}">${fmtSigned(w.unrealized)}</span>`, 'wide')}
       ${Math.abs(w.settled) >= 0.5 ? statTile('💰 장 마감 정산 보너스', `<span class="${signCls(w.settled)}">${fmtSigned(w.settled)}</span>`) : ''}
@@ -5198,7 +5331,7 @@ function showRoundResult(w){
     <div class="stat-grid">
       ${statTile('최고 순자산', fmtMoney(run.peakEquity))}
       ${statTile('생존 라운드', `${run.weeksCleared} / ${MAX_ROUND}주`)}
-      ${statTile('총 반대매매', run.liquidations + '회')}
+      ${statTile('총 청산', run.liquidations + '회')}
       ${statTile('다음 주 목표', fmtMoney(ROUND_TARGETS[w.round]))}
     </div>
     <button class="btn-chunky ov-btn" data-act="toReward">▶ 보상 고르고 WEEK ${w.round + 1}로</button>
@@ -5746,16 +5879,16 @@ function buildSettings(){
     ${settingRow('uiSize', '화면 크기', `글자·카드 크기 배율. 자동 = 창 높이 ÷ 600 (0.25 단위, 1~2.5). 작게 −0.25 · 크게 +0.25 · 매우 크게 +0.5 (창에 들어가는 만큼만). 지금 ×${uiScale}${isMobileLayout() ? ' (모바일 세로 화면은 ×1 고정)' : ''}.`)}
     ${settingRow('fontSize', '글자 크기', '크게 = 한글·본문 글자를 한 단계씩 키웁니다 (영문 픽셀 글꼴은 선명한 크기 그대로).')}
     ${settingRow('speed', '장중 속도', `캔들 1개 ${TICK_MS}ms 기준 배율. 결과·확률은 그대로, 시간만 빨라집니다.`)}
-    ${settingRow('shake', '화면 흔들림 · 번쩍임 · 글리치', '반대매매·갭 때 흔들림·번쩍임·글리치. 끄면 히트스톱도 꺼짐 (시스템 동작 줄이기면 기본 끔).')}
-    ${settingRow('hitStop', '히트스톱', '반대매매·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
-    ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·반대매매·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
+    ${settingRow('shake', '화면 흔들림 · 번쩍임 · 글리치', '청산·갭 때 흔들림·번쩍임·글리치. 끄면 히트스톱도 꺼짐 (시스템 동작 줄이기면 기본 끔).')}
+    ${settingRow('hitStop', '히트스톱', '청산·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
+    ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·청산·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
     ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
     ${settingRow('playtest', '플레이테스트 모드', '테스터용. 판이 끝나면 📋 판 기록 복사 버튼이 뜨고 기록이 쌓인다 (≡ 메뉴 › 전체 기록 복사). 설문은 주소에 ?playtest=1을 붙였을 때만.')}
     ${settingRow('unlockTips', '해금 소개', '새 시스템(찌라시·공매도·레버리지…)이 처음 열리는 주에 짧은 소개 창을 띄웁니다. 끄면 알림 한 줄만.')}
     ${settingRow('chainFx', '결산 연출', '주간 결산을 통과하면 유물·보너스가 포지션 손익을 불린 순서를 칩으로 보여줍니다. 끄면 바로 결산 요약.')}
     ${settingRow('sound', '사운드', '칩튠 효과음 (음원 파일 없이 브라우저에서 합성).')}
     ${settingRow('sfxVol', '효과음 볼륨', '0 · 25 · 50 · 75 · 100%.', !settings.sound)}
-    ${settingRow('bgm', '배경음악', '화면·장세에 따라 바뀌는 칩튠 BGM. 장중에는 강세·약세·변동성·반대매매 위험에 맞춰 곡이 변합니다.', !settings.sound)}
+    ${settingRow('bgm', '배경음악', '화면·장세에 따라 바뀌는 칩튠 BGM. 장중에는 강세·약세·변동성·청산 위험에 맞춰 곡이 변합니다.', !settings.sound)}
     ${settingRow('bgmVol', '배경음악 볼륨', '0 · 25 · 40 · 50 · 75 · 100%. 효과음보다 작게 기본 40.', !settings.sound || !settings.bgm)}
     ${settingRow('tickSound', '장중 틱 소리', '캔들이 하나 생길 때마다 작은 시계 소리. 계속 울리니 기본은 끔.', !settings.sound)}
     <div class="set-row px-panel" data-row="reset">
@@ -5800,7 +5933,7 @@ function buildRecords(){
       ${statTile('총 판 수', total + '판')}
       ${statTile('최고 생존', `${t.bestWeeks} / ${MAX_ROUND}주`)}
       ${statTile('최고 순자산', t.bestPeak ? fmtMoney(t.bestPeak) : '—')}
-      ${statTile('총 반대매매', t.liq + '회')}
+      ${statTile('총 청산', t.liq + '회')}
       ${statTile('파산 · 졸업', `<span class="${bust ? 'pnl-down' : ''}">${bust}</span> · ${r.counts.VICTORY || 0}회`)}
       ${statTile('가장 많이 본 엔딩', top ? `<span style="color:${ENDINGS[top].color}">${ENDINGS[top].title}</span> ×${r.counts[top]}` : '—', 'wide')}
     </div>`;
@@ -5823,9 +5956,9 @@ function buildRecords(){
         <span>W${x.round} D${x.day}</span>
         <span class="rr-eq ${signCls(x.eq - START_CASH)}">${fmtMoney(x.eq)}</span>
         <span class="rr-when">${fmtWhen(x.at)}</span>
-        <span class="rr-stats">생존 ${x.weeks}주 · 최고 ${fmtMoney(x.peak)} · 반대매매 ${x.liq}회${x.deck !== undefined ? ` · 유물 ${x.relics}개 · 덱 ${x.deck}장` : ''}${x.bosses ? ` · 보스 격파 ${x.bosses}` : ''}${x.boss && BOSS_BY_ID[x.boss] ? ` · <span class="rr-boss">사인: ${bossText(x.boss)}</span>` : ''}</span>
+        <span class="rr-stats">생존 ${x.weeks}주 · 최고 ${fmtMoney(x.peak)} · 청산 ${x.liq}회${x.deck !== undefined ? ` · 유물 ${x.relics}개 · 덱 ${x.deck}장` : ''}${x.bosses ? ` · 보스 격파 ${x.bosses}` : ''}${x.boss && BOSS_BY_ID[x.boss] ? ` · <span class="rr-boss">사인: ${bossText(x.boss)}</span>` : ''}</span>
       </div>`; }).join('')}</div>`
-    : `<div class="rec-empty">아직 끝낸 판이 없습니다. 첫 반대매매는 누구에게나 찾아옵니다.</div>`;
+    : `<div class="rec-empty">아직 끝낸 판이 없습니다. 첫 청산은 누구에게나 찾아옵니다.</div>`;
   $('recordsBox').innerHTML = summary + tiles +
     `<div class="pile-title">▌ 최근 ${RECORDS_HISTORY}판</div>` + rows +
     (total ? `<button class="btn-chunky sm back-btn rec-reset" id="recordsReset">✕ 기록 초기화</button>` : '');
@@ -6005,8 +6138,8 @@ const UNLOCK_INTRO = {   // 한 화면 3줄 이내 · 커뮤니티 밈 톤 (금�
   signals:   { title: '📡 시그널 해금', lines: ['종목 옆 칩 = 오늘 추세 예측. 적중률은 칩에 그대로.', '보조지표 42개가 전부 다른 말을 해도, 믿는 건 당신 몫.', '읽는 법은 ≡ 메뉴 › 📖 시그널 설명서.'] },
   tips:      { title: '📱 찌라시 해금', lines: ['장중에 리딩방 찌라시가 날아온다.', 'A = 대박 아니면 쪽박, B = 작지만 확실.', '확률은 화면에 보이는 그대로. 설거지 조심.'] },
   news:      { title: '📰 뉴스 해금', lines: ['전광판 속보 = 오늘 장 분위기.', '📰 내일 = 내일 뉴스 미리보기. 루머일 수도 있다.'] },
-  short:     { title: '📉 공매도·인버스 해금', lines: ['공매도 = 다음 매수를 하락 베팅으로. 인버스·곱버스는 지수가 빠지면 오른다.', '숏은 급등하면 반대매매. 숏 스퀴즈 한 방이면 깡통.', '공매도·인버스 카드가 덱에 들어왔다.'] },
-  leverage:  { title: '🔥 레버리지 해금', lines: ['신용 매수·영끌 = 빌린 돈으로 크게. 이자는 매일.', '포지션 심지가 다 타면 반대매매 — 강제 청산.', '존버·증거금 보충으로 심지를 지켜라.'] },
+  short:     { title: '📉 공매도·인버스 해금', lines: ['공매도 = 다음 매수를 하락 베팅으로. 인버스·곱버스는 지수가 빠지면 오른다.', '숏은 급등하면 청산. 숏 스퀴즈 한 방이면 깡통.', '공매도·인버스 카드가 덱에 들어왔다.'] },
+  leverage:  { title: '🔥 레버리지 해금', lines: ['신용 매수·영끌 = 빌린 돈으로 크게. 이자는 매일.', '포지션 심지가 다 타면 청산당합니다.', '존버·증거금 보충으로 심지를 지켜라.'] },
   shopTools: { title: '🔧 암시장 확장', lines: ['암시장에서 카드 제거·리모델링·변환·복제 가능.', '덱을 얇게 깎을수록 좋은 카드가 자주 온다.'] },
   sector:    { title: '📊 섹터 레벨 해금', lines: ['섹터 리포트 = 그 섹터 정산 칩·배수 레벨업.', '한 섹터에 몰빵할수록 정산이 커진다. 📑 리서치 팩도 열림.'] },
   fss:       { title: '🚨 작전·금감원 해금', lines: ['비둘기·매파·트윗·작전 세력 카드로 시장을 흔든다.', '쓸 때마다 금감원 게이지 ↑, 가득 차면 제재.', '상폐직전테크·급등AI랩 = 하루 ±30% 작전주.'] }
@@ -6070,6 +6203,7 @@ $('menuPanel').addEventListener('click', e => {
   else if(act === 'tips') showTipLog();
   else if(act === 'deck'){ if(run) showDeck(); }
   else if(act === 'signalGuide') showSignalGuide();
+  else if(act === 'glossary') showGlossary();
   else if(act === 'sectors'){ if(run) showSectorLevels(); }
   else if(act === 'settings'){ settingsReturn = currentTab; switchTab('settings'); }
   else if(act === 'playtestLog') playtestCopyAll();
@@ -6260,6 +6394,7 @@ document.addEventListener('keydown', e => {
   if(amtCtx && e.key === 'Escape'){ e.preventDefault(); cancelAmount(); return; }
   if(upgradePickMode && e.key === 'Escape'){ e.preventDefault(); upgradePickMode = false; showReward(lastRoundClear); return; }
   if(e.key === 'Escape' && zoomTarget){ e.preventDefault(); closeChartZoom(); return; }
+  if(e.key === 'Escape' && glossaryOpen){ e.preventDefault(); hideOverlay(); return; }
   if(currentTab === 'play' && !overlayOpen && !e.ctrlKey && !e.metaKey && !e.altKey && /^[1-4]$/.test(e.key) && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))){ setSpeed(speedKeys()[+e.key - 1]); return; }
   if(e.key === 'Escape'){
     if(selectedIdx >= 0){ selectedIdx = -1; renderAll(); return; }   // 대상 지정 취소가 먼저
@@ -6274,6 +6409,8 @@ $('overlay').addEventListener('click', e => {
   if(chainPlay){ skipSettlementChain(); return; }
   if(chainHold){ if(e.target.closest('[data-act="chainNext"]')) chainNext(); return; }   // 결과 화면에선 '▶ 다음'만
   if(performance.now() - chainSkippedAt < CHAIN_SKIP_GUARD_MS) return;
+  const gc = e.target.closest('[data-gloss-cat]');
+  if(gc){ showGlossary(gc.dataset.glossCat); return; }
   const aq = e.target.closest('[data-amt-q]');
   if(aq && amtCtx){ setAmount(amtCtx.max * +aq.dataset.amtQ); return; }
   const up = e.target.closest('[data-upgrade]');
@@ -6593,8 +6730,8 @@ document.getElementById('tickerText').innerHTML = tickerContent.repeat(3);
 
 window.onload = () => {
   $('marginRuleText').title = MAINTENANCE_MARGIN_ON   // 반대매매 기준 (엔진 수치 그대로) — 화면에는 '심지', 전문용어는 툴팁
-    ? `담보비율 ${Math.round(MAINTENANCE_RATIO * 100)}%(숏 ${Math.round(SHORT_MAINTENANCE_RATIO * 100)}%) 미만 = 반대매매`
-    : `증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% 미만 = 반대매매`;
+    ? `담보비율 ${Math.round(MAINTENANCE_RATIO * 100)}%(숏 ${Math.round(SHORT_MAINTENANCE_RATIO * 100)}%) 미만 = 청산`
+    : `증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% 미만 = 청산`;
   buildQuotes();
   $('menuSectors').hidden = !SECTOR_LEVELS_ON;   // (N3) 플래그가 꺼져 있으면 메뉴도 없음
   buildCollection();
