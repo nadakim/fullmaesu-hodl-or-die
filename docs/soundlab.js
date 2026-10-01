@@ -24,7 +24,7 @@ const SOUND_CATEGORY_OF = {
   cashRegister: 'feedback', relicTick: 'feedback', relicLevelUp: 'feedback', relicShatter: 'feedback', relicGain: 'feedback', relicClack: 'feedback',
   rareDraw: 'feedback', packShake: 'feedback', packBurst: 'feedback', packFlip: 'feedback', comboUp: 'feedback', comboBreak: 'feedback',
   multSlam: 'feedback', goalReach: 'feedback', tipJackpot: 'feedback', tipBust: 'feedback', flatShrug: 'feedback', survived: 'feedback', sigh: 'feedback',
-  settleAdd: 'settle', settleMult: 'settle', settleThud: 'settle', tierBreak: 'settle', bestBoom: 'settle', unitBreak: 'settle', reelStop: 'settle',
+  settleAdd: 'settle', settleMult: 'settle', settleThud: 'settle', tierBreak: 'settle', coinShower: 'settle', steam: 'alarm', bestBoom: 'settle', unitBreak: 'settle', reelStop: 'settle',
   jackpot: 'settle', chainStep: 'settle', countTick: 'settle', stampWin: 'settle', stampLoss: 'settle',
   marginCall: 'alarm', gapAlarm: 'alarm', gapUp: 'alarm', gapDown: 'alarm', heartbeat: 'alarm', fssWarn: 'alarm', fssSanction: 'alarm',
   tipArrive: 'alarm', crashDown: 'alarm', closeRoll: 'alarm', drumRoll: 'alarm',
