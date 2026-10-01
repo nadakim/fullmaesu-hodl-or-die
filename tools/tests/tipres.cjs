@@ -15,14 +15,14 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
       await page.evaluate(([ch, k]) => { window.tipChances = () => ch; Sound.stats.played = {}; if(k !== 'flat') run.cash = 6000; openTip('mom'); renderAll(); }, [chances, kind]);
       await page.waitForTimeout(250);
       await page.locator(`#overlayBox [data-tip-choice="${choice}"]`).click();
-      await page.waitForTimeout(kind === 'up' ? 1100 : 700);
+      await page.waitForSelector(`.gap-alert.tip-res.${kind}`, { timeout: 5000 }).catch(() => {});   // 고정 대기 대신 그 결과 알림이 뜰 때까지 (짧은 알림은 부하가 크면 700ms 안에 지나가 버렸다)
       const st = await page.evaluate(() => { const el = document.querySelector('.gap-alert.tip-res');
         return el && { cls: el.className, tape: el.querySelector('.ga-tape').textContent, name: el.querySelector('.ga-name').textContent, amt: el.querySelector('.ga-pct').textContent,
           slush: (el.querySelector('.ga-slush') || {}).textContent || '', meme: el.querySelector('.ga-meme').textContent, busy: Fx.queueBusy, overlay: overlayOpen,
           sfx: Object.keys(Sound.stats.played), d: Math.round(run.tipLog[0].delta) }; });
       const tape = { up: '📈 찌라시 적중!', flat: '➖ 본전 치기', down: '📉 찌라시 설거지' }[kind];
       ok(st && st.cls.includes(kind) && st.tape === tape && st.busy && !st.overlay, `${w} ${kind}: 중앙 알림 (시장 정지, 오버레이 아직)`, st);
-      if (kind === 'flat') ok(/💼 비자금 \+80만/.test(st.slush) && st.amt === '±0만' && st.cls.includes('t1'), `${w} flat: ±0만 + 비자금 줄 + tier1`);
+      if (kind === 'flat') ok(!!st && /💼 비자금 \+80만/.test(st.slush) && st.amt === '±0만' && st.cls.includes('t1'), `${w} flat: ±0만 + 비자금 줄 + tier1`);
       if (kind === 'up') ok(st.cls.includes('t3') && ['coinDrop','billFlip'].every(x => st.sfx.includes(x)), `${w} up: tier3 + coinDrop·billFlip`, st.sfx);
       if (kind === 'down') ok(st.cls.includes('t3') && st.sfx.includes('crashDown') && !st.sfx.includes('crowdScream'), `${w} down: tier3 + crashDown (비명 없음)`, st.sfx);
       if (kind === 'flat') ok(st.sfx.includes('flatShrug'), `${w} flat: flatShrug`, st.sfx);

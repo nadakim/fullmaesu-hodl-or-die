@@ -1,14 +1,24 @@
 # 브라우저 회귀 테스트 (Playwright, 저장소 밖 의존성 없음)
 
 전역 Playwright(`/opt/node22/lib/node_modules/playwright`, Chromium 사전 설치)를 node 스크립트로 직접 부른다 — npm 설치 없음.
-테스트는 `http://127.0.0.1:8765/demo.html`을 연다. 먼저 사이트 사본을 띄운다:
+**실행은 러너로 한다** (의존성 없음 — 사이트 사본·정적 서버·판정·재실행·요약을 한 번에):
 
 ```sh
-OUT=/tmp/hodl-test; mkdir -p $OUT/site $OUT/w $OUT/v
-cp docs/demo $OUT/site/demo.html && cp docs/*.js $OUT/site/ && cp -r docs/assets $OUT/site/
-python3 -m http.server 8765 --bind 127.0.0.1 -d $OUT/site &
-for t in tools/tests/*.cjs; do echo "== $t"; node $t $OUT 2>&1 | grep -E '^FAIL|FAIL [0-9]+ /|errors|Error' ; done
+node tools/tests/run-all.cjs                       # 전체 (워커 1개, 포트 8770)
+node tools/tests/run-all.cjs --only boss,sector    # 일부만
+node tools/tests/run-all.cjs --workers 2           # 2개씩 동시에 (워커마다 자기 포트·서버)
+node tools/tests/run-all.cjs --repeat 5 --json r.json   # 같은 스위트 5회 → 테스트별 실패·무결과 횟수 표 (재실행 없음)
 ```
+
+- 판정: 마지막 `FAIL n / m` 줄이 있으면 n = 0이 통과. 그 줄이 없는 관찰 스크립트(smoke·w-*)는 `errors []` 줄이 있고 `FAIL ` 줄이 없으면 통과. **결과 줄 없이 끝나면(크래시·타임아웃 `--timeout` 기본 600초) 실패**로 센다.
+- 실패한 테스트는 끝에 **단독으로 1회 재실행**한다(`--no-retry`로 끔). 재실행에서 통과하면 '불안정(FLAKY)'으로 요약에 남긴다 — 통과로 치지만 원인을 찾아 고칠 대상이다. 재실행 뒤에도 실패가 있으면 종료 코드 1.
+- 테스트는 환경 변수 `TEST_BASE`(러너가 `http://127.0.0.1:<포트>`로 넣는다)를 읽는다. 단독으로 직접 돌릴 때는 예전처럼 8765에 서버를 띄우고 `node tools/tests/<이름>.cjs <폴더>`.
+- **새 테스트 작성 규칙** (간헐 실패 원인이었던 것):
+  - 장을 반복문으로 끝까지 돌릴 때는 `while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }` — `window.tipChance = () => 0`은 일반 찌라시만 끈다. **세력 매집 찌라시(`maybeAccumTip`)는 따로 열려** 반복문이 무한히 돈다(sector.cjs 무결과).
+  - 고정 `sleep` 대신 상태 대기(`waitForFunction`·`waitForSelector`) — 연출·결과 화면은 부하가 크면 늦게 뜬다. `.catch(() => {})`로 대기 실패를 삼키지 말고 다음 단계 상태(주차·phase)로 확인한다.
+  - 무작위 일정(보스·시장)에 기대는 검사는 고정한다 (`run.bossPlan[2] = …`, `setSeed`).
+  - 짧은 연출(히트스톱 등)은 몇 ms 뒤 샘플하지 말고 함수를 감싸 호출을 센다.
+  - 판을 끝내는 장면 뒤에 새 판을 시작하면 먼저 연출 큐를 비운다 (`Fx.skipQueue`) — 미뤄진 게임오버 화면이 새 판 위에서 돈다.
 
 - 인자 = 스크린샷을 남길 폴더 (`w-*`는 그 아래 `w/`에 저장). `FAIL 0 / N` + `errors []`면 통과.
 - 타이틀은 첫 입력(클릭·키)을 오디오 켜기에만 쓰고 메뉴 선택으로 쓰지 않는다 → 테스트는 페이지를 열거나 새로고침한 뒤 `keyboard.press('Shift')`를 먼저 누른다 (bgm.cjs만 첫 입력 전 무음을 재느라 예외).
@@ -16,6 +26,7 @@ for t in tools/tests/*.cjs; do echo "== $t"; node $t $OUT 2>&1 | grep -E '^FAIL|
 
 | 파일 | 보는 것 |
 |---|---|
+| run-all | 러너 (테스트 아님): 사이트 사본·포트별 서버·결과 줄 판정·실패 단독 재실행·요약·`--repeat` 통계 |
 | smoke | CLAUDE.md 스모크 (출격 → 매수 → 장중 → 전량 매도 → 주간 결산 → 암시장 → 2주차) |
 | rm | 읽을 수 있는 시장: 시그널·뉴스·카드 EV(툴팁) |
 | tipres | 찌라시 결과 중앙 알림·효과음·찌라시 기록 |

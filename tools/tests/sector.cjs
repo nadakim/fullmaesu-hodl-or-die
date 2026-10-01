@@ -34,9 +34,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.screenshot({ path: `${S}/sector-table-${W}.png` });
     await p.evaluate(() => hideOverlay());
     // 장 마감 정산: 수익 마감 → 섹터 단계가 맨 앞
-    await p.evaluate(() => { window.tipChance = () => 0; window.rollCrit = () => 0; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); assets.coin.price *= 1.01; tick(); } renderAll(); });
+    await p.evaluate(() => { window.tipChance = () => 0; window.rollCrit = () => 0; const g0 = window.rollGaps; window.rollGaps = () => {}; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); assets.coin.price *= 1.01; tick(); } window.rollGaps = g0; renderAll(); });
     const st = await p.evaluate(() => { const r = run.lastDay.settlement.find(x => x.assetId === 'coin'); return r ? r.steps.map(s => [s.source, s.kind, s.label]) : null; });
-    ok(W + ' 정산 단계: base → 섹터 칩 → 섹터 배수 (유물보다 먼저)', !!st && st[1][0] === 'sector' && st[1][1] === 'add' && st[2][1] === 'mult' && /📊 암호화폐 Lv\.3/.test(st[1][2]), st);
+    ok(W + ' 정산 단계: base → 섹터 칩 → 섹터 배수 (유물보다 먼저)', !!st && !!st[1] && !!st[2] && st[1][0] === 'sector' && st[1][1] === 'add' && st[2][1] === 'mult' && /📊 암호화폐 Lv\.3/.test(st[1][2]), st);
     await p.waitForFunction(() => !!stage, null, { timeout: 8000 }).catch(() => {});
     await p.waitForFunction(() => document.querySelectorAll('#stageList .chain-chip').length >= 3, null, { timeout: 8000 }).catch(() => {});   // 고정 대기 대신 칩 3개(오늘 손익·섹터 칩·섹터 배수)가 나올 때까지
     const chips = await p.evaluate(() => [...document.querySelectorAll('#stageList .chain-chip')].map(c => [c.textContent, getComputedStyle(c).color]));

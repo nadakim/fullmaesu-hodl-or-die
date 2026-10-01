@@ -199,9 +199,10 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
     // 갭 (보유 종목)
     await p2.keyboard.press('Escape');
     await p2.evaluate(() => { hideOverlay(); switchTab('play'); window.tipChance = () => 0; startRun(); openPosition('sc', 800, 1, 1, true); startMarket(); renderAll();
+      window.__hs = 0; if(!Fx.__hsWrapped){ const o = Fx.hitStop; Fx.hitStop = (...a) => { window.__hs++; return o(...a); }; Fx.__hsWrapped = true; }   // 히트스톱 호출을 센다 (40ms 뒤 frozenFor 샘플은 부하가 크면 이미 끝나 있었다)
       onGameEvent('gap', { stockId: 'sc', pct: 0.5 }); });
-    await sleep(40);
-    const gp = await p2.evaluate(() => ({ frozen: Fx.frozenFor() > 0, parts: Fx.particleCount }));   // 롱 + 상승 갭 = 중 단계
+    await p2.waitForFunction(() => Fx.particleCount > 0, null, { timeout: 3000 }).catch(() => {});
+    const gp = await p2.evaluate(() => ({ frozen: window.__hs > 0, parts: Fx.particleCount }));   // 롱 + 상승 갭 = 중 단계
     await sleep(120);
     await p2.screenshot({ path: `${S}/j-gap-${W}.png` });
     const gp2 = await p2.evaluate(() => document.querySelector('.cabinet').className);

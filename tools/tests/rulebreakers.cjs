@@ -12,7 +12,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html?tuner=1'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
   await p.click('#startBtn'); await sleep(500);
   // 판마다 새로: 유물·포지션 비우고 시작
-  const fresh = () => p.evaluate(() => { window.tipChance = () => 0; setSeed(7); startRun(); clearToasts(); run.relics = []; run.relicState = {}; run.cash = 1e6; renderAll(); });
+  // 직전 장면이 판을 끝냈으면(파산 → runOver) 게임오버 화면이 연출 큐 뒤에 미뤄져 있다 — 큐를 비우고 결과 화면을 닫은 뒤 새 판 (안 그러면 새 판 위에서 showRunOver가 돌아 page error)
+  const fresh = async () => {
+    await p.evaluate(() => { for(let i = 0; i < 50 && Fx.queueBusy; i++) Fx.skipQueue(); });
+    await p.waitForTimeout(50);
+    await p.evaluate(() => { hideOverlay(); window.tipChance = () => 0; setSeed(7); startRun(); clearToasts(); run.relics = []; run.relicState = {}; run.cash = 1e6; renderAll(); });
+  };
   const ev = (type) => p.evaluate(t => eventLog.filter(e => e.type === t).map(e => e.data), type);
 
   // 1) 💎 존버 서약서: 매도 불가 · 장 마감 넘긴 날 n → ×1.5ⁿ

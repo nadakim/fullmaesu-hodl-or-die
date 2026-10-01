@@ -37,7 +37,7 @@
 - `.claude/agents/` — `engine-purity-reviewer`(공통 규칙 diff 검토)·`regression-runner`(회귀 테스트 요약). 스킬 `verify-ui`(`tools/verify-ui.sh [테스트…|all]`)·`balance-compare`(전/후 시뮬 비교)·`add-content`(카드·유물·보스·찌라시·뉴스·엔딩·효과음 추가 체크리스트)·`new-test`(회귀 테스트 템플릿)·`pr-prepare`(PR 전 점검·설명 초안)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
-- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 41개, 실행법·주의점은 `tools/tests/README.md`)
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 41개, 실행법·주의점은 `tools/tests/README.md`). **실행: `node tools/tests/run-all.cjs`** (포트별 서버, 결과 줄 없는 종료 = 실패, 실패는 단독 재실행해 통과하면 '불안정' 경고, `--repeat N` 통계)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
@@ -144,6 +144,7 @@
    mkdir -p /tmp/site && cp docs/demo /tmp/site/demo.html && cp docs/engine.js /tmp/site/ && cp -r docs/assets /tmp/site/
    python3 -m http.server 8765 --bind 127.0.0.1 -d /tmp/site
    ```
+   회귀 테스트 전체는 서버 없이 `node tools/tests/run-all.cjs` 한 줄 (러너가 사본·서버를 만든다).
 2. Playwright MCP(`.mcp.json`) 또는 Playwright 스크립트로 `http://127.0.0.1:8765/demo.html`을 연다.
 3. 최소 스모크 시나리오:
    - `▶ 영끌 출격` 클릭 → `#screen-play`가 활성화되고 장전(`run.phase === 'premarket'`)인지
