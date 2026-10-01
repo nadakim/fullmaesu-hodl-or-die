@@ -783,11 +783,6 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .rl-kind{position:absolute;left:calc(-5 * var(--u));top:calc(-6 * var(--u));min-width:calc(11 * var(--u));padding:calc(1 * var(--u)) calc(2 * var(--u)) 0;
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);line-height:1.3;color:#000;background:var(--cyan);box-shadow:0 0 0 calc(1 * var(--u)) #000;pointer-events:none;}
 .rl-kind.xmult,.rl-kind.mult,.rl-kind.last{background:var(--gold);} .rl-kind.copy{background:var(--text2);}
-/* 규칙 파괴형 유물 발동: 정산 계산식 줄 아래 이름 (N4 색 언어 — 칩 cyan · 배수 gold) */
-.sf-rule{margin:calc(2 * var(--u)) auto calc(6 * var(--u));width:max-content;max-width:100%;padding:calc(2 * var(--u)) calc(10 * var(--u));background:#000;
-  font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.3;box-shadow:0 0 0 calc(2 * var(--u)) currentColor,calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
-.sf-rule.hit{animation:sfHit .22s steps(4);}
-body.no-motion .sf-rule.hit{animation:none;} @media (prefers-reduced-motion: reduce){.sf-rule.hit{animation:none;}}
 .choice.locked-choice{opacity:.45;cursor:not-allowed;}
 .ch-lock{display:block;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--gold);}
 .tn-sel{max-width:100%;background:var(--panel);color:var(--text);font:inherit;}
@@ -1208,6 +1203,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .toast.bad{color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .toast.good{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .toast.warn{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+@keyframes toastInUp{0%{opacity:0;transform:translateY(calc(6 * var(--u)));}8%{opacity:1;transform:none;}85%{opacity:1;}100%{opacity:0;}}
 @keyframes toastIn{0%{opacity:0;transform:translateY(calc(-6 * var(--u)));}8%{opacity:1;transform:none;}85%{opacity:1;}100%{opacity:0;}}
 
 .overlay{
@@ -1829,12 +1825,14 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   .play-right .open-btn,.play-right .sell-all-btn{position:sticky;bottom:0;z-index:2;}
   .play-right .section-title,.play-left .section-title{align-items:baseline;}
 
-  /* 알림은 상단 HUD를 가리지 않도록 왼쪽 차트 위에 */
+  /* 알림은 왼쪽 아래(시세표 하단) — 상단 HUD·차트·장 시작·전량 매도를 안 가린다 (2.6초, pointer-events:none). 새 알림이 맨 아래에 쌓이고 오래된 것이 위로 밀린다.
+     (예전엔 왼쪽 차트 위였는데 차트를 계속 가려서 옮김. 후보 비교: 포지션 하단·손패 하단은 매수/매도 대상이라 시세표 하단이 가장 덜 해롭다) */
   .toast-layer{
-    top:calc(170 * var(--u));left:calc(30 * var(--u));
-    transform:none;
-    width:min(40vw, calc(480 * var(--u)));
+    top:auto;bottom:calc(16 * var(--u));left:calc(24 * var(--u));
+    transform:none;justify-content:flex-end;
+    width:min(30vw, calc(420 * var(--u)));
   }
+  .toast{animation-name:toastInUp;}
 }
 
 /* 좁은 2단(4:3 등): 시장 칸이 좁아 스파크라인을 빼고 종목명·시그널에 폭을 준다 */
@@ -4738,15 +4736,6 @@ function stageFormula(chips, mult, amt){   // 계산식 줄 [칩] × [배수] = 
   if(mult !== undefined) $('sfMultV').textContent = fmtMultNum(mult);
   if(amt !== undefined){ const el = $('sfAmt'); $('sfAmtV').textContent = amt === null ? '?' : fmtSigned(amt); el.className = 'sf-box sf-amt' + (amt === null ? '' : amt >= 0 ? ' up' : ' down'); }
 }
-/* 규칙 파괴형 유물 단계면 계산식 줄 아래에 이름 (칩 = cyan · 배수 = gold) */
-function stageRuleName(st){
-  const r = RELIC_BY_ID[st.source], el = $('sfRule');
-  if(!el || !r || !r.rule) return;
-  el.hidden = false;
-  el.className = 'sf-rule ' + (st.kind === 'add' ? 'n-chip' : 'n-mult');
-  el.textContent = `⚠ 규칙 파괴 · ${st.label}`;
-  void el.offsetWidth; el.classList.add('hit');
-}
 const sfHit = id => { const el = $(id); if(!el) return; el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); };
 function preShake(ratio){   // 최종 금액 직전 흔들림 — 폭 = 이번 판 기준 세기 (흔들림 끔·동작 줄이기면 CSS가 끈다)
   const box = $('overlayBox'), P = JUICE_CONFIG.preShakePx;
@@ -4780,7 +4769,6 @@ function playDayStage(d){
       <span class="sf-box sf-mult" id="sfMult"><small>배수</small><span id="sfMultV">1.00</span></span>=
       <span class="sf-box sf-amt" id="sfAmt"><small>금액</small><span id="sfAmtV">?</span></span>
     </div>
-    <div class="sf-rule" id="sfRule" hidden></div>
     <div class="chain-list" id="stageList">
       ${rows.map((r, i) => `<div class="chain-row pending" id="stageRow${i}">
         <div class="chain-head"><span class="chain-name">${r.posName} <small>${posLabel(r)}</small></span><span class="stage-mult" id="stageMult${i}">×1</span></div>
@@ -4839,7 +4827,6 @@ function playDayStage(d){
         el.className = 'stage-mult' + (tier ? ' f' + tier : '');
         stageHeroSet(st.runningMult);
         stageFormula(st.runningChips, st.runningMult);
-        stageRuleName(st);
         const box = $('overlayBox');
         box.classList.toggle('stage-f3', tier === 3); box.classList.toggle('stage-f4', tier === 4);
       }, true);
