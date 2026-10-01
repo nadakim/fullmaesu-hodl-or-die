@@ -1,10 +1,11 @@
 # Session Handoff
 
-**Date:** 2026-09-29
+**Date:** 2026-10-01
 **main:** S0~S9 + N1까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
 
 ## 지금 상태 (다음 세션은 여기부터)
 
+- **사운드 감사 + Sound Lab** (`claude/sound-audit`, UI 전용 — engine.js 무변경, `sim/runner.js` 결과 동일): `node tools/audio/audit.cjs`(68개 효과음·옵션·BGM 렌더 측정) → `freq.cjs`(봇 판 8개 재생 빈도·보이스 스틸) → `report.cjs`(표 갱신) = `docs/audio/AUDIT.md`(가설 7개 판정 + 덤 6개). `?soundlab=1`로 Sound Lab(`docs/soundlab.js`: 카테고리별 버튼·음높이 사다리·옵션·장면 18개·BGM 곡/레이어·소리별 메모 `hodl.soundNotes`·'메모 복사' JSON). `Sound.stats.stolenBy` 관찰 추가. 테스트 `tools/tests/soundlab.cjs`. 새 효과음은 `SOUND_CATEGORY_OF`에 등록 후 audit 재실행. **다음: 사용자가 Sound Lab에서 듣고 메모 JSON을 보내면 AUDIT.md '귀로 확인할 목록'을 채우고 음량 균형·고음·컴프레서 조정안(🛑 사용자 결정)을 만든다.** Sound Lab 전용 아티팩트는 별도 게시(기존 데모 아티팩트는 목표 성장률 실험 빌드라 덮어쓰지 않음).
 - **빌드 카운터 보스 4종 — 보류** (`claude/boss-counters`, 🛑 PR 후 멈춤 — 기본 꺼짐으로 머지 대기): 사용자 결정 = 조정안 1~3 모두 불채택, `BOSS_COUNTERS_ON` 기본 false(손잡이 `BOSS_COUNTER_TARGET_MULT`·`_HELD`도 꺼짐), 기본 상태 = main 결과 동일. 코드·도구(`sim/boss-split.js`·`sim/boss-counter-check.js`·runner `--boss-adapt`)·테스트(`bosscounter.cjs`는 플래그를 켜서 회귀) 보존. 재개 조건: 목표 구조 결정 후 표적/비표적 재측정, 남은 후보 = 표적 판정을 지난 주 정산 비중으로 (BOSS_WEEKS.md '결정').
 - **다음 작업: 목표 성장률 실험** — `ROUND_TARGETS` 구조(주 성장 배수 요구)를 `--targets`·`metrics.js`(주간 여유·주 성장 배수 표)로 실험. 결정되면 빌드 카운터를 `--set BOSS_COUNTERS_ON=true`로 재측정.
 - **플레이테스트 킷** (`claude/playtest-kit`, UI 전용 — 자동 머지): `?playtest=1`(설문 포함) 또는 설정 '플레이테스트 모드'(복사만) → 게임오버·졸업 화면 '📋 판 기록 복사', `hodl.playtestLog`, ≡ '전체 기록 복사'. 절차·지표·CSV `docs/playtest/PROTOCOL.md`. 테스트 `tools/tests/playtest.cjs`. 다음: 테스터 5~10명 결과를 받아 PROTOCOL.md 집계표로 정리 → 봇 지표(BALANCE_METRICS.md)와 비교.

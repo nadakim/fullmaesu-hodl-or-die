@@ -1,0 +1,892 @@
+{
+ "sr": 44100,
+ "bgmVolumeSetting": 0.4,
+ "sfxVolumeSetting": 0.5,
+ "calibration": {
+  "makeupDb": 9.293293290662795
+ },
+ "songs": {
+  "title": {
+   "loop": true,
+   "bpm": 132,
+   "key": "C major",
+   "adaptive": false,
+   "bars": 16,
+   "seconds": 29.1,
+   "full": {
+    "peakDb": -8.07,
+    "rmsDb": -22.22,
+    "crestDb": 14.14,
+    "loudA": -28.14,
+    "durS": 30.15,
+    "centroid": 404.8,
+    "hiRatio": 0.04,
+    "band24": 0.03,
+    "loRatio": 0.63,
+    "over": 0,
+    "peakPreDb": -16.44,
+    "rmsPreDb": -31.45
+   },
+   "seam": {
+    "jumpDb": 60.31,
+    "beforeDb": -80.79,
+    "afterDb": -20.48,
+    "innerMedianDb": 17.37,
+    "innerP95Db": 221.54,
+    "innerMaxDb": 221.54,
+    "flag": false
+   },
+   "channels": {
+    "p1": {
+     "peakDb": -19.45,
+     "rmsDb": -28.4,
+     "crestDb": 8.96,
+     "loudA": -28.56,
+     "durS": 29.09,
+     "centroid": 1234.52,
+     "hiRatio": 0.13,
+     "band24": 0.12,
+     "loRatio": 0,
+     "over": 0
+    },
+    "p2": {
+     "peakDb": -24.68,
+     "rmsDb": -37.38,
+     "crestDb": 12.7,
+     "loudA": -37.71,
+     "durS": 28.75,
+     "centroid": 1170.98,
+     "hiRatio": 0.12,
+     "band24": 0.12,
+     "loRatio": 0,
+     "over": 0
+    },
+    "tri": {
+     "peakDb": -15.13,
+     "rmsDb": -21.03,
+     "crestDb": 5.9,
+     "loudA": -37.29,
+     "durS": 29.09,
+     "centroid": 115.69,
+     "hiRatio": 0,
+     "band24": 0,
+     "loRatio": 0.86,
+     "over": 0
+    },
+    "noise": {
+     "peakDb": -11.37,
+     "rmsDb": -28.7,
+     "crestDb": 17.33,
+     "loudA": -35.49,
+     "durS": 28.93,
+     "centroid": 579.76,
+     "hiRatio": 0.09,
+     "band24": 0.05,
+     "loRatio": 0.36,
+     "over": 0
+    }
+   }
+  },
+  "premarket": {
+   "loop": true,
+   "bpm": 90,
+   "key": "A minor",
+   "adaptive": false,
+   "bars": 16,
+   "seconds": 42.7,
+   "full": {
+    "peakDb": -14.64,
+    "rmsDb": -24.62,
+    "crestDb": 9.98,
+    "loudA": -37.92,
+    "durS": 43.72,
+    "centroid": 139.42,
+    "hiRatio": 0.01,
+    "band24": 0.01,
+    "loRatio": 0.94,
+    "over": 0,
+    "peakPreDb": -23.93,
+    "rmsPreDb": -33.91
+   },
+   "seam": {
+    "jumpDb": 4.35,
+    "beforeDb": -30.02,
+    "afterDb": -25.67,
+    "innerMedianDb": 4.5,
+    "innerP95Db": 5.06,
+    "innerMaxDb": 5.06,
+    "flag": false
+   },
+   "channels": {
+    "p1": {
+     "peakDb": -14.61,
+     "rmsDb": -37.45,
+     "crestDb": 22.84,
+     "loudA": -37.36,
+     "durS": 35.94,
+     "centroid": 1447.2,
+     "hiRatio": 0.22,
+     "band24": 0.22,
+     "loRatio": 0,
+     "over": 0
+    },
+    "p2": {
+     "peakDb": -14.61,
+     "rmsDb": -41.96,
+     "crestDb": 27.35,
+     "loudA": -46.23,
+     "durS": 38.5,
+     "centroid": 507.87,
+     "hiRatio": 0.03,
+     "band24": 0.03,
+     "loRatio": 0.01,
+     "over": 0
+    },
+    "tri": {
+     "peakDb": -14.61,
+     "rmsDb": -24.82,
+     "crestDb": 10.21,
+     "loudA": -43.23,
+     "durS": 38.5,
+     "centroid": 97.07,
+     "hiRatio": 0,
+     "band24": 0,
+     "loRatio": 0.98,
+     "over": 0
+    },
+    "noise": {
+     "peakDb": -14.64,
+     "rmsDb": -46.78,
+     "crestDb": 32.15,
+     "loudA": -47.42,
+     "durS": 36.01,
+     "centroid": 6997.5,
+     "hiRatio": 0.96,
+     "band24": 0.06,
+     "loRatio": 0,
+     "over": 0
+    }
+   }
+  },
+  "market": {
+   "loop": true,
+   "bpm": 128,
+   "key": "E minor",
+   "adaptive": true,
+   "bars": 16,
+   "seconds": 30,
+   "full": {
+    "peakDb": -8.56,
+    "rmsDb": -22.79,
+    "crestDb": 14.23,
+    "loudA": -29.44,
+    "durS": 31.04,
+    "centroid": 348.57,
+    "hiRatio": 0.03,
+    "band24": 0.02,
+    "loRatio": 0.65,
+    "over": 0,
+    "peakPreDb": -17.32,
+    "rmsPreDb": -31.99
+   },
+   "seam": {
+    "jumpDb": 63.08,
+    "beforeDb": -82.56,
+    "afterDb": -19.47,
+    "innerMedianDb": 17.4,
+    "innerP95Db": 220.53,
+    "innerMaxDb": 220.53,
+    "flag": false
+   },
+   "channels": {
+    "p1": {
+     "peakDb": -20.86,
+     "rmsDb": -29.87,
+     "crestDb": 9.02,
+     "loudA": -29.93,
+     "durS": 30,
+     "centroid": 1263.8,
+     "hiRatio": 0.12,
+     "band24": 0.11,
+     "loRatio": 0,
+     "over": 0
+    },
+    "p2": {
+     "peakDb": -29.97,
+     "rmsDb": -35.71,
+     "crestDb": 5.74,
+     "loudA": -38.8,
+     "durS": 29.65,
+     "centroid": 617.4,
+     "hiRatio": 0.04,
+     "band24": 0.03,
+     "loRatio": 0,
+     "over": 0
+    },
+    "tri": {
+     "peakDb": -15.11,
+     "rmsDb": -21.64,
+     "crestDb": 6.53,
+     "loudA": -38.94,
+     "durS": 30,
+     "centroid": 99.36,
+     "hiRatio": 0,
+     "band24": 0,
+     "loRatio": 0.84,
+     "over": 0
+    },
+    "noise": {
+     "peakDb": -13.34,
+     "rmsDb": -30.77,
+     "crestDb": 17.43,
+     "loudA": -37.81,
+     "durS": 30,
+     "centroid": 581.46,
+     "hiRatio": 0.08,
+     "band24": 0.04,
+     "loRatio": 0.34,
+     "over": 0
+    }
+   },
+   "moods": {
+    "NORMAL": {
+     "peakDb": -8.56,
+     "rmsDb": -22.96,
+     "crestDb": 14.4,
+     "loudA": -29.38,
+     "durS": 22.5,
+     "centroid": 365.46,
+     "hiRatio": 0.03,
+     "band24": 0.02,
+     "loRatio": 0.64,
+     "over": 0
+    },
+    "BULL": {
+     "peakDb": -9.3,
+     "rmsDb": -23.06,
+     "crestDb": 13.76,
+     "loudA": -29.61,
+     "durS": 22.5,
+     "centroid": 384.94,
+     "hiRatio": 0.04,
+     "band24": 0.04,
+     "loRatio": 0.52,
+     "over": 0
+    },
+    "BEAR": {
+     "peakDb": -8.93,
+     "rmsDb": -22.93,
+     "crestDb": 14,
+     "loudA": -29.58,
+     "durS": 22.5,
+     "centroid": 328.44,
+     "hiRatio": 0.03,
+     "band24": 0.02,
+     "loRatio": 0.75,
+     "over": 0
+    },
+    "VOLATILE": {
+     "peakDb": -8.65,
+     "rmsDb": -22.93,
+     "crestDb": 14.28,
+     "loudA": -29.35,
+     "durS": 22.5,
+     "centroid": 362.34,
+     "hiRatio": 0.03,
+     "band24": 0.03,
+     "loRatio": 0.63,
+     "over": 0
+    },
+    "danger": {
+     "peakDb": -8.44,
+     "rmsDb": -23.06,
+     "crestDb": 14.62,
+     "loudA": -28.8,
+     "durS": 22.5,
+     "centroid": 403.57,
+     "hiRatio": 0.03,
+     "band24": 0.03,
+     "loRatio": 0.6,
+     "over": 0
+    },
+    "fss": {
+     "peakDb": -8.92,
+     "rmsDb": -22.77,
+     "crestDb": 13.85,
+     "loudA": -29.28,
+     "durS": 22.5,
+     "centroid": 358.02,
+     "hiRatio": 0.03,
+     "band24": 0.02,
+     "loRatio": 0.6,
+     "over": 0
+    },
+    "jackpot": {
+     "peakDb": -8.53,
+     "rmsDb": -22.89,
+     "crestDb": 14.36,
+     "loudA": -28.74,
+     "durS": 22.5,
+     "centroid": 395.02,
+     "hiRatio": 0.03,
+     "band24": 0.02,
+     "loRatio": 0.58,
+     "over": 0
+    },
+    "마감 임박(tempo +12%)": {
+     "peakDb": -9.01,
+     "rmsDb": -22.94,
+     "crestDb": 13.94,
+     "loudA": -29.43,
+     "durS": 22.5,
+     "centroid": 362.88,
+     "hiRatio": 0.03,
+     "band24": 0.02,
+     "loRatio": 0.64,
+     "over": 0
+    }
+   },
+   "layerSolo": {
+    "lead2(BULL 옥타브 위)": {
+     "peakDb": -26.61,
+     "rmsDb": -35.48,
+     "crestDb": 8.87,
+     "loudA": -34.5,
+     "durS": 22.5,
+     "centroid": 2168.84,
+     "hiRatio": 0.43,
+     "band24": 0.41,
+     "loRatio": 0,
+     "over": 0
+    },
+    "ring(금감원 전화벨)": {
+     "peakDb": -25.02,
+     "rmsDb": -30.93,
+     "crestDb": 5.91,
+     "loudA": -38.71,
+     "durS": 20.4,
+     "centroid": 263.97,
+     "hiRatio": 0,
+     "band24": 0,
+     "loRatio": 0.01,
+     "over": 0
+    },
+    "jackpot 패드·금관": {
+     "peakDb": -19.73,
+     "rmsDb": -33.29,
+     "crestDb": 13.56,
+     "loudA": -35.61,
+     "durS": 22.5,
+     "centroid": 680.67,
+     "hiRatio": 0.02,
+     "band24": 0.02,
+     "loRatio": 0,
+     "over": 0
+    }
+   }
+  },
+  "shop": {
+   "loop": true,
+   "bpm": 100,
+   "key": "D minor",
+   "adaptive": false,
+   "bars": 16,
+   "seconds": 38.4,
+   "full": {
+    "peakDb": -11.22,
+    "rmsDb": -22.07,
+    "crestDb": 10.85,
+    "loudA": -31.94,
+    "durS": 39.46,
+    "centroid": 205.52,
+    "hiRatio": 0.01,
+    "band24": 0.01,
+    "loRatio": 0.74,
+    "over": 0,
+    "peakPreDb": -20.51,
+    "rmsPreDb": -31.36
+   },
+   "seam": {
+    "jumpDb": 5.87,
+    "beforeDb": -28.17,
+    "afterDb": -22.3,
+    "innerMedianDb": 5.47,
+    "innerP95Db": 6.33,
+    "innerMaxDb": 6.33,
+    "flag": false
+   },
+   "channels": {
+    "p1": {
+     "peakDb": -14.03,
+     "rmsDb": -32.21,
+     "crestDb": 18.18,
+     "loudA": -32.7,
+     "durS": 38.4,
+     "centroid": 1128.1,
+     "hiRatio": 0.11,
+     "band24": 0.1,
+     "loRatio": 0,
+     "over": 0
+    },
+    "p2": {
+     "peakDb": -14.35,
+     "rmsDb": -45.09,
+     "crestDb": 30.75,
+     "loudA": -45.4,
+     "durS": 38,
+     "centroid": 1330.3,
+     "hiRatio": 0.14,
+     "band24": 0.11,
+     "loRatio": 0,
+     "over": 0
+    },
+    "tri": {
+     "peakDb": -14.35,
+     "rmsDb": -22.49,
+     "crestDb": 8.14,
+     "loudA": -38.74,
+     "durS": 38.4,
+     "centroid": 111.99,
+     "hiRatio": 0,
+     "band24": 0,
+     "loRatio": 0.81,
+     "over": 0
+    },
+    "noise": {
+     "peakDb": -14.58,
+     "rmsDb": -35.38,
+     "crestDb": 20.8,
+     "loudA": -41.33,
+     "durS": 37.86,
+     "centroid": 765.86,
+     "hiRatio": 0.12,
+     "band24": 0.06,
+     "loRatio": 0.35,
+     "over": 0
+    }
+   }
+  },
+  "records": {
+   "loop": true,
+   "bpm": 80,
+   "key": "F major",
+   "adaptive": false,
+   "bars": 16,
+   "seconds": 48,
+   "full": {
+    "peakDb": -14.99,
+    "rmsDb": -24.54,
+    "crestDb": 9.55,
+    "loudA": -36.18,
+    "durS": 49.06,
+    "centroid": 162.64,
+    "hiRatio": 0.01,
+    "band24": 0.01,
+    "loRatio": 0.88,
+    "over": 0,
+    "peakPreDb": -24.29,
+    "rmsPreDb": -33.83
+   },
+   "seam": {
+    "jumpDb": 4.71,
+    "beforeDb": -30.67,
+    "afterDb": -25.96,
+    "innerMedianDb": 4.45,
+    "innerP95Db": 4.91,
+    "innerMaxDb": 4.91,
+    "flag": false
+   },
+   "channels": {
+    "p1": {
+     "peakDb": -24.84,
+     "rmsDb": -36.69,
+     "crestDb": 11.85,
+     "loudA": -36.89,
+     "durS": 38.5,
+     "centroid": 1293.28,
+     "hiRatio": 0.17,
+     "band24": 0.16,
+     "loRatio": 0,
+     "over": 0
+    },
+    "p2": {
+     "peakDb": -33.63,
+     "rmsDb": -42.44,
+     "crestDb": 8.81,
+     "loudA": -47.75,
+     "durS": 38.5,
+     "centroid": 420.11,
+     "hiRatio": 0.02,
+     "band24": 0.02,
+     "loRatio": 0.1,
+     "over": 0
+    },
+    "tri": {
+     "peakDb": -19.58,
+     "rmsDb": -24.86,
+     "crestDb": 5.28,
+     "loudA": -43.29,
+     "durS": 38.5,
+     "centroid": 93.01,
+     "hiRatio": 0,
+     "band24": 0,
+     "loRatio": 0.94,
+     "over": 0
+    },
+    "noise": {
+     "silent": true
+    }
+   }
+  },
+  "tipAlert": {
+   "loop": false,
+   "bpm": 150,
+   "key": "C major",
+   "adaptive": false,
+   "bars": 1,
+   "seconds": 0.8,
+   "full": {
+    "peakDb": -20.2,
+    "rmsDb": -32.47,
+    "crestDb": 12.27,
+    "loudA": -31.38,
+    "durS": 0.7,
+    "centroid": 2329.69,
+    "hiRatio": 0.78,
+    "band24": 0.67,
+    "loRatio": 0,
+    "peakPreDb": -29.49,
+    "rmsPreDb": -41.65,
+    "over": 0
+   }
+  },
+  "weekClear": {
+   "loop": false,
+   "bpm": 140,
+   "key": "C major",
+   "adaptive": false,
+   "bars": 1,
+   "seconds": 1.7,
+   "full": {
+    "peakDb": -8.98,
+    "rmsDb": -19.29,
+    "crestDb": 10.31,
+    "loudA": -25.35,
+    "durS": 1.72,
+    "centroid": 388.55,
+    "hiRatio": 0.05,
+    "band24": 0.05,
+    "loRatio": 0.6,
+    "peakPreDb": -17.95,
+    "rmsPreDb": -28.56,
+    "over": 0
+   }
+  },
+  "gameOver": {
+   "loop": false,
+   "bpm": 110,
+   "key": "A minor",
+   "adaptive": false,
+   "bars": 1,
+   "seconds": 3.8,
+   "full": {
+    "peakDb": -9.79,
+    "rmsDb": -18.67,
+    "crestDb": 8.88,
+    "loudA": -25.48,
+    "durS": 3.55,
+    "centroid": 315.05,
+    "hiRatio": 0.03,
+    "band24": 0.02,
+    "loRatio": 0.64,
+    "peakPreDb": -19.01,
+    "rmsPreDb": -27.96,
+    "over": 0
+   }
+  },
+  "victory": {
+   "loop": false,
+   "bpm": 120,
+   "key": "C major",
+   "adaptive": false,
+   "bars": 2,
+   "seconds": 4,
+   "full": {
+    "peakDb": -9.14,
+    "rmsDb": -19.64,
+    "crestDb": 10.5,
+    "loudA": -26.44,
+    "durS": 3.88,
+    "centroid": 338.44,
+    "hiRatio": 0.03,
+    "band24": 0.03,
+    "loRatio": 0.69,
+    "peakPreDb": -18.17,
+    "rmsPreDb": -28.92,
+    "over": 0
+   }
+  }
+ },
+ "afterSfx": {
+  "song": "market",
+  "atS": 8,
+  "bgmOnly": {
+   "baselineGrDb": 0,
+   "p95GrDb": 0
+  },
+  "rows": [
+   {
+    "sfx": "bestBoom",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 6.44,
+    "deltaGrDb": 6.44,
+    "recoverS": 0.15,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "bestBoom",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 6.44,
+    "deltaGrDb": 6.44,
+    "recoverS": 0.13,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "bankrupt",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.76,
+    "deltaGrDb": 0.76,
+    "recoverS": 2.65,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "bankrupt",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.09,
+    "deltaGrDb": 0.09,
+    "recoverS": 2.63,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "victory",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 1.53,
+    "deltaGrDb": 1.53,
+    "recoverS": 1.03,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "victory",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.65,
+    "deltaGrDb": 0.65,
+    "recoverS": 0.08,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "jackpot",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 0,
+    "deltaGrDb": 0,
+    "recoverS": 0.5,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "jackpot",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0,
+    "deltaGrDb": 0,
+    "recoverS": 2.38,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "marginCall",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 3.51,
+    "deltaGrDb": 3.51,
+    "recoverS": 0.83,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "marginCall",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 4.42,
+    "deltaGrDb": 4.42,
+    "recoverS": 0.83,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "stampWin",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 3.46,
+    "deltaGrDb": 3.46,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "stampWin",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 3.43,
+    "deltaGrDb": 3.43,
+    "recoverS": 0.08,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "multSlam",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 1.94,
+    "deltaGrDb": 1.94,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "multSlam",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 1.92,
+    "deltaGrDb": 1.92,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "settleMult(big)",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.35,
+    "deltaGrDb": 0.35,
+    "recoverS": 0.23,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "settleMult(big)",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.32,
+    "deltaGrDb": 0.32,
+    "recoverS": 0.23,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "packBurst(mythic)",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 1.64,
+    "deltaGrDb": 1.64,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "packBurst(mythic)",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 1.69,
+    "deltaGrDb": 1.69,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "choir",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.33,
+    "deltaGrDb": 0.33,
+    "recoverS": 0.5,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "choir",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0,
+    "deltaGrDb": 0,
+    "recoverS": 1.35,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "crashDown",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 5.24,
+    "deltaGrDb": 5.24,
+    "recoverS": 0.93,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "crashDown",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 5.31,
+    "deltaGrDb": 5.31,
+    "recoverS": 0.93,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "cashRegister",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.01,
+    "deltaGrDb": 0.01,
+    "recoverS": 0.5,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "cashRegister",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0,
+    "deltaGrDb": 0,
+    "recoverS": 3.78,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "sellWin",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 0.06,
+    "deltaGrDb": 0.06,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "sellWin",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 0,
+    "deltaGrDb": 0,
+    "recoverS": 0.95,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "cardPlay",
+    "duck": 0,
+    "baselineGrDb": 0,
+    "peakGrDb": 2.4,
+    "deltaGrDb": 2.4,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   },
+   {
+    "sfx": "cardPlay",
+    "duck": 0.25,
+    "baselineGrDb": 0,
+    "peakGrDb": 2.5,
+    "deltaGrDb": 2.5,
+    "recoverS": 0.05,
+    "bgmPostRmsDb": -22.94
+   }
+  ]
+ }
+}

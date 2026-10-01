@@ -1,0 +1,3191 @@
+{
+ "note": "가상 시계로 돌린 실제 UI. 연출 보통·장중 1배속·BGM 끔·온보딩 전부 해금. perMin = 이름별 총 횟수 ÷ 가상 플레이 분",
+ "settings": {
+  "fxSpeed": "normal",
+  "speed": 1,
+  "bgm": false,
+  "unlockWeek": 8
+ },
+ "all": {
+  "games": 8,
+  "minutes": 76.4,
+  "total": 19797,
+  "merged": 1301,
+  "stolen": 23,
+  "peakVoices": 8,
+  "stolenBy": {
+   "weekClear": 4,
+   "relicGain": 1,
+   "cashRegister": 8,
+   "settleThud": 2,
+   "sigh": 1,
+   "comboUp": 2,
+   "heartbeat": 1,
+   "marketOpen": 1,
+   "dayEnd": 2,
+   "coinIn": 1
+  },
+  "mergedBy": {
+   "cardPlay": 400,
+   "gapUp": 450,
+   "comboUp": 117,
+   "countTick": 59,
+   "dayEnd": 63,
+   "shopShuffle": 130,
+   "billFlip": 19,
+   "uiMove": 3,
+   "coinIn": 58,
+   "relicGain": 2
+  },
+  "lostBy": {
+   "comboUp": 117,
+   "countTick": 59,
+   "gapUp": 29,
+   "billFlip": 19,
+   "coinIn": 58
+  },
+  "variety": {
+   "cardPlay": {
+    "n": 581,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "buy": {
+    "n": 376,
+    "distinct": 8,
+    "topShare": 0.487
+   },
+   "uiHover": {
+    "n": 685,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "uiPress": {
+    "n": 1125,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "drumRoll": {
+    "n": 860,
+    "distinct": 4,
+    "topShare": 0.25
+   },
+   "marketOpen": {
+    "n": 215,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "tipArrive": {
+    "n": 170,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "uiClick": {
+    "n": 176,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "flatShrug": {
+    "n": 141,
+    "distinct": 3,
+    "topShare": 0.957
+   },
+   "comboUp": {
+    "n": 1587,
+    "distinct": 15,
+    "topShare": 0.399
+   },
+   "closeRoll": {
+    "n": 645,
+    "distinct": 3,
+    "topShare": 0.333
+   },
+   "dayEnd": {
+    "n": 331,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "countTick": {
+    "n": 3838,
+    "distinct": 73,
+    "topShare": 0.042
+   },
+   "settleThud": {
+    "n": 167,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "cardDeal": {
+    "n": 1035,
+    "distinct": 5,
+    "topShare": 0.2
+   },
+   "comboBreak": {
+    "n": 387,
+    "distinct": 9,
+    "topShare": 0.413
+   },
+   "gapUp": {
+    "n": 1519,
+    "distinct": 6,
+    "topShare": 0.972
+   },
+   "multSlam": {
+    "n": 326,
+    "distinct": 3,
+    "topShare": 0.706
+   },
+   "goalReach": {
+    "n": 24,
+    "distinct": 2,
+    "topShare": 0.917
+   },
+   "reelStop": {
+    "n": 50,
+    "distinct": 12,
+    "topShare": 0.34
+   },
+   "jackpot": {
+    "n": 28,
+    "distinct": 9,
+    "topShare": 0.393
+   },
+   "settleMult": {
+    "n": 942,
+    "distinct": 30,
+    "topShare": 0.099
+   },
+   "billFlip": {
+    "n": 1913,
+    "distinct": 9,
+    "topShare": 0.191
+   },
+   "coinDrop": {
+    "n": 131,
+    "distinct": 9,
+    "topShare": 0.344
+   },
+   "cashRegister": {
+    "n": 118,
+    "distinct": 74,
+    "topShare": 0.373
+   },
+   "chainStep": {
+    "n": 375,
+    "distinct": 14,
+    "topShare": 0.149
+   },
+   "stampWin": {
+    "n": 85,
+    "distinct": 3,
+    "topShare": 0.376
+   },
+   "weekClear": {
+    "n": 49,
+    "distinct": 4,
+    "topShare": 0.714
+   },
+   "relicGain": {
+    "n": 33,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "shopPad": {
+    "n": 35,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "shopHover": {
+    "n": 24,
+    "distinct": 5,
+    "topShare": 0.292
+   },
+   "uiMove": {
+    "n": 12,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "gapAlarm": {
+    "n": 42,
+    "distinct": 4,
+    "topShare": 0.476
+   },
+   "settleAdd": {
+    "n": 173,
+    "distinct": 15,
+    "topShare": 0.225
+   },
+   "bestBoom": {
+    "n": 12,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "gapDown": {
+    "n": 50,
+    "distinct": 2,
+    "topShare": 0.62
+   },
+   "shopShuffle": {
+    "n": 146,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "relicClack": {
+    "n": 13,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "tierBreak": {
+    "n": 438,
+    "distinct": 49,
+    "topShare": 0.1
+   },
+   "unitBreak": {
+    "n": 302,
+    "distinct": 2,
+    "topShare": 0.98
+   },
+   "sellLoss": {
+    "n": 53,
+    "distinct": 20,
+    "topShare": 0.642
+   },
+   "relicTick": {
+    "n": 106,
+    "distinct": 33,
+    "topShare": 0.321
+   },
+   "relicShatter": {
+    "n": 12,
+    "distinct": 2,
+    "topShare": 0.667
+   },
+   "relicLevelUp": {
+    "n": 10,
+    "distinct": 5,
+    "topShare": 0.4
+   },
+   "rareDraw": {
+    "n": 15,
+    "distinct": 2,
+    "topShare": 0.867
+   },
+   "crashDown": {
+    "n": 18,
+    "distinct": 2,
+    "topShare": 0.778
+   },
+   "victory": {
+    "n": 4,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "sigh": {
+    "n": 3,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "cardReject": {
+    "n": 3,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "fssSanction": {
+    "n": 3,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "crowdScream": {
+    "n": 14,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "stampLoss": {
+    "n": 2,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "heartbeat": {
+    "n": 169,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "survived": {
+    "n": 6,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "marginCall": {
+    "n": 9,
+    "distinct": 2,
+    "topShare": 0.889
+   },
+   "sellWin": {
+    "n": 18,
+    "distinct": 18,
+    "topShare": 0.056
+   },
+   "coinIn": {
+    "n": 181,
+    "distinct": 12,
+    "topShare": 0.099
+   },
+   "fssWarn": {
+    "n": 5,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "packShake": {
+    "n": 1,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "packBurst": {
+    "n": 1,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "packFlip": {
+    "n": 1,
+    "distinct": 1,
+    "topShare": 1
+   },
+   "weekFail": {
+    "n": 4,
+    "distinct": 1,
+    "topShare": 1
+   }
+  },
+  "counts": {
+   "cardPlay": 581,
+   "buy": 376,
+   "uiHover": 685,
+   "uiPress": 1125,
+   "drumRoll": 860,
+   "marketOpen": 215,
+   "tipArrive": 170,
+   "uiClick": 176,
+   "flatShrug": 141,
+   "comboUp": 1587,
+   "closeRoll": 645,
+   "dayEnd": 331,
+   "countTick": 3838,
+   "settleThud": 167,
+   "cardDeal": 1035,
+   "comboBreak": 387,
+   "gapUp": 1519,
+   "multSlam": 326,
+   "goalReach": 24,
+   "reelStop": 50,
+   "jackpot": 28,
+   "settleMult": 942,
+   "billFlip": 1913,
+   "coinDrop": 131,
+   "cashRegister": 118,
+   "chainStep": 375,
+   "stampWin": 85,
+   "weekClear": 49,
+   "relicGain": 33,
+   "shopPad": 35,
+   "shopHover": 24,
+   "uiMove": 12,
+   "gapAlarm": 42,
+   "settleAdd": 173,
+   "bestBoom": 12,
+   "gapDown": 50,
+   "shopShuffle": 146,
+   "relicClack": 13,
+   "tierBreak": 438,
+   "unitBreak": 302,
+   "sellLoss": 53,
+   "relicTick": 106,
+   "relicShatter": 12,
+   "relicLevelUp": 10,
+   "rareDraw": 15,
+   "crashDown": 18,
+   "victory": 4,
+   "sigh": 3,
+   "cardReject": 3,
+   "fssSanction": 3,
+   "crowdScream": 14,
+   "stampLoss": 2,
+   "heartbeat": 169,
+   "survived": 6,
+   "marginCall": 9,
+   "sellWin": 18,
+   "coinIn": 181,
+   "fssWarn": 5,
+   "packShake": 1,
+   "packBurst": 1,
+   "packFlip": 1,
+   "weekFail": 4
+  },
+  "top": [
+   {
+    "name": "countTick",
+    "count": 3838,
+    "perMin": 50.24
+   },
+   {
+    "name": "billFlip",
+    "count": 1913,
+    "perMin": 25.04
+   },
+   {
+    "name": "comboUp",
+    "count": 1587,
+    "perMin": 20.77
+   },
+   {
+    "name": "gapUp",
+    "count": 1519,
+    "perMin": 19.88
+   },
+   {
+    "name": "uiPress",
+    "count": 1125,
+    "perMin": 14.73
+   },
+   {
+    "name": "cardDeal",
+    "count": 1035,
+    "perMin": 13.55
+   },
+   {
+    "name": "settleMult",
+    "count": 942,
+    "perMin": 12.33
+   },
+   {
+    "name": "drumRoll",
+    "count": 860,
+    "perMin": 11.26
+   },
+   {
+    "name": "uiHover",
+    "count": 685,
+    "perMin": 8.97
+   },
+   {
+    "name": "closeRoll",
+    "count": 645,
+    "perMin": 8.44
+   },
+   {
+    "name": "cardPlay",
+    "count": 581,
+    "perMin": 7.6
+   },
+   {
+    "name": "tierBreak",
+    "count": 438,
+    "perMin": 5.73
+   },
+   {
+    "name": "comboBreak",
+    "count": 387,
+    "perMin": 5.07
+   },
+   {
+    "name": "buy",
+    "count": 376,
+    "perMin": 4.92
+   },
+   {
+    "name": "chainStep",
+    "count": 375,
+    "perMin": 4.91
+   },
+   {
+    "name": "dayEnd",
+    "count": 331,
+    "perMin": 4.33
+   },
+   {
+    "name": "multSlam",
+    "count": 326,
+    "perMin": 4.27
+   },
+   {
+    "name": "unitBreak",
+    "count": 302,
+    "perMin": 3.95
+   },
+   {
+    "name": "marketOpen",
+    "count": 215,
+    "perMin": 2.81
+   },
+   {
+    "name": "coinIn",
+    "count": 181,
+    "perMin": 2.37
+   },
+   {
+    "name": "uiClick",
+    "count": 176,
+    "perMin": 2.3
+   },
+   {
+    "name": "settleAdd",
+    "count": 173,
+    "perMin": 2.26
+   },
+   {
+    "name": "tipArrive",
+    "count": 170,
+    "perMin": 2.23
+   },
+   {
+    "name": "heartbeat",
+    "count": 169,
+    "perMin": 2.21
+   },
+   {
+    "name": "settleThud",
+    "count": 167,
+    "perMin": 2.19
+   },
+   {
+    "name": "shopShuffle",
+    "count": 146,
+    "perMin": 1.91
+   },
+   {
+    "name": "flatShrug",
+    "count": 141,
+    "perMin": 1.85
+   },
+   {
+    "name": "coinDrop",
+    "count": 131,
+    "perMin": 1.71
+   },
+   {
+    "name": "cashRegister",
+    "count": 118,
+    "perMin": 1.54
+   },
+   {
+    "name": "relicTick",
+    "count": 106,
+    "perMin": 1.39
+   },
+   {
+    "name": "stampWin",
+    "count": 85,
+    "perMin": 1.11
+   },
+   {
+    "name": "sellLoss",
+    "count": 53,
+    "perMin": 0.69
+   },
+   {
+    "name": "reelStop",
+    "count": 50,
+    "perMin": 0.65
+   },
+   {
+    "name": "gapDown",
+    "count": 50,
+    "perMin": 0.65
+   },
+   {
+    "name": "weekClear",
+    "count": 49,
+    "perMin": 0.64
+   },
+   {
+    "name": "gapAlarm",
+    "count": 42,
+    "perMin": 0.55
+   },
+   {
+    "name": "shopPad",
+    "count": 35,
+    "perMin": 0.46
+   },
+   {
+    "name": "relicGain",
+    "count": 33,
+    "perMin": 0.43
+   },
+   {
+    "name": "jackpot",
+    "count": 28,
+    "perMin": 0.37
+   },
+   {
+    "name": "goalReach",
+    "count": 24,
+    "perMin": 0.31
+   },
+   {
+    "name": "shopHover",
+    "count": 24,
+    "perMin": 0.31
+   },
+   {
+    "name": "crashDown",
+    "count": 18,
+    "perMin": 0.24
+   },
+   {
+    "name": "sellWin",
+    "count": 18,
+    "perMin": 0.24
+   },
+   {
+    "name": "rareDraw",
+    "count": 15,
+    "perMin": 0.2
+   },
+   {
+    "name": "crowdScream",
+    "count": 14,
+    "perMin": 0.18
+   },
+   {
+    "name": "relicClack",
+    "count": 13,
+    "perMin": 0.17
+   },
+   {
+    "name": "uiMove",
+    "count": 12,
+    "perMin": 0.16
+   },
+   {
+    "name": "bestBoom",
+    "count": 12,
+    "perMin": 0.16
+   },
+   {
+    "name": "relicShatter",
+    "count": 12,
+    "perMin": 0.16
+   },
+   {
+    "name": "relicLevelUp",
+    "count": 10,
+    "perMin": 0.13
+   },
+   {
+    "name": "marginCall",
+    "count": 9,
+    "perMin": 0.12
+   },
+   {
+    "name": "survived",
+    "count": 6,
+    "perMin": 0.08
+   },
+   {
+    "name": "fssWarn",
+    "count": 5,
+    "perMin": 0.07
+   },
+   {
+    "name": "victory",
+    "count": 4,
+    "perMin": 0.05
+   },
+   {
+    "name": "weekFail",
+    "count": 4,
+    "perMin": 0.05
+   },
+   {
+    "name": "sigh",
+    "count": 3,
+    "perMin": 0.04
+   },
+   {
+    "name": "cardReject",
+    "count": 3,
+    "perMin": 0.04
+   },
+   {
+    "name": "fssSanction",
+    "count": 3,
+    "perMin": 0.04
+   },
+   {
+    "name": "stampLoss",
+    "count": 2,
+    "perMin": 0.03
+   },
+   {
+    "name": "packShake",
+    "count": 1,
+    "perMin": 0.01
+   },
+   {
+    "name": "packBurst",
+    "count": 1,
+    "perMin": 0.01
+   },
+   {
+    "name": "packFlip",
+    "count": 1,
+    "perMin": 0.01
+   }
+  ]
+ },
+ "byStrategy": {
+  "antFlagBuild": {
+   "games": 2,
+   "minutes": 30.41,
+   "total": 8559,
+   "merged": 496,
+   "stolen": 14,
+   "peakVoices": 8,
+   "stolenBy": {
+    "weekClear": 3,
+    "relicGain": 1,
+    "cashRegister": 7,
+    "settleThud": 2,
+    "sigh": 1
+   },
+   "mergedBy": {
+    "cardPlay": 84,
+    "gapUp": 210,
+    "comboUp": 42,
+    "countTick": 9,
+    "dayEnd": 24,
+    "shopShuffle": 110,
+    "billFlip": 15,
+    "uiMove": 2
+   },
+   "lostBy": {
+    "comboUp": 42,
+    "countTick": 9,
+    "gapUp": 11,
+    "billFlip": 15
+   },
+   "variety": {
+    "cardPlay": {
+     "n": 152,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "buy": {
+     "n": 149,
+     "distinct": 3,
+     "topShare": 0.523
+    },
+    "uiHover": {
+     "n": 268,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiPress": {
+     "n": 443,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "drumRoll": {
+     "n": 320,
+     "distinct": 4,
+     "topShare": 0.25
+    },
+    "marketOpen": {
+     "n": 80,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "tipArrive": {
+     "n": 66,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiClick": {
+     "n": 67,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "flatShrug": {
+     "n": 62,
+     "distinct": 3,
+     "topShare": 0.952
+    },
+    "comboUp": {
+     "n": 603,
+     "distinct": 15,
+     "topShare": 0.4
+    },
+    "closeRoll": {
+     "n": 240,
+     "distinct": 3,
+     "topShare": 0.333
+    },
+    "dayEnd": {
+     "n": 129,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "countTick": {
+     "n": 2002,
+     "distinct": 71,
+     "topShare": 0.039
+    },
+    "settleThud": {
+     "n": 64,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "cardDeal": {
+     "n": 390,
+     "distinct": 5,
+     "topShare": 0.2
+    },
+    "comboBreak": {
+     "n": 142,
+     "distinct": 9,
+     "topShare": 0.444
+    },
+    "gapUp": {
+     "n": 641,
+     "distinct": 4,
+     "topShare": 0.977
+    },
+    "multSlam": {
+     "n": 120,
+     "distinct": 3,
+     "topShare": 0.667
+    },
+    "goalReach": {
+     "n": 10,
+     "distinct": 2,
+     "topShare": 0.9
+    },
+    "reelStop": {
+     "n": 16,
+     "distinct": 8,
+     "topShare": 0.25
+    },
+    "jackpot": {
+     "n": 10,
+     "distinct": 5,
+     "topShare": 0.4
+    },
+    "settleMult": {
+     "n": 547,
+     "distinct": 23,
+     "topShare": 0.112
+    },
+    "billFlip": {
+     "n": 852,
+     "distinct": 9,
+     "topShare": 0.174
+    },
+    "coinDrop": {
+     "n": 53,
+     "distinct": 8,
+     "topShare": 0.321
+    },
+    "cashRegister": {
+     "n": 49,
+     "distinct": 33,
+     "topShare": 0.347
+    },
+    "chainStep": {
+     "n": 216,
+     "distinct": 14,
+     "topShare": 0.144
+    },
+    "stampWin": {
+     "n": 40,
+     "distinct": 3,
+     "topShare": 0.375
+    },
+    "weekClear": {
+     "n": 20,
+     "distinct": 4,
+     "topShare": 0.7
+    },
+    "relicGain": {
+     "n": 7,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopPad": {
+     "n": 14,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopHover": {
+     "n": 7,
+     "distinct": 3,
+     "topShare": 0.429
+    },
+    "uiMove": {
+     "n": 7,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "gapAlarm": {
+     "n": 14,
+     "distinct": 3,
+     "topShare": 0.429
+    },
+    "settleAdd": {
+     "n": 85,
+     "distinct": 11,
+     "topShare": 0.306
+    },
+    "bestBoom": {
+     "n": 5,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "gapDown": {
+     "n": 19,
+     "distinct": 2,
+     "topShare": 0.684
+    },
+    "shopShuffle": {
+     "n": 120,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicClack": {
+     "n": 7,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "tierBreak": {
+     "n": 260,
+     "distinct": 47,
+     "topShare": 0.119
+    },
+    "unitBreak": {
+     "n": 161,
+     "distinct": 2,
+     "topShare": 0.969
+    },
+    "sellLoss": {
+     "n": 17,
+     "distinct": 2,
+     "topShare": 0.941
+    },
+    "relicTick": {
+     "n": 61,
+     "distinct": 26,
+     "topShare": 0.148
+    },
+    "relicShatter": {
+     "n": 8,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicLevelUp": {
+     "n": 6,
+     "distinct": 3,
+     "topShare": 0.667
+    },
+    "rareDraw": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "crashDown": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "victory": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "sigh": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "cardReject": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "fssSanction": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    }
+   },
+   "counts": {
+    "cardPlay": 152,
+    "buy": 149,
+    "uiHover": 268,
+    "uiPress": 443,
+    "drumRoll": 320,
+    "marketOpen": 80,
+    "tipArrive": 66,
+    "uiClick": 67,
+    "flatShrug": 62,
+    "comboUp": 603,
+    "closeRoll": 240,
+    "dayEnd": 129,
+    "countTick": 2002,
+    "settleThud": 64,
+    "cardDeal": 390,
+    "comboBreak": 142,
+    "gapUp": 641,
+    "multSlam": 120,
+    "goalReach": 10,
+    "reelStop": 16,
+    "jackpot": 10,
+    "settleMult": 547,
+    "billFlip": 852,
+    "coinDrop": 53,
+    "cashRegister": 49,
+    "chainStep": 216,
+    "stampWin": 40,
+    "weekClear": 20,
+    "relicGain": 7,
+    "shopPad": 14,
+    "shopHover": 7,
+    "uiMove": 7,
+    "gapAlarm": 14,
+    "settleAdd": 85,
+    "bestBoom": 5,
+    "gapDown": 19,
+    "shopShuffle": 120,
+    "relicClack": 7,
+    "tierBreak": 260,
+    "unitBreak": 161,
+    "sellLoss": 17,
+    "relicTick": 61,
+    "relicShatter": 8,
+    "relicLevelUp": 6,
+    "rareDraw": 2,
+    "crashDown": 2,
+    "victory": 2,
+    "sigh": 2,
+    "cardReject": 1,
+    "fssSanction": 1
+   },
+   "top": [
+    {
+     "name": "countTick",
+     "count": 2002,
+     "perMin": 65.83
+    },
+    {
+     "name": "billFlip",
+     "count": 852,
+     "perMin": 28.01
+    },
+    {
+     "name": "gapUp",
+     "count": 641,
+     "perMin": 21.08
+    },
+    {
+     "name": "comboUp",
+     "count": 603,
+     "perMin": 19.83
+    },
+    {
+     "name": "settleMult",
+     "count": 547,
+     "perMin": 17.99
+    },
+    {
+     "name": "uiPress",
+     "count": 443,
+     "perMin": 14.57
+    },
+    {
+     "name": "cardDeal",
+     "count": 390,
+     "perMin": 12.82
+    },
+    {
+     "name": "drumRoll",
+     "count": 320,
+     "perMin": 10.52
+    },
+    {
+     "name": "uiHover",
+     "count": 268,
+     "perMin": 8.81
+    },
+    {
+     "name": "tierBreak",
+     "count": 260,
+     "perMin": 8.55
+    },
+    {
+     "name": "closeRoll",
+     "count": 240,
+     "perMin": 7.89
+    },
+    {
+     "name": "chainStep",
+     "count": 216,
+     "perMin": 7.1
+    },
+    {
+     "name": "unitBreak",
+     "count": 161,
+     "perMin": 5.29
+    },
+    {
+     "name": "cardPlay",
+     "count": 152,
+     "perMin": 5
+    },
+    {
+     "name": "buy",
+     "count": 149,
+     "perMin": 4.9
+    },
+    {
+     "name": "comboBreak",
+     "count": 142,
+     "perMin": 4.67
+    },
+    {
+     "name": "dayEnd",
+     "count": 129,
+     "perMin": 4.24
+    },
+    {
+     "name": "multSlam",
+     "count": 120,
+     "perMin": 3.95
+    },
+    {
+     "name": "shopShuffle",
+     "count": 120,
+     "perMin": 3.95
+    },
+    {
+     "name": "settleAdd",
+     "count": 85,
+     "perMin": 2.79
+    },
+    {
+     "name": "marketOpen",
+     "count": 80,
+     "perMin": 2.63
+    },
+    {
+     "name": "uiClick",
+     "count": 67,
+     "perMin": 2.2
+    },
+    {
+     "name": "tipArrive",
+     "count": 66,
+     "perMin": 2.17
+    },
+    {
+     "name": "settleThud",
+     "count": 64,
+     "perMin": 2.1
+    },
+    {
+     "name": "flatShrug",
+     "count": 62,
+     "perMin": 2.04
+    },
+    {
+     "name": "relicTick",
+     "count": 61,
+     "perMin": 2.01
+    },
+    {
+     "name": "coinDrop",
+     "count": 53,
+     "perMin": 1.74
+    },
+    {
+     "name": "cashRegister",
+     "count": 49,
+     "perMin": 1.61
+    },
+    {
+     "name": "stampWin",
+     "count": 40,
+     "perMin": 1.32
+    },
+    {
+     "name": "weekClear",
+     "count": 20,
+     "perMin": 0.66
+    },
+    {
+     "name": "gapDown",
+     "count": 19,
+     "perMin": 0.62
+    },
+    {
+     "name": "sellLoss",
+     "count": 17,
+     "perMin": 0.56
+    },
+    {
+     "name": "reelStop",
+     "count": 16,
+     "perMin": 0.53
+    },
+    {
+     "name": "shopPad",
+     "count": 14,
+     "perMin": 0.46
+    },
+    {
+     "name": "gapAlarm",
+     "count": 14,
+     "perMin": 0.46
+    },
+    {
+     "name": "goalReach",
+     "count": 10,
+     "perMin": 0.33
+    },
+    {
+     "name": "jackpot",
+     "count": 10,
+     "perMin": 0.33
+    },
+    {
+     "name": "relicShatter",
+     "count": 8,
+     "perMin": 0.26
+    },
+    {
+     "name": "relicGain",
+     "count": 7,
+     "perMin": 0.23
+    },
+    {
+     "name": "shopHover",
+     "count": 7,
+     "perMin": 0.23
+    },
+    {
+     "name": "uiMove",
+     "count": 7,
+     "perMin": 0.23
+    },
+    {
+     "name": "relicClack",
+     "count": 7,
+     "perMin": 0.23
+    },
+    {
+     "name": "relicLevelUp",
+     "count": 6,
+     "perMin": 0.2
+    },
+    {
+     "name": "bestBoom",
+     "count": 5,
+     "perMin": 0.16
+    },
+    {
+     "name": "rareDraw",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "crashDown",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "victory",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "sigh",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "cardReject",
+     "count": 1,
+     "perMin": 0.03
+    },
+    {
+     "name": "fssSanction",
+     "count": 1,
+     "perMin": 0.03
+    }
+   ]
+  },
+  "levTowerBuild": {
+   "games": 1,
+   "minutes": 15.17,
+   "total": 3814,
+   "merged": 260,
+   "stolen": 2,
+   "peakVoices": 8,
+   "stolenBy": {
+    "comboUp": 1,
+    "weekClear": 1
+   },
+   "mergedBy": {
+    "cardPlay": 83,
+    "countTick": 11,
+    "comboUp": 29,
+    "gapUp": 93,
+    "dayEnd": 23,
+    "shopShuffle": 20,
+    "uiMove": 1
+   },
+   "lostBy": {
+    "countTick": 11,
+    "comboUp": 29,
+    "gapUp": 8
+   },
+   "variety": {
+    "cardPlay": {
+     "n": 118,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "buy": {
+     "n": 83,
+     "distinct": 5,
+     "topShare": 0.506
+    },
+    "uiHover": {
+     "n": 133,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiPress": {
+     "n": 220,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "drumRoll": {
+     "n": 160,
+     "distinct": 4,
+     "topShare": 0.25
+    },
+    "marketOpen": {
+     "n": 40,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "comboUp": {
+     "n": 312,
+     "distinct": 9,
+     "topShare": 0.378
+    },
+    "gapUp": {
+     "n": 285,
+     "distinct": 5,
+     "topShare": 0.961
+    },
+    "multSlam": {
+     "n": 69,
+     "distinct": 3,
+     "topShare": 0.739
+    },
+    "goalReach": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "closeRoll": {
+     "n": 120,
+     "distinct": 3,
+     "topShare": 0.333
+    },
+    "comboBreak": {
+     "n": 77,
+     "distinct": 8,
+     "topShare": 0.338
+    },
+    "dayEnd": {
+     "n": 67,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "countTick": {
+     "n": 748,
+     "distinct": 57,
+     "topShare": 0.051
+    },
+    "settleThud": {
+     "n": 32,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "cardDeal": {
+     "n": 195,
+     "distinct": 5,
+     "topShare": 0.2
+    },
+    "gapAlarm": {
+     "n": 11,
+     "distinct": 3,
+     "topShare": 0.636
+    },
+    "gapDown": {
+     "n": 18,
+     "distinct": 2,
+     "topShare": 0.611
+    },
+    "reelStop": {
+     "n": 8,
+     "distinct": 3,
+     "topShare": 0.5
+    },
+    "jackpot": {
+     "n": 4,
+     "distinct": 2,
+     "topShare": 0.5
+    },
+    "settleMult": {
+     "n": 239,
+     "distinct": 30,
+     "topShare": 0.121
+    },
+    "billFlip": {
+     "n": 422,
+     "distinct": 9,
+     "topShare": 0.19
+    },
+    "coinDrop": {
+     "n": 34,
+     "distinct": 9,
+     "topShare": 0.294
+    },
+    "cashRegister": {
+     "n": 29,
+     "distinct": 19,
+     "topShare": 0.345
+    },
+    "tipArrive": {
+     "n": 30,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiClick": {
+     "n": 30,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "crashDown": {
+     "n": 5,
+     "distinct": 2,
+     "topShare": 0.8
+    },
+    "crowdScream": {
+     "n": 4,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "chainStep": {
+     "n": 78,
+     "distinct": 13,
+     "topShare": 0.154
+    },
+    "stampWin": {
+     "n": 19,
+     "distinct": 3,
+     "topShare": 0.421
+    },
+    "weekClear": {
+     "n": 10,
+     "distinct": 3,
+     "topShare": 0.7
+    },
+    "relicGain": {
+     "n": 3,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopPad": {
+     "n": 7,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopHover": {
+     "n": 5,
+     "distinct": 4,
+     "topShare": 0.4
+    },
+    "sellLoss": {
+     "n": 6,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "stampLoss": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopShuffle": {
+     "n": 26,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicClack": {
+     "n": 3,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "flatShrug": {
+     "n": 19,
+     "distinct": 2,
+     "topShare": 0.895
+    },
+    "uiMove": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "tierBreak": {
+     "n": 58,
+     "distinct": 23,
+     "topShare": 0.121
+    },
+    "bestBoom": {
+     "n": 3,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "unitBreak": {
+     "n": 47,
+     "distinct": 2,
+     "topShare": 0.979
+    },
+    "relicTick": {
+     "n": 11,
+     "distinct": 9,
+     "topShare": 0.182
+    },
+    "rareDraw": {
+     "n": 7,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "heartbeat": {
+     "n": 10,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "survived": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "marginCall": {
+     "n": 3,
+     "distinct": 2,
+     "topShare": 0.667
+    },
+    "victory": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    }
+   },
+   "counts": {
+    "cardPlay": 118,
+    "buy": 83,
+    "uiHover": 133,
+    "uiPress": 220,
+    "drumRoll": 160,
+    "marketOpen": 40,
+    "comboUp": 312,
+    "gapUp": 285,
+    "multSlam": 69,
+    "goalReach": 1,
+    "closeRoll": 120,
+    "comboBreak": 77,
+    "dayEnd": 67,
+    "countTick": 748,
+    "settleThud": 32,
+    "cardDeal": 195,
+    "gapAlarm": 11,
+    "gapDown": 18,
+    "reelStop": 8,
+    "jackpot": 4,
+    "settleMult": 239,
+    "billFlip": 422,
+    "coinDrop": 34,
+    "cashRegister": 29,
+    "tipArrive": 30,
+    "uiClick": 30,
+    "crashDown": 5,
+    "crowdScream": 4,
+    "chainStep": 78,
+    "stampWin": 19,
+    "weekClear": 10,
+    "relicGain": 3,
+    "shopPad": 7,
+    "shopHover": 5,
+    "sellLoss": 6,
+    "stampLoss": 1,
+    "shopShuffle": 26,
+    "relicClack": 3,
+    "flatShrug": 19,
+    "uiMove": 2,
+    "tierBreak": 58,
+    "bestBoom": 3,
+    "unitBreak": 47,
+    "relicTick": 11,
+    "rareDraw": 7,
+    "heartbeat": 10,
+    "survived": 1,
+    "marginCall": 3,
+    "victory": 1
+   },
+   "top": [
+    {
+     "name": "countTick",
+     "count": 748,
+     "perMin": 49.32
+    },
+    {
+     "name": "billFlip",
+     "count": 422,
+     "perMin": 27.83
+    },
+    {
+     "name": "comboUp",
+     "count": 312,
+     "perMin": 20.57
+    },
+    {
+     "name": "gapUp",
+     "count": 285,
+     "perMin": 18.79
+    },
+    {
+     "name": "settleMult",
+     "count": 239,
+     "perMin": 15.76
+    },
+    {
+     "name": "uiPress",
+     "count": 220,
+     "perMin": 14.51
+    },
+    {
+     "name": "cardDeal",
+     "count": 195,
+     "perMin": 12.86
+    },
+    {
+     "name": "drumRoll",
+     "count": 160,
+     "perMin": 10.55
+    },
+    {
+     "name": "uiHover",
+     "count": 133,
+     "perMin": 8.77
+    },
+    {
+     "name": "closeRoll",
+     "count": 120,
+     "perMin": 7.91
+    },
+    {
+     "name": "cardPlay",
+     "count": 118,
+     "perMin": 7.78
+    },
+    {
+     "name": "buy",
+     "count": 83,
+     "perMin": 5.47
+    },
+    {
+     "name": "chainStep",
+     "count": 78,
+     "perMin": 5.14
+    },
+    {
+     "name": "comboBreak",
+     "count": 77,
+     "perMin": 5.08
+    },
+    {
+     "name": "multSlam",
+     "count": 69,
+     "perMin": 4.55
+    },
+    {
+     "name": "dayEnd",
+     "count": 67,
+     "perMin": 4.42
+    },
+    {
+     "name": "tierBreak",
+     "count": 58,
+     "perMin": 3.82
+    },
+    {
+     "name": "unitBreak",
+     "count": 47,
+     "perMin": 3.1
+    },
+    {
+     "name": "marketOpen",
+     "count": 40,
+     "perMin": 2.64
+    },
+    {
+     "name": "coinDrop",
+     "count": 34,
+     "perMin": 2.24
+    },
+    {
+     "name": "settleThud",
+     "count": 32,
+     "perMin": 2.11
+    },
+    {
+     "name": "tipArrive",
+     "count": 30,
+     "perMin": 1.98
+    },
+    {
+     "name": "uiClick",
+     "count": 30,
+     "perMin": 1.98
+    },
+    {
+     "name": "cashRegister",
+     "count": 29,
+     "perMin": 1.91
+    },
+    {
+     "name": "shopShuffle",
+     "count": 26,
+     "perMin": 1.71
+    },
+    {
+     "name": "stampWin",
+     "count": 19,
+     "perMin": 1.25
+    },
+    {
+     "name": "flatShrug",
+     "count": 19,
+     "perMin": 1.25
+    },
+    {
+     "name": "gapDown",
+     "count": 18,
+     "perMin": 1.19
+    },
+    {
+     "name": "gapAlarm",
+     "count": 11,
+     "perMin": 0.73
+    },
+    {
+     "name": "relicTick",
+     "count": 11,
+     "perMin": 0.73
+    },
+    {
+     "name": "weekClear",
+     "count": 10,
+     "perMin": 0.66
+    },
+    {
+     "name": "heartbeat",
+     "count": 10,
+     "perMin": 0.66
+    },
+    {
+     "name": "reelStop",
+     "count": 8,
+     "perMin": 0.53
+    },
+    {
+     "name": "shopPad",
+     "count": 7,
+     "perMin": 0.46
+    },
+    {
+     "name": "rareDraw",
+     "count": 7,
+     "perMin": 0.46
+    },
+    {
+     "name": "sellLoss",
+     "count": 6,
+     "perMin": 0.4
+    },
+    {
+     "name": "crashDown",
+     "count": 5,
+     "perMin": 0.33
+    },
+    {
+     "name": "shopHover",
+     "count": 5,
+     "perMin": 0.33
+    },
+    {
+     "name": "jackpot",
+     "count": 4,
+     "perMin": 0.26
+    },
+    {
+     "name": "crowdScream",
+     "count": 4,
+     "perMin": 0.26
+    },
+    {
+     "name": "relicGain",
+     "count": 3,
+     "perMin": 0.2
+    },
+    {
+     "name": "relicClack",
+     "count": 3,
+     "perMin": 0.2
+    },
+    {
+     "name": "bestBoom",
+     "count": 3,
+     "perMin": 0.2
+    },
+    {
+     "name": "marginCall",
+     "count": 3,
+     "perMin": 0.2
+    },
+    {
+     "name": "uiMove",
+     "count": 2,
+     "perMin": 0.13
+    },
+    {
+     "name": "goalReach",
+     "count": 1,
+     "perMin": 0.07
+    },
+    {
+     "name": "stampLoss",
+     "count": 1,
+     "perMin": 0.07
+    },
+    {
+     "name": "survived",
+     "count": 1,
+     "perMin": 0.07
+    },
+    {
+     "name": "victory",
+     "count": 1,
+     "perMin": 0.07
+    }
+   ]
+  },
+  "random": {
+   "games": 3,
+   "minutes": 27.19,
+   "total": 6921,
+   "merged": 542,
+   "stolen": 6,
+   "peakVoices": 8,
+   "stolenBy": {
+    "comboUp": 1,
+    "heartbeat": 1,
+    "cashRegister": 1,
+    "marketOpen": 1,
+    "dayEnd": 1,
+    "coinIn": 1
+   },
+   "mergedBy": {
+    "cardPlay": 233,
+    "dayEnd": 15,
+    "coinIn": 58,
+    "comboUp": 46,
+    "countTick": 37,
+    "gapUp": 147,
+    "billFlip": 4,
+    "relicGain": 2
+   },
+   "lostBy": {
+    "coinIn": 58,
+    "comboUp": 46,
+    "countTick": 37,
+    "gapUp": 10,
+    "billFlip": 4
+   },
+   "variety": {
+    "cardPlay": {
+     "n": 311,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "buy": {
+     "n": 143,
+     "distinct": 8,
+     "topShare": 0.434
+    },
+    "uiHover": {
+     "n": 250,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiPress": {
+     "n": 410,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "drumRoll": {
+     "n": 320,
+     "distinct": 4,
+     "topShare": 0.25
+    },
+    "marketOpen": {
+     "n": 80,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "comboUp": {
+     "n": 625,
+     "distinct": 12,
+     "topShare": 0.406
+    },
+    "gapUp": {
+     "n": 569,
+     "distinct": 5,
+     "topShare": 0.974
+    },
+    "comboBreak": {
+     "n": 156,
+     "distinct": 9,
+     "topShare": 0.417
+    },
+    "closeRoll": {
+     "n": 240,
+     "distinct": 3,
+     "topShare": 0.333
+    },
+    "tipArrive": {
+     "n": 63,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiClick": {
+     "n": 67,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "flatShrug": {
+     "n": 50,
+     "distinct": 2,
+     "topShare": 0.98
+    },
+    "dayEnd": {
+     "n": 119,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "countTick": {
+     "n": 1039,
+     "distinct": 61,
+     "topShare": 0.054
+    },
+    "reelStop": {
+     "n": 24,
+     "distinct": 8,
+     "topShare": 0.333
+    },
+    "jackpot": {
+     "n": 13,
+     "distinct": 7,
+     "topShare": 0.308
+    },
+    "settleMult": {
+     "n": 155,
+     "distinct": 18,
+     "topShare": 0.142
+    },
+    "billFlip": {
+     "n": 626,
+     "distinct": 8,
+     "topShare": 0.217
+    },
+    "coinDrop": {
+     "n": 42,
+     "distinct": 8,
+     "topShare": 0.405
+    },
+    "cashRegister": {
+     "n": 39,
+     "distinct": 24,
+     "topShare": 0.41
+    },
+    "settleThud": {
+     "n": 64,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "cardDeal": {
+     "n": 385,
+     "distinct": 5,
+     "topShare": 0.2
+    },
+    "multSlam": {
+     "n": 128,
+     "distinct": 3,
+     "topShare": 0.719
+    },
+    "goalReach": {
+     "n": 12,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "sellWin": {
+     "n": 18,
+     "distinct": 18,
+     "topShare": 0.056
+    },
+    "coinIn": {
+     "n": 181,
+     "distinct": 12,
+     "topShare": 0.099
+    },
+    "crashDown": {
+     "n": 11,
+     "distinct": 2,
+     "topShare": 0.909
+    },
+    "crowdScream": {
+     "n": 10,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "bestBoom": {
+     "n": 4,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "sellLoss": {
+     "n": 28,
+     "distinct": 19,
+     "topShare": 0.357
+    },
+    "heartbeat": {
+     "n": 159,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "marginCall": {
+     "n": 6,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "gapAlarm": {
+     "n": 15,
+     "distinct": 4,
+     "topShare": 0.467
+    },
+    "chainStep": {
+     "n": 81,
+     "distinct": 11,
+     "topShare": 0.16
+    },
+    "stampWin": {
+     "n": 26,
+     "distinct": 3,
+     "topShare": 0.385
+    },
+    "weekClear": {
+     "n": 18,
+     "distinct": 3,
+     "topShare": 0.722
+    },
+    "relicGain": {
+     "n": 22,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopPad": {
+     "n": 13,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopHover": {
+     "n": 11,
+     "distinct": 5,
+     "topShare": 0.273
+    },
+    "cardReject": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "gapDown": {
+     "n": 11,
+     "distinct": 2,
+     "topShare": 0.545
+    },
+    "tierBreak": {
+     "n": 120,
+     "distinct": 22,
+     "topShare": 0.117
+    },
+    "unitBreak": {
+     "n": 94,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiMove": {
+     "n": 3,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "settleAdd": {
+     "n": 88,
+     "distinct": 15,
+     "topShare": 0.182
+    },
+    "fssWarn": {
+     "n": 5,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicClack": {
+     "n": 3,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicTick": {
+     "n": 34,
+     "distinct": 6,
+     "topShare": 0.676
+    },
+    "fssSanction": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "packShake": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "packBurst": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "packFlip": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicShatter": {
+     "n": 4,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "survived": {
+     "n": 5,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicLevelUp": {
+     "n": 4,
+     "distinct": 2,
+     "topShare": 0.75
+    },
+    "rareDraw": {
+     "n": 6,
+     "distinct": 2,
+     "topShare": 0.667
+    },
+    "victory": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "stampLoss": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "weekFail": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    }
+   },
+   "counts": {
+    "cardPlay": 311,
+    "buy": 143,
+    "uiHover": 250,
+    "uiPress": 410,
+    "drumRoll": 320,
+    "marketOpen": 80,
+    "comboUp": 625,
+    "gapUp": 569,
+    "comboBreak": 156,
+    "closeRoll": 240,
+    "tipArrive": 63,
+    "uiClick": 67,
+    "flatShrug": 50,
+    "dayEnd": 119,
+    "countTick": 1039,
+    "reelStop": 24,
+    "jackpot": 13,
+    "settleMult": 155,
+    "billFlip": 626,
+    "coinDrop": 42,
+    "cashRegister": 39,
+    "settleThud": 64,
+    "cardDeal": 385,
+    "multSlam": 128,
+    "goalReach": 12,
+    "sellWin": 18,
+    "coinIn": 181,
+    "crashDown": 11,
+    "crowdScream": 10,
+    "bestBoom": 4,
+    "sellLoss": 28,
+    "heartbeat": 159,
+    "marginCall": 6,
+    "gapAlarm": 15,
+    "chainStep": 81,
+    "stampWin": 26,
+    "weekClear": 18,
+    "relicGain": 22,
+    "shopPad": 13,
+    "shopHover": 11,
+    "cardReject": 2,
+    "gapDown": 11,
+    "tierBreak": 120,
+    "unitBreak": 94,
+    "uiMove": 3,
+    "settleAdd": 88,
+    "fssWarn": 5,
+    "relicClack": 3,
+    "relicTick": 34,
+    "fssSanction": 2,
+    "packShake": 1,
+    "packBurst": 1,
+    "packFlip": 1,
+    "relicShatter": 4,
+    "survived": 5,
+    "relicLevelUp": 4,
+    "rareDraw": 6,
+    "victory": 1,
+    "stampLoss": 1,
+    "weekFail": 2
+   },
+   "top": [
+    {
+     "name": "countTick",
+     "count": 1039,
+     "perMin": 38.21
+    },
+    {
+     "name": "billFlip",
+     "count": 626,
+     "perMin": 23.02
+    },
+    {
+     "name": "comboUp",
+     "count": 625,
+     "perMin": 22.98
+    },
+    {
+     "name": "gapUp",
+     "count": 569,
+     "perMin": 20.93
+    },
+    {
+     "name": "uiPress",
+     "count": 410,
+     "perMin": 15.08
+    },
+    {
+     "name": "cardDeal",
+     "count": 385,
+     "perMin": 14.16
+    },
+    {
+     "name": "drumRoll",
+     "count": 320,
+     "perMin": 11.77
+    },
+    {
+     "name": "cardPlay",
+     "count": 311,
+     "perMin": 11.44
+    },
+    {
+     "name": "uiHover",
+     "count": 250,
+     "perMin": 9.19
+    },
+    {
+     "name": "closeRoll",
+     "count": 240,
+     "perMin": 8.83
+    },
+    {
+     "name": "coinIn",
+     "count": 181,
+     "perMin": 6.66
+    },
+    {
+     "name": "heartbeat",
+     "count": 159,
+     "perMin": 5.85
+    },
+    {
+     "name": "comboBreak",
+     "count": 156,
+     "perMin": 5.74
+    },
+    {
+     "name": "settleMult",
+     "count": 155,
+     "perMin": 5.7
+    },
+    {
+     "name": "buy",
+     "count": 143,
+     "perMin": 5.26
+    },
+    {
+     "name": "multSlam",
+     "count": 128,
+     "perMin": 4.71
+    },
+    {
+     "name": "tierBreak",
+     "count": 120,
+     "perMin": 4.41
+    },
+    {
+     "name": "dayEnd",
+     "count": 119,
+     "perMin": 4.38
+    },
+    {
+     "name": "unitBreak",
+     "count": 94,
+     "perMin": 3.46
+    },
+    {
+     "name": "settleAdd",
+     "count": 88,
+     "perMin": 3.24
+    },
+    {
+     "name": "chainStep",
+     "count": 81,
+     "perMin": 2.98
+    },
+    {
+     "name": "marketOpen",
+     "count": 80,
+     "perMin": 2.94
+    },
+    {
+     "name": "uiClick",
+     "count": 67,
+     "perMin": 2.46
+    },
+    {
+     "name": "settleThud",
+     "count": 64,
+     "perMin": 2.35
+    },
+    {
+     "name": "tipArrive",
+     "count": 63,
+     "perMin": 2.32
+    },
+    {
+     "name": "flatShrug",
+     "count": 50,
+     "perMin": 1.84
+    },
+    {
+     "name": "coinDrop",
+     "count": 42,
+     "perMin": 1.54
+    },
+    {
+     "name": "cashRegister",
+     "count": 39,
+     "perMin": 1.43
+    },
+    {
+     "name": "relicTick",
+     "count": 34,
+     "perMin": 1.25
+    },
+    {
+     "name": "sellLoss",
+     "count": 28,
+     "perMin": 1.03
+    },
+    {
+     "name": "stampWin",
+     "count": 26,
+     "perMin": 0.96
+    },
+    {
+     "name": "reelStop",
+     "count": 24,
+     "perMin": 0.88
+    },
+    {
+     "name": "relicGain",
+     "count": 22,
+     "perMin": 0.81
+    },
+    {
+     "name": "sellWin",
+     "count": 18,
+     "perMin": 0.66
+    },
+    {
+     "name": "weekClear",
+     "count": 18,
+     "perMin": 0.66
+    },
+    {
+     "name": "gapAlarm",
+     "count": 15,
+     "perMin": 0.55
+    },
+    {
+     "name": "jackpot",
+     "count": 13,
+     "perMin": 0.48
+    },
+    {
+     "name": "shopPad",
+     "count": 13,
+     "perMin": 0.48
+    },
+    {
+     "name": "goalReach",
+     "count": 12,
+     "perMin": 0.44
+    },
+    {
+     "name": "crashDown",
+     "count": 11,
+     "perMin": 0.4
+    },
+    {
+     "name": "shopHover",
+     "count": 11,
+     "perMin": 0.4
+    },
+    {
+     "name": "gapDown",
+     "count": 11,
+     "perMin": 0.4
+    },
+    {
+     "name": "crowdScream",
+     "count": 10,
+     "perMin": 0.37
+    },
+    {
+     "name": "marginCall",
+     "count": 6,
+     "perMin": 0.22
+    },
+    {
+     "name": "rareDraw",
+     "count": 6,
+     "perMin": 0.22
+    },
+    {
+     "name": "fssWarn",
+     "count": 5,
+     "perMin": 0.18
+    },
+    {
+     "name": "survived",
+     "count": 5,
+     "perMin": 0.18
+    },
+    {
+     "name": "bestBoom",
+     "count": 4,
+     "perMin": 0.15
+    },
+    {
+     "name": "relicShatter",
+     "count": 4,
+     "perMin": 0.15
+    },
+    {
+     "name": "relicLevelUp",
+     "count": 4,
+     "perMin": 0.15
+    },
+    {
+     "name": "uiMove",
+     "count": 3,
+     "perMin": 0.11
+    },
+    {
+     "name": "relicClack",
+     "count": 3,
+     "perMin": 0.11
+    },
+    {
+     "name": "cardReject",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "fssSanction",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "weekFail",
+     "count": 2,
+     "perMin": 0.07
+    },
+    {
+     "name": "packShake",
+     "count": 1,
+     "perMin": 0.04
+    },
+    {
+     "name": "packBurst",
+     "count": 1,
+     "perMin": 0.04
+    },
+    {
+     "name": "packFlip",
+     "count": 1,
+     "perMin": 0.04
+    },
+    {
+     "name": "victory",
+     "count": 1,
+     "perMin": 0.04
+    },
+    {
+     "name": "stampLoss",
+     "count": 1,
+     "perMin": 0.04
+    }
+   ]
+  },
+  "nothing": {
+   "games": 2,
+   "minutes": 3.63,
+   "total": 503,
+   "merged": 3,
+   "stolen": 1,
+   "peakVoices": 8,
+   "stolenBy": {
+    "dayEnd": 1
+   },
+   "mergedBy": {
+    "dayEnd": 1,
+    "countTick": 2
+   },
+   "lostBy": {
+    "countTick": 2
+   },
+   "variety": {
+    "uiHover": {
+     "n": 34,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiPress": {
+     "n": 52,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "drumRoll": {
+     "n": 60,
+     "distinct": 4,
+     "topShare": 0.25
+    },
+    "marketOpen": {
+     "n": 15,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "closeRoll": {
+     "n": 45,
+     "distinct": 3,
+     "topShare": 0.333
+    },
+    "tipArrive": {
+     "n": 11,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "uiClick": {
+     "n": 12,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "comboUp": {
+     "n": 47,
+     "distinct": 5,
+     "topShare": 0.447
+    },
+    "coinDrop": {
+     "n": 2,
+     "distinct": 2,
+     "topShare": 0.5
+    },
+    "billFlip": {
+     "n": 13,
+     "distinct": 4,
+     "topShare": 0.769
+    },
+    "goalReach": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "dayEnd": {
+     "n": 16,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "cardDeal": {
+     "n": 65,
+     "distinct": 5,
+     "topShare": 0.2
+    },
+    "buy": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "flatShrug": {
+     "n": 10,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "gapUp": {
+     "n": 24,
+     "distinct": 2,
+     "topShare": 0.917
+    },
+    "countTick": {
+     "n": 49,
+     "distinct": 16,
+     "topShare": 0.122
+    },
+    "settleThud": {
+     "n": 7,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "multSlam": {
+     "n": 9,
+     "distinct": 2,
+     "topShare": 0.778
+    },
+    "comboBreak": {
+     "n": 12,
+     "distinct": 4,
+     "topShare": 0.5
+    },
+    "sellLoss": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "gapAlarm": {
+     "n": 2,
+     "distinct": 2,
+     "topShare": 0.5
+    },
+    "gapDown": {
+     "n": 2,
+     "distinct": 2,
+     "topShare": 0.5
+    },
+    "sigh": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "weekClear": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "relicGain": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopPad": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "shopHover": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "reelStop": {
+     "n": 2,
+     "distinct": 2,
+     "topShare": 0.5
+    },
+    "jackpot": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "settleMult": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "cashRegister": {
+     "n": 1,
+     "distinct": 1,
+     "topShare": 1
+    },
+    "weekFail": {
+     "n": 2,
+     "distinct": 1,
+     "topShare": 1
+    }
+   },
+   "counts": {
+    "uiHover": 34,
+    "uiPress": 52,
+    "drumRoll": 60,
+    "marketOpen": 15,
+    "closeRoll": 45,
+    "tipArrive": 11,
+    "uiClick": 12,
+    "comboUp": 47,
+    "coinDrop": 2,
+    "billFlip": 13,
+    "goalReach": 1,
+    "dayEnd": 16,
+    "cardDeal": 65,
+    "buy": 1,
+    "flatShrug": 10,
+    "gapUp": 24,
+    "countTick": 49,
+    "settleThud": 7,
+    "multSlam": 9,
+    "comboBreak": 12,
+    "sellLoss": 2,
+    "gapAlarm": 2,
+    "gapDown": 2,
+    "sigh": 1,
+    "weekClear": 1,
+    "relicGain": 1,
+    "shopPad": 1,
+    "shopHover": 1,
+    "reelStop": 2,
+    "jackpot": 1,
+    "settleMult": 1,
+    "cashRegister": 1,
+    "weekFail": 2
+   },
+   "top": [
+    {
+     "name": "cardDeal",
+     "count": 65,
+     "perMin": 17.91
+    },
+    {
+     "name": "drumRoll",
+     "count": 60,
+     "perMin": 16.54
+    },
+    {
+     "name": "uiPress",
+     "count": 52,
+     "perMin": 14.33
+    },
+    {
+     "name": "countTick",
+     "count": 49,
+     "perMin": 13.5
+    },
+    {
+     "name": "comboUp",
+     "count": 47,
+     "perMin": 12.95
+    },
+    {
+     "name": "closeRoll",
+     "count": 45,
+     "perMin": 12.4
+    },
+    {
+     "name": "uiHover",
+     "count": 34,
+     "perMin": 9.37
+    },
+    {
+     "name": "gapUp",
+     "count": 24,
+     "perMin": 6.61
+    },
+    {
+     "name": "dayEnd",
+     "count": 16,
+     "perMin": 4.41
+    },
+    {
+     "name": "marketOpen",
+     "count": 15,
+     "perMin": 4.13
+    },
+    {
+     "name": "billFlip",
+     "count": 13,
+     "perMin": 3.58
+    },
+    {
+     "name": "uiClick",
+     "count": 12,
+     "perMin": 3.31
+    },
+    {
+     "name": "comboBreak",
+     "count": 12,
+     "perMin": 3.31
+    },
+    {
+     "name": "tipArrive",
+     "count": 11,
+     "perMin": 3.03
+    },
+    {
+     "name": "flatShrug",
+     "count": 10,
+     "perMin": 2.76
+    },
+    {
+     "name": "multSlam",
+     "count": 9,
+     "perMin": 2.48
+    },
+    {
+     "name": "settleThud",
+     "count": 7,
+     "perMin": 1.93
+    },
+    {
+     "name": "coinDrop",
+     "count": 2,
+     "perMin": 0.55
+    },
+    {
+     "name": "sellLoss",
+     "count": 2,
+     "perMin": 0.55
+    },
+    {
+     "name": "gapAlarm",
+     "count": 2,
+     "perMin": 0.55
+    },
+    {
+     "name": "gapDown",
+     "count": 2,
+     "perMin": 0.55
+    },
+    {
+     "name": "reelStop",
+     "count": 2,
+     "perMin": 0.55
+    },
+    {
+     "name": "weekFail",
+     "count": 2,
+     "perMin": 0.55
+    },
+    {
+     "name": "goalReach",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "buy",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "sigh",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "weekClear",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "relicGain",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "shopPad",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "shopHover",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "jackpot",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "settleMult",
+     "count": 1,
+     "perMin": 0.28
+    },
+    {
+     "name": "cashRegister",
+     "count": 1,
+     "perMin": 0.28
+    }
+   ]
+  }
+ },
+ "games": [
+  {
+   "strat": "antFlagBuild",
+   "seed": 2,
+   "ended": true,
+   "capped": null,
+   "endCause": "VICTORY",
+   "weeksCleared": 8,
+   "round": 8,
+   "day": 5,
+   "minutes": 14.56,
+   "events": 4288,
+   "merged": 215,
+   "stolen": 10,
+   "peakVoices": 8,
+   "stolenBy": {
+    "weekClear": 2,
+    "relicGain": 1,
+    "cashRegister": 6,
+    "settleThud": 1
+   },
+   "relics": [
+    "dopamine",
+    "antFlag",
+    "infinity",
+    "sectorSet",
+    "moonSavings",
+    "ccompound"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "antFlagBuild",
+   "seed": 3,
+   "ended": true,
+   "capped": null,
+   "endCause": "VICTORY",
+   "weeksCleared": 8,
+   "round": 8,
+   "day": 5,
+   "minutes": 15.85,
+   "events": 4271,
+   "merged": 281,
+   "stolen": 4,
+   "peakVoices": 8,
+   "stolenBy": {
+    "sigh": 1,
+    "weekClear": 1,
+    "settleThud": 1,
+    "cashRegister": 1
+   },
+   "relics": [
+    "dopamine",
+    "antFlag",
+    "ccompound",
+    "infinity",
+    "moonSavings",
+    "sectorSet"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "levTowerBuild",
+   "seed": 2,
+   "ended": true,
+   "capped": null,
+   "endCause": "VICTORY",
+   "weeksCleared": 8,
+   "round": 8,
+   "day": 5,
+   "minutes": 15.17,
+   "events": 3814,
+   "merged": 260,
+   "stolen": 2,
+   "peakVoices": 8,
+   "stolenBy": {
+    "comboUp": 1,
+    "weekClear": 1
+   },
+   "relics": [
+    "phoenix",
+    "traumaSurvivor",
+    "limitUp",
+    "levTower",
+    "hotline",
+    "rerun"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "random",
+   "seed": 1,
+   "ended": true,
+   "capped": null,
+   "endCause": "VICTORY",
+   "weeksCleared": 8,
+   "round": 8,
+   "day": 5,
+   "minutes": 16.09,
+   "events": 4197,
+   "merged": 276,
+   "stolen": 4,
+   "peakVoices": 8,
+   "stolenBy": {
+    "comboUp": 1,
+    "heartbeat": 1,
+    "cashRegister": 1,
+    "marketOpen": 1
+   },
+   "relics": [
+    "dopamine",
+    "antFlag",
+    "payday",
+    "coldwallet",
+    "capital",
+    "tipCollector"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "random",
+   "seed": 2,
+   "ended": true,
+   "capped": null,
+   "endCause": "NEAR_MISS",
+   "weeksCleared": 3,
+   "round": 4,
+   "day": 5,
+   "minutes": 5.88,
+   "events": 1338,
+   "merged": 111,
+   "stolen": 1,
+   "peakVoices": 8,
+   "stolenBy": {
+    "dayEnd": 1
+   },
+   "relics": [
+    "seal",
+    "shortpro",
+    "hotline",
+    "payday"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "random",
+   "seed": 3,
+   "ended": true,
+   "capped": null,
+   "endCause": "ROUND_TRIP",
+   "weeksCleared": 3,
+   "round": 4,
+   "day": 5,
+   "minutes": 5.23,
+   "events": 1386,
+   "merged": 155,
+   "stolen": 1,
+   "peakVoices": 8,
+   "stolenBy": {
+    "coinIn": 1
+   },
+   "relics": [
+    "vip",
+    "payday",
+    "coldwallet"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "nothing",
+   "seed": 1,
+   "ended": true,
+   "capped": null,
+   "endCause": "SIDELINED",
+   "weeksCleared": 1,
+   "round": 2,
+   "day": 5,
+   "minutes": 2.52,
+   "events": 413,
+   "merged": 3,
+   "stolen": 1,
+   "peakVoices": 8,
+   "stolenBy": {
+    "dayEnd": 1
+   },
+   "relics": [
+    "inverse"
+   ],
+   "notes": []
+  },
+  {
+   "strat": "nothing",
+   "seed": 2,
+   "ended": true,
+   "capped": null,
+   "endCause": "SIDELINED",
+   "weeksCleared": 0,
+   "round": 1,
+   "day": 5,
+   "minutes": 1.11,
+   "events": 90,
+   "merged": 0,
+   "stolen": 0,
+   "peakVoices": 4,
+   "stolenBy": {},
+   "relics": [],
+   "notes": []
+  }
+ ]
+}

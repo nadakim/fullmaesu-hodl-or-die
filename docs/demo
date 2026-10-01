@@ -5740,6 +5740,16 @@ function cashRain(n){ Fx.billRain(n || 40); }   // 지폐 비 — fx.js 파티�
    JUICE_CONFIG의 숫자(중첩된 배열·객체 안 포함)를 전부 슬라이더로. 바꾸면 바로 적용 + localStorage hodl.tuner에 저장
    (저장값은 ?tuner=1일 때만 불러온다 — 보통 플레이는 기본값). '콤보 테스트' = 가짜 수익 이벤트 1→20 뒤 끊김,
    '값 복사' = JSON(클립보드 + 패널 안 글상자), '기본값' = 처음 값으로 되돌리고 저장 삭제. 엔진 규칙에는 영향 없음 (UI 연출 수치만) */
+/* Sound Lab (?soundlab=1, UI 전용): 소리를 사람이 직접 듣고 메모하는 화면. 주소에 있을 때만 docs/soundlab.js를 불러온다 —
+   일반 모드는 파일 요청도 화면도 저장값도 없다. 소리 측정은 tools/audio/ (docs/audio/AUDIT.md) */
+const SOUNDLAB_ON = /[?&]soundlab=1(&|$)/.test(location.search);
+function loadSoundLab(){
+  const s = document.createElement('script');
+  s.src = 'soundlab.js';
+  s.onload = () => SoundLab.mount();
+  s.onerror = () => toast('soundlab.js를 불러오지 못했습니다 (docs/soundlab.js)', 'bad');
+  document.head.appendChild(s);
+}
 const TUNER_KEY = 'hodl.tuner';
 const JUICE_DEFAULTS = JSON.parse(JSON.stringify(JUICE_CONFIG));
 const TUNER_ON = /[?&]tuner=1(&|$)/.test(location.search);
@@ -6475,6 +6485,7 @@ window.onload = () => {
   setTimeout(loop, TICK_MS / settings.speed);
   heartLoop();   // (32) 반대매매 위험 심장 박동
   if(TUNER_ON){ tunerLoad(); buildTuner(); }   // (46) ?tuner=1 연출 조정 패널
+  if(SOUNDLAB_ON) loadSoundLab();   // ?soundlab=1 Sound Lab
 };
 </script>
 </body>

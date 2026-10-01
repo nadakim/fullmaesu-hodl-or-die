@@ -101,7 +101,7 @@ const Sound = (() => {
   let buffers = {};                // 덮어쓰기 파일: SFX 이름 → AudioBuffer
   let voices = [];                 // 울리는 중: { name, bus, base, boost, end }
   let lastByName = {};             // 이름 → { at(ms), voice } — 중복 합치기용
-  const stats = { played: {}, merged: 0, stolen: 0 };   // 검증·디버그용 카운터
+  const stats = { played: {}, merged: 0, stolen: 0, stolenBy: {}, peakVoices: 0 };   // 검증·디버그용 카운터 (관찰 전용 — 소리·발음 규칙에 영향 없음). stolenBy = 끊긴 소리의 이름별 횟수, peakVoices = 동시 발음 최대
 
   const midi = n => 440 * Math.pow(2, (n - 69) / 12);
   const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -183,7 +183,7 @@ const Sound = (() => {
   /* ── 효과음 사전: fn(bus, t 시작 시각, p 피치 배율, opts) → 길이(초) ── */
   const SFX = {
     uiClick(b, t, p){ tone(b, 'square', 2200 * p, t, 0.025, 0.08); return 0.03; },
-    uiMove(b, t, p){ tone(b, 'square', 3000 * p, t, 0.015, 0.05); return 0.02; },
+    uiMove(b, t, p){ tone(b, 'square', 3000 * p, t, 0.015, 0.13); return 0.02; },
     uiConfirm(b, t, p){ tone(b, 'square', 1320 * p, t, 0.05, 0.1); tone(b, 'square', 1980 * p, t + 0.055, 0.08, 0.1); return 0.14; },
     tierBreak(b, t, p, o){   // 배수 구간 돌파: 한 옥타브 올려치는 스윕 + 빠른 5음계 아르페지오 (구간이 높을수록 길게)
       const tier = Math.max(1, Math.min(4, (o && o.tier) || 1)), f = filter(b, 'lowpass', 5200 - tier * 600);   // 높은 구간은 귀 보호
@@ -209,8 +209,8 @@ const Sound = (() => {
       return 0.07;
     },
     coinIn(b, t, p){   // 입금 "차링" (동전 폭포 도착마다 — 작게)
-      tone(b, 'square', midi(96) * p, t, 0.03, 0.045);
-      tone(b, 'square', midi(100) * p, t + 0.03, 0.09, 0.04);
+      tone(b, 'square', midi(96) * p, t, 0.03, 0.12);
+      tone(b, 'square', midi(100) * p, t + 0.03, 0.09, 0.11);
       return 0.12;
     },
     closeRoll(b, t, p, o){   // 장 마감 임박: 스네어 연타 — 단계가 오를수록 촘촘하게
@@ -227,7 +227,7 @@ const Sound = (() => {
       tone(b, 'triangle', midi(64) * p, t + 0.05, 1.1, 0.07, { f1: midi(55) * p, hold: 0.4 });
       return 1.3;
     },
-    uiHover(b, t, p){ tone(b, 'square', 2600 * p, t, 0.012, 0.03); return 0.015; },
+    uiHover(b, t, p){ tone(b, 'square', 2600 * p, t, 0.012, 0.08); return 0.015; },
     uiPress(b, t, p){ noise(b, t, 0.035, 0.22, 'lowpass', 1400 * p); tone(b, 'square', 420 * p, t, 0.04, 0.07, { f1: 260 * p }); return 0.05; },
     cardPlay(b, t, p){
       noise(b, t, 0.05, 0.45, 'bandpass', 1800 * p, 0, 0.9);
@@ -261,7 +261,7 @@ const Sound = (() => {
       tone(filter(b, 'lowpass', 500), 'square', midi(40) * p, t, 0.12, 0.12);
       return 0.3;
     },
-    tick(b, t, p){ noise(b, t, 0.012, 0.12, 'highpass', 4500 * p); return 0.015; },
+    tick(b, t, p){ noise(b, t, 0.012, 0.3, 'highpass', 4500 * p); return 0.015; },
     marketOpen(b, t, p){ [72, 76, 79].forEach((n, i) => bell(b, n, t + i * 0.11, i === 2 ? 0.9 : 0.45, 0.18, p)); return 1.15; },
     dayEnd(b, t, p){ [79, 72].forEach((n, i) => bell(b, n, t + i * 0.24, 0.8, 0.2, p)); return 1.1; },
     gapUp(b, t, p){
@@ -411,6 +411,8 @@ const Sound = (() => {
     heartbeat(b, t, p){   // 심장 박동: 저음 두 번 "쿵-쿵"
       tone(b, 'sine', 62 * p, t, 0.12, 0.3, { f1: 40 * p });
       tone(b, 'sine', 58 * p, t + 0.18, 0.14, 0.24, { f1: 38 * p });
+      tone(b, 'triangle', 150 * p, t, 0.1, 0.22, { f1: 90 * p });   // 작은 스피커에서도 들리게 윗배음을 얹는다 (감사 결과: 중심 58Hz·저음 99%)
+      tone(b, 'triangle', 140 * p, t + 0.18, 0.12, 0.18, { f1: 85 * p });
       return 0.36;
     },
     settleAdd(b, t, p){   // 정산 칩 더하기: 경쾌한 "딩"
@@ -658,7 +660,7 @@ const Sound = (() => {
       stats.merged++;
       return true;
     }
-    while(voices.length >= SFX_MAX_VOICES){ kill(voices.shift()); stats.stolen++; }
+    while(voices.length >= SFX_MAX_VOICES){ const gone = voices.shift(); kill(gone); stats.stolen++; stats.stolenBy[gone.name] = (stats.stolenBy[gone.name] || 0) + 1; }
     const bus = ctx.createGain();
     const base = Math.max(0, Math.min(2, opts.volume === undefined ? 1 : opts.volume));
     bus.gain.value = base;
@@ -667,6 +669,7 @@ const Sound = (() => {
     const len = buffers[name] ? playBuffer(bus, t, opts.pitch || 1, buffers[name]) : SFX[name](bus, t, opts.pitch || 1, opts);
     const v = { name, bus, base, boost: 1, end: t + len };
     voices.push(v);
+    if(voices.length > stats.peakVoices) stats.peakVoices = voices.length;
     lastByName[name] = { at, voice: v };
     stats.played[name] = (stats.played[name] || 0) + 1;
     return true;

@@ -31,20 +31,23 @@
 - `docs/music.js` — 배경음악 (UI 전용). 곡은 코드가 아니라 데이터 `SONGS`(파일 맨 위, 트래커 형식 `{bpm, stepsPerBeat, patterns, order}`, 칸 = 'C4'·'-'·'.'·드럼 K/S/H/O). 패미컴 4채널 + market 적응형 레이어, look-ahead 스케줄러. `Music.setTrack`·`setMood`·`stinger`·`duck`·`setMuffle`(암시장 로우패스). `Sound.mixBus`(같은 컴프레서)로 섞는다.
 - `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`·`streak`, 캔버스 한 장)·`chip`, **연출 큐** `Fx.enqueue({kind, tier, blocking, duration, play, stop, skip})` — 한 틱에 몰린 이벤트를 발생 순서대로 하나씩(두 번째부터 연쇄 수 `Fx.chain` — 효과음 반음씩, 'CHAIN ×n' 표시는 `setChainCounter`로 끌 수 있고 demo는 수익 콤보로 대신해 끈다), blocking 항목이 있으면 `Fx.queueBusy` → 게임 루프가 tick을 미룬다, 클릭·Space·Enter = `Fx.skipQueue`.
 - `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
+- `docs/soundlab.js` — Sound Lab (UI 전용). 주소에 `?soundlab=1`이 있을 때만 `docs/demo`가 불러온다(일반 모드는 요청·화면·저장값 없음). 모든 SFX를 카테고리별로 듣고 옵션·음높이 사다리 12단·장면(정산 무대·콤보·마감 임박·팩 개봉 등 실제 게임 순서)·BGM 곡/레이어/장세를 재생하고 소리마다 평가+한 줄 메모(localStorage `hodl.soundNotes`, '📋 메모 복사'=JSON). 위쪽 `SOUND_CATEGORY_OF`(소리 이름 → 카테고리)·`SOUND_OPTION_VARIANTS`는 데이터라 감사 도구도 읽는다 — **새 SFX는 여기에 카테고리를 적는다**(안 적으면 `soundlab.cjs`가 실패). Lab 컨트롤은 `button`/`.btn-chunky`가 아니라 `div[role=button]`(게임의 전역 uiClick·uiPress·uiHover가 섞이지 않게).
+- `docs/audio/` — 사운드 감사 결과: `AUDIT.md`(표 + 가설별 판정, 표 구역은 `tools/audio/report.cjs`가 다시 씀) · `data/*.json`(sfx·bgm·freq 측정값).
+- `tools/audio/` — 사운드 감사 도구(Claude는 소리를 못 듣는다 → 잴 수 있는 것은 숫자로, 귀로 판단할 건 Sound Lab에서 사용자가). `audit.cjs`(SFX·BGM를 OfflineAudioContext로 렌더해 길이·피크·RMS·crest·스펙트럼 중심·고음/저음 비율·컴프레서 전/후·루프 이음매·큰 효과음 직후 BGM 눌림) · `freq.cjs`(가상 시계 `page.clock`으로 실제 UI를 빠르게 돌리며 `sim/strategies.js` 봇이 판을 끝까지 두고 `Sound.play`만 기록 → 이름별 분당·merged·stolen·동시 발음) · `report.cjs`(JSON → AUDIT.md 표). 소리·BGM·믹스를 바꾸면 전/후로 `audit.cjs`를 돌려 비교한다. 자세한 건 `docs/audio/AUDIT.md`.
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP(`tools/mcp-playwright.sh`: 사전 설치 Chromium이 있으면 전역 playwright 내장 MCP, 없으면 `@playwright/mcp`)
 - `.claude/settings.json` — 훅: `tools/hooks/engine-guard.sh`(engine.js 수정 후 DOM·`Math.random` 검사 + 시뮬 스모크), `protect-files.sh`(폰트·sfx·`sim/results` 직접 수정 차단), `content-guard.sh`(게임 소스에 금지 소재 — 자해 연상 표현·실존 기업명/티커 — 검사)
 - `.claude/agents/` — `engine-purity-reviewer`(공통 규칙 diff 검토)·`regression-runner`(회귀 테스트 요약). 스킬 `verify-ui`(`tools/verify-ui.sh [테스트…|all]`)·`balance-compare`(전/후 시뮬 비교)·`add-content`(카드·유물·보스·찌라시·뉴스·엔딩·효과음 추가 체크리스트)·`new-test`(회귀 테스트 템플릿)·`pr-prepare`(PR 전 점검·설명 초안)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
 - `tools/sim/cardev.cjs` — 시장 카드 한 장의 기대 수익 측정
-- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 41개, 실행법·주의점은 `tools/tests/README.md`)
+- `tools/tests/` — 브라우저 회귀 테스트 (Playwright node 스크립트 42개, 실행법·주의점은 `tools/tests/README.md`)
 - `tools/sim/bearbet.cjs` — 하락 베팅 한 번(인버스 ETF vs 공매도·레버리지)의 평균·분산·반대매매 확률 비교
 
 ## 기술 스택
 
 - 순수 **HTML / CSS / JavaScript + Canvas** (캔들 차트, 배경 그리드)
 - **빌드 도구·번들러·프레임워크·npm 의존성 추가 금지** (React, Vite, TypeScript, Tailwind 등 X). 브라우저에서 파일 하나로 바로 열려야 한다.
-- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/engine.js` + `docs/audio.js` + `docs/music.js` + `docs/fx.js` + `docs/assets/`를 함께 배포해야 한다. 외부 오디오·연출 라이브러리(Howler.js·Tone.js 등) 금지 — Web Audio API와 Canvas만.
+- 외부 리소스를 쓰지 않는다 (스팀 오프라인 빌드 대비). 폰트는 전부 `docs/assets/fonts/`의 로컬 파일 — Press Start 2P·VT323(TTF), 한글 Galmuri7·9·11·14(woff2, npm `galmuri` 2.40.3 = GitHub quiple/galmuri의 dist). 라이선스는 전부 SIL OFL 1.1, 같은 폴더의 `*-OFL.txt`. 페이지는 `docs/demo` + `docs/engine.js` + `docs/audio.js` + `docs/music.js` + `docs/fx.js` + `docs/assets/`를 함께 배포해야 한다(Sound Lab용 `docs/soundlab.js`·`docs/audio/data/`는 `?soundlab=1`에서만 필요). 외부 오디오·연출 라이브러리(Howler.js·Tone.js 등) 금지 — Web Audio API와 Canvas만.
 
 ## 코드 규칙
 
@@ -95,7 +98,7 @@
 - 수익 콤보(S8-46, 화면의 콤보 숫자는 이것 하나): UI `combo {n, max, tier}` — `comboHit(src)`(오른 캔들 `comboChanged` up·수익 `sold`/`soldAll`/`orderFilled`·유리한 보유 갭 `comboByGap`·찌라시 적중·`daySettled` 보너스) / `comboBreak()`(내린 캔들·손실 매도·반대매매·불리한 갭·찌라시 설거지 → `#fxStreak.cool` '최대 ×N'). 단계 `comboTier` = `JUICE_CONFIG.comboTiers`(c1~c5, 12+ JACKPOT), 효과음 `comboUp`(`stagePitch`)·`multSlam`·`jackpot`·`comboBreak`. 하락이 이어지면 같은 자리에 '하락 콤보 ×n'(엔진 `run.combo.down`). 연쇄 큐의 'CHAIN ×n' 표시는 `Fx.setChainCounter(false)`로 끄고 수(`Fx.chain`)는 음높이용으로만, 카드 연속 사용 칩은 'n연속'. 엔진 `run.combo`(성장형 유물·도파민 과다)는 그대로.
 - 연출 고조(juice-escalation, 수치 `JUICE_CONFIG`의 `multHitStopMs`·`bestBreakFactor`·`unitPop*`·`crit*`·`rocket*`·`comboSlam*`·`close*`·`cashout*`·`dangerMuffleHz`·`squeakMax`·`slowMo*`): 정산 무대 `playDayStage`에 구간 돌파음 `tierBreak`·곱하기 히트스톱(무대 시간도 `Fx.frozenFor()` 동안 멈춤)·최고 갱신 `stageBestHit`(암전 `screenFlash`)·단위 돌파 `juiceUnitBreak`(판마다 `unitSeen`, 결산 체인 카운트업도)·크리티컬 777 릴. 장중 게임 루프 tick 뒤 `juiceRockets`(차트 마지막 캔들 좌표 `chartGeom` = `drawCandles`의 `o.geom`)·`juiceSurvive`·`juiceClosing`. 콤보 `comboTierUp` → `comboSlam`·`setJackpotMusic`(→ `Music.setMood({jackpot})`, market 곡 `layers.jackpot`). 매도 `cashout`(`Fx.coinsTo`가 도착 시각을 돌려준다)·`juiceSellAll`(`posPnlSnap`). 위험 로우패스 `Music.setMuffle(hz, {key: 'danger'})`(heartLoop, `dangerT`) · 생존 `survived` · 턱걸이 `squeakThrough`(`playSettlementChain(chain, onDone, {squeak})`). 흔들림·번쩍임·암전·슬로모션은 `motionOK()`일 때만. 빈도 점검 `node sim/juice-peaks.js`.
 - 연출 조정 패널(`?tuner=1`, UI 전용): `JUICE_CONFIG`의 숫자 칸(중첩 포함, `tunerLeaves`)마다 슬라이더 → 즉시 적용 + localStorage `hodl.tuner`(조정 모드에서만 불러옴), '콤보 테스트'(1→20 → 끊김)·'값 복사'(JSON, `tunerLastCopy`)·'기본값'. 새 연출 수치는 `JUICE_CONFIG`에 넣으면 자동으로 패널에 뜬다.
-- 소리·타격감은 엔진에 한 줄도 넣지 않는다. `onGameEvent`와 UI 연출 함수에서만 `Sound.play`·`Fx.*`를 부른다 (새 효과음은 `audio.js` 사전 + 상단 표에 추가). 세기는 `Fx.intensity(금액, 순자산)`(순자산의 `FX_MONEY_FULL` = 1)로 정하고 '강'은 대략 10번 중 1번. 히트스톱은 게임 루프가 `Fx.frozenFor()`만큼 다음 tick을 미루는 것뿐 — tick 순서·횟수·결과는 그대로여야 한다 (`sim/runner.js` 전후 결과 JSON 동일로 확인). 설정 '화면 흔들림'을 끄면 흔들림·글리치·히트스톱이 모두 꺼지고, 파티클·소리는 남는다.
+- 소리·타격감은 엔진에 한 줄도 넣지 않는다. `Sound.stats`(`played`·`merged`·`stolen`·`stolenBy`·`peakVoices`)는 관찰 전용 카운터다 — 소리·발음 규칙에 영향이 없다. `onGameEvent`와 UI 연출 함수에서만 `Sound.play`·`Fx.*`를 부른다 (새 효과음은 `audio.js` 사전 + 상단 표에 추가). 세기는 `Fx.intensity(금액, 순자산)`(순자산의 `FX_MONEY_FULL` = 1)로 정하고 '강'은 대략 10번 중 1번. 히트스톱은 게임 루프가 `Fx.frozenFor()`만큼 다음 tick을 미루는 것뿐 — tick 순서·횟수·결과는 그대로여야 한다 (`sim/runner.js` 전후 결과 JSON 동일로 확인). 설정 '화면 흔들림'을 끄면 흔들림·글리치·히트스톱이 모두 꺼지고, 파티클·소리는 남는다.
 - 엔진 안의 시간 흐름은 틱 카운트(`tickInDay`, `eventTicksLeft`)로 처리한다. `setTimeout`/`setInterval`은 UI 쪽 게임 루프(`window.onload`)에만 둔다.
 - C#으로 옮기기 쉬운 형태를 선호: 명확한 필드를 가진 평범한 객체, 순수 함수, 숫자 상수는 이름 있는 상수로. JS 전용 트릭(동적 프로퍼티 추가, 암묵적 형변환, 프로토타입 조작)은 피한다.
 - 금액 단위는 "만 원" 기준 Number를 유지하고(BigInt 쓰지 않음), 화면 표시는 전부 UI의 `formatKrw(n)`(만·억·조·경…무량대수, 상위 두 단위, 1조 원 이상 유효숫자 4자리, 그 너머 지수 표기)을 거친다 — `fmtMoney`·`fmtSigned`·`fmtSlush`가 이것을 쓴다. `toLocaleString() + '만'`을 새로 쓰지 않는다.
