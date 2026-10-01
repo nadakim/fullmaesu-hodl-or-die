@@ -21,7 +21,7 @@ const FX_QUEUE_SPEED   = { normal: { gap: 450, dur: 1 }, fast: { gap: 250, dur: 
 
 const Fx = (() => {
   let motion = true, hitStopOn = true;
-  let frozenUntil = 0, unfreezeTimer = null, shakeTimer = null, glitchTimer = null, lastStampAt = 0;
+  let frozenUntil = 0, unfreezeTimer = null, shakeTimer = null, boxShakeTimer = null, glitchTimer = null, lastStampAt = 0;
   const colorCache = {};
   const punchState = {};   // 요소 id → { dir, at, combo }
   const now = () => performance.now();
@@ -34,6 +34,7 @@ const Fx = (() => {
     hitStopOn = !!o.hitStop && motion;
     if(!hitStopOn) release();
     if(!motion){ const cab = cabinet(); if(cab) cab.classList.remove('shake', 'shake-1', 'shake-2', 'shake-3', 'fx-glitch'); }
+    if(!motion) document.querySelectorAll('.overlay-box').forEach(b => b.classList.remove('ov-shake-1', 'ov-shake-2', 'ov-shake-3'));
   }
   const intensity = (amount, equity) => clamp01(Math.abs(amount) / Math.max(1, Math.abs(equity)) / FX_MONEY_FULL);
   const level = i => i >= FX_LEVEL_BIG ? 3 : i >= FX_LEVEL_MID ? 2 : 1;
@@ -63,6 +64,14 @@ const Fx = (() => {
     cab.classList.add('shake-' + lvl);
     clearTimeout(shakeTimer);
     shakeTimer = setTimeout(() => cab.classList.remove('shake-' + lvl), 700);
+    const box = document.querySelector('.overlay.show .overlay-box.stage-live');   // 정산 무대가 열려 있으면 상자도 (오버레이는 .cabinet 밖이라 안 흔들린다)
+    if(box){
+      box.classList.remove('ov-shake-1', 'ov-shake-2', 'ov-shake-3');
+      void box.offsetWidth;
+      box.classList.add('ov-shake-' + lvl);
+      clearTimeout(boxShakeTimer);
+      boxShakeTimer = setTimeout(() => box.classList.remove('ov-shake-' + lvl), 700);
+    }
   }
   function glitch(){
     if(!motion) return;
