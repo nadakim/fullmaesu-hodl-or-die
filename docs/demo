@@ -44,6 +44,7 @@ document.title = GAME_TITLE.ko + ': ' + GAME_TITLE.en + (GAME_TITLE.sub ? ' — 
   /* 화면 배율: 데스크톱은 layoutUi()가 --ui(창 높이 ÷ 600, 1~2.5)를 정한다. 모든 길이는 --u의 배수 */
   --ui:1;
   --u:calc(var(--ui) * 1px);
+  --hand-row:calc(68 * var(--u));   /* 손패 컴팩트 격자(데스크톱)의 카드 한 장 높이 — 손패 크기는 여기 하나로 */
   /* 한글 전용 (Galmuri) */
   --fs-xs:calc(10 * var(--u));  --gf-xs:'Galmuri9';
   --fs-sm:calc(12 * var(--u));  --gf-sm:'Galmuri11';
@@ -466,6 +467,19 @@ body::after{
 .hand{display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));grid-auto-rows:calc(96 * var(--u));gap:calc(7 * var(--u));padding:calc(4 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u));}
 .hand.g4{grid-template-columns:repeat(4, minmax(0, 1fr));}
 .hand.g4 .g-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}   /* 4열: 카드가 좁아진 만큼 이름 한 단계 작게 */
+/* 손패 컴팩트 격자 (데스크톱 ≥901px, renderHand가 .compact를 붙인다): 5열 × 필요한 행만(최대 2행 = HAND_MAX). 카드는 칸을 꽉 채운다 — 행 높이 --hand-row */
+.hand.compact{grid-template-columns:repeat(5, minmax(0, 1fr));grid-auto-rows:var(--hand-row);gap:calc(5 * var(--u));padding:calc(4 * var(--u)) calc(4 * var(--u)) calc(6 * var(--u));}
+.hand.compact .card.gcard{padding:calc(3 * var(--u)) calc(4 * var(--u));gap:calc(1 * var(--u));}
+.hand.compact .g-top{gap:calc(4 * var(--u));}
+.hand.compact .c-ap{padding:calc(1 * var(--u)) calc(3 * var(--u));}
+.hand.compact .g-rar{width:calc(6 * var(--u));height:calc(6 * var(--u));}
+.hand.compact .g-name,.hand.compact .card.gcard:not(.t-stock) .g-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.2;-webkit-line-clamp:2;}
+.hand.compact .g-line + .g-line{display:none;}   /* 현재가 줄은 접는다 — 툴팁과 시세표에 있다. 종목 이름이 두 줄까지 보이게 */
+.hand.compact .card.gcard:not(.t-stock) .g-name.long{font-size:var(--fs-xs);-webkit-line-clamp:3;}   /* 종목이 아닌 카드는 비용 줄이 없어 세 줄까지 */
+.hand.compact .card.t-stock .g-name.long{font-size:var(--fs-xs);}   /* 이름이 6자 이상이거나 한 단어가 5자 이상이면 한 단계 작게 (Galmuri 최소 10px) — 칸이 좁아도 잘리지 않게 */
+.hand.compact .g-line{line-height:1;}
+.hand.compact .g-foot{min-height:0;line-height:1.1;}
+.hand.compact .g-foot:empty{display:none;}
 .g-slot{box-shadow:none;border:calc(2 * var(--u)) dashed var(--line);min-width:0;min-height:0;}
 /* 격자용 카드: 위 [행동력 · 종류 색 띠 · 등급 점] / 이름 / 가격·현재가 또는 설명 한 줄 / 대상·소멸 */
 .card.gcard{width:auto;min-width:0;height:auto;min-height:0;gap:calc(2 * var(--u));padding:calc(5 * var(--u)) calc(6 * var(--u)) calc(4 * var(--u));justify-content:space-between;overflow:hidden;}
@@ -1767,7 +1781,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   /* ── TR룸 2단 (기본): 상단 HUD / 좌 시장 / 우 손패·포지션 ── */
   #screen-play.active{
     display:grid;
-    grid-template-columns:minmax(0, 38fr) minmax(0, 62fr);
+    grid-template-columns:minmax(0, 42fr) minmax(0, 58fr);   /* 손패가 줄어든 폭만큼 시장 칸 +4 */
     grid-template-rows:auto minmax(0, 1fr);
     grid-template-areas:"top top" "left right";
     gap:calc(8 * var(--u)) calc(12 * var(--u));
@@ -1817,7 +1831,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   .play-right{
     grid-area:right;display:grid;
     grid-template-columns:minmax(0, 1fr) auto;
-    grid-template-rows:auto auto auto auto minmax(calc(250 * var(--u)), 1fr) auto minmax(35vh, 1fr) auto;
+    grid-template-rows:auto auto auto auto auto auto minmax(35vh, 1fr) auto;   /* 손패 행은 카드 줄 수만큼만(auto) — 줄어든 높이는 포지션 칸으로 */
     grid-template-areas:"relic turn" "tip tip" "chips chips" "ht ht" "hand hand" "pt pt" "pos pos" "open sell";
     gap:0 calc(8 * var(--u));overflow-y:auto;overflow-x:hidden;
   }
@@ -1828,7 +1842,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   .play-right .chips{grid-area:chips;flex-wrap:nowrap;overflow-x:auto;margin:0 0 calc(2 * var(--u));padding-bottom:calc(2 * var(--u));}
   .play-right .chips .chip{flex:none;white-space:nowrap;}
   .play-right .hand-title{grid-area:ht;margin:calc(2 * var(--u)) 0 calc(4 * var(--u));}
-  .play-right .hand{grid-area:hand;padding:calc(4 * var(--u)) calc(4 * var(--u)) calc(8 * var(--u));min-height:0;grid-template-rows:repeat(3, minmax(0, 1fr));grid-auto-rows:0;}
+  .play-right .hand{grid-area:hand;}
   .play-right .pos-title{grid-area:pt;margin:calc(4 * var(--u)) 0 calc(4 * var(--u));}
   .play-right .positions-wrap{grid-area:pos;min-height:0;max-height:none;margin:0 0 calc(6 * var(--u));padding:calc(2 * var(--u));overflow-y:auto;}
   .play-right .open-btn{grid-area:open;margin:0;padding:calc(8 * var(--u));}
@@ -1868,30 +1882,50 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   .play-left .quote-row .q-name{grid-row:1 / span 2;}
 }
 @media (min-width: 1200px) and (min-aspect-ratio: 145/100){
+  /* 손패가 줄어든 높이는 시장으로: 왼쪽 칸은 뉴스 + 차트만(차트가 칸 높이를 전부 씀), 시세표는 손패 아래 가운데 칸으로 올라온다.
+     .play-left를 display:contents로 풀어서 뉴스·차트·시세 제목·시세표가 각자 격자 칸에 앉는다 (DOM·id는 그대로) */
   #screen-play.active{
-    grid-template-columns:minmax(0, 32fr) minmax(0, 38fr) minmax(0, 30fr);
-    grid-template-rows:auto auto auto auto auto auto minmax(0, 1fr) auto;
+    grid-template-columns:minmax(0, 34fr) minmax(0, 36fr) minmax(0, 30fr);
+    grid-template-rows:auto auto auto auto auto auto auto minmax(0, 1fr) auto;
     grid-template-areas:
-      "top  top   top"
-      "left relic pt"
-      "left tip   pos"
-      "left turn  pos"
-      "left chips pos"
-      "left ht    pos"
-      "left hand  pos"
-      "left open  sell";
+      "top   top    top"
+      "news  turn   relic"
+      "chart tip    ."
+      "chart chips  ."
+      "chart ht     pt"
+      "chart hand   pos"
+      "chart qt     pos"
+      "chart quotes pos"
+      "chart open   sell";   /* 유물 줄은 오른쪽(포지션) 위로 — 가운데 세로를 시세표에 */
     gap:0 calc(14 * var(--u));
   }
+  .play-left{display:contents;}
+  /* 알림: 3단에선 왼쪽 아래가 차트라서 가운데 칸 아래(시세표 하단, 장 시작 버튼 위)로 — 가운데 칸 x·폭 = 격자 열 비율 34:36:30을 그대로 계산 */
+  .toast-layer{
+    left:calc(12 * var(--u) + (100vw - 52 * var(--u)) * 0.34 + 14 * var(--u));
+    width:calc((100vw - 52 * var(--u)) * 0.36);bottom:calc(60 * var(--u));
+  }
+  .play-left .news-row{grid-area:news;min-width:0;}
+  .play-left .chart-box{grid-area:chart;height:auto;min-height:0;margin:0 0 calc(6 * var(--u));}
+  .play-left .section-title{grid-area:qt;margin:calc(4 * var(--u)) 0 calc(4 * var(--u));}
+  .play-left .quotes{grid-area:quotes;min-height:0;margin:0 0 calc(4 * var(--u));align-content:start;overflow-y:auto;scrollbar-width:thin;gap:calc(2 * var(--u)) calc(4 * var(--u));   /* 7행 = 평소(5장) 스크롤 없음. 손패 10장이면 행이 모자라 스크롤 */
+
+    background-image:linear-gradient(0deg, color-mix(in srgb, var(--cyan) 6%, transparent) calc(1 * var(--u)), transparent 0), linear-gradient(90deg, color-mix(in srgb, var(--cyan) 6%, transparent) calc(1 * var(--u)), transparent 0);
+    background-size:calc(12 * var(--u)) calc(12 * var(--u));}   /* .tx-grid 무늬를 시세표가 이어받는다 (.play-left 상자가 사라졌으므로) */
   .play-top{margin-bottom:calc(8 * var(--u));grid-template-columns:auto minmax(0, 1fr) calc(240 * var(--u)) calc(180 * var(--u));}
   .play-right{display:contents;}
   .play-right .relic-bar{margin:0 0 calc(4 * var(--u));}
-  .play-right .turn-bar{margin:0 0 calc(6 * var(--u));}
+  .play-right .turn-bar{margin:0 0 calc(4 * var(--u));}
+  .play-right .hand-title{margin:0 0 calc(2 * var(--u));}
   .play-right .chips{margin:0 0 calc(4 * var(--u));}
-  .play-right .open-btn{padding:calc(10 * var(--u));}
+  .play-right .open-btn{padding:calc(8 * var(--u));}
   .play-right .pos-title{margin:0 0 calc(6 * var(--u));}
   .play-right .positions-wrap{margin:0 0 calc(6 * var(--u));gap:calc(8 * var(--u));}
-  .play-right .sell-all-btn{padding:calc(10 * var(--u));}
+  .play-right .sell-all-btn{padding:calc(8 * var(--u));}
   .play-left .quote-row{padding-top:calc(1 * var(--u));padding-bottom:calc(1 * var(--u));}
+  .play-left .q-name{line-height:1.15;}
+  .play-left .q-sig{margin-top:0;line-height:1.2;}
+  .play-left .q-sig .sig-chip{line-height:1.1;}
   .chip.news{display:none;}
 
   .pos-empty{padding:calc(40 * var(--u)) calc(14 * var(--u));font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
@@ -3657,14 +3691,16 @@ function onGameEvent(type, d){
 /* ── 카드 한 장 (손패 · 도감 · 보상 · 덱 확인 공용) ── */
 /* 손패 격자용 카드: 행동력 · 종류 띠 · 등급 점 / 이름 / 가격·현재가(종목) 또는 설명 한 줄 / 대상·소멸.
    전체 설명·수치·기대값은 툴팁(showCardTip) */
-const HAND_GRID_COLS = 3, HAND_GRID_WIDE_COLS = 4, HAND_GRID_ROWS = 3, HAND_GRID_CELLS = HAND_GRID_COLS * HAND_GRID_ROWS;
+const HAND_GRID_COLS = 3, HAND_GRID_WIDE_COLS = 4, HAND_GRID_ROWS = 3, HAND_GRID_CELLS = HAND_GRID_COLS * HAND_GRID_ROWS;   // 모바일(≤900px) 기존 격자
+const HAND_COMPACT_COLS = 5;   // 데스크톱 컴팩트 격자: 5열 × 필요한 행만 (10장 = HAND_MAX면 2행)
+const handCompact = () => window.matchMedia('(min-width: 901px)').matches;
 function handCardHtml(card, o){
   const stock = card.stock ? STOCK_BY_ID[card.stock] : null;
   const foot = [card.target ? TARGET_LABEL[card.target] : '', card.exhaust ? '소멸' : ''].filter(Boolean).join(' · ');
   return `
     <div class="card gcard t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
       <div class="g-top"><span class="c-ap">${card.type === 'status' ? '✕' : o.ap}</span><span class="g-band"></span><span class="g-rar" title="${card.type === 'status' ? '상태' : RARITY_LABEL[card.rarity]}"></span></div>
-      <div class="g-name">${card.name}</div>
+      <div class="g-name${card.name.length >= 6 || Math.max(...card.name.split(/\s+/).map(w => w.length)) >= 5 ? ' long' : ''}">${card.name}</div>
       ${stock ? `<div class="g-line"><span class="c-cost">₩${formatKrw(o.cost)}</span></div><div class="g-line"><span class="c-price" data-p="${stock.id}"></span></div>`
               : ''}
       <div class="g-foot">${card.tags.length ? `<span class="c-tags">${tagIcons(card.tags)}</span> ` : ''}${foot}</div>
@@ -4061,13 +4097,15 @@ function renderHand(){
   const box = $('handBox');
   const usable = run.hand.map((_, i) => cardUsable(i) ? '1' : '0').join('');
   const sig = run.hand.map(c => c.uid + ':' + cardCost(CARD_BY_ID[c.id])).join() + '|' + usable + '|' + run.boss + '|' + selectedIdx + '|' + run.pending.principalMult + '|' + run.pending.lev
-    + '|' + run.marketCard + '|' + run.positions.map(p => p.id + ':' + Math.round(exposure(p))).join();   // 기대값이 포지션·대기 시장 카드에 따라 바뀐다
+    + '|' + run.marketCard + '|' + handCompact() + '|' + run.positions.map(p => p.id + ':' + Math.round(exposure(p))).join();   // 기대값이 포지션·대기 시장 카드에 따라 바뀐다
   const deal = dealReady();
   if(sig !== handSig || deal){
     handSig = sig;
-    const cols = run.hand.length > HAND_GRID_CELLS ? HAND_GRID_WIDE_COLS : HAND_GRID_COLS;   // 10장(HAND_MAX)이면 4열
-    box.classList.toggle('g4', cols === HAND_GRID_WIDE_COLS);
-    const cells = cols * HAND_GRID_ROWS;
+    const compact = handCompact();
+    const cols = compact ? HAND_COMPACT_COLS : run.hand.length > HAND_GRID_CELLS ? HAND_GRID_WIDE_COLS : HAND_GRID_COLS;   // 모바일: 10장(HAND_MAX)이면 4열
+    box.classList.toggle('compact', compact);
+    box.classList.toggle('g4', !compact && cols === HAND_GRID_WIDE_COLS);
+    const cells = compact ? cols * Math.max(1, Math.ceil(run.hand.length / cols)) : cols * HAND_GRID_ROWS;   // 컴팩트: 필요한 행만, 마지막 행의 빈 칸만 점선 슬롯
     box.innerHTML = run.hand.map((inst, i) => {
           const card = CARD_BY_ID[inst.id];
           const cls = (usable[i] === '1' ? '' : 'disabled' + (handBossBlock(i) ? ' boss-blocked' : '')) + (i === selectedIdx ? ' selected' : '') + (usable[i] === '1' && boostsSettle(i) ? ' boost' : '');

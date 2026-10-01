@@ -9,7 +9,7 @@ const measure = () => {
   const ps = document.querySelector('#screen-play');
   if (ps.classList.contains('active')) {
     o.cols = getComputedStyle(ps).gridTemplateColumns.split(' ').length;
-    const L = document.querySelector('.play-left').getBoundingClientRect();
+    const pl = document.querySelector('.play-left'); const L = getComputedStyle(pl).display === 'contents' ? $('quoteBox').getBoundingClientRect() : pl.getBoundingClientRect();   // 3단은 .play-left가 display:contents(시세표는 가운데 칸)
     const rows = [...document.querySelectorAll('.quote-row')];
     o.q7 = rows.length === 7 && rows.every(r => { const b = r.getBoundingClientRect(); return b.height > 0 && b.bottom <= L.bottom + 1 && b.bottom <= vh; }) && $('quoteBox').scrollHeight <= $('quoteBox').clientHeight + 1;
     o.posH = Math.round($('positionsBox').getBoundingClientRect().height);
