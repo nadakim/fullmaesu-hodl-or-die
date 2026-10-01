@@ -30,7 +30,7 @@
 - `docs/audio.js` — 효과음 (UI 전용). Web Audio API 합성 칩튠, 음원 파일 없음. `Sound.play(이름, {pitch, volume})`, 사전 `Sound.SFX`, 파일 상단에 이름 → 이벤트 표.
 - `docs/music.js` — 배경음악 (UI 전용). 곡은 코드가 아니라 데이터 `SONGS`(파일 맨 위, 트래커 형식 `{bpm, stepsPerBeat, patterns, order}`, 칸 = 'C4'·'-'·'.'·드럼 K/S/H/O). 패미컴 4채널 + market 적응형 레이어, look-ahead 스케줄러. `Music.setTrack`·`setMood`·`stinger`·`duck`·`setMuffle`(암시장 로우패스). `Sound.mixBus`(같은 컴프레서)로 섞는다.
 - `docs/fx.js` — 타격감 연출 (UI 전용). `Fx.hitStop`·`shake(1~3)`·`glitch`·`stamp`·`punch`·`cardFly`·파티클(`coinsTo`·`shatter`·`sparks`·`burst`·`streak`, 캔버스 한 장)·`chip`, **연출 큐** `Fx.enqueue({kind, tier, blocking, duration, play, stop, skip})` — 한 틱에 몰린 이벤트를 발생 순서대로 하나씩(두 번째부터 연쇄 수 `Fx.chain` — 효과음 반음씩, 'CHAIN ×n' 표시는 `setChainCounter`로 끌 수 있고 demo는 수익 콤보로 대신해 끈다), blocking 항목이 있으면 `Fx.queueBusy` → 게임 루프가 tick을 미룬다, 클릭·Space·Enter = `Fx.skipQueue`.
-- `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`)
+- `sim/` — 헤드리스 전략 시뮬레이터 (`runner.js`·`strategies.js`·`load-engine.js`, 결과 `results/`). 실험 원본 JSON은 `sim/results/exp/`(gitignore)에 — 커밋하지 않고 표와 재현 명령만 문서에 남긴다.
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
 - `.mcp.json` — Playwright MCP (headless chromium)
 - `tools/sim/sim.cjs` — 밸런스 시뮬레이터 (봇 6종 × N판, 결과 표). 기준점: `docs/balance-baseline.md`
@@ -167,3 +167,4 @@
 - 작업을 시작하기 전에 열린 PR 중 같은 파일(`docs/demo`·`docs/engine.js` 등)을 수정하는 것이 있으면 먼저 사용자에게 알리고 진행 여부를 확인받는다.
 - `main`에 머지된 상태에서 게임은 반드시 실행 가능해야 한다. 미완성 기능은 CONFIG의 플래그로 꺼 둔다 (엔진·UI 모두 플래그를 읽어 분기).
 - 충돌이 나면 merge 커밋 대신 `main` 기준 rebase로 해결한다.
+- 실험 원본 JSON은 커밋하지 않는다. 표와 재현 명령만 문서에 남긴다. 커밋하는 결과 파일은 2MB 이하 (`node tools/check-tracked-size.cjs`로 확인).

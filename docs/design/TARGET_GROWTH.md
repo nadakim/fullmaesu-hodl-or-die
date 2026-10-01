@@ -50,12 +50,28 @@
 | S3 | 1 1 2 2 2 2 2 2 |
 | S4 | 1 1 1.3 1.5 1.8 2.2 2.6 3.0 |
 
-결과 파일은 다음과 같다.
-- 후보: `sim/results/tg-S*.json`, `tg-S*-s1001.json`
-- 카운터 재측정: `tg-S*-counters.json`, 대조 `tg-S*-bosses-off.json`
-- 기준: `baseline-before-boss-counters.json`(= main, 시드 1~500), `baseline-before-target-growth-s1001.json`
+### 재현 방법 (원본 JSON은 커밋하지 않는다 — `sim/results/exp/`, gitignore)
 
-표 다시 만들기: `node sim/target-growth-check.js 기준.json tg-S1.json tg-S2.json tg-S3.json tg-S4.json --names S1,S2,S3,S4`
+- 엔진: 커밋 `7ba8437`(`docs/engine.js` 마지막 변경 — `baseTarget` 분리 뒤). 시드 묶음 1~500(`--seed 1`, 기본)·1001~1500(`--seed 1001`).
+- 예상 소요: 전략 19종 × 500판 1회 ≈ 6분(4코어에서 4개 병렬 ≈ 30~40분에 전부). 아래 `E=sim/results/exp`.
+
+```sh
+G='TARGET_GROWTH_ON=true;TARGET_GROWTH_K='
+# 기준 (꺼짐) — 시드 1~500 · 1001~1500
+node sim/runner.js --n 500 --out $E/base.json
+node sim/runner.js --n 500 --seed 1001 --out $E/base-s1001.json
+# 후보 (S2~S4는 K만 바꾼다: [1,1,1.5,…] · [1,1,2,…] · [1,1,1.3,1.5,1.8,2.2,2.6,3.0])
+node sim/runner.js --n 500 --set "${G}[1,1,1.3,1.3,1.3,1.3,1.3,1.3]" --out $E/tg-S1.json
+node sim/runner.js --n 500 --seed 1001 --set "${G}[1,1,1.3,1.3,1.3,1.3,1.3,1.3]" --out $E/tg-S1-s1001.json
+# 빌드 카운터 재측정 + 대조군 (보스 끔)
+node sim/runner.js --n 500 --set "${G}[1,1,1.3,1.3,1.3,1.3,1.3,1.3];BOSS_COUNTERS_ON=true" --out $E/tg-S1-counters.json
+node sim/runner.js --n 500 --set "${G}[1,1,1.3,1.3,1.3,1.3,1.3,1.3];BOSS_WEEKS_ON=false" --out $E/tg-S1-bosses-off.json
+# 표
+node sim/target-growth-check.js $E/base.json $E/tg-S1.json $E/tg-S2.json $E/tg-S3.json $E/tg-S4.json --names S1,S2,S3,S4
+node sim/boss-check.js $E/tg-S1-counters.json $E/tg-S1-bosses-off.json
+```
+
+- 재현 확인 (2026-10-01): 기준·S1을 levTowerBuild·antFlagBuild만 시드 1~500으로 다시 돌림 → 기준 33.6%·45.6%, S1 7.0%·22.4% (아래 표와 일치).
 
 ### 시드 1~500
 

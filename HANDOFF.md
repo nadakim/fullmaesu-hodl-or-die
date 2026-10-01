@@ -6,6 +6,7 @@
 ## 지금 상태 (다음 세션은 여기부터)
 
 - **목표 성장률 실험 — 미채택, 코드 보존** (`claude/target-growth`, PR #37, 🛑 기본 꺼짐으로 머지 대기): 사용자 결정 = 채택 안 함(후보 4개 기준 미달·꼬리 붕괴·94~100% 주 구속·운 의존도 불변·재상장 꼼수). `TARGET_GROWTH_ON` 기본 false, 기본 상태 = main 결과 동일, `?growth=1`·설정 토글·`sim/target-growth-check.js`·`targetgrowth.cjs` 보존. 재개 조건: 사람 테스트에서 후반이 쉽다고 확인될 때 (TARGET_GROWTH.md '결정').
+- **결과 파일 규칙 (2026-10-01)**: 실험 원본 JSON은 `sim/results/exp/`(gitignore), 문서엔 표 + 재현 명령. PR #37의 JSON 17개(213.7MB) 제거, 재현 확인 일치. 추적 파일 크기 점검 `node tools/check-tracked-size.cjs`(기존 2MB 초과 46개 352.6MB는 그대로 — 정리 여부는 사용자 결정).
 - **다음 작업: 시험 주간 보장 실험** (보스 주에만 성장 요구, 빌드 카운터와 묶지 않음) — **단, 사람 테스트(PROTOCOL.md) 결과를 먼저 확인한 뒤**.
 - **빌드 카운터 보스 4종 — 보류** (`claude/boss-counters`, 🛑 PR 후 멈춤 — 기본 꺼짐으로 머지 대기): 사용자 결정 = 조정안 1~3 모두 불채택, `BOSS_COUNTERS_ON` 기본 false(손잡이 `BOSS_COUNTER_TARGET_MULT`·`_HELD`도 꺼짐), 기본 상태 = main 결과 동일. 코드·도구(`sim/boss-split.js`·`sim/boss-counter-check.js`·runner `--boss-adapt`)·테스트(`bosscounter.cjs`는 플래그를 켜서 회귀) 보존. 재개 조건: 목표 구조 결정 후 표적/비표적 재측정, 남은 후보 = 표적 판정을 지난 주 정산 비중으로 (BOSS_WEEKS.md '결정').
 - **다음 작업: 목표 성장률 실험** — `ROUND_TARGETS` 구조(주 성장 배수 요구)를 `--targets`·`metrics.js`(주간 여유·주 성장 배수 표)로 실험. 결정되면 빌드 카운터를 `--set BOSS_COUNTERS_ON=true`로 재측정.
