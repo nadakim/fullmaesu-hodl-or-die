@@ -59,6 +59,7 @@
    | settleMult  | 장 마감 정산 무대: 배수 단계 (opts.pitch · opts.big = ×10 이상이면 더 크게) | "슈욱—펑"                    |
    | settleThud  | 장 마감 정산 무대: 끝 마침표 (순자산 "쾅" 뒤)               | 저음 "둥"                              |
    | shopShuffle | shopRerolled (암시장 진열 새로고침)                         | 카드 섞는 "촤르륵" 노이즈 연타 + 끝 "탁" |
+   | coinShower  | 정산 무대: 한 포지션의 마지막 단계 피날레 (opts.count 동전 수) | 저음 "쿵" + 동전이 우수수 떨어지는 짤랑 연타 |
    | tierBreak   | 정산 무대: 누적 배수가 ×10·100·1,000·10,000을 넘는 순간 (opts.tier 1~4, 높을수록 길게 · opts.pitch = stagePitch) | 한 옥타브 올려치는 스윕 + 5음계 아르페지오 |
    | steam       | 정산 무대: 배수가 과열 구간(×100 이상)에서 한 단계 오를 때마다 (opts.level 2~4 — 높을수록 길고 세게, ×1,000 이상은 밸브 휘파람이 얹힘) | "쉬이이익—" 증기 빠지는 소리 |
    | bestBoom    | 정산 무대: 이번 판 최고 정산을 갱신하는 단계 (암전 한 프레임 뒤)  | 아주 낮은 "쿵" + 긴 저음                |
@@ -186,6 +187,16 @@ const Sound = (() => {
     uiClick(b, t, p){ tone(b, 'square', 2200 * p, t, 0.025, 0.08); return 0.03; },
     uiMove(b, t, p){ tone(b, 'square', 3000 * p, t, 0.015, 0.13); return 0.02; },
     uiConfirm(b, t, p){ tone(b, 'square', 1320 * p, t, 0.05, 0.1); tone(b, 'square', 1980 * p, t + 0.055, 0.08, 0.1); return 0.14; },
+    coinShower(b, t, p, o){   // 정산 피날레: 저음 "쿵" 뒤에 동전이 우수수 — 고음 짤랑이 점점 성기고 낮아지며 떨어진다
+      const n = Math.max(6, Math.min(40, (o && o.count) || 18));
+      thud(b, t, 0.4);
+      for(let i = 0; i < n; i++){
+        const k = i / n, at = t + 0.05 + k * 0.85 + Math.random() * 0.03, f = midi(96 - Math.round(k * 7) + (i % 3) * 2) * p;
+        tone(b, 'square', f, at, 0.035, 0.05 * (1 - k * 0.5));
+        tone(b, 'sine', f * 1.5, at + 0.012, 0.08, 0.04 * (1 - k * 0.5));
+      }
+      return 1.0;
+    },
     steam(b, t, p, o){   // 과열 증기: 밝은 쉬익 노이즈가 점점 낮은 쪽으로 가라앉고, 몸통 노이즈가 받친다. 레벨 3+는 밸브 휘파람
       const lv = Math.max(1, Math.min(4, (o && o.level) || 2)), len = 0.55 + 0.12 * lv;
       noise(b, t, len, 0.1 + 0.04 * lv, 'highpass', 5400 * p, 2400 * p, 0.7);

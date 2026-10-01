@@ -255,6 +255,15 @@ const Fx = (() => {
             color: color(Math.random() < 0.8 ? '--green2' : '--gold'), edge: color('--green-dim') });
     }
   }
+  function coinRain(n){   // 금빛 동전이 위에서 우수수 떨어진다 (정산 마지막 단계 피날레). 파티클 상한 FX_MAX_PARTICLES 안에서만
+    const W = window.innerWidth, H = window.innerHeight;
+    for(let i = 0; i < n; i++){
+      const big = Math.random() < 0.35;
+      add({ x: rnd(0, W), y: rnd(-80, -10), vx: rnd(-30, 30), vy: rnd(120, 260), g: rnd(500, 900), age: 0, life: rnd(1.0, 1.7) * Math.max(1, H / 900),
+            delay: rnd(0, 0.45), w: big ? 12 : 8, h: big ? 12 : 8, size: 6, solid: false, mark: true,
+            color: color(Math.random() < 0.7 ? '--gold' : '--gold2'), edge: color('--gold2') });
+    }
+  }
   // 유물 조명: 아이콘에서 픽셀이 튀어나와 영향을 받는 숫자 쪽으로 날아간다
   function streak(fromRect, toRect, n, colorNames){
     if(!shown(fromRect) || !shown(toRect)) return;
@@ -375,7 +384,7 @@ const Fx = (() => {
 
   return { setOptions, setUiScale, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
-           get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, glitch, stamp, flash, jiggle, punch, cardFly,
+           get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, coinRain, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, billRain, shatter, sparks, burst,
            get particleCount(){ return parts.length; }, get running(){ return raf !== 0; },
            get motion(){ return motion; }, get hitStopOn(){ return hitStopOn; } };

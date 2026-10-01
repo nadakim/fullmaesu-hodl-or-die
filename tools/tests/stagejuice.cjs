@@ -55,6 +55,11 @@ const FAKE = () => {
     }
     const fh = seenTier.map(i => i.fh);
     ok(W + ' 불꽃 높이가 티어마다 커진다', fh[0] < 1 && fh[1] > fh[0] && fh[2] > fh[1] && fh[3] > fh[2], fh.map(v => +v.toFixed(1)));
+    await p.evaluate(() => { stage.speed = 2; });
+    await p.waitForFunction(() => $('stageHeroV').textContent === '×10,000', null, { timeout: 15000, polling: 'raf' }); await sleep(120);
+    await p.evaluate(() => { stage.speed = 1; });
+    const snd = await p.evaluate(() => window.__snd);
+    ok(W + ' 피날레: 코인 우수수 효과음 coinShower 재생 (포지션 마지막 단계)', snd.includes('coinShower') && snd.filter(n => n === 'coinShower').length === 1, snd.filter(n => n === 'coinShower').length);
     ok(W + ' 증기 효과음 steam 재생', (await p.evaluate(() => window.__snd)).includes('steam'));
     const shook = await p.evaluate(() => [...window.__shakeSeen]);
     ok(W + ' Fx.shake가 정산 상자(.overlay-box)도 흔들었다', shook.length > 0, shook);
