@@ -1,8 +1,12 @@
 {
   "mcpServers": {
     "playwright": {
+      "command": "sh",
+      "args": ["tools/mcp-playwright.sh"]
+    },
+    "context7": {
       "command": "npx",
-      "args": ["@playwright/mcp@latest", "--headless", "--browser", "chromium"]
+      "args": ["-y", "@upstash/context7-mcp@latest"]
     }
   }
 }
