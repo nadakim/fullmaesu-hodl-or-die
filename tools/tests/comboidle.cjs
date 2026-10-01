@@ -1,0 +1,32 @@
+// 콤보·JACKPOT 표시는 수익 이벤트가 한동안(comboIdleMs) 없으면 식으며 사라진다 (장이 끝나도 남아 있던 버그)
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+let pass = 0, fail = 0;
+const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  const b = await chromium.launch(); const errs = [];
+  const p = await b.newPage({ viewport: { width: 1366, height: 768 } });
+  p.on('pageerror', e => errs.push(e.message));
+  await p.goto('http://127.0.0.1:8765/demo.html');
+  await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
+  await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(500);
+  const cls = () => p.evaluate(() => [$('fxStreak').className, $('fxStreak').textContent]);
+  await p.evaluate(() => { JUICE_CONFIG.comboIdleMs = 400; JUICE_CONFIG.comboCoolMs = 300; for(let i = 0; i < 14; i++) comboHit('test'); });
+  const a = await cls();
+  ok('JACKPOT 표시 중', /on c5/.test(a[0]) && a[1].startsWith('JACKPOT'), a);
+  await sleep(250);
+  ok('이벤트가 이어지면 안 식음', /on/.test((await cls())[0]));
+  await p.evaluate(() => comboHit('test')); await sleep(250);
+  ok('이벤트마다 시간 초과가 다시 시작', /on/.test((await cls())[0]));
+  await sleep(350);
+  const c = await cls();
+  ok('이벤트가 없으면 식는다 (최대 ×N)', /cool/.test(c[0]) && c[1].startsWith('최대'), c);
+  await sleep(450);
+  const d = await cls();
+  ok('식은 뒤 사라진다', d[0] === 'fx-streak', d);
+  ok('시간 초과로 식을 땐 끊김 소리 없음', await p.evaluate(() => { const o = Sound.play; let got = false; Sound.play = (n, op) => { if(n === 'comboBreak') got = true; return o.call(Sound, n, op); }; JUICE_CONFIG.comboIdleMs = 200; for(let i = 0; i < 5; i++) comboHit('t'); return new Promise(r => setTimeout(() => { Sound.play = o; r(!got); }, 500)); }));
+  ok('손실로 끊기면 그대로 (끊김 소리 + 식음)', await p.evaluate(() => { const o = Sound.play; let got = false; Sound.play = (n, op) => { if(n === 'comboBreak') got = true; return o.call(Sound, n, op); }; JUICE_CONFIG.comboIdleMs = 6000; for(let i = 0; i < 5; i++) comboHit('t'); comboBreak(); Sound.play = o; return got; }));
+  ok('pageerror 없음', errs.length === 0, errs);
+  console.log(`\n${fail ? 'FAIL' : 'PASS'} ${fail} / ${pass + fail}`);
+  await b.close(); process.exit(fail ? 1 : 0);
+})();
