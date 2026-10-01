@@ -56,6 +56,7 @@ document.title = GAME_TITLE.ko + ': ' + GAME_TITLE.en + (GAME_TITLE.sub ? ' — 
   --fs-p1:calc(8 * var(--u));   --gp-p1:'GP8';
   --fs-p2:calc(16 * var(--u));  --gp-p2:'GP16';
   --fs-p3:calc(24 * var(--u));  --gp-p3:'GP24';
+  --fs-p4:calc(40 * var(--u));  --gp-p4:'GP24';   /* 8의 5배 — 정산 무대 주인공 배수(숫자·×)만. 한글은 안 쓴다 */
   /* VT323 본문 (+ 옆 한글) */
   --fs-v1:calc(16 * var(--u));  --gv-v1:'GV16';
   --fs-v2:calc(20 * var(--u));  --gv-v2:'GV20';
@@ -70,7 +71,7 @@ html[data-font="large"]{
   --fs-m16:calc(20 * var(--u)); --gf-m16:'Galmuri9';
   --fs-lg:calc(24 * var(--u));  --gf-lg:'Galmuri11';
   --fs-xl:calc(30 * var(--u));  --gf-xl:'Galmuri14';
-  --gp-p1:'GP8L'; --gp-p2:'GP16L'; --gp-p3:'GP24L';
+  --gp-p1:'GP8L'; --gp-p2:'GP16L'; --gp-p3:'GP24L'; --gp-p4:'GP24L';
   --fs-v1:calc(20 * var(--u));  --gv-v1:'GV20';
   --fs-v2:calc(24 * var(--u));  --gv-v2:'GV24';
   --fs-v3:calc(30 * var(--u));  --gv-v3:'GV30';
@@ -1259,6 +1260,64 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 @keyframes stageJitter{50%{transform:translate(calc(1 * var(--u)), calc(-1 * var(--u)));}}
 .overlay-box.stage-f3{box-shadow:0 0 0 calc(3 * var(--u)) var(--purple),0 0 calc(24 * var(--u)) var(--purple),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
 .overlay-box.stage-f4{box-shadow:0 0 0 calc(4 * var(--u)) var(--gold),0 0 calc(40 * var(--u)) var(--red),0 0 calc(80 * var(--u)) var(--gold2);}
+/* 정산 무대 주인공 배수 + 불꽃 (juice-stage): 누적 배수를 크게, 티어(f1~f4)가 오를수록 불꽃이 커지고 색이 변한다. 불꽃 = hard-stop 그라디언트 막대 7개를 steps()로 일렁임 */
+.overlay-box.stage-live{overflow-x:hidden;}
+.stage-hero{position:relative;display:flex;justify-content:center;align-items:flex-end;height:calc(88 * var(--u));margin:calc(2 * var(--u)) 0 calc(6 * var(--u));
+  --fl-a:var(--red2);--fl-b:var(--gold2);--fl-c:var(--gold);--fl-h:0;}
+.stage-hero.t2{--fl-a:var(--red);--fl-b:var(--gold2);--fl-c:var(--gold);}
+.stage-hero.t3{--fl-a:var(--purple);--fl-b:var(--red);--fl-c:var(--gold);}
+.stage-hero.t4{--fl-a:var(--purple);--fl-b:var(--gold);--fl-c:var(--text);}
+.sh-flame{position:absolute;left:50%;bottom:calc(10 * var(--u));width:min(86%, calc(300 * var(--u)));height:calc(40 * var(--u) * var(--fl-h));translate:-50% 0;display:flex;align-items:flex-end;pointer-events:none;}
+.sh-flame i{flex:1;height:calc(100% * var(--k));transform-origin:50% 100%;clip-path:polygon(0 22%, 50% 0, 100% 22%, 100% 100%, 0 100%);
+  background:linear-gradient(to top, var(--fl-a) 0 34%, var(--fl-b) 34% 68%, var(--fl-c) 68% 100%);
+  animation:shFlick var(--fl-ms, .16s) steps(3) infinite;}
+.sh-flame i:nth-child(1){--k:.5;animation-delay:-.02s;} .sh-flame i:nth-child(2){--k:.8;animation-delay:-.07s;}
+.sh-flame i:nth-child(3){--k:.62;animation-delay:-.12s;} .sh-flame i:nth-child(4){--k:1;animation-delay:-.04s;}
+.sh-flame i:nth-child(5){--k:.7;animation-delay:-.1s;} .sh-flame i:nth-child(6){--k:.85;animation-delay:-.14s;}
+.sh-flame i:nth-child(7){--k:.45;animation-delay:-.06s;}
+@keyframes shFlick{0%{transform:scaleY(1);}33%{transform:scaleY(.72);}66%{transform:scaleY(.9) translateX(calc(1 * var(--u)));}100%{transform:scaleY(1);}}
+.sh-num{position:relative;font-family:'Press Start 2P',var(--gp-p4),monospace;font-size:var(--fs-p4);line-height:1.1;color:var(--gold);white-space:nowrap;
+  text-shadow:calc(2 * var(--u)) 0 0 #000,calc(-2 * var(--u)) 0 0 #000,0 calc(2 * var(--u)) 0 #000,0 calc(-2 * var(--u)) 0 #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}   /* 검은 외곽선 4방향: 뒤의 불꽃과 섞여도 읽힌다 */
+.sh-num.long{font-size:var(--fs-p3);}
+.stage-hero.t1 .sh-num{text-shadow:calc(2 * var(--u)) 0 0 #000,calc(-2 * var(--u)) 0 0 #000,0 calc(2 * var(--u)) 0 #000,0 calc(-2 * var(--u)) 0 #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--red2);}
+.stage-hero.t2 .sh-num{text-shadow:calc(2 * var(--u)) 0 0 #000,calc(-2 * var(--u)) 0 0 #000,0 calc(2 * var(--u)) 0 #000,0 calc(-2 * var(--u)) 0 #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--red);}
+.stage-hero.t3 .sh-num{color:var(--text);text-shadow:calc(2 * var(--u)) 0 0 #000,calc(-2 * var(--u)) 0 0 #000,0 calc(2 * var(--u)) 0 #000,0 calc(-2 * var(--u)) 0 #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--purple);}
+.stage-hero.t4 .sh-num{color:var(--text);text-shadow:calc(2 * var(--u)) 0 0 #000,calc(-2 * var(--u)) 0 0 #000,0 calc(2 * var(--u)) 0 #000,0 calc(-2 * var(--u)) 0 #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 var(--gold),calc(-4 * var(--u)) calc(-4 * var(--u)) 0 var(--red);}
+.sh-num.pop{animation:shPop var(--pop-ms, .26s) steps(4);}
+.sh-num.slam{animation:shSlam var(--slam-ms, .52s) steps(8);z-index:2;}
+@keyframes shSlam{0%{transform:scale(1);}25%{transform:scale(var(--slam, 1.9)) rotate(-2deg);}50%{transform:scale(calc(var(--slam, 1.9) * .9)) rotate(2deg);}75%{transform:scale(.92);}100%{transform:none;}}
+@keyframes shPop{0%{transform:scale(var(--pop, 1.3));}100%{transform:none;}}
+/* 정산 무대가 열려 있는 동안 Fx.shake가 .overlay-box도 흔든다 (진폭 --ovk 배: 어두운 배경 위 작은 상자라 .cabinet보다 크게) */
+/* 폭주 배경 (juice-stage 2): 티어 ≥ rageTier이면 정산 상자(.overlay-box)의 배경 전체가 한 가지 색으로 통째로 바뀌며 순환한다 (뒤 화면은 그대로).
+   steps(1)로 4색이 뚝뚝 바뀐다 (한 바퀴 --rage-ms ≥ 1.33초 = 초당 3회 이하). 어두운 바탕 위 저채도(color-mix 알파)만 — 전체 화면 고대비 점멸 금지 */
+.overlay-box.stage-live.stage-rage{position:relative;isolation:isolate;
+  --c1:color-mix(in srgb, var(--red) var(--rage-box-a, 30%), transparent);--c2:color-mix(in srgb, var(--gold) var(--rage-box-a, 30%), transparent);
+  --c3:color-mix(in srgb, var(--purple) var(--rage-box-a, 30%), transparent);--c4:color-mix(in srgb, var(--cyan) var(--rage-box-a, 30%), transparent);}
+.overlay-box.stage-live.stage-rage::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:var(--c1);animation:ovRage var(--rage-ms, 1600ms) steps(1) infinite;}
+@keyframes ovRage{0%{background:var(--c1);}25%{background:var(--c2);}50%{background:var(--c3);}75%{background:var(--c4);}}
+/* 과열 증기: 주인공 배수 위로 네모 김이 피어올라 옅어진다 (CSS만 — 파티클 예산 0). 개수는 티어별 --steam-n */
+.sh-steam{position:absolute;left:50%;top:0;width:min(70%, calc(240 * var(--u)));height:0;translate:-50% 0;pointer-events:none;}
+.sh-steam i{position:absolute;bottom:0;width:calc(14 * var(--u));height:calc(14 * var(--u));background:color-mix(in srgb, var(--text) 55%, transparent);opacity:0;
+  animation:steamUp var(--steam-ms, 1100ms) steps(8) infinite;}
+.sh-steam i:nth-child(n + 1){left:calc(6% * var(--n));animation-delay:calc(-1 * var(--n) * 0.09s);}
+.sh-steam i:nth-child(1){--n:1;} .sh-steam i:nth-child(2){--n:4;} .sh-steam i:nth-child(3){--n:7;} .sh-steam i:nth-child(4){--n:10;}
+.sh-steam i:nth-child(5){--n:2;} .sh-steam i:nth-child(6){--n:5;} .sh-steam i:nth-child(7){--n:8;} .sh-steam i:nth-child(8){--n:11;}
+.sh-steam i:nth-child(9){--n:3;} .sh-steam i:nth-child(10){--n:6;} .sh-steam i:nth-child(11){--n:9;} .sh-steam i:nth-child(12){--n:12;}
+.sh-steam i:nth-child(n + 5){width:calc(9 * var(--u));height:calc(9 * var(--u));}
+.stage-hero:not(.steaming) .sh-steam i{display:none;}
+@keyframes steamUp{0%{transform:translate(0,0);opacity:0;}15%{opacity:.9;}100%{transform:translate(calc(6 * var(--u) * var(--sway, 1)), calc(-1 * var(--steam-rise, 72) * var(--u)));opacity:0;}}
+@media (prefers-reduced-motion: reduce){.overlay-box.stage-live.stage-rage::before,.sh-steam i{animation:none;}.sh-steam i{display:none;}}
+body.no-motion .overlay-box.stage-live.stage-rage::before,body.no-motion .sh-steam i{animation:none;}
+body.no-motion .sh-steam i{display:none;}
+.overlay-box.ov-shake-1{animation:ovShake1 .25s steps(4);}
+.overlay-box.ov-shake-2{animation:ovShake2 .4s steps(6);}
+.overlay-box.ov-shake-3{animation:ovShake3 .56s steps(8);}
+@keyframes ovShake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}66%{transform:translate(calc(2 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}}
+@keyframes ovShake2{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}40%{transform:translate(calc(4 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}60%{transform:translate(calc(-3 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}80%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
+@keyframes ovShake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u) * var(--ovk, 2)),calc(4 * var(--u) * var(--ovk, 2)));}25%{transform:translate(calc(7 * var(--u) * var(--ovk, 2)),calc(-5 * var(--u) * var(--ovk, 2)));}37%{transform:translate(calc(-6 * var(--u) * var(--ovk, 2)),calc(-3 * var(--u) * var(--ovk, 2)));}50%{transform:translate(calc(6 * var(--u) * var(--ovk, 2)),calc(3 * var(--u) * var(--ovk, 2)));}62%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}75%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}87%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
+/* 동작 줄이기·흔들림 끔: 흔들림·팝·일렁임 없음. 불꽃은 정지한 모양으로 남는다 (정적 대체) */
+@media (prefers-reduced-motion: reduce){.sh-num.slam,.sh-num.pop,.sh-flame i,.overlay-box[class*="ov-shake-"]{animation:none;}}
+body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame i,body.no-motion .overlay-box[class*="ov-shake-"]{animation:none;}
 .stage-reel{display:inline-block;min-width:calc(46 * var(--u));text-align:center;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--bg);background:var(--gold);padding:calc(3 * var(--u)) calc(6 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 .stage-reel.spin{animation:stageJitter .06s steps(2) infinite;}
 .stage-pay{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);margin-top:calc(6 * var(--u));}
@@ -4512,6 +4571,29 @@ const JUICE_CONFIG = {
   nextGuardMs: 400,              // 결과가 뜬 뒤 이 시간 동안 '▶ 다음 날'·엔터 무시
   fireShake: { 1: 0, 2: 1, 3: 2, 4: 3 },   // 불타기 단계별 흔들림
   fireHitStop: 90,               // ×10,000 도달 히트스톱 (ms)
+  // ── 정산 무대 주인공 배수·불꽃·상자 흔들림 (juice-stage) ──
+  heroPopBase: 0.1,              // 주인공 숫자 팝: 시작 크기 = 1 + 이 값 + heroPopPerDecade × log10(배수)
+  heroPopPerDecade: 0.2,         //   (×10마다 이만큼 더 커진다)
+  heroPopMax: 1.6,               //   팝 시작 크기 상한
+  heroPopMs: 260,                //   팝이 1배로 내려앉는 시간 (ms)
+  heroFlameH: [0, 0.6, 1, 1.4, 1.8],   // 불꽃 높이 (주인공 글자 높이의 배수) — 티어 0(없음)~4
+  heroFlameMs: 160,              // 불꽃 일렁임 한 바퀴 (ms)
+  heroLongChars: 8,              // 이 글자 수를 넘으면 주인공 숫자를 한 단계 작게 (상자 밖으로 안 나가게)
+  rageTier: 3,                   // 폭주 배경: 이 티어(×1,000) 이상이면 정산 상자 배경 전체가 한 가지 색으로 통째로 바뀌며 순환 (4 = ×10,000만)
+  rageHz: 2.5,                   //   배경 색 전환 횟수/초 — 광과민 안전: 코드가 3 이하로 자른다
+  rageBoxA: [0, 0, 0, 30, 42],   //   정산 상자 배경 색 진하기 % — 티어 0~4 (어두운 바탕 위 저채도)
+  steamTier: 2,                  // 과열 증기: 이 티어(×100) 이상이면 주인공 배수 위로 김이 피어오르고 '쉬익' 소리
+  steamCount: [0, 0, 4, 8, 12],  //   김 덩어리 수 (티어 0~4, 최대 12)
+  steamRise: 72,                 //   김이 올라가는 높이 (×--u)
+  steamMs: 1100,                 //   김 한 번 피어올라 사라지는 시간 (ms)
+  steamVol: 0.8,                 //   '쉬익' 효과음 크기 (0~1)
+  finaleMinMult: 3,              // 피날레: 한 포지션의 마지막 단계에서 누적 배수가 이 값 이상이면 (코인 우수수 + 배수가 앞으로 튀어나왔다 원위치)
+  finaleScale: 1.9,              //   배수 숫자가 튀어나오는 최대 크기 (상자 폭을 넘으면 자동으로 줄인다)
+  finaleMs: 520,                 //   튀어나왔다 돌아오는 시간 (ms)
+  finaleCoins: [18, 60],         //   떨어지는 동전 수 (최소, 최대 — 이번 판 최고 정산 대비 세기 비례)
+  finaleHitStop: 70,             //   피날레 히트스톱 (ms, 최고 갱신 단계는 그쪽이 우선)
+  finaleVol: 1,                  //   코인 우수수 효과음 크기 (0~1)
+  boxShakeMul: 2.5,              // Fx.shake가 정산 상자를 흔들 때 진폭 배수 (1 = 화면 흔들림과 같은 폭)
   // ── N4 색 언어·계산식 줄 ──
   slotSpinMs: 300,               // 금액 슬롯: 전체가 굴러가다 첫 자리가 멈출 때까지 (ms)
   slotDigitGapMs: 90,            //           자릿수마다 멈추는 시간차 (왼쪽부터)
@@ -4608,6 +4690,49 @@ function slotHtml(text, locked){
   return text.replace(/\d/g, ch => k++ < locked ? ch : `<span class="slot-d spin">${Math.floor(Math.random() * 10)}</span>`);
 }
 const digitCount = text => (text.match(/\d/g) || []).length;
+/* 주인공 배수: 누적 배수를 상자 중앙에 크게 + 티어별 불꽃 (값·티어는 quiet 이벤트라 '결과로' 점프해도 맞는다. 팝은 재생 때만) */
+function stageHeroSet(m){
+  const hero = $('stageHero'), num = $('stageHeroV');
+  if(!hero) return;
+  const tier = fireTier(m), J = JUICE_CONFIG;
+  num.textContent = '×' + fmtMultNum(m).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');   // 주인공은 군더더기 0 없이 (2.00 → 2)
+  num.classList.toggle('long', num.textContent.length > J.heroLongChars);
+  hero.className = 'stage-hero' + (tier ? ' t' + tier : '');
+  hero.style.setProperty('--fl-h', J.heroFlameH[tier] || 0);
+  hero.style.setProperty('--fl-ms', J.heroFlameMs + 'ms');
+  // 폭주 배경: 티어 ≥ rageTier → 정산 상자 배경만 (뒤 화면은 그대로). 전환 횟수/초는 3 이하로 자른다 (4색 한 바퀴 = 4/hz초)
+  const box = $('overlayBox'), rage = tier >= J.rageTier && J.rageTier > 0;
+  const hz = Math.max(0.5, Math.min(3, J.rageHz));
+  box.classList.toggle('stage-rage', rage);
+  if(rage){ box.style.setProperty('--rage-ms', Math.round(4000 / hz) + 'ms'); box.style.setProperty('--rage-box-a', (J.rageBoxA[tier] || 0) + '%'); }
+  // 과열 증기: 티어 ≥ steamTier → 김 덩어리 steamCount[티어]개
+  const steam = tier >= J.steamTier && J.steamTier > 0, n = Math.min(12, Math.round(J.steamCount[tier] || 0));
+  hero.classList.toggle('steaming', steam && n > 0);
+  hero.style.setProperty('--steam-ms', J.steamMs + 'ms'); hero.style.setProperty('--steam-rise', J.steamRise);
+  hero.querySelectorAll('.sh-steam i').forEach((el, k) => { el.style.display = steam && k < n ? '' : 'none'; });
+}
+function stageHeroPop(m){
+  const num = $('stageHeroV'), J = JUICE_CONFIG;
+  if(!num) return;
+  const pop = Math.min(J.heroPopMax, 1 + J.heroPopBase + J.heroPopPerDecade * Math.log10(Math.max(1, m)));
+  num.style.setProperty('--pop', pop.toFixed(3));
+  num.style.setProperty('--pop-ms', J.heroPopMs + 'ms');
+  num.classList.remove('pop'); void num.offsetWidth; num.classList.add('pop');
+}
+/* 피날레: 한 포지션의 마지막 단계 — 배수 숫자가 앞으로 튀어나왔다 원위치 + 동전 우수수 + 히트스톱. 재생 때만(스킵하면 건너뜀) */
+function stageFinale(m, ratio, skipHitStop){
+  const num = $('stageHeroV'), J = JUICE_CONFIG, box = $('overlayBox');
+  if(num && box){
+    const fit = Math.max(1, (box.clientWidth * 0.9) / Math.max(1, num.offsetWidth));
+    num.style.setProperty('--slam', Math.min(J.finaleScale, fit).toFixed(3));
+    num.style.setProperty('--slam-ms', J.finaleMs + 'ms');
+    num.classList.remove('slam'); void num.offsetWidth; num.classList.add('slam');
+  }
+  const C = J.finaleCoins, n = Math.round(C[0] + (C[1] - C[0]) * ratio);
+  Fx.coinRain(n);
+  Sound.play('coinShower', { count: Math.round(10 + 20 * ratio), volume: J.finaleVol });
+  if(!skipHitStop && J.finaleHitStop > 0) Fx.hitStop(J.finaleHitStop);
+}
 function stageFormula(chips, mult, amt){   // 계산식 줄 [칩] × [배수] = [금액] (amt = null이면 '?')
   if(chips !== undefined) $('sfChipV').textContent = fmtSigned(chips);
   if(mult !== undefined) $('sfMultV').textContent = fmtMultNum(mult);
@@ -4649,6 +4774,7 @@ function playDayStage(d){
   showOverlay(`
     <div class="result-kicker">WEEK ${d.round} · DAY ${d.day} 장 마감</div>
     <div class="ov-title" style="color:var(--gold)">장 마감 정산</div>
+    <div class="stage-hero" id="stageHero" aria-hidden="true"><div class="sh-steam"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="sh-flame"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><b class="sh-num" id="stageHeroV">×1</b></div>
     <div class="stage-formula" id="stageFormula" title="칩(오늘 손익 + 더하기 유물) × 배수(합산 + · 곱 ×) = 금액. 정산 보너스 = 금액 − 오늘 손익">
       <span class="sf-box sf-chip" id="sfChip"><small>칩</small><span id="sfChipV">${fmtSigned(0)}</span></span>×
       <span class="sf-box sf-mult" id="sfMult"><small>배수</small><span id="sfMultV">1.00</span></span>=
@@ -4664,6 +4790,9 @@ function playDayStage(d){
       <div class="chain-sum pending" id="stageSum">오늘 정산 보너스 <span class="${signCls(d.payout)}" id="stageSumV">${fmtSigned(0)}</span></div>
     </div>
     <div class="chain-skip" id="stageHint">클릭 · SPACE = 빨리 감기 · 두 번 = 결과로${small ? ' · 작은 정산 ×' + JUICE_CONFIG.smallSpeed : ''}</div>`);
+  const box0 = $('overlayBox');
+  box0.classList.add('stage-live');   // Fx.shake가 이 상자도 흔든다
+  box0.style.setProperty('--ovk', JUICE_CONFIG.boxShakeMul);
   const M = JUICE_CONFIG.stageMs, ev = [];
   let t = M.intro, n = 0;
   const on = (dt, fn, quiet) => ev.push({ t, fn, quiet });   // quiet = 결과로 점프할 때도 실행 (최종 상태를 만드는 것)
@@ -4671,7 +4800,7 @@ function playDayStage(d){
   Sound.play('dayEnd');
   rows.forEach((r, i) => {
     const row = () => $('stageRow' + i);
-    on(0, () => { document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); row().classList.remove('pending'); row().classList.add('playing'); }, true);
+    on(0, () => { document.querySelectorAll('#stageList .chain-row.playing').forEach(e => e.classList.remove('playing')); row().classList.remove('pending'); row().classList.add('playing'); stageHeroSet(1); }, true);
     t += M.row;
     on(0, () => { row().querySelector('.chain-chips').insertAdjacentHTML('beforeend', `<span class="chain-chip add">오늘 손익 ${fmtSigned(r.base)}</span>`); stageFormula(r.base, 1, null); }, true);
     on(0, () => { Sound.play('countTick', { pitch: stagePitch(n) }); sfHit('sfChip'); });
@@ -4708,6 +4837,7 @@ function playDayStage(d){
         const el = $('stageMult' + i), tier = fireTier(st.runningMult);
         el.textContent = '×' + fmtMultNum(st.runningMult);
         el.className = 'stage-mult' + (tier ? ' f' + tier : '');
+        stageHeroSet(st.runningMult);
         stageFormula(st.runningChips, st.runningMult);
         stageRuleName(st);
         const box = $('overlayBox');
@@ -4717,10 +4847,13 @@ function playDayStage(d){
         const x = st.kind === 'xmult', J = JUICE_CONFIG;
         Sound.play(x ? 'settleMult' : 'settleAdd', { pitch: stagePitch(k), big: fireTier(st.runningMult) >= 1 });
         const tier = fireTier(st.runningMult);
-        if(tierUp) Sound.play('tierBreak', { tier, pitch: stagePitch(k) });   // (A1) 구간 돌파: 옥타브 스윕 + 아르페지오 (음높이는 같은 5음계)
+        if(tierUp) Sound.play('tierBreak', { tier, pitch: stagePitch(k) });
+        if(x && tier >= J.steamTier && J.steamTier > 0) Sound.play('steam', { level: tier, volume: J.steamVol });   // 과열 증기 '쉬익' (곱하기 단계마다)   // (A1) 구간 돌파: 옥타브 스윕 + 아르페지오 (음높이는 같은 5음계)
         const el = $('stageMult' + i);
         sfHit(st.kind === 'add' ? 'sfChip' : 'sfMult');
         Fx.punch(el, 1, x ? 0.5 + 0.1 * tier : 0.25);
+        stageHeroPop(st.runningMult);
+        if(si === steps.length - 1 && st.runningMult >= J.finaleMinMult) stageFinale(st.runningMult, ratio, isBest);   // 피날레
         if(tier >= 2){ const rc = rectOf(el); if(rc) Fx.burst(rc.left + rc.width / 2, rc.top + rc.height / 2, 8 * tier, tier >= 3 ? ['--purple', '--gold', '--red'] : ['--cyan', '--gold']); }
         if(tier >= 4) Fx.hitStop(J.fireHitStop);
         if(isBest) stageBestHit();   // (A2) 이번 판 최고 갱신: 가장 긴 히트스톱 + 암전 한 프레임 → "쿵" + 전체 폭발
@@ -4868,7 +5001,7 @@ function stageNext(){
 function stageClose(){
   if(!stage) return;
   cancelAnimationFrame(stage.raf);
-  $('overlayBox').classList.remove('stage-f3', 'stage-f4', 'pre-shake');
+  $('overlayBox').classList.remove('stage-rage', 'stage-f3', 'stage-f4', 'pre-shake', 'stage-live', 'ov-shake-1', 'ov-shake-2', 'ov-shake-3');
   Music.unduck('stage');
   stage = null;
 }
@@ -5787,7 +5920,7 @@ function buildTuner(){
   }).join('');
   box.innerHTML = `<div class="tn-head"><span>JUICE TUNER</span><button class="tn-btn" data-tn-act="fold">─</button></div>
     <div class="tn-body">
-      <div class="tn-btns"><button class="tn-btn" data-tn-act="combo">콤보 테스트</button><button class="tn-btn" data-tn-act="copy">값 복사</button><button class="tn-btn" data-tn-act="reset">기본값</button></div>
+      <div class="tn-btns"><button class="tn-btn" data-tn-act="combo">콤보 테스트</button><button class="tn-btn" data-tn-act="stage">정산 무대 테스트</button><button class="tn-btn" data-tn-act="copy">값 복사</button><button class="tn-btn" data-tn-act="reset">기본값</button></div>
       <div class="tn-btns"><select class="tn-sel" id="tunerRelic">${RELICS.slice().sort((a, b) => (b.rule ? 1 : 0) - (a.rule ? 1 : 0)).map(r => `<option value="${r.id}">${r.rule ? '⚠ ' : ''}${r.icon} ${r.name}</option>`).join('')}</select><button class="tn-btn" data-tn-act="relic">유물 장착</button></div>
       <textarea class="tn-out" id="tunerOut" readonly hidden></textarea>
       ${rows}
@@ -5805,6 +5938,7 @@ function buildTuner(){
     const act = e.target.dataset.tnAct;
     if(act === 'fold') box.classList.toggle('folded');
     if(act === 'combo') tunerComboTest();
+    if(act === 'stage') tunerStageTest();
     if(act === 'copy') tunerCopy();
     if(act === 'reset') tunerReset();
     if(act === 'relic'){ const id = $('tunerRelic').value; toast(window.__debug.giveRelic(id) ? `${RELIC_BY_ID[id].icon} ${RELIC_BY_ID[id].name} 장착` : '장착 실패 (판 없음 · 이미 있음 · 칸 가득)', 'info'); }
@@ -5817,6 +5951,16 @@ function tunerComboTest(){   // 가짜 수익 이벤트 1→20 → 끊김 (단�
     if(k++ < TUNER_COMBO_TEST.hits) comboHit('test');
     else { clearInterval(iv); comboBreak(); }
   }, TUNER_COMBO_TEST.gapMs);
+}
+function tunerStageTest(){   // 가짜 정산 기록 ×2 → ×10 → ×100 → ×1,000 → ×10,000 (불꽃 티어·팝·상자 흔들림 확인용). 판이 있고 TR룸일 때만
+  if(!run || currentTab !== 'play'){ toast('TR룸에서 판을 시작한 뒤 눌러 주세요', 'info'); return; }
+  const base = 1000, mults = [2, 5, 10, 10, 10];   // 누적 ×2 → ×10 → ×100 → ×1,000 → ×10,000
+  let chips = base, m = 1;
+  const steps = [{ label: '오늘 손익', kind: 'base', value: base, runningChips: base, runningMult: 1, source: 'base' }];
+  mults.forEach((v, i) => { m *= v; steps.push({ label: '테스트 유물 ' + (i + 1), kind: 'xmult', value: v, runningChips: chips, runningMult: m, source: 'test' + i }); });
+  const payout = chips * m - base;
+  Fx.skipQueue(); stageClose();
+  playDayStage({ round: run.round, day: 1, payout, settlement: [{ posId: 0, posName: '테스트 종목', assetId: 'test', dir: 1, lev: 1, base, steps, chips, mult: m, payout, sources: [] }] });
 }
 function tunerCopy(){
   tunerLastCopy = JSON.stringify(JUICE_CONFIG, null, 2);
