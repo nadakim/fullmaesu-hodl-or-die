@@ -29,6 +29,7 @@ const FAKE = () => {
   for (const [W, H] of [[1920, 1080], [1366, 768]]) {
     const p = await open(b, W, H);
     await p.evaluate(`(() => { window.__shakeSeen = new Set(); new MutationObserver(() => { const bx = document.getElementById('overlayBox'); [1, 2, 3].forEach(n => { if(bx.classList.contains('ov-shake-' + n)) window.__shakeSeen.add(n); }); }).observe(document.getElementById('overlayBox'), { attributes: true, attributeFilter: ['class'] }); window.__fake = ${FAKE.toString()}; })()`);
+    await p.evaluate(() => { window.__snd = []; const o = Sound.play; Sound.play = (n, op) => { window.__snd.push(n); return o.call(Sound, n, op); }; });
     await p.evaluate(() => { Fx.skipQueue(); playDayStage(window.__fake()); });
     ok(W + ' 무대 열림 · 주인공 요소 · stage-live', await p.evaluate(() => !!stage && !!$('stageHero') && $('overlayBox').classList.contains('stage-live') && $('stageHeroV').textContent === '×1'));
     ok(W + ' 불꽃 막대 7개', await p.evaluate(() => document.querySelectorAll('#stageHero .sh-flame i').length === 7));
@@ -40,6 +41,12 @@ const FAKE = () => {
       await sleep(260);
       const info = await p.evaluate(() => { const h = $('stageHero'), n = $('stageHeroV'), fl = h.querySelector('.sh-flame'), cs = getComputedStyle(n), r = $('overlayBox').getBoundingClientRect();
         return { cls: h.className, fs: parseFloat(cs.fontSize), u: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1, fh: fl.getBoundingClientRect().height, sx: $('overlayBox').scrollWidth - $('overlayBox').clientWidth, mult: $('stageMult0').textContent, box: [r.left, r.right] }; });
+      const ex = await p.evaluate(() => { const ov = $('overlay'), bx = $('overlayBox'), cs = getComputedStyle(ov, '::before'), bs = getComputedStyle(bx, '::before');
+        return { rage: ov.classList.contains('stage-rage') && bx.classList.contains('stage-rage'), anim: cs.animationName, dur: parseFloat(cs.animationDuration) * (cs.animationDuration.endsWith('ms') ? 0.001 : 1), bAnim: bs.animationName,
+          steam: [...document.querySelectorAll('#stageHero .sh-steam i')].filter(e => getComputedStyle(e).display !== 'none').length }; });
+      ok(`${W} ${txt}: 폭주 배경 = 티어 3 이상만`, ex.rage === (tier >= 3), ex);
+      if(tier >= 3){ ok(`${W} ${txt}: 배경·상자 모두 순환 애니메이션 · 초당 3회 이하 (한 바퀴 ≥ 1.33초)`, ex.anim === 'ovRage' && ex.bAnim === 'ovRage' && ex.dur >= 1.33, [ex.anim, ex.bAnim, ex.dur]); }
+      ok(`${W} ${txt}: 증기 덩어리 수 (티어 2 이상, 4/8/12)`, ex.steam === [0, 0, 4, 8, 12][tier] , ex.steam);
       seenTier.push(info);
       ok(`${W} ${txt}: 티어 ${tier} 클래스`, tier === 0 ? !/t[1-4]/.test(info.cls) : info.cls.includes('t' + tier), info.cls);
       ok(`${W} ${txt}: 주인공 글자 크기 = 40 × --ui`, Math.abs(info.fs - 40 * info.u) < 1.5, [info.fs, info.u]);
@@ -48,6 +55,7 @@ const FAKE = () => {
     }
     const fh = seenTier.map(i => i.fh);
     ok(W + ' 불꽃 높이가 티어마다 커진다', fh[0] < 1 && fh[1] > fh[0] && fh[2] > fh[1] && fh[3] > fh[2], fh.map(v => +v.toFixed(1)));
+    ok(W + ' 증기 효과음 steam 재생', (await p.evaluate(() => window.__snd)).includes('steam'));
     const shook = await p.evaluate(() => [...window.__shakeSeen]);
     ok(W + ' Fx.shake가 정산 상자(.overlay-box)도 흔들었다', shook.length > 0, shook);
     // 스킵: 결과로 → 주인공 = 최종 배수 · 티어 4
@@ -73,6 +81,11 @@ const FAKE = () => {
     const r = await p.evaluate(() => ({ an: [getComputedStyle($('stageHeroV')).animationName, getComputedStyle(document.querySelector('#stageHero .sh-flame i')).animationName, getComputedStyle($('overlayBox')).animationName], fh: document.querySelector('#stageHero .sh-flame').getBoundingClientRect().height }));
     ok('동작 줄이기: 팝·일렁임·상자 흔들림 애니메이션 없음', r.an.every(a => a === 'none'), r.an);
     ok('동작 줄이기: 불꽃은 정지한 모양으로 남는다', r.fh > 10, r.fh);
+    const rm = await p.evaluate(() => { stage.speed = 8; return null; });
+    await p.waitForFunction(() => $('stageHeroV').textContent === '×10,000', null, { timeout: 15000, polling: 'raf' });
+    await p.evaluate(() => { stage.speed = 0; });
+    const r2 = await p.evaluate(() => [getComputedStyle($('overlay'), '::before').animationName, getComputedStyle($('overlayBox'), '::before').animationName, [...document.querySelectorAll('#stageHero .sh-steam i')].every(e => getComputedStyle(e).display === 'none')]);
+    ok('동작 줄이기: 폭주 배경 정지 · 증기 없음', r2[0] === 'none' && r2[1] === 'none' && r2[2], r2);
     await p.close();
   }
   // 설정 '화면 흔들림' 끔: Fx.shake 자체가 무시된다 → 상자도 안 흔들림

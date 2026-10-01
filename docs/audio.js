@@ -60,6 +60,7 @@
    | settleThud  | 장 마감 정산 무대: 끝 마침표 (순자산 "쾅" 뒤)               | 저음 "둥"                              |
    | shopShuffle | shopRerolled (암시장 진열 새로고침)                         | 카드 섞는 "촤르륵" 노이즈 연타 + 끝 "탁" |
    | tierBreak   | 정산 무대: 누적 배수가 ×10·100·1,000·10,000을 넘는 순간 (opts.tier 1~4, 높을수록 길게 · opts.pitch = stagePitch) | 한 옥타브 올려치는 스윕 + 5음계 아르페지오 |
+   | steam       | 정산 무대: 배수가 과열 구간(×100 이상)에서 한 단계 오를 때마다 (opts.level 2~4 — 높을수록 길고 세게, ×1,000 이상은 밸브 휘파람이 얹힘) | "쉬이이익—" 증기 빠지는 소리 |
    | bestBoom    | 정산 무대: 이번 판 최고 정산을 갱신하는 단계 (암전 한 프레임 뒤)  | 아주 낮은 "쿵" + 긴 저음                |
    | unitBreak   | 정산 금액이 한국 단위(억·조·경…)를 넘는 순간                | 낮은 "쿵"                                |
    | reelStop    | 크리티컬 릴 "7 7 7" 한 칸 멈춤 (opts.pitch)                 | 딸깍 + 짧은 블립                         |
@@ -185,6 +186,13 @@ const Sound = (() => {
     uiClick(b, t, p){ tone(b, 'square', 2200 * p, t, 0.025, 0.08); return 0.03; },
     uiMove(b, t, p){ tone(b, 'square', 3000 * p, t, 0.015, 0.13); return 0.02; },
     uiConfirm(b, t, p){ tone(b, 'square', 1320 * p, t, 0.05, 0.1); tone(b, 'square', 1980 * p, t + 0.055, 0.08, 0.1); return 0.14; },
+    steam(b, t, p, o){   // 과열 증기: 밝은 쉬익 노이즈가 점점 낮은 쪽으로 가라앉고, 몸통 노이즈가 받친다. 레벨 3+는 밸브 휘파람
+      const lv = Math.max(1, Math.min(4, (o && o.level) || 2)), len = 0.55 + 0.12 * lv;
+      noise(b, t, len, 0.1 + 0.04 * lv, 'highpass', 5400 * p, 2400 * p, 0.7);
+      noise(b, t + 0.02, len * 0.8, 0.07 + 0.025 * lv, 'bandpass', 2000 * p, 800 * p, 1.1);
+      if(lv >= 3) tone(b, 'sine', 2600 * p, t + 0.03, 0.32, 0.035, { f1: 1900 * p });
+      return len;
+    },
     tierBreak(b, t, p, o){   // 배수 구간 돌파: 한 옥타브 올려치는 스윕 + 빠른 5음계 아르페지오 (구간이 높을수록 길게)
       const tier = Math.max(1, Math.min(4, (o && o.tier) || 1)), f = filter(b, 'lowpass', 5200 - tier * 600);   // 높은 구간은 귀 보호
       tone(f, 'square', midi(64) * p, t, 0.12, 0.09, { f1: midi(76) * p });
