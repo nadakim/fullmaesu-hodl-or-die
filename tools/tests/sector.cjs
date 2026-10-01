@@ -9,7 +9,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     await p.evaluate(() => { clearToasts(); run.hand = ['rpt_crypto', 'rpt_crypto+', 'stk_coin'].map(newCard); run.ap = 3; handSig = ''; renderAll(); });
     await sleep(150);
@@ -34,7 +34,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.screenshot({ path: `${S}/sector-table-${W}.png` });
     await p.evaluate(() => hideOverlay());
     // 장 마감 정산: 수익 마감 → 섹터 단계가 맨 앞
-    await p.evaluate(() => { window.tipChance = () => 0; window.rollCrit = () => 0; startMarket(); while(run.phase === 'market'){ assets.coin.price *= 1.01; tick(); } renderAll(); });
+    await p.evaluate(() => { window.tipChance = () => 0; window.rollCrit = () => 0; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); assets.coin.price *= 1.01; tick(); } renderAll(); });
     const st = await p.evaluate(() => { const r = run.lastDay.settlement.find(x => x.assetId === 'coin'); return r ? r.steps.map(s => [s.source, s.kind, s.label]) : null; });
     ok(W + ' 정산 단계: base → 섹터 칩 → 섹터 배수 (유물보다 먼저)', !!st && st[1][0] === 'sector' && st[1][1] === 'add' && st[2][1] === 'mult' && /📊 암호화폐 Lv\.3/.test(st[1][2]), st);
     await p.waitForFunction(() => !!stage, null, { timeout: 8000 }).catch(() => {});

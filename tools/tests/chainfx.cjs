@@ -10,7 +10,7 @@ const FIND = `(want) => {
     Fx.skipQueue(); window.tipChance = () => 0; setSeed(seed); startRun(); run.cash += 20000;
     ['meme', 'sc'].forEach(id => openPosition(id, 1500, 3, 1, true));
     startMarket(); renderAll(); Fx.skipQueue();
-    while(run.phase === 'market'){
+    while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1);
       const before = eventLog.length;
       tick();
       const ev = eventLog.slice(before).map(e => e.type);
@@ -31,7 +31,7 @@ const FIND = `(want) => {
   for(const [W, H] of [[1920, 1080], [1366, 768], [390, 844]]){
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(W + ': ' + e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await sleep(200);

@@ -7,22 +7,26 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 이번 주를 목표 달성으로 끝낸다 (장 마감 → 결산)
 const CLEAR_BODY = `window.tipChance = () => 0; run.cash += currentTarget() * 1.2; run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll();`;
 const CLEAR_WEEK = `(() => { ${CLEAR_BODY} return run.phase; })()`;
-async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상 화면
-  for(let i = 0; i < 60 && !(await p.evaluate(() => !!chainHold)); i++) await sleep(100);
-  await sleep(560); await p.locator('[data-act="chainNext"]').click(); await sleep(200);
+async function throughResult(p){   // 결산 요약 → 결과 화면 (고정 대기 대신 상태 대기)
+  await p.waitForFunction(() => !!chainHold, null, { timeout: 15000 });
+  await sleep(560);   // CHAIN_NEXT_GUARD_MS(0.5초) 입력 무시 구간
+  await p.locator('[data-act="chainNext"]').click();
+  await p.waitForSelector('#overlayBox [data-act="toReward"], #overlayBox .ending-title', { timeout: 15000 });
 }
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 일정
     const plan = await p.evaluate(() => ({ plan: run.bossPlan, boss: run.boss, chip: $('bossChip').hidden,
       finals: BOSSES.filter(b => b.final).map(b => b.id), counters: BOSSES.filter(b => b.counter).map(b => b.id), builds: BOSSES.filter(b => b.build).length, flag: BOSS_COUNTERS_ON, n: BOSSES.length }));
     const regs = [plan.plan[2], plan.plan[4], plan.plan[6]];
     ok(W + ' 보스 13종 + 빌드 카운터(플래그 켬이면 4) (정산 카운터 3) · 일정 2·4·6 일반(중복 없음) + 8 최종 · 1주차 없음', plan.n === 13 + plan.builds && plan.builds === (plan.flag ? 4 : 0) && plan.counters.length === 3 && new Set(regs).size === 3 && regs.every(id => plan.finals.indexOf(id) < 0) && plan.finals.indexOf(plan.plan[8]) >= 0 && !plan.boss && plan.chip, plan);
+    // 2주차 보스를 고정한다 — 무작위 일정이 세무조사(초과분 추징)·목표 상향이면 아래 '격파 보상 비자금' 계산이 달라져 간헐 실패했다
+    await p.evaluate(() => { run.bossPlan[2] = 'shortBan'; }); plan.plan[2] = 'shortBan';
     // 1주 결산 → 결과·보상·유물·암시장 예고
     await p.evaluate(CLEAR_WEEK); await throughResult(p);
     ok(W + ' 결산 결과에 다음 주 보스 예고', await p.evaluate(id => !!document.querySelector(`#overlayBox .boss-notice[data-boss="${id}"]`), plan.plan[2]));
@@ -67,7 +71,7 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
       renderAll();
       const row = quoteRowEl(run.haltStock);
       out.haltRow = row ? [row.classList.contains('halted'), row.querySelector('.q-chg').textContent.startsWith('停')] : null;
-      run.positions = []; while(run.phase === 'market') tick();
+      run.positions = []; while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }
       // 빅스텝
       setBoss('bigStep'); run.overdraft = 1000; out.interest3 = dailyInterest(); run.boss = ''; out.interest1 = dailyInterest(); run.overdraft = 0;
       // 증거금 상향
@@ -109,7 +113,7 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
       return { phase: run.phase, tax: run.lastWeek.auditTax, want: (run.lastWeek.eq - run.lastWeek.target) * 0.5 }; })()`);
     ok(W + ' 세무조사: 결산 통과 시 목표 초과분 50% 추징', au.phase === 'reward' && au.tax > 0 && Math.abs(au.tax - au.want) < 1e-6, au);
     await throughResult(p);
-    ok(W + ' 결과 화면에 추징 표시', await p.evaluate(() => /세무조사 추징/.test($('overlayBox').textContent)));
+    ok(W + ' 결과 화면에 추징 표시', await p.waitForFunction(() => /세무조사 추징/.test($('overlayBox').textContent), null, { timeout: 8000 }).then(() => true, () => false));
     await p.evaluate(() => { hideOverlay(); chooseReward('skip'); chooseRelicReward(''); leaveShop(); Fx.skipQueue(); });
     // 최종 보스
     const fin = await p.evaluate(() => {
@@ -120,10 +124,10 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
       startMarket(); out.state = marketState;
       out.moves = STOCKS.map((s, i) => [s.beta > 0, assets[s.id].price / before[i] - 1]);
       out.gap = bossGapMult();
-      while(run.phase === 'market') tick();
+      while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }
       run.bossPlan[run.round] = 'bubblePeak'; startBossWeek(); run.day = 2; startDay();
-      startMarket(); out.bubble2 = run.forcedState; while(run.phase === 'market') tick();
-      run.day = 4; startDay(); startMarket(); out.bubble4 = [run.forcedState, bossGapMult()]; while(run.phase === 'market') tick();
+      startMarket(); out.bubble2 = run.forcedState; while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }
+      run.day = 4; startDay(); startMarket(); out.bubble4 = [run.forcedState, bossGapMult()]; while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }
       return out;
     });
     const crashOk = fin.moves.every(([up, m]) => up ? m < -0.08 : m > 0.08);

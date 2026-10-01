@@ -13,7 +13,7 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
     const ctx = await b.newContext({ viewport: vp, reducedMotion: (opts && opts.reduced) ? 'reduce' : 'no-preference' });
     const page = await ctx.newPage();
     page.on('pageerror', e => errs.push(e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');   // (온보딩) 전 시스템 열린 상태로
     return page;
@@ -105,7 +105,7 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
     playCardFx(0, null); playCardFx(0, null); playCardFx(0, null); playCardFx(0, null); playCardFx(0, null); };
   await page.addInitScript(() => {});
   const pickSeed = await page.evaluate(src => { const setupRun = eval(src);
-    for(let seed = 1; seed < 400; seed++){ setupRun(seed); const s0 = eventLog.length; startMarket(); while(run.phase === 'market') tick();
+    for(let seed = 1; seed < 400; seed++){ setupRun(seed); const s0 = eventLog.length; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); }
       const ev = eventLog.slice(s0).map(e => e.type); if(ev.includes('marginCall') && ev.includes('gap')) return seed; }
     return -1; }, '(' + setupRun.toString() + ')');
   const replay = async (useLoop) => page.evaluate(async ([useLoop, seed, src]) => {
@@ -113,8 +113,8 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
     setupRun(seed);
     const s0 = eventLog.length;
     window.__hsCount = 0;
-    if(useLoop){ settings.speed = 4; startMarket(); renderAll(); while(run.phase === 'market') await new Promise(r => setTimeout(r, 40)); }
-    else { startMarket(); while(run.phase === 'market') tick(); }
+    if(useLoop){ settings.speed = 4; startMarket(); renderAll(); while(run.phase === 'market'){ if(run.pendingTip){ resolveTip(1); hideOverlay(); } await new Promise(r => setTimeout(r, 40)); } }
+    else { startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } }
     return { cash: run.cash, realized: run.realized, liq: run.liquidations, int: run.interestPaid, eq: netEquity(), phase: run.phase, day: run.day,
              events: eventLog.slice(s0).map(e => e.type).join(','), hs: window.__hsCount };
   }, [useLoop, pickSeed, '(' + setupRun.toString() + ')']);

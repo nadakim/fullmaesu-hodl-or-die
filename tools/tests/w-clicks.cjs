@@ -4,7 +4,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1615,900],[1366,768],[1920,1080],[2560,1440],[1280,1024],[390,844]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(W + ' ' + e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await sleep(300);
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await sleep(300);
     const ok = (name, c, info) => res.push(`${W} ${c ? 'OK ' : 'FAIL'} ${name}${c ? '' : ' ' + JSON.stringify(info)}`);
     // 좌표 정확도: 요소 중심의 elementFromPoint가 자기 자신(또는 자식)인지
     const hit = sel => p.evaluate(sel => { const el = document.querySelector(sel); if(!el) return 'none'; el.scrollIntoView({block:'nearest',inline:'nearest'}); const r = el.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2); return !!t && (el === t || el.contains(t)); }, sel);

@@ -6,14 +6,17 @@ let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const runDay = up => `(() => { window.tipChance = () => 0; window.rollCrit = () => 0; startMarket(); run.allProtectedToday = true;
-  while(run.phase === 'market'){ for(const id of Object.keys(assets)) assets[id].price *= ${up}; tick(); } renderAll(); })()`;
-const closeStage = p => p.evaluate(() => { if(stage){ if(!stage.hold) stageSkip(); stage.readyAt = 0; stageNext(); } hideOverlay(); clearToasts(); });
+  while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); for(const id of Object.keys(assets)) assets[id].price *= ${up}; tick(); } renderAll(); })()`;
+const closeStage = async p => {   // 닫고 실제로 사라질 때까지 기다린다 — 안 기다리면 다음 날 검사가 이전 무대를 읽어 간헐 실패했다
+  await p.evaluate(() => { if(stage){ if(!stage.hold) stageSkip(); stage.readyAt = 0; stageNext(); } hideOverlay(); clearToasts(); });
+  await p.waitForFunction(() => !stage, null, { timeout: 8000 }).catch(() => {});
+};
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 1) W1D1 · 종목 카드 1장 · 유물 없음 → 간이 무대
     await p.evaluate(() => { clearToasts(); run.relics = []; run.hand = ['stk_semi'].map(newCard); handSig = ''; renderAll(); });

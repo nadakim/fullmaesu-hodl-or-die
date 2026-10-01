@@ -5,13 +5,13 @@ let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const CYAN = 'rgb(0, 229, 255)', GOLD = 'rgb(255, 215, 0)';
-const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(run.phase === 'market'){ for(const id of ['semi','coin']) assets[id].price *= ${up}; tick(); } renderAll(); })()`;
+const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); for(const id of ['semi','coin']) assets[id].price *= ${up}; tick(); } renderAll(); })()`;
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const [W, H] of [[1920,1080],[1366,768],[1280,800]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 예상 정산 툴팁 (장전, 포지션 2개 + 곱하기 유물)
     await p.evaluate(() => { clearToasts(); window.rollCrit = () => 0; ['antFlag', 'levTower'].forEach(id => gainRelic(id, 't'));
@@ -61,7 +61,7 @@ const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(
     await p.evaluate(() => { stage.readyAt = 0; stageNext(); });
     await p.close();
   }
-  ok('튜너에 슬롯 수치', await (async () => { const p = await b.newPage(); await p.goto('http://127.0.0.1:8765/demo.html?tuner=1'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(400);
+  ok('튜너에 슬롯 수치', await (async () => { const p = await b.newPage(); await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html?tuner=1'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(400);
     const r = await p.evaluate(() => ['slotDigitGapMs', 'slotSpinMs', 'preShakeMs'].every(k => !!document.querySelector(`[data-tn="${k}"]`))); await p.close(); return r; })());
   ok('page errors 없음', errs.length === 0, errs);
   console.log(`FAIL ${fail} / ${pass + fail}`);

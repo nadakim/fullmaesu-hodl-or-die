@@ -11,7 +11,7 @@ const played = (p, n) => p.evaluate(n => __snd.filter(s => s[0] === n).length, n
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.evaluate(HOOK);
     await p.click('#startBtn'); await sleep(460);
     // 입장

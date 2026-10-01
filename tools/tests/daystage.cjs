@@ -5,13 +5,13 @@ let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 장 하루를 끝낸다 (가격을 조금씩 올려 수익 마감)
-const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(run.phase === 'market'){ for(const id of ['semi','coin','gukbap']) assets[id].price *= ${up}; tick(); } renderAll(); })()`;
+const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); for(const id of ['semi','coin','gukbap']) assets[id].price *= ${up}; tick(); } renderAll(); })()`;
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const [W, H] of [[1920,1080],[1366,768],[390,844]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 1) 보정 없는 날 → 무대 없음 (알림만)
     await p.evaluate(() => { clearToasts(); window.rollCrit = () => 0; openPosition('semi', 1000, 1, 1, true); });

@@ -9,7 +9,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const b = await chromium.launch(); const errs = [];
   const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?tuner=1'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+  await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html?tuner=1'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
   await p.click('#startBtn'); await sleep(500);
   // 판마다 새로: 유물·포지션 비우고 시작
   const fresh = () => p.evaluate(() => { window.tipChance = () => 0; setSeed(7); startRun(); clearToasts(); run.relics = []; run.relicState = {}; run.cash = 1e6; renderAll(); });
@@ -104,7 +104,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
   await ctx.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace('const RULE_BREAKER_RELICS_ON = true', 'const RULE_BREAKER_RELICS_ON = false') }); });
   const p2 = await ctx.newPage(); p2.on('pageerror', e => errs.push(e.message));
-  await p2.goto('http://127.0.0.1:8765/demo.html'); await p2.keyboard.press('Shift');
+  await p2.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p2.keyboard.press('Shift');
   const off = await p2.evaluate(() => ({ flag: RULE_BREAKER_RELICS_ON, n: RELICS.filter(r => r.rule).length, total: RELICS.length }));
   ok('플래그 끔 → 규칙 파괴형 0종 (유물 35종 그대로)', !off.flag && off.n === 0 && off.total === 35, off);
   await ctx.close();

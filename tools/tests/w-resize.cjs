@@ -5,7 +5,7 @@ const S = process.argv[2]; const sleep = ms => new Promise(r => setTimeout(r, ms
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   // 저장된 bgFx 남아 있어도 무시
   await p.addInitScript(() => { try { localStorage.setItem('hodl.settings', JSON.stringify({ bgFx: false, crt: 'weak', uiSize: 'auto' })); } catch(e){} });
-  await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await sleep(300);
+  await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await sleep(300);
   out.push(['bgFx 무시', await p.evaluate(() => [!('bgFx' in settings), settings.crt, !document.getElementById('bgChartContainer') && !document.getElementById('candleBg')])]);
   await p.click('#startBtn'); await sleep(300);
   await p.evaluate(() => { window.tipChance = () => 0; openPosition('coin', 1500, 2, 1, true); startMarket(); for (let i = 0; i < 6; i++) tick(); renderAll(); });
@@ -26,7 +26,7 @@ const S = process.argv[2]; const sleep = ms => new Promise(r => setTimeout(r, ms
   await p.screenshot({ path: `${S}/w/after-resize-1615x900.png` });
   // DPR 2
   const c2 = await b.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 }); const p2 = await c2.newPage(); p2.on('pageerror', e => errs.push(e.message));
-  await p2.goto('http://127.0.0.1:8765/demo.html'); await p2.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p2.keyboard.press('Shift'); await p2.click('#startBtn'); await sleep(300);
+  await p2.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p2.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p2.keyboard.press('Shift'); await p2.click('#startBtn'); await sleep(300);
   out.push(['DPR2', await p2.evaluate(() => { const cc = $('candlestickChart'); return [uiScale, cc.width, cc.clientWidth, devicePixelRatio]; })]);
   // 설정: 화면 크기 단계
   for (const [W, H] of [[1615,900],[1366,768],[1920,1080],[2560,1440],[1280,1024]]) {

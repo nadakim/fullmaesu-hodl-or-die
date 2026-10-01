@@ -6,12 +6,14 @@ let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 이번 주를 통과시키고 보상·암시장을 건너뛰어 다음 주 TR룸으로
-const nextWeek = async p => {
+const nextWeek = async p => {   // 조건 대기: 결산 → 결과 → 보상 → 암시장 → 다음 주 장전까지 (부하가 크면 8초 고정 대기가 모자라 조용히 넘어가던 문제)
+  const r0 = await p.evaluate(() => run.round);
   await p.evaluate(() => { window.tipChance = () => 0; run.cash += 1e6; run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } Fx.skipQueue(); });
-  await p.waitForFunction(() => !!chainHold || !!chainPlay, null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => !!chainHold || !!chainPlay, null, { timeout: 20000 });
   await p.evaluate(() => { if(chainPlay) skipSettlementChain(); if(chainHold){ chainHold.readyAt = 0; chainNext(); } });
-  await p.waitForSelector('[data-act="toReward"]', { timeout: 8000 }).catch(() => {});   // 결산 결과가 뜬 뒤에 (연출 큐 → 결과 화면 순서를 기다린다)
+  await p.waitForSelector('[data-act="toReward"]', { timeout: 20000 });   // 결산 결과가 뜬 뒤에 (연출 큐 → 결과 화면 순서를 기다린다)
   await p.evaluate(() => { hideOverlay(); if(run.rewardStep === 'card') chooseReward('skip'); if(run.rewardStep === 'relic') chooseRelicReward(''); hideOverlay(); leaveShop(); switchTab('play'); renderAll(); });
+  await p.waitForFunction(r => run.round === r + 1 && run.phase === 'premarket', r0, { timeout: 20000 });
   for(let i = 0; i < 20; i++){ await sleep(150); await p.evaluate(() => { if(Fx.queueBusy) Fx.skipQueue(); }); }
 };
 const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); return !!e && !!e.offsetParent; }, sel);
@@ -21,7 +23,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
     const ctx = await b.newContext({ viewport: { width: W, height: H } });
     const p = await ctx.newPage();
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.keyboard.press('Shift');
     await p.evaluate(() => { localStorage.removeItem('hodl.unlockWeek'); }); await p.reload(); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(900);
     // 1) 1주차: 잠긴 UI 숨김
@@ -41,7 +43,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
     ok(W + ' 1주차: 보상·팩 후보에 잠긴 카드 없음 · 찌라시 확률 0', !pools[0] && pools[1] === 0, pools);
     if(W === 1920) await p.screenshot({ path: `${S}/onboarding-w1-${W}.png` });
     // 2) 1주차 결산 → 암시장: 리서치 팩·카드 제거 없음 (다음 주 기준)
-    await p.evaluate(() => { run.hand = []; handSig = ''; window.tipChance = () => 0; run.cash += 1e6; run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market') tick(); Fx.skipQueue(); });
+    await p.evaluate(() => { run.hand = []; handSig = ''; window.tipChance = () => 0; run.cash += 1e6; run.day = DAYS_PER_ROUND; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } Fx.skipQueue(); });
     await p.waitForFunction(() => !!chainHold || !!chainPlay, null, { timeout: 8000 }).catch(() => {});
     await p.evaluate(() => { if(chainPlay) skipSettlementChain(); if(chainHold){ chainHold.readyAt = 0; chainNext(); } });
     await sleep(200);
@@ -100,7 +102,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
   const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
   await ctx.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace('const ONBOARDING_ON = true', 'const ONBOARDING_ON = false') }); });
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html'); await p.keyboard.press('Shift'); await p.evaluate(() => localStorage.removeItem('hodl.unlockWeek'));
+  await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.keyboard.press('Shift'); await p.evaluate(() => localStorage.removeItem('hodl.unlockWeek'));
   await p.click('#startBtn'); await sleep(900);
   const off = await p.evaluate(() => ({ flag: ONBOARDING_ON, cls: document.body.className, deck: run.masterDeck.length, sig: [...document.querySelectorAll('.q-sig')].some(e => e.offsetParent),
     rows: [...document.querySelectorAll('.quote-row')].filter(e => e.offsetParent).length, news: !!document.querySelector('.news-row').offsetParent, play: (run.hand = ['short'].map(newCard), checkPlay(0)) }));

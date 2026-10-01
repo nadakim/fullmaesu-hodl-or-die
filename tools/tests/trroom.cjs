@@ -12,7 +12,7 @@ const snd = (p, name) => p.evaluate(n => __snd.filter(s => s[0] === n), name);
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.evaluate(HOOK);
     await p.evaluate(() => { window.tipChance = () => 0; });
     await p.click('#startBtn'); await sleep(460);
@@ -49,7 +49,7 @@ const snd = (p, name) => p.evaluate(n => __snd.filter(s => s[0] === n), name);
     await sleep(900);
     ok(W + ' 카운트다운 뒤 장 진행', await p.evaluate(() => run.tickInDay > 0));
     // 스킵 (Space) → 즉시 사라지고 벨은 한 번
-    await p.evaluate(() => { __snd = []; while(run.phase === 'market') tick(); renderAll(); dealPending = false; });
+    await p.evaluate(() => { __snd = []; while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll(); dealPending = false; });
     await p.waitForFunction(() => !!stage, null, { timeout: 5000 }).catch(() => {});   // 포지션이 있으면 매일 정산 무대 (stage-every-day) → 닫고 진행
     await p.evaluate(() => { if(stage){ stageSkip(); stageSkip(); stage.readyAt = 0; stageNext(); } dealPending = false; });
     await sleep(300);
@@ -58,7 +58,7 @@ const snd = (p, name) => p.evaluate(n => __snd.filter(s => s[0] === n), name);
     const sk = await p.evaluate(() => [!!document.querySelector('.countdown'), Fx.queueBusy, __snd.filter(s => s[0] === 'marketOpen').length]);
     ok(W + ' Space → 카운트다운 스킵 (벨 1번)', !sk[0] && !sk[1] && sk[2] === 1, sk);
     // 연쇄 속도 '최소' → 카운트다운 생략, 드로우도 생략
-    await p.evaluate(() => { settings.fxSpeed = 'min'; __snd = []; while(run.phase === 'market') tick(); renderAll(); });
+    await p.evaluate(() => { settings.fxSpeed = 'min'; __snd = []; while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll(); });
     await sleep(900);
     ok(W + " '최소' → 드로우 연출 없음", (await snd(p, 'cardDeal')).length === 0);
     await p.click('#openBtn'); await sleep(120);

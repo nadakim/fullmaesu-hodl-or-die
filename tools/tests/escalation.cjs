@@ -22,7 +22,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(500);
     await p.evaluate(spy);
 
@@ -32,7 +32,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
       openPosition('coin', 3000, 3, 1, true); openPosition('semi', 2000, 2, 1, true); openPosition('meme', 1000, 1, 1, true);
       stageBest = { run, payout: 1 }; unitSeen = { run, max: 0 }; __snd.length = 0; __stamps.length = 0; __screens.length = 0;
       startMarket(); run.allProtectedToday = true;   // 시장 난수로 반대매매가 끼지 않게 (오늘 전 포지션 면제)
-      while(run.phase === 'market'){ ['coin', 'semi', 'meme'].forEach(id => { assets[id].price *= 1.004; }); tick(); } renderAll(); });
+      while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); ['coin', 'semi', 'meme'].forEach(id => { assets[id].price *= 1.004; }); tick(); } renderAll(); });
     await p.waitForFunction(() => !!stage, null, { timeout: 8000 });
     const reelDone = await p.waitForFunction(() => { const e = document.querySelector('.stage-reel'); return e && !e.classList.contains('spin') ? e.textContent : false; }, null, { timeout: 15000 }).then(h => h.jsonValue()).catch(() => null);
     if(W === 1920) await p.screenshot({ path: `${S}/esc-crit-${W}.png` });
@@ -104,7 +104,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
   // ── 흔들림 끔: 번쩍임·암전 없이 소리만
   const q = await b.newPage({ viewport: { width: 1366, height: 768 } });
   q.on('pageerror', e => errs.push(e.message));
-  await q.goto('http://127.0.0.1:8765/demo.html'); await q.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await q.keyboard.press('Shift');
+  await q.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html'); await q.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await q.keyboard.press('Shift');
   await q.click('#startBtn'); await sleep(400);
   await q.evaluate(spy);
   const nm = await q.evaluate(() => { settings.shake = false; applySettings(); __snd.length = 0; __screens.length = 0;
@@ -115,7 +115,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
 
   // ── 튜너에 새 수치
   const t = await b.newPage();
-  await t.goto('http://127.0.0.1:8765/demo.html?tuner=1'); await t.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(400);
+  await t.goto((process.env.TEST_BASE || 'http://127.0.0.1:8765') + '/demo.html?tuner=1'); await t.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(400);
   const keys = ['multHitStopMs.2', 'blackoutMs', 'unitPopScale', 'critFreezeMs', 'rocketPct', 'comboSlamMs', 'closeTicks', 'cashoutMaxDings', 'dangerMuffleHz.1', 'squeakMax', 'slowMoMs'];
   const miss = await t.evaluate(ks => ks.filter(k => !document.querySelector(`[data-tn="${k}"]`)), keys);
   ok('튜너에 새 수치', miss.length === 0, miss);
