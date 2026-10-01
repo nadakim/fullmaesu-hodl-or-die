@@ -477,8 +477,8 @@ body::after{
 .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.25;text-align:center;color:var(--text);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;}
 .card.r-mythic .g-name{color:var(--gold);}
-.card.gcard:not(.t-stock) .g-name{font-family:var(--gf-lg),monospace;font-size:var(--fs-lg);-webkit-line-clamp:3;}   /* 설명 없는 카드는 이름만 크게 (설명·수치는 툴팁) */
-.hand.g4 .card.gcard:not(.t-stock) .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);}
+.card.gcard .g-name{font-family:var(--gf-lg),monospace;font-size:var(--fs-lg);-webkit-line-clamp:3;}   /* 설명 없는 카드는 이름만 크게 (설명·수치는 툴팁) */
+.hand.g4 .card.gcard .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);}
 /* 추천: 지금 쓰면 오늘 예상 정산 배수가 오르는 카드 (previewSettlement 비교) */
 .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite;}
 .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite,handIdle 3.2s step-end infinite;}
@@ -1132,6 +1132,14 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .q-tag.hidden{color:var(--purple);}
 .q-tag.up{color:var(--green);}
 .q-tag.down{color:var(--red);}
+.q-chg .yd,.ch-chg .yd,#czHead .yd{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--muted);}
+.quote-hint-yd{display:none;color:var(--muted);}
+@media (min-width: 901px) and (not ((min-width: 1200px) and (min-aspect-ratio: 145/100))){
+  .play-left .q-chg .yd{display:none;}
+  .play-left .quote-hint-yd{display:inline;}
+}
+.q-chg.limit-up .yd{color:var(--bg);}
+.q-chg.limit-down .yd{color:var(--text);}
 .q-chg.limit-up{color:var(--bg);background:var(--green);padding:0 calc(2 * var(--u));}
 .q-chg.limit-down{color:var(--text);background:var(--red2);padding:0 calc(2 * var(--u));}
 .q-tag.gap{color:var(--bg);background:var(--gold);padding:calc(1 * var(--u)) calc(2 * var(--u));}
@@ -2028,7 +2036,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 
       <div class="section-title">
         <span class="px-tag">종목 시세</span>
-        <span>클릭 = 큰 차트로 보기</span>
+        <span id="quoteHint">클릭 = 큰 차트로 보기</span>
       </div>
       <div class="quotes" id="quoteBox"></div>
 
@@ -3665,8 +3673,6 @@ function handCardHtml(card, o){
     <div class="card gcard t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
       <div class="g-top"><span class="c-ap">${card.type === 'status' ? '✕' : o.ap}</span><span class="g-band"></span><span class="g-rar" title="${card.type === 'status' ? '상태' : RARITY_LABEL[card.rarity]}"></span></div>
       <div class="g-name">${card.name}</div>
-      ${stock ? `<div class="g-line"><span class="c-cost">₩${formatKrw(o.cost)}</span></div><div class="g-line"><span class="c-price" data-p="${stock.id}"></span></div>`
-              : ''}
       <div class="g-foot">${card.tags.length ? `<span class="c-tags">${tagIcons(card.tags)}</span> ` : ''}${foot}</div>
     </div>`;
 }
@@ -3679,7 +3685,6 @@ function cardHtml(card, o){
       <div class="c-top"><span class="c-ap">${card.type === 'status' ? '✕' : (o.ap !== undefined ? o.ap : card.ap)}</span><span class="c-type">${TYPE_LABEL[card.type]}</span></div>
       <div class="sym">${card.name}</div>
       ${stock ? `<div class="c-cost">₩${formatKrw(o.cost || stock.cost)}</div>` : ''}
-      ${stock && o.live ? `<div class="c-price" data-p="${stock.id}"></div>` : ''}
       <div class="c-desc">${cardDesc(card)}</div>
       ${o.ev ? `<div class="c-ev ${o.ev.cls}" title="${o.ev.title}">${o.ev.text}</div>` : ''}
       <div class="c-foot"><span>${card.tags.length ? `<span class="c-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span> ` : ''}${foot}</span><span class="c-rar ${card.rarity}">${card.type === 'status' ? '' : RARITY_LABEL[card.rarity]}</span></div>
@@ -3827,6 +3832,9 @@ function renderHud(){
 }
 
 /* ── 큰 차트: 지수 또는 선택한 종목 ── */
+/* 등락률 표시: 장중 = 오늘, 장전·장 마감 뒤 = 어제 등락률(엔진 lastDayChg, 표시 전용) */
+const showYday = () => run.phase !== 'market';
+const dispChg = a => showYday() ? a.lastDayChg : a.price / a.dayOpen - 1;
 function renderMainChart(){
   const isIdx = chartTarget === 'idx';
   const a = isIdx ? null : assets[chartTarget];
@@ -3834,8 +3842,8 @@ function renderMainChart(){
   $('chartLabel').textContent = isIdx ? 'IDX' : STOCK_BY_ID[chartTarget].name;
   $('chartLabel').title = isIdx ? '시장 전체 흐름(지수). 종목은 이 흐름을 베타(β)만큼 따라간다 — β 2면 두 배로, 인버스는 반대로. 점선 = 전일 종가' : '점선 = 전일 종가';
   $('marketPriceText').textContent = isIdx ? Math.round(marketPrice).toLocaleString() : fmtPrice(a.price);
-  const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
-  $('chartChg').textContent = isIdx ? '' : fmtPct(chg);
+  const chg = isIdx ? 0 : dispChg(a);
+  $('chartChg').innerHTML = isIdx ? '' : (showYday() ? '<small class="yd">어제</small> ' : '') + fmtPct(chg);
   $('chartChg').className = 'ch-chg ' + (chg >= 0 ? 'pnl-up' : 'pnl-down');
   $('chartBackBtn').hidden = isIdx;
 }
@@ -3914,26 +3922,28 @@ function newsLine(){
 const newsTomorrowLine = () => { const n = run && NEWS_BY_ID[run.newsTomorrow]; return n ? `📰 내일: ${n.text} — ${newsEffectText(n)} · ${newsRelText(n)}` : ''; };
 
 function renderQuotes(){
+  const qh = $('quoteHint'), qhTxt = (showYday() ? '<b class="quote-hint-yd">등락률 = 어제 · </b>' : '') + '클릭 = 큰 차트로 보기';
+  if(qh.dataset.t !== qhTxt){ qh.dataset.t = qhTxt; qh.innerHTML = qhTxt; }
   const targets = selectedTargets('asset');
   STOCKS.forEach(s => {
     const row = document.querySelector(`[data-q="${s.id}"]`);
     if(!row) return;
     const a = assets[s.id];
-    const chg = a.price / a.dayOpen - 1;
+    const chg = dispChg(a);
     row.querySelector('.q-price').textContent = fmtPrice(a.price);
     const ch = row.querySelector('.q-chg');
-    ch.textContent = fmtPct(chg);
+    ch.innerHTML = (showYday() ? '<small class="yd">어제</small> ' : '') + fmtPct(chg);
     ch.className = 'q-chg ' + (chg >= 0 ? 'pnl-up' : 'pnl-down');
     drawSpark(row.querySelector('canvas'), a.history, chg >= 0);
     // 찌라시: 장전에는 결과를 숨긴다
     const pm = run.pumps[s.id], tag = row.querySelector('.q-tag');
     const gap = assets[s.id].candles.slice(-GAP_TAG_CANDLES).reduce((g, c) => c.gap || g, 0);   // 최근 갭
     const lim = a.limitHit;   // (S7-19) 상·하한가: 등락률 칸을 색으로 칠한다 (이름 칸은 좁아서 잘린다)
-    if(lim){ ch.textContent = (lim > 0 ? '上 ' : '下 ') + ch.textContent; ch.className += lim > 0 ? ' limit-up' : ' limit-down'; ch.title = lim > 0 ? `상한가 (+${Math.round(PRICE_LIMIT * 100)}% 제한)` : `하한가 (−${Math.round(PRICE_LIMIT * 100)}% 제한)`; }
+    if(lim){ ch.innerHTML = (lim > 0 ? '上 ' : '下 ') + ch.innerHTML; ch.className += lim > 0 ? ' limit-up' : ' limit-down'; ch.title = lim > 0 ? `상한가 (+${Math.round(PRICE_LIMIT * 100)}% 제한)` : `하한가 (−${Math.round(PRICE_LIMIT * 100)}% 제한)`; }
     else ch.title = '';
     const halted = run.haltStock === s.id;   // (S9) 상장폐지 심사: 거래정지
     row.classList.toggle('halted', halted);
-    if(halted){ ch.textContent = '停 ' + ch.textContent; ch.title = '거래정지 (보스: 상장폐지 심사) — 가격이 멈추고 사고팔 수 없다'; }
+    if(halted){ ch.innerHTML = '停 ' + ch.innerHTML; ch.title = '거래정지 (보스: 상장폐지 심사) — 가격이 멈추고 사고팔 수 없다'; }
     tag.textContent = gap ? (gap > 0 ? 'GAP▲' : 'GAP▼') : !pm ? '' : run.phase !== 'market' ? '찌라시?' : pm > 0 ? '작전▲' : '설거지▼';
     tag.className = 'q-tag ' + (gap ? 'gap' : !pm ? '' : run.phase !== 'market' ? 'hidden' : pm > 0 ? 'up' : 'down');
     row.classList.toggle('targetable', targets.indexOf(s.id) >= 0);
@@ -4076,7 +4086,6 @@ function renderHand(){
         }).join('') + '<div class="g-slot"></div>'.repeat(Math.max(0, cells - run.hand.length));   // 빈 칸 = 점선 슬롯
     if(deal) playDeal(box);
   }
-  box.querySelectorAll('[data-p]').forEach(el => { el.textContent = '@' + fmtPrice(assets[el.dataset.p].price); });
 }
 
 /* (S5-25) 지금 쓰면 오늘 예상 정산 배수가 오르는 카드: 종목 카드는 hypotheticalBuy로 previewSettlement를 비교,
@@ -4232,9 +4241,9 @@ function renderChartZoom(){
       + tabs.map(([id, name]) => `<button data-cz="${id}" class="btn-chunky sm ${id === zoomTarget ? 'on' : ''}">${name}</button>`).join('') + '<button class="btn-chunky sm cz-close" data-cz-close="1">✕ 닫기 (Esc)</button>';
   }
   const isIdx = zoomTarget === 'idx', a = isIdx ? null : assets[zoomTarget];
-  const chg = isIdx ? 0 : a.price / a.dayOpen - 1;
+  const chg = isIdx ? 0 : dispChg(a);
   $('czHead').innerHTML = isIdx ? `IDX ${Math.round(marketPrice).toLocaleString()}`
-    : `${STOCK_BY_ID[zoomTarget].name} ${fmtPrice(a.price)} <span class="${chg >= 0 ? 'pnl-up' : 'pnl-down'}">${fmtPct(chg)}</span> · ${signalHtml(STOCK_BY_ID[zoomTarget])}`;
+    : `${STOCK_BY_ID[zoomTarget].name} ${fmtPrice(a.price)} <span class="${chg >= 0 ? 'pnl-up' : 'pnl-down'}">${showYday() ? '<small class="yd">어제</small> ' : ''}${fmtPct(chg)}</span> · ${signalHtml(STOCK_BY_ID[zoomTarget])}`;
   const cv = $('czCanvas'), ctx = cv.getContext('2d');
   if(!cv.clientWidth) return;
   const dpr = window.devicePixelRatio || 1, k = Math.max(1, Math.round(uiScale * dpr * 1.5));
