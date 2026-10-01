@@ -13,7 +13,7 @@ const area = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left,
     await p.goto('http://127.0.0.1:8765/demo.html');
     await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
     await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(500);
-    await p.evaluate(() => { window.tipChance = () => 0; toast('첫째 알림', 'info'); toast('▶ 장 시작!', 'good'); toast('반대매매 경고: 담보가 부족합니다', 'bad'); toast('금감원 감시 게이지 상승', 'warn'); });
+    await p.evaluate(() => { window.tipChance = () => 0; toast('첫째 알림', 'info'); toast('▶ 장 시작!', 'good'); toast('청산 경고: 담보가 부족합니다', 'bad'); toast('금감원 감시 게이지 상승', 'warn'); });
     await sleep(300);
     const r = await p.evaluate(() => { const R = s => { const e = document.querySelector(s); if(!e) return null; const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
       return { toasts: [...document.querySelectorAll('#toastLayer > *')].map(e => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, text: e.textContent }; }),

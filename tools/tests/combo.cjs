@@ -47,7 +47,7 @@ const URL = 'http://127.0.0.1:8765/demo.html';
       out.chainShown = document.querySelector('.fx-chainctr') ? document.querySelector('.fx-chainctr').classList.contains('on') : false;
       return out;
     });
-    ok(W + ' 수익 매도 +1 · 유리한 갭 +1 · 손실 매도 끊김 · 반대매매 끊김 · 정산 보너스 +1', ev.win >= 1 && ev.gapUp === ev.win + 1 && ev.loss === 0 && ev.liq[0] >= 1 && ev.liq[1] === 0 && ev.settle === 1 && !ev.chainShown, ev);
+    ok(W + ' 수익 매도 +1 · 유리한 갭 +1 · 손실 매도 끊김 · 청산 끊김 · 정산 보너스 +1', ev.win >= 1 && ev.gapUp === ev.win + 1 && ev.loss === 0 && ev.liq[0] >= 1 && ev.liq[1] === 0 && ev.settle === 1 && !ev.chainShown, ev);
     await p.close();
   }
   // ?tuner=1 조정 패널

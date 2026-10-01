@@ -13,7 +13,7 @@ const SOUND_CATEGORIES = [
   { id: 'ui',       label: 'UI',       desc: '버튼·카드 조작 — 가장 자주, 가장 작게' },
   { id: 'feedback', label: '피드백',   desc: '매수·매도·유물·동전·콤보 등 행동의 즉각 반응' },
   { id: 'settle',   label: '정산',     desc: '장 마감 정산 무대·결산 체인 — 이 게임의 메인 이벤트' },
-  { id: 'alarm',    label: '경보',     desc: '갭·반대매매·금감원·마감 임박 — 주의를 끌어야 하는 소리' },
+  { id: 'alarm',    label: '경보',     desc: '갭·청산·금감원·마감 임박 — 주의를 끌어야 하는 소리' },
   { id: 'sting',    label: '스팅어',   desc: '개장·마감·승패처럼 길고 큰 한 번짜리' },
   { id: 'ambient',  label: '앰비언트', desc: '길게 깔리는 분위기' }
 ];
@@ -197,7 +197,7 @@ const SoundLab = (() => {
     { id: 'crit',         label: '크리티컬 릴 7·7·7 → 잭팟', ev: sceneCrit },
     { id: 'combo',        label: '수익 콤보 1→14 (3·5·8 슬램 · 12 잭팟) → 끊김', ev: sceneCombo },
     { id: 'close',        label: '마감 임박 (마지막 3틱) → 장 마감', ev: sceneClose },
-    { id: 'danger',       label: '반대매매 위험: 심장 박동 가속 → 경보 → 반대매매', ev: sceneDanger },
+    { id: 'danger',       label: '청산 위험: 심장 박동 가속 → 경보 → 청산', ev: sceneDanger },
     { id: 'open',         label: '장 시작 카운트다운 3·2·1 → OPEN', ev: sceneOpen },
     { id: 'deal',         label: '장전 드로우 (카드 6장 + 희귀·전설·신화 종)', ev: sceneDeal },
     { id: 'chain',        label: '주간 결산 체인 (칩 → 카운트업 → 떡상!)', ev: sceneChain }
@@ -275,7 +275,7 @@ const SoundLab = (() => {
     <div>${['p1', 'p2', 'tri', 'noise'].map(c => `<label class="lab-chk"><input type="checkbox" data-lab="bgmLayer" data-ch="${c}" checked> ${c}${{ p1: ' 멜로디', p2: ' 화음', tri: ' 베이스', noise: ' 드럼' }[c]}</label>`).join('')}</div>
     <div class="lab-sub" style="margin-top:calc(6 * var(--u,1px))">시장 상황 (market 곡이 반응 — 다음 마디부터 바뀜)</div>
     <div><select data-lab="bgmState" aria-label="장세">${['NORMAL', 'BULL', 'BEAR', 'VOLATILE'].map(s => `<option>${s}</option>`).join('')}</select>
-      <label class="lab-chk"><input type="checkbox" data-lab="bgmFlag" data-flag="danger"> 반대매매 위험(사이렌)</label>
+      <label class="lab-chk"><input type="checkbox" data-lab="bgmFlag" data-flag="danger"> 청산 위험(사이렌)</label>
       <label class="lab-chk"><input type="checkbox" data-lab="bgmFlag" data-flag="fss"> 금감원 경고(전화벨)</label>
       <label class="lab-chk"><input type="checkbox" data-lab="bgmFlag" data-flag="jackpot"> JACKPOT 레이어</label>
       <label class="lab-chk"><input type="checkbox" data-lab="bgmMuffle"> 암시장 로우패스</label>
