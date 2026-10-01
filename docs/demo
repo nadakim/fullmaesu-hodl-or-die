@@ -1637,7 +1637,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .fx-streak.c2{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green-dim),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
 .fx-streak.c3{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
 .fx-streak.c4{animation:rainbow .6s steps(4) infinite;}
-.fx-streak.c5{color:#000;background:var(--gold);box-shadow:0 0 0 calc(3 * var(--u)) var(--gold2),0 0 0 calc(6 * var(--u)) #000,calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;animation:jackpotFlash .3s steps(2) infinite;}
+.fx-streak.c5{color:#000;background:var(--gold);box-shadow:0 0 0 calc(3 * var(--u)) var(--gold2),0 0 0 calc(6 * var(--u)) #000,calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;animation:jackpotFlash .7s steps(2) infinite;}
 @keyframes jackpotFlash{50%{background:#000;color:var(--gold);}}
 .fx-streak.bump:not(.c4):not(.c5){animation:comboBump .22s steps(3);}
 @keyframes comboBump{0%{transform:scale(calc(var(--streak-scale,1) * 1.35));}100%{transform:scale(var(--streak-scale,1));}}
@@ -2856,15 +2856,15 @@ function juiceMilestones(eq, prev, target){
    손실 이벤트면 끊긴다: 보유 손익이 내린 캔들 · 손실 매도 · 반대매매 · 불리한 갭 · 찌라시 설거지 → "최대 ×N"을 남기고 식는다.
    단계(JUICE_CONFIG.comboTiers) 1~2 / 3~4 / 5~7 / 8~11 / 12+ JACKPOT. 오를 때마다 5음계 한 칸 위(stagePitch = 2옥타브 넘으면 감아 올리는 셰퍼드 톤),
    단계가 오르면 쾅(multSlam) + 흔들림·파티클, JACKPOT은 도장 + 돈비. 하락이 이어지면 같은 자리에 '하락 콤보 ×n' + 가장자리 어둠 (엔진 run.combo.down 표시만) */
-let combo = { run: null, n: 0, max: 0, tier: 0, coolTimer: 0 };
+let combo = { run: null, n: 0, max: 0, tier: 0, coolTimer: 0, idleTimer: 0 };
 let streak = { dir: 0, n: 0 };   // 지금 보이는 방향·수 (틱 소리 음높이용)
 const comboTier = n => n <= 0 ? 0 : 1 + JUICE_CONFIG.comboTiers.filter(t => n >= t).length;   // 0 없음 · 1 = 1~2 … 5 = JACKPOT
-function comboOwn(){ if(combo.run !== run) combo = { run, n: 0, max: 0, tier: 0, coolTimer: 0 }; }
+function comboOwn(){ if(combo.run !== run){ clearTimeout(combo.idleTimer); combo = { run, n: 0, max: 0, tier: 0, coolTimer: 0, idleTimer: 0 }; } }
 function hideDownStreak(){   // 포지션이 없을 때: 하락 표시·가장자리 어둠만 걷는다 (수익 콤보는 이어진다)
   $('fxVignette').style.opacity = 0;
   if(streak.dir < 0){ $('fxStreak').className = 'fx-streak'; streak = { dir: 0, n: 0 }; }
 }
-function hideStreak(){ $('fxStreak').className = 'fx-streak'; $('fxVignette').style.opacity = 0; streak = { dir: 0, n: 0 }; combo = { run, n: 0, max: 0, tier: 0, coolTimer: 0 }; setJackpotMusic(false); }
+function hideStreak(){ clearTimeout(combo.idleTimer); clearTimeout(combo.coolTimer); $('fxStreak').className = 'fx-streak'; $('fxVignette').style.opacity = 0; streak = { dir: 0, n: 0 }; combo = { run, n: 0, max: 0, tier: 0, coolTimer: 0, idleTimer: 0 }; setJackpotMusic(false); }
 function comboHit(src){
   comboOwn();
   const J = JUICE_CONFIG, el = $('fxStreak');
@@ -2873,6 +2873,8 @@ function comboHit(src){
   streak = { dir: 1, n };
   $('fxVignette').style.opacity = 0;
   clearTimeout(combo.coolTimer);
+  clearTimeout(combo.idleTimer);   // 수익 이벤트가 한동안 없으면 콤보가 식는다 (JACKPOT이 장 마감 뒤에도 남던 버그)
+  combo.idleTimer = setTimeout(() => comboBreak(true), JUICE_CONFIG.comboIdleMs);
   Sound.play('comboUp', { pitch: stagePitch(n - 1), volume: 0.45 + 0.1 * tier });
   if(n >= J.comboShowFrom){
     el.className = 'fx-streak on c' + tier;
@@ -2893,8 +2895,9 @@ function comboTierUp(tier){
   if(tier >= J.comboSlamFrom) comboSlam(combo.n, tier);   // (B6) 중앙 도장 → 콤보 자리로 (단계가 오를 때만)
   if(tier >= 5){ cashRain(); setJackpotMusic(true); }      // (B7) JACKPOT 음악 레이어
 }
-function comboBreak(){
+function comboBreak(quiet){   // quiet = 시간 초과로 식을 때 (끊김 소리 없음)
   comboOwn();
+  clearTimeout(combo.idleTimer);
   if(!combo.n) return;
   const n = combo.n, el = $('fxStreak');
   combo.n = 0; combo.tier = 0; streak = { dir: 0, n: 0 };
@@ -2902,7 +2905,7 @@ function comboBreak(){
   if(n < JUICE_CONFIG.comboShowFrom){ el.className = 'fx-streak'; return; }
   el.className = 'fx-streak cool';   // 식음: 최고 기록을 남기고 금이 가며 떨어진다
   el.textContent = '최대 ×' + n;
-  Sound.play('comboBreak', { pitch: stagePitch(Math.min(n, 10) - 1) });
+  if(quiet !== true) Sound.play('comboBreak', { pitch: stagePitch(Math.min(n, 10) - 1) });
   clearTimeout(combo.coolTimer);
   combo.coolTimer = setTimeout(() => { if(el.classList.contains('cool')) el.className = 'fx-streak'; }, JUICE_CONFIG.comboCoolMs);
 }
@@ -4623,6 +4626,7 @@ const JUICE_CONFIG = {
   comboMaxScale: 2,              // 최대 크기
   comboShake: { 2: 0, 3: 1, 4: 2, 5: 3 },        // 단계가 오를 때 흔들림
   comboParts: { 2: 10, 3: 18, 4: 30, 5: 64 },    // 단계가 오를 때 파티클 수
+  comboIdleMs: 6000,             // 수익 이벤트가 이 시간(ms) 동안 없으면 콤보 표시(JACKPOT 포함)가 식으며 사라진다 — 장이 끝나거나 멈춰도 안 남게
   comboCoolMs: 1600,             // 끊긴 뒤 '최대 ×N'이 남아 있는 시간
   // ── 손에 잡히는 화면 (ui-tactile) ──
   tiltMaxDeg: 8,                 // 카드 기울기 최대 각도 (도) — 손패·보상·암시장 카드
