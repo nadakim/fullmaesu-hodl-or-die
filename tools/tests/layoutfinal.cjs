@@ -131,6 +131,23 @@ const measure = p => p.evaluate(() => {
     const li = await p.evaluate(() => ({ boxes: [...document.querySelectorAll('#chartPair .chart-box')].filter(e => e.offsetParent).length, chartW: document.querySelector('#chartBox').getBoundingClientRect().width, pairW: document.querySelector('#chartPair').getBoundingClientRect().width, invRow: !!document.querySelector('.quote-row[data-q="inv"]').offsetParent, caps: [...document.querySelectorAll('#quoteBox .q-gcap')].filter(c => c.offsetParent && c.textContent).sort((x, y) => x.getBoundingClientRect().top - y.getBoundingClientRect().top).map(c => c.textContent) }));
     ok(`${t} 인버스 해금 전 → IDX 차트 전체 폭 · 인버스 행·캡션 숨김`, li.boxes === 1 && Math.abs(li.chartW - li.pairW) < 1 && !li.invRow && li.caps.indexOf('인버스') < 0, li);
     await p.close();
+    // 시장 지도: [목록 | 지도] 토글 · 해금된 종목만 타일 · 그룹 캡션 · 클릭 = 목록 행과 같은 동작 · 설정 저장
+    for (const [qs, n] of [['scenario=all', 12], ['scenario=lockinv,nine', 9]]) {
+      p = await open(b, W, H, qs);
+      await p.click('[data-qview="map"]'); await sleep(400);
+      const mp = await p.evaluate(() => { const area = document.querySelector('#qmArea').getBoundingClientRect(), tiles = [...document.querySelectorAll('.qm-tile')], R = e => e.getBoundingClientRect();
+        let ov = 0; for (let i = 0; i < tiles.length; i++) for (let j = i + 1; j < tiles.length; j++) { const a = R(tiles[i]), c = R(tiles[j]); if(a.left < c.right - 1 && a.right > c.left + 1 && a.top < c.bottom - 1 && a.bottom > c.top + 1) ov++; }
+        return { n: tiles.length, list: getComputedStyle(document.querySelector('#quoteBox')).display, ov, inside: tiles.every(t => { const r = R(t); return r.left >= area.left - 1 && r.right <= area.right + 1 && r.top >= area.top - 1 && r.bottom <= area.bottom + 1; }),
+          held: tiles.filter(t => t.classList.contains('held')).every(t => /^★/.test(t.querySelector('.qm-name').textContent)), sum: /^상승 \d+ · 하락 \d+/.test(document.querySelector('#qmSum').textContent),
+          caps: document.querySelectorAll('.qm-cap').length, saved: JSON.parse(localStorage.getItem('hodl.settings') || '{}').quoteView }; });
+      ok(`${t} 시장 지도(${qs}) → 타일 ${n}개 · 목록 숨김 · 겹침·넘침 없음 · 보유 ★ · 상승/하락 요약 · 설정 저장`, mp.n === n && mp.list === 'none' && mp.ov === 0 && mp.inside && mp.held && mp.sum && mp.caps >= 3 && mp.saved === 'map', mp);
+      const id = await p.evaluate(() => document.querySelector('.qm-tile').dataset.q);
+      await p.click(`.qm-tile[data-q="${id}"]`); await sleep(250);
+      ok(`${t} 지도 타일 클릭 = 그 종목 큰 차트 (목록 행과 같은 동작)`, await p.evaluate(i => chartTarget === i, id));
+      await p.click('[data-qview="list"]'); await sleep(200);
+      ok(`${t} 목록으로 되돌림`, await p.evaluate(() => getComputedStyle(document.querySelector('#quoteMap')).display === 'none' && settings.quoteView === 'list'));
+      await p.close();
+    }
   }
   // 검은 띠: 와이드 화면에서 배경(body)이 화면 끝까지 같은 색
   let p = await open(b, 2560, 1080, 'scenario=empty');
