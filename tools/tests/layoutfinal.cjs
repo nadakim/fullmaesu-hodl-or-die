@@ -47,7 +47,7 @@ const measure = p => p.evaluate(() => {
     let p = await open(b, W, H, 'scenario=nine'); let m = await measure(p);
     const U = m.u;
     ok(`${t} 확정 레이아웃 적용`, m.layout === 'F' && m.handFan, m.layout);
-    ok(`${t} (a) 9종목 보유 → 포지션 줄 9개 · 시세 13행 전부 · 시세 목록 스크롤 없음`, m.nPos === 9 && m.nQuotes === 13 && m.stockScroll <= 1 && m.rowsInside, [m.nPos, m.nQuotes, m.stockScroll]);
+    ok(`${t} (a) 9종목 보유 → 포지션 줄 9개 · 시세 12행 전부 · 시세 목록 스크롤 없음`, m.nPos === 9 && m.nQuotes === 12 && m.stockScroll <= 1 && m.rowsInside, [m.nPos, m.nQuotes, m.stockScroll]);
     ok(`${t} (a) 포지션 줄 글자 안 잘림 (보유N일째·평단→현재가·원금·손익)`, m.clipped === 0, m.clipped);
     ok(`${t} (a) 차트 아래 포지션 줄 없음 (포지션은 시세 행에 통합)`, !m.blocks.chart || m.nPos === 9, '');
     const order = await p.evaluate(() => [...document.querySelectorAll('#stockList .quote-row')].map(r => r.dataset.q).join() === STOCKS.map(s => s.id).join());
@@ -111,7 +111,7 @@ const measure = p => p.evaluate(() => {
 
     // (d) 보유 0개
     p = await open(b, W, H, 'scenario=empty'); m = await measure(p);
-    ok(`${t} (d) 보유 0개 → 포지션 줄·빈 패널 없음 · 시세 13행 가격만`, m.nPos === 0 && !m.posBoxShown && m.nQuotes === 13, [m.nPos, m.posBoxShown]);
+    ok(`${t} (d) 보유 0개 → 포지션 줄·빈 패널 없음 · 시세 12행 가격만`, m.nPos === 0 && !m.posBoxShown && m.nQuotes === 12, [m.nPos, m.posBoxShown]);
     const flat = await p.evaluate(() => [...document.querySelectorAll('.quote-row')].every(r => getComputedStyle(r.querySelector('.q-chg')).display === 'none' && getComputedStyle(r.querySelector('canvas')).display === 'none' && r.querySelector('.q-price').textContent));
     ok(`${t} (d) 등락 전부 0 → 가격만`, flat);
     ok(`${t} (d) 블록 겹침·스크롤 없음`, m.over.length === 0 && m.docX <= 0 && m.docY <= 0, [m.over, m.docX, m.docY]);
