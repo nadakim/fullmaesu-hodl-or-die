@@ -25,7 +25,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         reasons: cs.filter(c => c.classList.contains('disabled')).map(c => c.querySelector('.cv-reason').textContent),
         reasonVisible: cs.filter(c => c.classList.contains('disabled')).some(c => getComputedStyle(c.querySelector('.cv-reason')).display !== 'none'),
         lockVisible: cs.filter(c => c.classList.contains('disabled')).every(c => getComputedStyle(c.querySelector('.cv-lock')).display !== 'none'),
-        gems: [...new Set(cs.map(c => getComputedStyle(c.querySelector('.cv-gem')).clipPath))].length };
+        gems: [...new Set(cs.map(c => c.querySelector('.cv-gem path').getAttribute('d')))].length };   // 보석 = 등급별 7×7 픽셀 SVG
     });
     ok(`${W} 손패 6장 전부 cardView`, hand.n === 6 && hand.cv && hand.old === 0, hand);
     ok(`${W} 손패 2:3 비율`, hand.ratio.every(r => Math.abs(r - 2 / 3) < 0.02), hand.ratio);

@@ -103,6 +103,18 @@ small{font-size:inherit;}   /* 브라우저 기본 smaller(83%)는 허용 크기
   --line:#1a2240;
   --line2:#0f172a;
   --blue:#3d7bff;
+  /* 카드 등급 (색 매핑 = DESIGN.md·CLAUDE.md 등급 문서): 색 · 프레임 두께(1080p 2px → 4px) — 카드·라벨·유물·팩 확률 막대가 전부 이 변수만 읽는다 */
+  --rar-common:var(--muted);
+  --rar-uncommon:var(--green2);
+  --rar-rare:var(--blue);
+  --rar-legendary:var(--purple);
+  --rar-mythic:var(--gold);
+  --rar-status:var(--muted);   /* 상태 카드: 중립 회색 + 빗금 (등급 없음) */
+  --rar-w-common:calc(1.15 * var(--u));
+  --rar-w-uncommon:calc(1.45 * var(--u));
+  --rar-w-rare:calc(1.75 * var(--u));
+  --rar-w-legendary:calc(2 * var(--u));
+  --rar-w-mythic:calc(2.3 * var(--u));
 }
 
 .px-border{
@@ -472,7 +484,6 @@ body::after{
 .hand.compact .card.gcard{padding:calc(3 * var(--u)) calc(4 * var(--u));gap:calc(1 * var(--u));}
 .hand.compact .g-top{gap:calc(4 * var(--u));}
 .hand.compact .c-ap{padding:calc(1 * var(--u)) calc(3 * var(--u));}
-.hand.compact .g-rar{width:calc(6 * var(--u));height:calc(6 * var(--u));}
 .hand.compact .card.gcard .g-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.2;-webkit-line-clamp:2;}
 .hand.compact .card.gcard .g-name.long{font-size:var(--fs-xs);-webkit-line-clamp:3;}   /* 이름이 6자 이상이거나 한 단어가 5자 이상이면 한 단계 작게 (Galmuri 최소 10px), 세 줄까지 */
 .hand.compact .g-foot{min-height:0;line-height:1.1;}
@@ -483,8 +494,6 @@ body::after{
 .card.gcard::before,.card.gcard::after{display:none;}
 .g-top{display:flex;align-items:center;gap:calc(5 * var(--u));}
 .g-band{flex:1;height:calc(4 * var(--u));background:var(--cc);}
-.g-rar{width:calc(8 * var(--u));height:calc(8 * var(--u));background:var(--rc);box-shadow:0 0 0 calc(1 * var(--u)) #000;}
-.card.t-status .g-rar{background:var(--muted);}
 .g-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.25;text-align:center;color:var(--text);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;}
 .card.r-mythic .g-name{color:var(--gold);}
@@ -599,18 +608,18 @@ body.no-motion .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s s
 .card-tip .ct-ev{display:block;margin-top:calc(5 * var(--u));font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.4;}
 .card-tip .ct-ev.pos{color:var(--green);} .card-tip .ct-ev.settle{color:var(--text2);} .card-tip .ct-ev.neg{color:var(--red);} .card-tip .ct-ev.zero{color:var(--muted);}
 .c-foot{display:flex;justify-content:space-between;gap:calc(4 * var(--u));font-size:var(--fs-xs);font-family:var(--gf-xs),monospace;color:var(--muted);}
-.card.r-common{--rc:var(--muted);}
-.card.r-uncommon{--rc:var(--green2);}
-.card.r-rare{--rc:var(--blue);}
-.card.r-legendary{--rc:var(--purple);}
-.card.r-mythic{--rc:var(--gold);}
+.card.r-common{--rc:var(--rar-common);}
+.card.r-uncommon{--rc:var(--rar-uncommon);}
+.card.r-rare{--rc:var(--rar-rare);}
+.card.r-legendary{--rc:var(--rar-legendary);}
+.card.r-mythic{--rc:var(--rar-mythic);}
 .card.r-mythic .sym{color:var(--gold);}
-.card.t-status{--rc:#000;}
-.c-rar.common{color:var(--muted);}
-.c-rar.uncommon{color:var(--green);}
-.c-rar.rare{color:var(--blue);}
-.c-rar.legendary{color:var(--purple);}
-.c-rar.mythic{color:var(--gold);text-shadow:0 0 calc(4 * var(--u)) var(--gold2);}
+.card.t-status{--rc:var(--rar-status);}
+.c-rar.common{color:var(--rar-common);}
+.c-rar.uncommon{color:var(--rar-uncommon);}   /* 테두리와 같은 색 (예전엔 --green) */
+.c-rar.rare{color:var(--rar-rare);}
+.c-rar.legendary{color:var(--rar-legendary);}
+.c-rar.mythic{color:var(--rar-mythic);text-shadow:0 0 calc(4 * var(--u)) var(--gold2);}
 /* 주식 용어집 오버레이 (≡ 메뉴 '📖 용어집'): 카테고리 필터(.coll-filter 재사용) + 스크롤 목록. 잠긴 시스템 항목은 🔒만 */
 #overlayBox:has(.gloss){max-width:min(92vw, calc(640 * var(--u)));}
 .gloss .coll-filter{justify-content:center;margin-top:calc(4 * var(--u));}
@@ -839,7 +848,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .relic-tile[data-relic-reward]{cursor:pointer;}
 .relic-tile[data-relic-reward]:hover{transform:translate(calc(-2 * var(--u)),calc(-2 * var(--u)));}
 /* 팩·유물 타일 기울기 (카드와 같은 tiltFrame — 등급 색 --rc 발광, 희귀 이상·팩은 반짝이 띠). :hover까지 적어 위 호버 이동 규칙보다 뒤에서 이긴다 */
-.relic-tile{--rc:var(--muted);} .relic-tile.uncommon{--rc:var(--green2);} .relic-tile.rare{--rc:var(--blue);} .relic-tile.legendary{--rc:var(--purple);} .relic-tile.mythic{--rc:var(--gold);}
+.relic-tile{--rc:var(--rar-common);} .relic-tile.uncommon{--rc:var(--rar-uncommon);} .relic-tile.rare{--rc:var(--rar-rare);} .relic-tile.legendary{--rc:var(--rar-legendary);} .relic-tile.mythic{--rc:var(--rar-mythic);}
 .pack{--rc:var(--purple);}
 .pack.tilt,.pack.tilt:hover,.relic-tile.tilt,.relic-tile.tilt:hover{position:relative;z-index:2;transform:perspective(calc(520 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(1.05);
   box-shadow:0 0 0 calc(2 * var(--u)) var(--rc),0 0 0 calc(4 * var(--u)) #000,0 0 0 calc(6 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
@@ -941,7 +950,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .pki-bar .track i{display:block;height:100%;background:var(--rc);}
 .pki-bar .pct{text-align:right;color:var(--text);}
 .pki-bar.zero{opacity:.4;}
-.pki-bar.common{--rc:var(--muted);} .pki-bar.uncommon{--rc:var(--green2);} .pki-bar.rare{--rc:var(--blue);} .pki-bar.legendary{--rc:var(--purple);} .pki-bar.mythic{--rc:var(--gold);}
+.pki-bar.common{--rc:var(--rar-common);} .pki-bar.uncommon{--rc:var(--rar-uncommon);} .pki-bar.rare{--rc:var(--rar-rare);} .pki-bar.legendary{--rc:var(--rar-legendary);} .pki-bar.mythic{--rc:var(--rar-mythic);}
 .pki-note{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);line-height:1.2;color:var(--muted);text-align:left;margin-top:calc(4 * var(--u));}
 .pki-grid{display:flex;flex-wrap:wrap;gap:calc(12 * var(--u)) calc(8 * var(--u));justify-content:flex-start;}
 .pki-card{width:calc(75 * var(--u));display:flex;flex-direction:column;align-items:center;gap:calc(6 * var(--u));}
@@ -1941,42 +1950,57 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 }
 
 /* ══ 공용 카드 컴포넌트 .card.cv (cardView) ═════════════════════════════════════════════
-   2:3 세로. 희귀도 = 테두리 색(--rc) + 모서리 보석 모양 + 이름 색. 선택 = 흰 윤곽선 + 상승(희귀도와 다른 방식).
-   색은 UI 리디자인 규칙 5번: 일반 muted · 고급 green2 · 희귀 cyan · 전설 purple · 신화 gold (희귀 파랑은 쓰지 않는다). 종류는 색이 아니라 아이콘. */
+   2:3 세로. 등급 = 4중 표시 (색만으로 구분하지 않는다, 흑백에서도 구분):
+     (a) 프레임 두께 --rw(일반 2px → 신화 4px) + 전설 이상 안쪽 계단 발광, 신화는 보석이 가끔 반짝 (b) 코스트 배지 바로 아래 보석 — 모양 ○ ◇ ◆ ★ ✦
+     (c) 왼쪽 가장자리 8px 색 띠 .cv-band (d) 이름판 배경 = 등급 색 + 그 아래 등급 글자 .cv-rar(16px 이상).
+   부채꼴 손패에서 오른쪽 카드가 덮어도 보이도록 코스트·보석·띠·이름 첫 줄은 카드 왼쪽 40% 안. 색은 :root --rar-* 한 곳.
+   선택 = 등급 링 바깥 흰 윤곽선 + 상승 · 비활성 = 안쪽만 어둡게(프레임·보석·띠는 위에 남고 채도 70%) + 자물쇠. 종류는 색이 아니라 아이콘. */
 .card.cv{
   --cv-lift:calc(8 * var(--u));
-  --cv-nc:var(--text);
-  --rc:var(--muted);
-  display:grid;grid-template-rows:minmax(0, 1fr) auto auto auto;gap:calc(2 * var(--u));
-  padding:calc(6 * var(--u));box-sizing:border-box;overflow:visible;
+  --rc:var(--rar-common);
+  --rw:var(--rar-w-common);
+  --cv-glow:0 0 0 0 transparent;
+  --cv-band-w:calc(4.5 * var(--u));   /* 1080p 8px */
+  --cv-left:calc(var(--cv-band-w) + 3 * var(--u));
+  display:grid;grid-template-rows:minmax(0, 1fr) auto auto auto auto;gap:calc(2 * var(--u));
+  padding:calc(6 * var(--u)) calc(6 * var(--u)) calc(6 * var(--u)) var(--cv-left);box-sizing:border-box;overflow:visible;
   background:var(--panel2);cursor:pointer;
-  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;
+  box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;
   transform:none;animation:none;
 }
 .card.cv::before,.card.cv::after{display:none;}
-.card.cv.r-common{--rc:var(--muted);--cv-nc:var(--text);}
-.card.cv.r-uncommon{--rc:var(--green2);--cv-nc:var(--green);}
-.card.cv.r-rare{--rc:var(--cyan);--cv-nc:var(--cyan);}
-.card.cv.r-legendary{--rc:var(--purple);--cv-nc:var(--purple);}
-.card.cv.r-mythic{--rc:var(--gold);--cv-nc:var(--gold);}
-.card.cv.t-status{--rc:var(--muted);--cv-nc:var(--muted);}
+.card.cv.r-common{--rc:var(--rar-common);--rw:var(--rar-w-common);}
+.card.cv.r-uncommon{--rc:var(--rar-uncommon);--rw:var(--rar-w-uncommon);}
+.card.cv.r-rare{--rc:var(--rar-rare);--rw:var(--rar-w-rare);}
+.card.cv.r-legendary{--rc:var(--rar-legendary);--rw:var(--rar-w-legendary);
+  --cv-glow:inset 0 0 0 calc(2 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),inset 0 0 0 calc(4 * var(--u)) color-mix(in srgb, var(--rc) 18%, transparent);}   /* 안쪽 계단 발광 (부드러운 그림자 대신 픽셀 링 2단) */
+.card.cv.r-mythic{--rc:var(--rar-mythic);--rw:var(--rar-w-mythic);
+  --cv-glow:inset 0 0 0 calc(2 * var(--u)) color-mix(in srgb, var(--rc) 55%, transparent),inset 0 0 0 calc(4 * var(--u)) color-mix(in srgb, var(--rc) 25%, transparent),inset 0 0 0 calc(6 * var(--u)) color-mix(in srgb, var(--rc) 10%, transparent);}
+.card.cv.t-status{--rc:var(--rar-status);--rw:var(--rar-w-common);--cv-glow:0 0 0 0 transparent;}
+/* (c) 왼쪽 8px 색 띠 — 위는 코스트 배지 밑까지. 상태 카드는 회색 빗금 */
+.cv-band{position:absolute;left:0;top:0;bottom:0;width:var(--cv-band-w);z-index:2;background:var(--rc);}
+.card.cv.t-status .cv-band{background:repeating-linear-gradient(135deg, var(--rc) 0 calc(2 * var(--u)), var(--bg) 0 calc(4 * var(--u)));}
+/* (d) 이름판(등급 색 배경, 어두운 글자) + 등급 글자 */
+.cv-rar{font-family:var(--gf-m16),monospace;font-size:var(--fs-m16);line-height:1.1;color:var(--rc);text-align:left;white-space:nowrap;overflow:hidden;}
+.card.cv.t-status .cv-rar{color:var(--text2);}
 .card.cv.up{--cc:var(--rc);}
 /* 크기: 표준(보상·암시장·덱·도감) 152×228 / 손패는 칸 너비 × 2:3 */
 .card.cv-std{width:calc(152 * var(--u));min-width:calc(152 * var(--u));height:calc(228 * var(--u));}
-.card.cv-hand{width:100%;height:auto;aspect-ratio:2 / 3;min-width:0;min-height:0;padding:calc(4 * var(--u));gap:calc(1 * var(--u));}
+.card.cv-hand{width:100%;height:auto;aspect-ratio:2 / 3;min-width:0;min-height:0;padding:calc(4 * var(--u)) calc(4 * var(--u)) calc(4 * var(--u)) var(--cv-left);gap:calc(1 * var(--u));}
 .hand,.hand.compact,.hand.g4{grid-auto-rows:auto;}
 .hand .g-slot{aspect-ratio:2 / 3;}
-/* 보석: 등급마다 모양이 다르다 (clip-path 직선만) */
-.cv-gem{position:absolute;top:calc(5 * var(--u));right:calc(5 * var(--u));width:calc(13 * var(--u));height:calc(13 * var(--u));background:var(--rc);}
-.cv-hand .cv-gem{top:calc(3 * var(--u));right:calc(3 * var(--u));width:calc(11 * var(--u));height:calc(11 * var(--u));}
-.cv-gem.g-common{clip-path:polygon(15% 15%,85% 15%,85% 85%,15% 85%);}
-.cv-gem.g-uncommon{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);}
-.cv-gem.g-rare{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);}
-.cv-gem.g-legendary{clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%);}
-.cv-gem.g-mythic{clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);}
+/* (b) 보석: 코스트 배지 바로 아래, 등급마다 모양이 다르다 (7×7 픽셀 SVG — ○ 일반 · ◇ 고급 · ◆ 희귀 · ★ 전설 · ✦ 신화 · ✕ 상태). 색 = 등급, 검은 오프셋 그림자 */
+.cv-gem{position:absolute;z-index:3;left:calc(-3 * var(--u));top:calc(29 * var(--u));width:calc(16 * var(--u));height:calc(16 * var(--u));color:var(--rc);
+  background:var(--bg);box-shadow:0 0 0 calc(1 * var(--u)) var(--rc);padding:calc(2 * var(--u));box-sizing:border-box;}
+.cv-gem svg{display:block;width:100%;height:100%;}
+.cv-hand .cv-gem{left:calc(-2 * var(--u));top:calc(25 * var(--u));width:calc(15 * var(--u));height:calc(15 * var(--u));}
+.card.cv.r-mythic .cv-gem{animation:gemTwinkle 3.2s steps(1) infinite;}   /* 신화: 3초에 한 번 짧게 반짝 (절제) */
+@keyframes gemTwinkle{0%,88%,100%{background:var(--bg);color:var(--rc);}90%,94%{background:var(--rc);color:var(--bg);}}
+body.no-motion .card.cv.r-mythic .cv-gem{animation:none;}
+@media (prefers-reduced-motion: reduce){.card.cv.r-mythic .cv-gem{animation:none;}}
 /* 코스트 배지 (좌상단, 큰 숫자 VT323) */
 .cv-cost{position:absolute;left:calc(-5 * var(--u));top:calc(-5 * var(--u));z-index:2;min-width:calc(30 * var(--u));height:calc(30 * var(--u));padding:0 calc(3 * var(--u));box-sizing:border-box;
-  display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc);
+  display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc);z-index:3;
   font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1;}
 .cv-hand .cv-cost{min-width:calc(26 * var(--u));height:calc(26 * var(--u));left:calc(-4 * var(--u));top:calc(-4 * var(--u));}
 /* 아트 슬롯: 지금은 이모지, CARD_ART에 경로를 넣으면 스프라이트 */
@@ -1984,8 +2008,10 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .cv-glyph{font-size:calc(46 * var(--u));line-height:1;}
 .cv-hand .cv-glyph{font-size:calc(28 * var(--u));}
 .cv-img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;}
-.cv-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.2;text-align:center;color:var(--cv-nc);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;
+.cv-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.2;text-align:left;color:var(--bg);background:var(--rc);
+  justify-self:stretch;margin-left:calc(-1 * var(--cv-left) + var(--cv-band-w));margin-right:calc(-4 * var(--u));padding:calc(1 * var(--u)) calc(3 * var(--u)) 0;   /* 띠에 붙여 왼쪽부터 — 부채꼴에서도 첫 글자가 보인다 */
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;min-height:1.2em;}
+.card.cv.t-status .cv-name{background:repeating-linear-gradient(135deg, var(--rc) 0 calc(3 * var(--u)), color-mix(in srgb, var(--rc) 75%, var(--bg)) 0 calc(6 * var(--u)));}
 .cv-name.long{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
 .cv-hand .cv-name,.cv-hand .cv-name.long{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.15;}
 .cv-line{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.3;text-align:center;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:clip;}
@@ -1999,28 +2025,28 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 /* 이유 문구 (disabled 때만) */
 .cv-reason{display:none !important;position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:3;padding:calc(4 * var(--u)) calc(2 * var(--u));text-align:center;
   background:var(--bg);color:var(--text);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.2;box-shadow:0 0 0 calc(2 * var(--u)) var(--red);}
-.cv-lock{display:none;position:absolute;z-index:4;right:calc(5 * var(--u));top:calc(22 * var(--u));width:calc(22 * var(--u));height:calc(22 * var(--u));padding:calc(4 * var(--u));box-sizing:border-box;color:var(--text);background:var(--bg);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}   /* 비활성: 자물쇠만 (이유는 호버 툴팁) */
+.cv-lock{display:none;position:absolute;z-index:4;left:calc(-3 * var(--u));top:calc(50 * var(--u));width:calc(22 * var(--u));height:calc(22 * var(--u));padding:calc(4 * var(--u));box-sizing:border-box;color:var(--text);background:var(--bg);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}   /* 비활성: 자물쇠만 (이유는 호버 툴팁) */
 .cv-lock svg{width:100%;height:100%;display:block;}
 .card.cv.disabled .cv-lock{display:block;}
-.cv-hand .cv-lock{top:calc(28 * var(--u));right:auto;left:calc(3 * var(--u));width:calc(18 * var(--u));height:calc(18 * var(--u));padding:calc(3 * var(--u));}   /* 부채꼴에서 오른쪽 카드가 덮는 모서리를 피해 왼쪽 띠에 */
-.card.cv.disabled{opacity:1;cursor:not-allowed;box-shadow:0 0 0 calc(3 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
-.card.cv.disabled::after{display:block;content:'';position:absolute;inset:0;z-index:1;background:color-mix(in srgb, var(--bg) 72%, transparent);}
-.card.cv.disabled:hover{transform:none;background:var(--panel2);box-shadow:0 0 0 calc(3 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.cv-hand .cv-lock{top:calc(45 * var(--u));left:calc(-2 * var(--u));width:calc(16 * var(--u));height:calc(16 * var(--u));padding:calc(3 * var(--u));}   /* 부채꼴에서 오른쪽 카드가 덮는 모서리를 피해 보석 아래 왼쪽 열에 */
+.card.cv.disabled{opacity:1;cursor:not-allowed;filter:saturate(.7);box-shadow:0 0 0 var(--rw) var(--rc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}   /* 프레임·보석·띠는 등급 색 그대로(채도 70%) */
+.card.cv.disabled::after{display:block;content:'';position:absolute;inset:0;width:auto;height:auto;border:0;z-index:1;background:color-mix(in srgb, var(--bg) 72%, transparent);}   /* 안쪽만 어둡게 — 띠·보석·코스트·자물쇠는 z-index 2 이상 */
+.card.cv.disabled:hover{transform:none;background:var(--panel2);box-shadow:0 0 0 var(--rw) var(--rc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 /* hover: 8 상승 + ±2도 기울기 (tiltFrame이 --rx·--ry를 넣는다 — 여기서 ±2도로 자른다) */
 .card.cv:not(.disabled):is(:hover,.is-hover){background:var(--panel);   /* .is-hover = 상태 시트(shots/card-states.png) 전용 */
   transform:translateY(calc(-1 * var(--cv-lift)));
-  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),0 0 0 calc(9 * var(--u)) color-mix(in srgb, var(--rc) 18%, transparent),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}   /* 등급 색 발광 링 */
+  box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),0 0 0 calc(var(--rw) + 3 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),0 0 0 calc(var(--rw) + 6 * var(--u)) color-mix(in srgb, var(--rc) 18%, transparent),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}   /* 등급 색 발광 링 */
 .card.cv.tilt:not(.disabled){transform:perspective(calc(520 * var(--u))) translateY(calc(-1 * var(--cv-lift))) rotateX(clamp(-2deg, var(--rx, 0deg), 2deg)) rotateY(clamp(-2deg, var(--ry, 0deg), 2deg));}
 .card.cv.tilt:not(.disabled):active{transform:perspective(calc(520 * var(--u))) translateY(calc(-1 * var(--cv-lift) + 3 * var(--u)));}
 .card.cv.tilt.r-rare,.card.cv.tilt.r-legendary,.card.cv.tilt.r-mythic{background-image:none;}
 /* selected: 희귀도 링 바깥에 흰 윤곽선 + 8 상승 (희귀도 표시와 겹치지 않는 방식) */
 .card.cv.selected,.card.cv.selected:hover,.card.cv.selected.tilt{background:var(--panel);transform:translateY(calc(-1 * var(--cv-lift)));
-  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) var(--text),calc(8 * var(--u)) calc(10 * var(--u)) 0 #000;}
+  box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),0 0 0 calc(var(--rw) + 1 * var(--u)) #000,0 0 0 calc(var(--rw) + 4 * var(--u)) var(--text),calc(8 * var(--u)) calc(10 * var(--u)) 0 #000;}   /* 등급 링 → 검은 1칸 → 흰 윤곽선 (등급 링을 덮지 않는다) */
 /* played: 날아가는 복제본 */
 .card.cv.played{transform:none;box-shadow:0 0 0 calc(3 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;pointer-events:none;}
 /* 도감·덱 확인(보기 전용)은 호버해도 안 움직인다 */
-.coll-grid .card.cv:hover,.deck-list:not(.shop-singles):not(.shop-remove) .card.cv:not([data-remove]):not([data-upgrade]):hover{transform:none;box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
-.card.cv.picked{box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+.coll-grid .card.cv:hover,.deck-list:not(.shop-singles):not(.shop-remove) .card.cv:not([data-remove]):not([data-upgrade]):hover{transform:none;box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+.card.cv.picked{box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),0 0 0 calc(var(--rw) + 1 * var(--u)) #000,0 0 0 calc(var(--rw) + 4 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
 @media (prefers-reduced-motion: reduce){.card.cv,.card.cv.tilt:not(.disabled){transition:none;}}
 
 /* ══ 전투 화면 확정 레이아웃 (body.lay-f — 넓은 가로 화면에서만, 나머지는 위의 예전 레이아웃) ═══════════════════
@@ -3958,7 +3984,7 @@ const handCompact = () => window.matchMedia('(min-width: 901px)').matches;
    아트 교체: CARD_ART[카드 id]에 스프라이트 경로를 적으면 이모지 대신 <img>로 (픽셀 그대로, image-rendering: pixelated). 엔진·카드 데이터는 건드리지 않는다 */
 const CARD_ART = {};   // 예: CARD_ART.stk_semi = 'assets/cards/stk_semi.png' — 비어 있으면 아래 임시 이모지
 const CARD_GLYPH_BY_TYPE = { stock:'📈', buy:'💸', sell:'✂️', hold:'💎', action:'📣', defense:'🛡️', report:'📊', status:'☠️' };
-const CARD_GLYPH = { stk_semi:'💾', stk_coin:'🪙', stk_sc:'🧲', stk_gukbap:'💊', stk_meme:'🐕', stk_inv:'🐻', stk_inv2:'🧸', stk_ev:'🚗', stk_bio:'🧬', stk_build:'🏗️', stk_game:'🎮', stk_delist:'🎰', stk_ailab:'🤖',
+const CARD_GLYPH = { stk_semi:'💾', stk_coin:'🪙', stk_sc:'🧲', stk_gukbap:'💊', stk_meme:'🐕', stk_inv:'🐻', stk_ev:'🚗', stk_bio:'🧬', stk_build:'🏗️', stk_game:'🎮', stk_delist:'🎰', stk_ailab:'🤖',
   credit:'💳', yolo:'🔥', short:'📉', stopLoss:'🛑', takeProfit:'🎯', hodl:'🧘', diamond:'💎', pump:'📢', dove:'🕊️', hawk:'🦅', coffee:'☕', manip:'🕴️', fullBuy:'🛒', antArmy:'🐜', trauma:'☠️' };
 const CARD_SHORT_MAX = 14;
 /* 핵심 효과 1줄 (UI 문구 — 전문은 툴팁). 종목 카드는 데이터의 섹터·β, 리포트는 설명의 앞 토막을 그대로 쓴다 */
@@ -3991,6 +4017,20 @@ const cardTypeKind = card => card.type === 'stock' ? 'stock' : card.type === 'ho
 const CARD_TYPE_NAME = { stock:'종목 카드', action:'행동 카드', hold:'홀드 카드', status:'상태 카드' };
 const CARD_LOCK_ICON = `<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path d="M2 3V2h1V1h2v1h1v1H5V2H3v1z" fill="currentColor"/><path d="M1 3h6v5H1z" fill="currentColor"/><path d="M3 5h2v1H3z" fill="var(--bg)"/></svg>`;
 const CARD_RARITY_NAME = { common:'일반', uncommon:'고급', rare:'희귀', legendary:'전설', mythic:'신화' };
+/* 등급 보석 7×7 픽셀 (# = 칠함): ○ 일반 · ◇ 고급 · ◆ 희귀 · ★ 전설 · ✦ 신화 · ✕ 상태 — 흑백에서도 모양으로 구분 */
+const CARD_GEM_BITS = {
+  common:    ['..###..', '.#...#.', '#.....#', '#.....#', '#.....#', '.#...#.', '..###..'],
+  uncommon:  ['...#...', '..#.#..', '.#...#.', '#.....#', '.#...#.', '..#.#..', '...#...'],
+  rare:      ['...#...', '..###..', '.#####.', '#######', '.#####.', '..###..', '...#...'],
+  legendary: ['...#...', '...#...', '#######', '.#####.', '..###..', '.##.##.', '.#...#.'],
+  mythic:    ['...#...', '...#...', '..###..', '#######', '..###..', '...#...', '...#...'],
+  status:    ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#']
+};
+const CARD_GEM_ICON = {};
+Object.keys(CARD_GEM_BITS).forEach(k => {
+  const d = CARD_GEM_BITS[k].map((row, y) => [...row].map((ch, x) => ch === '#' ? `M${x} ${y}h1v1h-1z` : '').join('')).join('');
+  CARD_GEM_ICON[k] = `<svg viewBox="0 0 7 7" shape-rendering="crispEdges"><path d="${d}" fill="currentColor"/></svg>`;
+});
 function cardKeywords(card){
   const k = [];
   if(card.exhaust) k.push(['🔥', '소멸 — 쓰면 이번 판에서 사라진다']);
@@ -4017,16 +4057,18 @@ function cardView(card, o){
   o = o || {};
   const status = card.type === 'status', kind = cardTypeKind(card);
   const ap = status ? '✕' : (o.ap !== undefined ? o.ap : card.ap);
-  const rar = status ? 'common' : card.rarity;
+  const rar = status ? 'common' : card.rarity, gem = status ? 'status' : rar, rarName = status ? '상태' : CARD_RARITY_NAME[rar];
   const kws = cardKeywords(card).map(([ic, tip]) => `<span class="cv-kw" title="${tip}">${ic}</span>`).join('');
   const tags = card.tags.length ? `<span class="cv-kw cv-tags c-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span>` : '';
   return `
     <div class="card cv ${o.hand ? 'gcard cv-hand' : 'cv-std'} t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}
-         aria-label="${card.name} · ${status ? '상태' : CARD_RARITY_NAME[rar]} · ${CARD_TYPE_NAME[kind]}">
-      <i class="cv-gem g-${rar}" title="${status ? '상태' : CARD_RARITY_NAME[rar]}"></i>
+         aria-label="${card.name} · ${rarName} · ${CARD_TYPE_NAME[kind]}">
+      <i class="cv-band" aria-hidden="true"></i>
       <span class="cv-cost" title="행동력">${ap}</span>
+      <i class="cv-gem g-${gem}" title="${rarName}">${CARD_GEM_ICON[gem]}</i>
       <div class="cv-art">${cardArtHtml(card)}</div>
       <div class="cv-name${card.name.length >= 6 ? ' long' : ''}">${card.name}</div>
+      <div class="cv-rar">${rarName}</div>
       <div class="cv-line">${cardShort(card)}</div>
       <div class="cv-foot"><span class="cv-type k-${kind}" title="${CARD_TYPE_NAME[kind]}">${CARD_TYPE_ICON[kind]}</span><span class="cv-kws">${kws}${tags}</span></div>
       <div class="cv-reason" hidden>${o.reason || ''}</div>
