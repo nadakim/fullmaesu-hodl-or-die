@@ -2006,7 +2006,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 /* hover: 8 상승 + ±2도 기울기 (tiltFrame이 --rx·--ry를 넣는다 — 여기서 ±2도로 자른다) */
 .card.cv:not(.disabled):is(:hover,.is-hover){background:var(--panel);   /* .is-hover = 상태 시트(shots/card-states.png) 전용 */
   transform:translateY(calc(-1 * var(--cv-lift)));
-  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) color-mix(in srgb, var(--rc) 45%, transparent),0 0 0 calc(9 * var(--u)) color-mix(in srgb, var(--rc) 18%, transparent),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}   /* 등급 색 발광 링 */
 .card.cv.tilt:not(.disabled){transform:perspective(calc(520 * var(--u))) translateY(calc(-1 * var(--cv-lift))) rotateX(clamp(-2deg, var(--rx, 0deg), 2deg)) rotateY(clamp(-2deg, var(--ry, 0deg), 2deg));}
 .card.cv.tilt:not(.disabled):active{transform:perspective(calc(520 * var(--u))) translateY(calc(-1 * var(--cv-lift) + 3 * var(--u)));}
 .card.cv.tilt.r-rare,.card.cv.tilt.r-legendary,.card.cv.tilt.r-mythic{background-image:none;}
@@ -3847,7 +3847,7 @@ function cardView(card, o){
   const ap = status ? '✕' : (o.ap !== undefined ? o.ap : card.ap);
   const rar = status ? 'common' : card.rarity;
   const kws = cardKeywords(card).map(([ic, tip]) => `<span class="cv-kw" title="${tip}">${ic}</span>`).join('');
-  const tags = card.tags.length ? `<span class="cv-kw cv-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span>` : '';
+  const tags = card.tags.length ? `<span class="cv-kw cv-tags c-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span>` : '';
   return `
     <div class="card cv ${o.hand ? 'gcard cv-hand' : 'cv-std'} t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}
          aria-label="${card.name} · ${status ? '상태' : CARD_RARITY_NAME[rar]} · ${CARD_TYPE_NAME[kind]}">

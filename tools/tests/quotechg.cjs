@@ -16,7 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const first = await p.evaluate(() => ({ t: document.querySelector('[data-q] .q-chg').textContent, yd: !!document.querySelector('.q-chg .yd') }));
     ok(`${W} 1일차 장전 = 어제 0%`, first.yd && /0\.0+%|0%/.test(first.t), first.t);
     await p.evaluate(() => { run.hand = ['stk_semi', 'credit', 'stk_semi', 'stk_semi', 'stk_semi', 'stk_semi', 'stk_semi', 'stk_semi'].map(newCard); handSig = ''; renderAll(); });
-    const hand = await p.evaluate(() => { const cs = [...document.querySelectorAll('#handBox .card.gcard')]; return { n: cs.length, price: document.querySelectorAll('#handBox .c-price,#handBox .c-cost').length, clip: cs.filter(c => { const n = c.querySelector('.g-name'); return n.scrollHeight > n.clientHeight + 1; }).length, fs: cs.map(c => parseFloat(getComputedStyle(c.querySelector('.g-name')).fontSize))[0] }; });
+    const hand = await p.evaluate(() => { const cs = [...document.querySelectorAll('#handBox .card.gcard')]; return { n: cs.length, price: document.querySelectorAll('#handBox .c-price,#handBox .c-cost').length, clip: cs.filter(c => { const n = c.querySelector('.cv-name'); return n.scrollHeight > n.clientHeight + 1; }).length, fs: cs.map(c => parseFloat(getComputedStyle(c.querySelector('.cv-name')).fontSize))[0] }; });
     ok(`${W} 손패 가격 줄 없음`, hand.price === 0, hand);
     ok(`${W} 손패 이름 안 잘림`, hand.clip === 0, hand);
     await p.screenshot({ path: `${S}/qc-${W}-pre.png` });
