@@ -473,7 +473,7 @@ body::after{
 .hand.compact .g-top{gap:calc(4 * var(--u));}
 .hand.compact .c-ap{padding:calc(1 * var(--u)) calc(3 * var(--u));}
 .hand.compact .g-rar{width:calc(6 * var(--u));height:calc(6 * var(--u));}
-.hand.compact .g-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.2;-webkit-line-clamp:2;}
+.hand.compact .card.gcard .g-name{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.2;-webkit-line-clamp:2;}
 .hand.compact .card.gcard .g-name.long{font-size:var(--fs-xs);-webkit-line-clamp:3;}   /* 이름이 6자 이상이거나 한 단어가 5자 이상이면 한 단계 작게 (Galmuri 최소 10px), 세 줄까지 */
 .hand.compact .g-foot{min-height:0;line-height:1.1;}
 .hand.compact .g-foot:empty{display:none;}
