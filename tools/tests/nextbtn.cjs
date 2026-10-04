@@ -83,9 +83,9 @@ const state = page => page.evaluate(() => ({ chainList: !!document.getElementByI
     if (W === 390) await page.screenshot({ path: S + '/next-summary-390.png' });
     await sleep(500); await page.locator('[data-act="chainNext"]').click(); await sleep(200);
     ok((await state(page)).result, W + ' 요약에서 ▶ 다음 → showRoundResult');
-    // 5) 보정 없는 결산 (유물 없음) → 요약 + 버튼
+    // 5) 보정 없는 결산 (유물 없음) → 요약 + 버튼 (시드 4 = 크리티컬도 안 나오는 시드)
     await page.evaluate(() => { settings.chainFx = true; });
-    await setupWeek(page, { seed: 3, extraCash: 3000, buys: [{ id: 'semi', amt: 1000 }], move: { semi: 1.02 } });
+    await setupWeek(page, { seed: 4, extraCash: 3000, buys: [{ id: 'semi', amt: 1000 }], move: { semi: 1.02 } });
     await sleep(300);
     st = await state(page);
     ok(st.hold && st.next && !st.result, W + ' 유물·보너스 없는 결산 → 요약 + ▶ 다음', st);

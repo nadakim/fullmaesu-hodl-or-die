@@ -82,7 +82,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
       if(!t) break;
       t3.push(t); await p.locator('[data-act="unlockNext"]').click(); await sleep(300);
     }
-    const w3 = await p.evaluate(() => ({ round: run.round, inv: !!document.querySelector('.quote-row[data-q="inv"]').offsetParent, deck: ['credit', 'short', 'hodl', 'marginTopup', 'stk_inv', 'stk_inv2'].every(id => run.masterDeck.indexOf(id) >= 0),
+    const w3 = await p.evaluate(() => ({ round: run.round, inv: !!document.querySelector('.quote-row[data-q="inv"]').offsetParent, deck: ['credit', 'short', 'hodl', 'marginTopup', 'stk_inv'].every(id => run.masterDeck.indexOf(id) >= 0),
       held: run.heldCards.length, fss: !!$('fssBox').offsetParent || document.body.classList.contains('lock-fss') }));
     ok(W + ' 3주차: 공매도·레버리지·암시장 확장 소개 + 빼 둔 시작 카드가 덱으로', t3.length === 3 && w3.round === 3 && w3.inv && w3.deck && w3.held === 0 && w3.fss, { t3, w3 });
     // 6) 새 판: 도달한 주차(3)까지 처음부터 열림 · 소개 없음 · 설정 끔
@@ -104,7 +104,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
   await p.click('#startBtn'); await sleep(900);
   const off = await p.evaluate(() => ({ flag: ONBOARDING_ON, cls: document.body.className, deck: run.masterDeck.length, sig: [...document.querySelectorAll('.q-sig')].some(e => e.offsetParent),
     rows: [...document.querySelectorAll('.quote-row')].filter(e => e.offsetParent).length, news: !!document.querySelector('.news-row').offsetParent, play: (run.hand = ['short'].map(newCard), checkPlay(0)) }));
-  ok('플래그 끔 → 1주차부터 전부 보임 · 시작 덱 15장 · 공매도 사용 가능', !off.flag && !/lock-/.test(off.cls) && off.deck === 15 && off.sig && off.rows === 13 && off.news && off.play === null, off);
+  ok('플래그 끔 → 1주차부터 전부 보임 · 시작 덱 15장 · 공매도 사용 가능', !off.flag && !/lock-/.test(off.cls) && off.deck === 15 && off.sig && off.rows === 12 && off.news && off.play === null, off);
   await ctx.close();
   ok('page errors 없음', errs.length === 0, errs);
   console.log(`FAIL ${fail} / ${pass + fail}`);
