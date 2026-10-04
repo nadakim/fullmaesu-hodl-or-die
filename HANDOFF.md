@@ -3,6 +3,33 @@
 **Date:** 2026-10-01
 **main:** S0~S9 + N1까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
 
+## UI 리디자인 세션 (2026-10-04, 브랜치 `claude/clever-franklin-e589r1` — main 위로 rebase됨, **PR 아직 안 만듦**)
+
+> 기존 `## 지금 상태`보다 위에 둔다. 사용자 규칙은 CLAUDE.md `## UI 리디자인 규칙`(작업마다 5개 해상도 스크린샷·변경 전 먼저 저장·보고 5줄 이내·결정은 목록으로). 사용자와는 한국어.
+
+**한 일 (전부 UI 전용, `docs/engine.js`·카드 데이터·밸런스 무변경)**
+- 도구: agent-browser(`.claude/skills/agent-browser`) · impeccable 스킬 설치, `PRODUCT.md`·`DESIGN.md` 작성(기존 문서 기반, 추론 항목은 `[추론]` 표시), `skills-lock.json`.
+- **공용 카드 컴포넌트 `cardView`** (`docs/demo`): 손패·보상·암시장·덱·도감 전부 교체. 2:3, 코스트 배지·보석(등급 5모양)·아트 슬롯(`CARD_ART[id]`로 스프라이트 교체)·효과 1줄(`CARD_SHORT` ≤14자)·타입/키워드 아이콘, 희귀도 3중 표시, 상태 idle/hover/selected/disabled(자물쇠, 이유는 툴팁)/played. 상태 시트 `shots/card-states.png`.
+- **전투 화면 확정 레이아웃 `body.lay-f`**: A안 기반 + 상단 순자산·목표 바. 포지션을 시세 행 아래 줄(`.pos-line`)로 통합(CSS `order`), 부채꼴 손패 + 덱/버림 더미, 좌측 정보열(`#infoCol`), 우하단 장 시작 CTA. 폭 ≥ 1200 & 비율 ≥ 1.45에서만 켜지고 그 외·`?layout=classic`은 예전 레이아웃. 디버그 `?scenario=full|nine|multi|hand|long|empty`. 구조 설명은 CLAUDE.md '전투 화면 확정 레이아웃'.
+- 테스트: `tools/tests/cardview.cjs`(29)·`layoutfinal.cjs`(91) 신규, 나머지 테스트는 전부 `?layout=classic`으로 열도록 수정. 전체 회귀 통과(`escalation`은 가끔 흔들리는 시간 의존 항목).
+- 스크린샷: `shots/before`(작업 전), `shots/after`, `shots/layout`(A/B 비교), `shots/final`(시나리오 5종 × 3해상도), `shots/card-states.png`.
+- 데모 아티팩트(비공개): https://claude.ai/artifact/PwZ67dB2ZtK8oEYM1mxd1g — `docs/demo`→`index.html`(`<title>` 채움) + `engine/audio/music/fx.js` + `assets/sfx/files.js` + 폰트 6개를 `files`로. 이 세션의 stage 폴더에서 `Artifact`로 재게시(같은 파일 경로면 URL 유지). 기존 `87p2qHp…` 데모와는 별개.
+
+**🛑 사용자 결정 대기**
+1. 종목은 13개(9개 아님): 9개 전부 보유는 스크롤 없이 들어가고, 13개 전부 보유는 1080p에서 77px·1280×800에서 22px 넘쳐 목록 스크롤.
+2. 한 종목에 포지션 여러 개 가능(종목·방향·레버리지별) — 지금은 줄이 쌓이는 임시 표시. 제안: "×N 배지 + 펼침".
+3. 시세 행 시그널은 아이콘만(적중률 글자는 툴팁). 우측 열 372u(보유 줄이 잘려서 300px에서 확대) → 1280×800에서 손패 10장이 많이 겹침.
+4. 규칙 충돌 미결: 규칙 2(16:9 안전영역·와이드 배경 확장)·3(`tokens.css` 분리)·4(폰트 2종·캡션 16px — 1280×800에선 12.5px)·5(희귀 파랑→청록으로 바꿈, 카드 종류 색은 아이콘으로 대체)는 코드에 미적용/부분 적용.
+5. classic 레이아웃을 남길지(폭 < 1200·세로형 폴백) 정리할지. 손패 카드에는 효과 줄 숨김(좁아서).
+6. 열린 PR #37(목표 성장률 실험, 기본 꺼짐)이 `docs/demo`도 수정 — 머지 순서에 따라 충돌 가능(충돌은 rebase로).
+7. PR 분리: 이 브랜치에 스킬 설치·문서·cardView·레이아웃이 섞여 있음 → PR 만들 때 목적별로 쪼개야 함(CLAUDE.md Git 규칙).
+
+**다음 작업(제안)**: 위 결정 받기 → 결정 반영(×N 배지, 시그널 표기, 우측 열 폭) → 타이틀·결산·암시장 등 나머지 화면도 같은 규칙으로 → `tokens.css` 분리·16:9 안전영역(큰 작업, 별도 PR) → PR 분리·작성.
+
+**주의**: 테스트 서버는 `docs/demo`를 `/tmp/site/demo.html`로 복사해 띄움(README 참고) — 전체 회귀 도중 복사본을 바꾸면 결과가 오염됨. 푸시가 거부되면 rebase 뒤라 `--force-with-lease`(내 커밋뿐인 이 브랜치만).
+
+---
+
 ## 지금 상태 (다음 세션은 여기부터)
 
 - **사운드 감사 + Sound Lab** (`claude/sound-audit`, UI 전용 — engine.js 무변경, `sim/runner.js` 결과 동일): `node tools/audio/audit.cjs`(68개 효과음·옵션·BGM 렌더 측정) → `freq.cjs`(봇 판 8개 재생 빈도·보이스 스틸) → `report.cjs`(표 갱신) = `docs/audio/AUDIT.md`(가설 7개 판정 + 덤 6개). `?soundlab=1`로 Sound Lab(`docs/soundlab.js`: 카테고리별 버튼·음높이 사다리·옵션·장면 18개·BGM 곡/레이어·소리별 메모 `hodl.soundNotes`·'메모 복사' JSON). `Sound.stats.stolenBy` 관찰 추가. 테스트 `tools/tests/soundlab.cjs`. 새 효과음은 `SOUND_CATEGORY_OF`에 등록 후 audit 재실행. **다음: 사용자가 Sound Lab에서 듣고 메모 JSON을 보내면 AUDIT.md '귀로 확인할 목록'을 채우고 음량 균형·고음·컴프레서 조정안(🛑 사용자 결정)을 만든다.** Sound Lab 전용 아티팩트는 별도 게시(기존 데모 아티팩트는 목표 성장률 실험 빌드라 덮어쓰지 않음).
