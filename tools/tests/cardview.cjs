@@ -23,12 +23,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       return { n: cs.length, cv: cs.every(c => c.classList.contains('cv')), old: document.querySelectorAll('#handBox .g-top, #handBox .c-desc').length,
         ratio: cs.map(c => { const r = c.getBoundingClientRect(); return +(r.width / r.height).toFixed(3); }),
         reasons: cs.filter(c => c.classList.contains('disabled')).map(c => c.querySelector('.cv-reason').textContent),
-        reasonVisible: cs.filter(c => c.classList.contains('disabled')).every(c => getComputedStyle(c.querySelector('.cv-reason')).display !== 'none'),
+        reasonVisible: cs.filter(c => c.classList.contains('disabled')).some(c => getComputedStyle(c.querySelector('.cv-reason')).display !== 'none'),
+        lockVisible: cs.filter(c => c.classList.contains('disabled')).every(c => getComputedStyle(c.querySelector('.cv-lock')).display !== 'none'),
         gems: [...new Set(cs.map(c => getComputedStyle(c.querySelector('.cv-gem')).clipPath))].length };
     });
     ok(`${W} 손패 6장 전부 cardView`, hand.n === 6 && hand.cv && hand.old === 0, hand);
     ok(`${W} 손패 2:3 비율`, hand.ratio.every(r => Math.abs(r - 2 / 3) < 0.02), hand.ratio);
-    ok(`${W} 행동력 0일 때 못 쓰는 카드에 이유 문구`, hand.reasons.length >= 3 && hand.reasonVisible && hand.reasons.some(t => t === '행동력 부족'), hand.reasons);
+    ok(`${W} 못 쓰는 카드 = 자물쇠만 보이고 이유 문구는 숨김(툴팁용)`, hand.reasons.length >= 3 && hand.lockVisible && !hand.reasonVisible && hand.reasons.some(t => t === '행동력 부족'), hand);
     ok(`${W} 보석 모양이 등급마다 다름`, hand.gems >= 3, hand.gems);
 
     // 2) 표준 크기(보상·암시장·덱·도감) — 2:3, 효과 1줄 ≤14자·넘치지 않음, 글자 크기

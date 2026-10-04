@@ -121,7 +121,7 @@ const measure = p => p.evaluate(() => {
     // 전부 + 13종목 전부 보유(참고: 스크롤 양)
     p = await open(b, W, H, 'scenario=nine');
     const all13 = await p.evaluate(() => { STOCKS.slice(9).forEach((st, i) => { openPosition(st.id, 900, 1, 1, true); }); handSig = ''; posSig = ''; renderAll(); const sl = document.querySelector('#stockList'); return sl.scrollHeight - sl.clientHeight; });
-    console.log(`INFO ${t} 13종목 전부 보유하면 시세 목록이 ${Math.round(all13)}px 넘침 (9종목은 스크롤 없음)`);
+    console.log(`INFO ${t} 13종목 전부 보유하면 시세 목록이 ${Math.round(all13)}px 넘침 (9종목은 스크롤 없음 — 위 (a) 검사)`);
     await p.close();
   }
   // 검은 띠: 와이드 화면에서 배경(body)이 화면 끝까지 같은 색

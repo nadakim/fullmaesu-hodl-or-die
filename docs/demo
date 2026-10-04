@@ -2030,6 +2030,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 #infoCol,#stockList{display:none;}
 .top-settings{display:none;}
 .pile{display:none;}
+.hand-zone{display:contents;}   /* 예전 레이아웃에선 래퍼가 없는 것처럼 (손패가 격자 자식으로 남게) */
 @media (min-width: 1200px) and (min-aspect-ratio: 145/100){
   body.lay-f #screen-play.active{
     gap:calc(6 * var(--u)) calc(14 * var(--u));padding:calc(8 * var(--u)) calc(14 * var(--u));
@@ -2045,7 +2046,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   }
   body.lay-f .play-left,body.lay-f .play-right,body.lay-f .hand-zone{display:contents;}
   body.lay-f #infoCol{display:flex;flex-direction:column;gap:calc(8 * var(--u));min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;grid-area:info;}
-  body.lay-f #stockList{display:flex;flex-direction:column;grid-area:stocks;min-height:0;min-width:0;gap:calc(2 * var(--u));overflow:hidden;}
+  body.lay-f #stockList{display:flex;flex-direction:column;grid-area:stocks;min-height:0;min-width:0;gap:calc(1 * var(--u));overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
   body.lay-f .top-settings{display:inline-block;}
   body.lay-f .hand-title,body.lay-f .pos-title{display:none;}
 
@@ -2118,8 +2119,9 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   body.lay-f #pileDiscard{grid-area:hand;position:static;justify-self:end;align-self:end;margin:0 0 calc(14 * var(--u)) 0;}
 
   /* ── 우측: 종목 시세 + 포지션 통합 (행 순서는 종목 고정, 포지션 줄은 해당 종목 행 바로 아래) ── */
-  body.lay-f #stockList .section-title{flex:none;margin:0 0 calc(8 * var(--u));}
+  body.lay-f #stockList .section-title{flex:none;margin:0 0 calc(4 * var(--u));}
   body.lay-f #quoteBox,body.lay-f #positionsBox{display:contents;}
+  body.lay-f #stockList .quote-row,body.lay-f #stockList .pos-line{flex:0 0 auto;}   /* 줄이 찌그러지지 않게 — 넘치면 스크롤 양으로 드러난다 */
   body.lay-f.no-pos #positionsBox{display:none;}
   body.lay-f .quote-row{display:grid;grid-template-columns:minmax(0, 1fr) calc(54 * var(--u)) calc(66 * var(--u)) calc(66 * var(--u));gap:calc(6 * var(--u));align-items:center;padding:calc(1 * var(--u)) calc(8 * var(--u));min-height:0;position:relative;}
   body.lay-f .quote-row canvas{display:block;width:calc(54 * var(--u));height:calc(14 * var(--u));}
@@ -2139,7 +2141,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   body.lay-f .quote-row.held::before,body.lay-f .pos-line::before{content:'';position:absolute;left:0;top:0;bottom:0;width:calc(4 * var(--u));background:var(--muted);}
   body.lay-f .quote-row.held-up::before,body.lay-f .pos-line.pl-up::before{background:var(--green);}
   body.lay-f .quote-row.held-down::before,body.lay-f .pos-line.pl-down::before{background:var(--red);}
-  body.lay-f .pos-line{display:flex;align-items:center;flex-wrap:nowrap;gap:calc(4 * var(--u));position:relative;margin:calc(-2 * var(--u)) 0 0;padding:calc(2 * var(--u)) calc(5 * var(--u)) calc(5 * var(--u)) calc(10 * var(--u));min-width:0;overflow:hidden;}
+  body.lay-f .pos-line{display:flex;align-items:center;flex-wrap:nowrap;gap:calc(4 * var(--u));position:relative;margin:calc(-3 * var(--u)) 0 0;padding:calc(2 * var(--u)) calc(5 * var(--u)) calc(4 * var(--u)) calc(10 * var(--u));min-width:0;overflow:hidden;}
   body.lay-f .pos-line .detail{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--text2);white-space:nowrap;line-height:1.2;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}
   body.lay-f .pos-line .val{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);white-space:nowrap;margin-left:auto;line-height:1.2;flex:none;}
   body.lay-f .pos-line .name{flex:none;}
