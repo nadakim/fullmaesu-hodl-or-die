@@ -13,7 +13,7 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
     const ctx = await b.newContext({ viewport: vp, reducedMotion: (opts && opts.reduced) ? 'reduce' : 'no-preference' });
     const page = await ctx.newPage();
     page.on('pageerror', e => errs.push(e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');   // (온보딩) 전 시스템 열린 상태로
     return page;

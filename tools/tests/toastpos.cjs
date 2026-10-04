@@ -10,7 +10,7 @@ const area = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left,
   for (const [W, H] of [[1920, 1080], [1366, 768], [1280, 1024], [390, 844]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
     await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
     await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(500);
     await p.evaluate(() => { window.tipChance = () => 0; toast('첫째 알림', 'info'); toast('▶ 장 시작!', 'good'); toast('청산 경고: 담보가 부족합니다', 'bad'); toast('금감원 감시 게이지 상승', 'warn'); });

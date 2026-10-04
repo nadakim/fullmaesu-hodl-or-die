@@ -9,7 +9,7 @@ const TARGETS = [['×2', 'x2', 0], ['×10', 'x10', 1], ['×100', 'x100', 2], ['�
 async function open(b, W, H, extra) {
   const p = await b.newPage({ viewport: { width: W, height: H }, ...(extra || {}) });
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html');
+  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
   await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(460);
   await p.evaluate(() => { window.tipChance = () => 0; });
@@ -108,7 +108,7 @@ const FAKE = () => {
   {
     const p = await b.newPage({ viewport: { width: 1366, height: 768 } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?tuner=1'); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic&tuner=1'); await p.keyboard.press('Shift');
     const keys = ['heroPopBase', 'heroPopPerDecade', 'heroPopMax', 'heroPopMs', 'heroFlameH.4', 'heroFlameMs', 'boxShakeMul'];
     const have = await p.evaluate(ks => ks.map(k => !!document.querySelector(`#tunerPanel [data-tn="${k}"]`)), keys);
     ok('튜너 패널에 새 수치 슬라이더 7개', have.every(Boolean), have);

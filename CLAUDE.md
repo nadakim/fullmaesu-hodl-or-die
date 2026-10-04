@@ -35,6 +35,7 @@
 - `docs/audio/` — 사운드 감사 결과: `AUDIT.md`(표 + 가설별 판정, 표 구역은 `tools/audio/report.cjs`가 다시 씀) · `data/*.json`(sfx·bgm·freq 측정값).
 - `tools/audio/` — 사운드 감사 도구(Claude는 소리를 못 듣는다 → 잴 수 있는 것은 숫자로, 귀로 판단할 건 Sound Lab에서 사용자가). `audit.cjs`(SFX·BGM를 OfflineAudioContext로 렌더해 길이·피크·RMS·crest·스펙트럼 중심·고음/저음 비율·컴프레서 전/후·루프 이음매·큰 효과음 직후 BGM 눌림) · `freq.cjs`(가상 시계 `page.clock`으로 실제 UI를 빠르게 돌리며 `sim/strategies.js` 봇이 판을 끝까지 두고 `Sound.play`만 기록 → 이름별 분당·merged·stolen·동시 발음) · `report.cjs`(JSON → AUDIT.md 표). 소리·BGM·믹스를 바꾸면 전/후로 `audit.cjs`를 돌려 비교한다. 자세한 건 `docs/audio/AUDIT.md`.
 - `.claude/skills/` — 프로젝트 범위 스킬 (ponytail 등)
+- `agent-browser` — 브라우저 자동화 스킬(`.claude/skills/agent-browser/`). **새 세션에서 `agent-browser`가 없으면 아래 명령으로 재설치:** `npm install -g agent-browser` (스킬이 없으면 `npx skills add vercel-labs/agent-browser -a claude-code -y`). Chrome 다운로드가 막힌 환경에선 `agent-browser install`을 건너뛰고 사전 설치 Chromium을 지정한다: `export AGENT_BROWSER_EXECUTABLE_PATH=/opt/pw-browsers/chromium` (`doctor`는 이 경로를 자동 감지하지 못해 'No Chrome binary found'로 표시하지만 지정하면 실행된다). 다운로드가 되는 환경이면 `agent-browser install --with-deps`.
 - `.mcp.json` — Playwright MCP(`tools/mcp-playwright.sh`: 사전 설치 Chromium이 있으면 전역 playwright 내장 MCP, 없으면 `@playwright/mcp`)
 - `.claude/settings.json` — 훅: `tools/hooks/engine-guard.sh`(engine.js 수정 후 DOM·`Math.random` 검사 + 시뮬 스모크), `protect-files.sh`(폰트·sfx·`sim/results` 직접 수정 차단), `content-guard.sh`(게임 소스에 금지 소재 — 자해 연상 표현·실존 기업명/티커 — 검사)
 - `.claude/agents/` — `engine-purity-reviewer`(공통 규칙 diff 검토)·`regression-runner`(회귀 테스트 요약). 스킬 `verify-ui`(`tools/verify-ui.sh [테스트…|all]`)·`balance-compare`(전/후 시뮬 비교)·`add-content`(카드·유물·보스·찌라시·뉴스·엔딩·효과음 추가 체크리스트)·`new-test`(회귀 테스트 템플릿)·`pr-prepare`(PR 전 점검·설명 초안)
@@ -121,6 +122,7 @@
   - `VT323`(숫자·본문)은 최소 16px: `'VT323',var(--gv-v1)` + `--fs-v1`16 · `v2`20 · `v3`24 · `v4`30 (`--gv-*` = GV16… 한글 약 75%/67%).
   - '글자 크기: 크게' 설정은 `html[data-font="large"]`에서 이 변수들을 한 단계씩 올린다 (Press Start 2P 글자 자체는 그대로, 한글 대체 얼굴만 L 버전). 새 크기가 필요하면 변수·@font-face·large 재정의를 같이 추가한다. Canvas `ctx.font`도 같은 얼굴(`"Press Start 2P","GP8"`).
   - 손패(`#handBox.hand`): **데스크톱(≥901px)은 컴팩트 격자** — 5열 × 필요한 행만(5장 1행 · 10장 = `HAND_MAX` 2행 · 0장은 빈 칸 한 줄, `.compact`, 카드 높이 CSS 변수 `--hand-row` 68u, 이름이 길면 `.g-name.long`으로 `--fs-xs`, 종목 카드의 현재가 줄은 접는다 — 툴팁·시세표에 있음). 모바일(≤900px)은 기존 3열 × 3행(10장이면 `.g4` 4열). 카드는 칸을 꽉 채우는 격자용 카드 `handCardHtml`(`.card.gcard`: 행동력·종류 띠·등급 점 / 이름 / 종목이면 가격·현재가, 아니면 이름만 크게 / 대상·소멸, 정산 배수를 올리는 카드는 `.boost` 빛남 = `boostsSettle`) + 빈 칸 `.g-slot`. 전체 설명·수치·기대값은 툴팁. 그 밖(보상·암시장·도감·덱)의 카드는 `cardHtml` 기준 124×180(× `--u`). 설명이 넘치면 `clampCards`가 첫 문장만 남기고(`.c-desc.clamped`, 카드 `data-clamp="1"`, 발밑 ⓘ) 전문은 툴팁 `.card-tip`(마우스 올리기·길게 누르기)으로. 문구를 CSS로 줄이지 말고, 잘리는 카드는 문구로 해결한다.
+  - **공용 카드 컴포넌트 `cardView(card, o)`** (UI 리디자인 규칙 적용, UI 전용): 손패(`handCardHtml` = `cardView(…, {hand:true})`)·보상·암시장·덱 확인·도감(`cardHtml`)이 전부 이 하나를 쓴다 — 아래 `handCardHtml`/`.g-top`/`.c-desc` 기술은 옛 구조다. 2:3 세로(`.card.cv`; 표준 `.cv-std` 152×228u, 손패 `.cv-hand`는 칸 너비 × 2:3, 효과 줄은 숨김). 구성: 코스트 배지 `.cv-cost`(VT323) · 모서리 보석 `.cv-gem.g-<등급>`(모양 5종) · 아트 슬롯 `.cv-art`(`CARD_ART[id]`에 스프라이트 경로를 넣으면 `<img>`, 없으면 `CARD_GLYPH` 이모지) · 이름 `.cv-name` · 핵심 효과 1줄 `.cv-line`(`CARD_SHORT`, 최대 `CARD_SHORT_MAX` 14자 — 종목 카드는 섹터·β, 리포트는 설명 앞 토막) · 하단 타입 아이콘 `.cv-type`(종목·행동·홀드·상태 SVG, `cardTypeKind`) + 키워드 `.cv-kw`(소멸·보존·대상·강화). 희귀도 = 테두리 `--rc` + 보석 모양 + 이름 색(일반 muted · 고급 green · 희귀 cyan · 전설 purple · 신화 gold). 상태: idle / hover(`--cv-lift` 8u 상승 + `.tilt` ±2°) / `.selected`(희귀도 링 바깥 흰 윤곽선 + 상승) / `.disabled`(어둡게 + `.cv-reason` 이유 문구, 손패는 `cardReason(idx)`) / `.played`(`playCardFx`의 날아가는 복제본, 대상이 없으면 `#chartBox` 쪽). 전문은 기존 툴팁(`showCardTip`). 엔진·카드 데이터는 건드리지 않는다. 테스트 `tools/tests/cardview.cjs`(상태 시트 `shots/card-states.png`).
   - `overflow:hidden` + 좁은 line-height 안의 한글은 윗줄이 잘린다 (Galmuri가 VT323보다 키가 크다). 이런 곳은 line-height 1.1 이상·padding-top을 준다.
 - `image-rendering: pixelated`, Canvas는 `imageSmoothingEnabled = false` 유지.
 - 상승 = `--green`, 하락 = `--red` (한국식 반대 색 쓰지 않음 — 기존 컨벤션 유지).
@@ -130,6 +132,7 @@
 ### 레이아웃 (가로 데스크톱 / 세로 모바일)
 
 - **901px 이상**: `.cabinet`이 창 전체(100vw × 100dvh)를 채운다 (고정 비율·레터박스·확대 없음, 배경 차트·격자 레이어 없음). 배율 `uiScale`(CSS `--ui`)은 `layoutUi()`가 창 높이 ÷ `UI_BASE_H`(600)를 0.25 단위로 반올림, 1~2.5 — 창 크기가 바뀌면(`resize`, rAF 한 번) 다시 정하고 `renderAll`로 캔버스·카드 잘림을 다시 그린다. '화면 크기'를 키울 때는 창이 `UI_MIN_UNITS_W × UI_MIN_UNITS_H` 칸보다 작아지지 않는 선까지만. Canvas 내부 해상도 = 화면 크기 × devicePixelRatio, 점·선 굵기 = `round(uiScale × dpr)`. fx 파티클 크기는 `Fx.setUiScale`.
+- **전투 화면 확정 레이아웃 (`body.lay-f`, UI 리디자인 규칙 적용)**: 폭 ≥ 1200 이고 폭/높이 ≥ 1.45인 화면에서 `applyLayout()`이 켠다(`layoutNow()`). 그보다 좁거나 주소가 `?layout=classic`이면 아래 예전(classic) 레이아웃 그대로 — 회귀 테스트는 전부 `?layout=classic`으로 연다. 켜지면 `placeLayout()`이 현금·행동력·칩·금감원을 `#infoCol`(좌측 열)로, 종목 시세·포지션을 `#stockList`(우측)로 옮긴다(id·렌더 함수는 그대로, 끄면 제자리로). 격자(1080p 시작값을 `--u`로 환산): 상단 바 55u(≈96px: ≡ · WEEK/DAY · 순자산+목표 바 `.balance-main`(Press Start 24px, 화면에서 가장 큰 수치) · 장 속도 · ⚙ `#topSettingsBtn`) / 좌측 열 171u(현금·비자금·행동력 큰 칸 + n/3·정산 배수·덱 확인, 아래 전량 매도) / 중앙(유물 줄 → 이벤트 한 줄 → 차트 '시장 지수' 최소 229u → 부채꼴 손패 + 덱·버림 더미 `#pileDeck`·`#pileDiscard`) / 우측 372u(종목 시세) / 우하단 장 시작 대형 CTA. **포지션 통합**: `#quoteBox`와 `#positionsBox`가 `display:contents`로 같은 `#stockList` 안에서 CSS `order`(시세 행 = 종목 인덱스×2, 포지션 줄 `.pos-line` = ×2+1)로 섞여, 종목 순서는 고정이고 포지션 줄은 해당 종목 행 바로 아래에 붙는다. 보유 행은 `.held(.held-up/.held-down)` 왼쪽 강조 바, 레버리지·숏 배지는 종목 행 이름 옆 `.q-pb`. 같은 종목에 포지션이 여러 개면 줄이 쌓인다(임시 — ×N 배지·펼침은 결정 대기). 등락이 전부 0이면 `body.quotes-flat`으로 가격만. 손패는 `.hand.fan`(카드 108u, 겹침 간격은 칸 폭에서 `--step` 자동, 호버 14u 상승), 비활성 카드는 자물쇠 `.cv-lock`만 보이고 이유는 호버 툴팁. 디버그 `?scenario=full|nine|multi|hand|long|empty`(쉼표로 조합)가 9종목 보유·한 종목 2포지션·손패 가득·순자산 123억 4,567만·보유 0개를 강제로 만든다(UI 검증 전용). 테스트 `tools/tests/layoutfinal.cjs`.
 - TR룸: 폭 ≥ 1200 이고 폭/높이 ≥ 1.45면 **3단** — 상단 HUD(전체 폭 — N2: 상시 숫자는 순자산+목표 막대·현금(💼 비자금 작게)뿐, 빌린 돈·확정손익·낸 이자는 순자산 상자 호버 툴팁 `#balTip`, 금감원 게이지는 0이면 `.fss.off`로 숨김) / 왼쪽 시장(뉴스 전광판 + '📰 내일' 버튼(호버로 예고)·차트(칸 높이를 전부 씀, 장세 뱃지 `#marketStateBadge` = 엔진 `marketState`)) / 가운데 행동(행동력·칩·손패·**시세 13종목 2열 격자**(이름·시그널 칩 / 가격·등락, 상·하한가는 등락 칸 上·下, 섹터·β는 종목명 호버 — 3단에선 `.play-left`가 `display:contents`라 시세표가 손패 아래로 올라온다)·장 시작) / 오른쪽 위에 유물 줄 / 오른쪽 포지션(2줄 행 — 종목·배지·손익·매도 / 평단→현재가·원금·보유일·태그 아이콘·심지 게이지 `.fuse`(반대매매까지 남은 여유 `fuseLeft` = 건강도 1~`FUSE_FULL_HEALTH`, 초록 → 주황 `FUSE_WARM` → 빨강 = 엔진 `marginWarn`, 숫자·"담보비율/증거금률"은 툴팁만), 노출액은 행 툴팁 — 목록 스크롤·전량 매도). `.play-right`를 `display:contents`로 풀어 자식들을 `#screen-play` 그리드 영역(relic·turn·chips·ht·hand·open / pt·pos·sell)에 놓는다. 그보다 좁으면 **2단** `.play-left` | `.play-right`(포지션 최소 35vh, 모자라면 이 칸만 스크롤, 장 시작·전량 매도는 sticky). 시세표는 자동 배율에서 7행이 스크롤 없이 보여야 한다 (차트가 먼저 줄어든다). 새 UI는 이 구역 중 하나에 넣는다.
 - 뉴스 배너는 한 줄에 안 들어가면 `fitNews`가 전광판(`.marquee`)으로 흘리고, 흔들림 끔·동작 줄이기면 `.wrap`(줄바꿈). 유물 없음 안내는 `fitRelicEmpty`가 좁으면 '유물 없음'.
 - 게임 이름·메타는 `docs/demo` `<head>`의 `GAME_TITLE {ko, en, sub}`·`GAME_META {version, author, links}`에서만 읽는다 (탭 제목·타이틀 로고·전광판). 이름을 하드코딩하지 않는다.
@@ -137,6 +140,20 @@
 - 화면 전환은 탭 없이 `switchTab()`을 게임 흐름·메뉴에서만 부른다: 타이틀 '영끌 출격'/'이어하기'(`#continueBtn`, 진행 중인 판) → TR룸, 결산 → 보상 → 암시장 자동, '다음 주 개장' → TR룸. TR룸 HUD 왼쪽 ≡ 메뉴(`#menuBtn` · `#menuPanel`: 타이틀로 · 찌라시 기록 `showTipLog` · 덱 확인 · 시그널 설명서 `showSignalGuide` · 환경 설정(`settingsReturn`으로 돌아옴)). 차트 클릭 = 크게 보기 `#chartZoom`(`openChartZoom`, 오버레이가 아니라 떠 있는 창이라 장은 계속 진행, Esc가 가장 먼저 닫는다), Esc = 대상 지정 취소가 먼저, 그다음 메뉴 열기/닫기. 미확인 찌라시 결과(`tipSeen`)는 메뉴 점 `#menuDot` (`renderNav`).
 - **900px 이하**: 데스크톱 CSS(`@media (min-width: 901px)`)가 꺼지고 기존 세로 스택(최대 520px), `--ui` 1. 글자 최소 크기 규칙은 똑같다.
 - 레이아웃을 건드렸으면 1615×900, 1366×768, 1920×1080, 2560×1440, 1280×1024(2단), 모바일 폭(예: 390×844)에서 스크린샷으로 카드 잘림·겹침·시세 7행을 확인한다.
+
+## UI 리디자인 규칙
+
+이후 모든 UI 작업은 이 규칙을 따른다.
+
+1. 범위: 표현 계층(CSS, DOM 마크업, Canvas 렌더링)만 수정한다. 게임 로직, 밸런스 수치, 덱·카드 데이터, 상태 관리 코드는 수정하지 않는다. 로직과 UI를 잇는 함수명과 이벤트는 유지한다.
+2. 렌더 기준: 가로형 16:9 논리 해상도 1920x1080 기준으로 UI를 설계하고, UI 요소는 16:9 안전영역 안에만 배치한다. 배경(캔들 패턴, CRT 효과)은 21:9 같은 와이드 화면에서도 화면 끝까지 확장해 검은 띠가 보이지 않게 한다. 16:10(1280x800, 스팀 덱)에서는 안전영역을 유지하고 위아래 여백을 배경으로 채운다. 스케일은 정수배를 우선하고, image-rendering: pixelated, Canvas는 imageSmoothingEnabled=false.
+3. 디자인 토큰: tokens.css 한 파일에 색, 간격, 폰트 크기를 CSS 변수로 모은다. 다른 파일에서 색상 값을 직접 쓰지 않는다.
+4. 타이포: 폰트는 최대 2종(픽셀 한글 폰트 1, 숫자용 모노 1). 라이선스(OFL 여부)를 확인하고 보고한다. 1080p 기준 실제 픽셀로 캡션 16px 이상, 본문 20px, 강조 28px, 핵심 수치 40px 이상. 그보다 작은 글자는 쓰지 않는다.
+5. 색 의미 고정: 중립 어두운 배경 2단계 / 브랜드 포인트 1색(네온 그린) / 금색=돈·목표 / 빨강=위험·손실 / 보라·청록=희귀도와 암시장 전용. 이 외 색은 쓰지 않는다. 상승·하락 색은 [내가 정할 때까지 현재 유지].
+6. 한 화면에서 시선 우선순위는 1순위 1개, 2순위 2~3개로 제한한다. 모든 요소에 테두리 박스를 씌우지 않는다.
+7. JUICE TUNER 등 디버그 UI는 URL에 ?debug=1을 붙이거나 백틱(`) 키를 눌렀을 때만 보이게 한다.
+8. 검증: 작업마다 Playwright로 1920x1080, 1280x720, 1280x800(스팀 덱), 2560x1080(울트라와이드), 3840x2160에서 스크린샷을 찍는다. 변경 전후를 비교해 겹침, 잘림, 스크롤 발생, 와이드 화면의 검은 띠 여부를 직접 확인한다. 변경 전 스크린샷은 작업 시작 전에 먼저 shots/에 저장한다. 1280x800에서 모든 텍스트가 읽히는지 반드시 확인한다.
+9. 작업 후 보고는 5줄 이내. 내가 정하지 않은 결정을 임의로 하지 말고 목록으로 올린다.
 
 ## 수정 후 검증 (필수)
 

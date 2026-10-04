@@ -8,7 +8,7 @@ const box = (page, k) => page.evaluate(k => { const b = document.querySelector(`
   for (const [W, H] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type() === 'error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
     await page.evaluate(() => { run.slush = 3000; openShop(); renderShop(); Sound.stats.played = {}; });
     await page.waitForTimeout(200);

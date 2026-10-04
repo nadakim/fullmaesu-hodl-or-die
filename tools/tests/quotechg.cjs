@@ -9,14 +9,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920, 1080], [1366, 768], [1280, 1024], [390, 844]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
     await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
     await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(500);
     await p.evaluate(() => { window.tipChance = () => 0; });
     const first = await p.evaluate(() => ({ t: document.querySelector('[data-q] .q-chg').textContent, yd: !!document.querySelector('.q-chg .yd') }));
     ok(`${W} 1일차 장전 = 어제 0%`, first.yd && /0\.0+%|0%/.test(first.t), first.t);
     await p.evaluate(() => { run.hand = ['stk_semi', 'credit', 'stk_semi', 'stk_semi', 'stk_semi', 'stk_semi', 'stk_semi', 'stk_semi'].map(newCard); handSig = ''; renderAll(); });
-    const hand = await p.evaluate(() => { const cs = [...document.querySelectorAll('#handBox .card.gcard')]; return { n: cs.length, price: document.querySelectorAll('#handBox .c-price,#handBox .c-cost').length, clip: cs.filter(c => { const n = c.querySelector('.g-name'); return n.scrollHeight > n.clientHeight + 1; }).length, fs: cs.map(c => parseFloat(getComputedStyle(c.querySelector('.g-name')).fontSize))[0] }; });
+    const hand = await p.evaluate(() => { const cs = [...document.querySelectorAll('#handBox .card.gcard')]; return { n: cs.length, price: document.querySelectorAll('#handBox .c-price,#handBox .c-cost').length, clip: cs.filter(c => { const n = c.querySelector('.cv-name'); return n.scrollHeight > n.clientHeight + 1; }).length, fs: cs.map(c => parseFloat(getComputedStyle(c.querySelector('.cv-name')).fontSize))[0] }; });
     ok(`${W} 손패 가격 줄 없음`, hand.price === 0, hand);
     ok(`${W} 손패 이름 안 잘림`, hand.clip === 0, hand);
     await p.screenshot({ path: `${S}/qc-${W}-pre.png` });
