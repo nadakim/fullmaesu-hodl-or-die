@@ -11,7 +11,7 @@ const runDay = up => `(() => { window.tipChance = () => 0; startMarket(); while(
   for (const [W, H] of [[1920,1080],[1366,768],[390,844]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 1) 보정 없는 날 → 무대 없음 (알림만)
     await p.evaluate(() => { clearToasts(); window.rollCrit = () => 0; openPosition('semi', 1000, 1, 1, true); });

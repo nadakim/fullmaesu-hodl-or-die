@@ -16,6 +16,7 @@ for t in tools/tests/*.cjs; do echo "== $t"; node $t $OUT 2>&1 | grep -E '^FAIL|
 
 | 파일 | 보는 것 |
 |---|---|
+| layoutfinal | 확정 레이아웃: 시나리오 9종목 보유·손패 가득·긴 순자산·보유 0개 × 1920·1280×800·2560 — 겹침·잘림·스크롤 없음, 포지션 줄 통합(순서 고정·행 바로 아래·글자 안 잘림·매도), 상단 바 55u·좌측 열 171u·차트 ≥ 229u, 카드 폭 108u·호버 상승·비활성 자물쇠+툴팁, 좁은 창 폴백·왕복 |
 | smoke | CLAUDE.md 스모크 (출격 → 매수 → 장중 → 전량 매도 → 주간 결산 → 암시장 → 2주차) |
 | rm | 읽을 수 있는 시장: 시그널·뉴스·카드 EV(툴팁) |
 | tipres | 찌라시 결과 중앙 알림·효과음·찌라시 기록 |
@@ -57,3 +58,5 @@ for t in tools/tests/*.cjs; do echo "== $t"; node $t $OUT 2>&1 | grep -E '^FAIL|
 | w-tr · w-verify · w-resize | TR룸 손패 3×3·포지션 6개 / 창 크기별 표 / 창 크기 바꾸기 |
 
 **온보딩(ONBOARDING_ON)**: 1주차엔 공매도·신용·찌라시·섹터 등이 잠겨 있다. 다른 테스트는 페이지를 연 직후 `localStorage.hodl.unlockWeek = '8'`(전 시스템 해금)로 시작한다 — 새 테스트도 같은 줄을 넣고, `localStorage.clear()` 뒤에는 다시 넣는다.
+
+- **`?layout=classic`**: 확정 전투 화면 레이아웃(`lay-f`, 폭 ≥ 1200·비율 ≥ 1.45)이 기본이라, 예전 구조(손패 격자·`#positionsBox` 패널 등)를 보는 테스트는 주소에 `?layout=classic`을 붙여 연다. 확정 레이아웃 자체는 `layoutfinal.cjs`(시나리오 `?scenario=`)가 본다.

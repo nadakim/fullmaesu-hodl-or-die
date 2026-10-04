@@ -1997,9 +1997,12 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .cv-kw{font-family:var(--gf-xs),monospace;}
 .cv-hand .cv-kws{font-size:var(--fs-xs);}
 /* 이유 문구 (disabled 때만) */
-.cv-reason{display:none;position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:3;padding:calc(4 * var(--u)) calc(2 * var(--u));text-align:center;
+.cv-reason{display:none !important;position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:3;padding:calc(4 * var(--u)) calc(2 * var(--u));text-align:center;
   background:var(--bg);color:var(--text);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.2;box-shadow:0 0 0 calc(2 * var(--u)) var(--red);}
-.card.cv.disabled .cv-reason{display:block;}
+.cv-lock{display:none;position:absolute;z-index:4;right:calc(5 * var(--u));top:calc(22 * var(--u));width:calc(22 * var(--u));height:calc(22 * var(--u));padding:calc(4 * var(--u));box-sizing:border-box;color:var(--text);background:var(--bg);box-shadow:0 0 0 calc(2 * var(--u)) var(--line);}   /* 비활성: 자물쇠만 (이유는 호버 툴팁) */
+.cv-lock svg{width:100%;height:100%;display:block;}
+.card.cv.disabled .cv-lock{display:block;}
+.cv-hand .cv-lock{top:calc(28 * var(--u));right:auto;left:calc(3 * var(--u));width:calc(18 * var(--u));height:calc(18 * var(--u));padding:calc(3 * var(--u));}   /* 부채꼴에서 오른쪽 카드가 덮는 모서리를 피해 왼쪽 띠에 */
 .card.cv.disabled{opacity:1;cursor:not-allowed;box-shadow:0 0 0 calc(3 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .card.cv.disabled::after{display:block;content:'';position:absolute;inset:0;z-index:1;background:color-mix(in srgb, var(--bg) 72%, transparent);}
 .card.cv.disabled:hover{transform:none;background:var(--panel2);box-shadow:0 0 0 calc(3 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
@@ -2020,130 +2023,131 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .card.cv.picked{box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
 @media (prefers-reduced-motion: reduce){.card.cv,.card.cv.tilt:not(.disabled){transition:none;}}
 
-/* ══ 전투 화면 레이아웃 비교: A안(정보열 + 대형 차트 + 종목 목록) / B안(차트 중심) ═══════════════════
-   body.lay-ab(.lay-a/.lay-b)는 applyLayout()이 넓은 가로 화면(폭 ≥ 1200, 비율 ≥ 1.45)에서만 붙인다. 그 밖은 위의 현재 레이아웃 그대로.
-   공통: 상단 바 1줄 · 순자산/목표 바가 가장 큰 수치 · 장 시작 = 우하단 대형 CTA · 전량 매도 = 좌하단 작게 · 손패 = 하단 중앙 부채꼴 ·
-         포지션 없으면 빈 패널 없음 · 종목 등락이 전부 0이면 가격만 */
-#infoCol{display:none;}
-.layout-switch{display:none;}
+/* ══ 전투 화면 확정 레이아웃 (body.lay-f — 넓은 가로 화면에서만, 나머지는 위의 예전 레이아웃) ═══════════════════
+   기준 1080p 시작값을 --u(= px ÷ 1.75)로 옮긴 것: 상단 바 96px = 55u · 좌측 열 300px = 171u · 차트 최소 400px = 229u · 손패 카드 190px = 108u · 호버 상승 24px = 14u
+   상단 바(메뉴 · WEEK/DAY · 순자산+목표 바 · 장 속도 · 설정) / 좌측 열(현금·비자금·행동력·정산 배수·덱 확인, 아래 전량 매도) /
+   중앙(유물 줄 → 이벤트 한 줄 → 시장 지수 차트 → 부채꼴 손패 + 덱/버림 더미) / 우측(종목 시세, 보유 종목은 행 아래에 포지션 줄 통합) / 우하단 장 시작 */
+#infoCol,#stockList{display:none;}
 .top-settings{display:none;}
-@media (min-width: 901px){
-  .layout-switch{display:inline-flex;gap:calc(3 * var(--u));margin-left:auto;}
-  .layout-switch .btn-chunky{font-size:var(--fs-xs);padding:calc(2 * var(--u)) calc(6 * var(--u));}
-  .layout-switch .btn-chunky.on{--bk-ring:var(--gold);color:var(--gold);}
-  .layout-note{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--gold);align-self:center;white-space:nowrap;}
+.pile{display:none;}
+@media (min-width: 1200px) and (min-aspect-ratio: 145/100){
+  body.lay-f #screen-play.active{
+    gap:calc(6 * var(--u)) calc(14 * var(--u));padding:calc(8 * var(--u)) calc(14 * var(--u));
+    grid-template-columns:calc(171 * var(--u)) minmax(0, 1fr) calc(372 * var(--u));
+    grid-template-rows:calc(55 * var(--u)) auto auto minmax(calc(229 * var(--u)), 1fr) auto auto;
+    grid-template-areas:
+      "top  top    top"
+      "info relic  stocks"
+      "info news   stocks"
+      "info chart  stocks"
+      "info hand   stocks"
+      "sell hand   open";
+  }
+  body.lay-f .play-left,body.lay-f .play-right,body.lay-f .hand-zone{display:contents;}
+  body.lay-f #infoCol{display:flex;flex-direction:column;gap:calc(8 * var(--u));min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;grid-area:info;}
+  body.lay-f #stockList{display:flex;flex-direction:column;grid-area:stocks;min-height:0;min-width:0;gap:calc(2 * var(--u));overflow:hidden;}
+  body.lay-f .top-settings{display:inline-block;}
+  body.lay-f .hand-title,body.lay-f .pos-title{display:none;}
+
+  /* ── 상단 바 (≈96px): 메뉴 · WEEK/DAY · 순자산 + 목표 바(가장 큰 수치) · 장 속도 · 설정 ── */
+  body.lay-f .play-top{grid-area:top;align-self:stretch;margin:0;display:flex;align-items:center;gap:calc(12 * var(--u));min-width:0;}
+  body.lay-f .hud-col,body.lay-f .hud{display:contents;}
+  body.lay-f .menu-wrap{order:0;flex:none;}
+  body.lay-f #roundText{order:1;flex:none;}
+  body.lay-f .hud .day-track{order:2;flex:0 0 calc(110 * var(--u));min-width:0;}
+  body.lay-f #dayText{order:3;flex:none;}
+  body.lay-f #bossChip{order:4;flex:none;}
+  body.lay-f .balance-main{order:5;flex:1 1 0;min-width:0;margin:0;display:grid;grid-template-columns:auto minmax(0, 1fr);grid-template-areas:"total line" "total track";column-gap:calc(16 * var(--u));align-items:center;padding:calc(5 * var(--u)) calc(12 * var(--u));height:100%;box-sizing:border-box;}
+  body.lay-f .balance-main .label{display:none;}
+  body.lay-f .balance-main .total{grid-area:total;margin:0;font-size:var(--fs-p3);line-height:1.1;white-space:nowrap;}
+  body.lay-f .balance-main .target-line{grid-area:line;margin:0;font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);white-space:nowrap;gap:calc(10 * var(--u));overflow:hidden;min-width:0;}
+  body.lay-f #targetText{overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  body.lay-f .balance-main .target-track{grid-area:track;margin:0;height:calc(12 * var(--u));}
+  body.lay-f #speedBtns{order:6;flex:none;}
+  body.lay-f #topSettingsBtn{order:7;flex:none;}
+  body.lay-f .hud{white-space:nowrap;}
+  body.lay-f .balance-main .total.long{font-size:var(--fs-p3);}
+
+  /* ── 좌측 열 ── */
+  body.lay-f .assets-grid{margin:0;display:block;}
+  body.lay-f .asset-card{padding:calc(6 * var(--u)) calc(10 * var(--u));}
+  body.lay-f .asset-card .val{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);margin-top:calc(2 * var(--u));}
+  body.lay-f .turn-bar{margin:0;display:flex;flex-direction:column;align-items:stretch;gap:calc(6 * var(--u));padding:calc(8 * var(--u)) calc(10 * var(--u));}
+  body.lay-f .turn-bar > span:first-child{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--muted);}
+  body.lay-f .ap-pips{gap:calc(6 * var(--u));}
+  body.lay-f .ap-pip{width:calc(30 * var(--u));height:calc(30 * var(--u));}
+  body.lay-f .ap-text{font-size:var(--fs-v3);}
+  body.lay-f .turn-bar .pile-text{display:none;}
+  body.lay-f .turn-bar .deck-btn{align-self:stretch;}
+  body.lay-f .sell-all-btn{grid-area:sell;position:static;align-self:end;margin:0;padding:calc(5 * var(--u)) calc(8 * var(--u));font-size:var(--fs-xs);width:auto;}
+  body.lay-f .open-btn{grid-area:open;position:static;align-self:end;margin:0;padding:calc(16 * var(--u)) calc(10 * var(--u));font-size:var(--fs-p2);line-height:1.3;min-height:calc(64 * var(--u));}
+
+  /* ── 중앙: 유물 줄 · 이벤트 한 줄 · 시장 지수 차트 ── */
+  body.lay-f .play-right .relic-bar{grid-area:relic;margin:0;}
+  body.lay-f .play-right .relic-tip{grid-area:chart;align-self:start;justify-self:start;z-index:7;}
+  body.lay-f .play-left .news-row{grid-area:news;margin:0;min-width:0;}
+  body.lay-f .play-left .chart-box{grid-area:chart;height:auto;min-height:0;margin:0;}
+  body.lay-f .toast-layer{left:calc(14 * var(--u));width:min(18vw, calc(340 * var(--u)));bottom:calc(120 * var(--u));}
+
+  /* ── 손패: 부채꼴 (카드 190px ≈ 108u, 호버 시 24px ≈ 14u 상승). 겹침 간격은 칸 폭에 맞춰 자동 ── */
+  body.lay-f .hand-zone{display:contents;}
+  body.lay-f #handBox{grid-area:hand;background:none;box-shadow:none;padding:0;overflow:visible;align-self:end;}
+  body.lay-f #handBox.fan{--cw:calc(108 * var(--u));--step:min(calc(84 * var(--u)), calc((100cqw - var(--cw) - 150 * var(--u)) / var(--nm1, 1)));
+    container-type:inline-size;position:relative;display:block;height:calc(204 * var(--u));margin:0 calc(76 * var(--u));}
+  body.lay-f #handBox.fan .card.cv{position:absolute;bottom:calc(24 * var(--u));left:calc(50% - var(--cw) / 2 + var(--kx, 0) * var(--step));width:var(--cw);height:calc(162 * var(--u));aspect-ratio:auto;margin:0;
+    z-index:var(--fi, 1);transform-origin:50% 120%;transform:translateY(calc(var(--fy, 0) * var(--u))) rotate(calc(var(--fr, 0) * 1deg));animation:none;}
+  body.lay-f #handBox.fan .card.cv:not(.disabled):is(:hover,.is-hover),body.lay-f #handBox.fan .card.cv.tilt:not(.disabled),
+  body.lay-f #handBox.fan .card.cv.selected{z-index:60;transform:translateY(calc(var(--fy, 0) * var(--u) - 14 * var(--u))) rotate(0deg);}
+  body.lay-f #handBox.fan .card.cv .cv-glyph{font-size:calc(44 * var(--u));}
+  body.lay-f #handBox.fan .card.cv .cv-name,body.lay-f #handBox.fan .card.cv .cv-name.long{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
+  /* 덱 / 버림 더미 (장수 표시) */
+  body.lay-f .pile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(2 * var(--u));position:absolute;bottom:calc(14 * var(--u));width:calc(64 * var(--u));height:calc(92 * var(--u));box-sizing:border-box;
+    background:var(--panel2);box-shadow:0 0 0 calc(3 * var(--u)) var(--muted),calc(4 * var(--u)) calc(4 * var(--u)) 0 0 var(--line),calc(8 * var(--u)) calc(8 * var(--u)) 0 0 #000;font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);}
+  body.lay-f .pile b{font-family:'VT323',var(--gv-v4),monospace;font-size:var(--fs-v4);font-weight:normal;color:var(--text);line-height:1;}
+  body.lay-f .pile small{font-size:var(--fs-xs);color:var(--muted);}
+  body.lay-f .hand-zone{position:relative;}
+  body.lay-f .pile-deck{left:0;}
+  body.lay-f .pile-discard{right:0;}
+}
+@media (min-width: 1200px) and (max-width: 1500px) and (min-aspect-ratio: 145/100){
+  body.lay-f .balance-main .total.long{font-size:var(--fs-p2);}   /* 좁은 창에서 긴 금액은 한 단계 작게 — 목표 글자가 밀리지 않게 */
 }
 @media (min-width: 1200px) and (min-aspect-ratio: 145/100){
-  body.lay-ab #screen-play.active{gap:calc(6 * var(--u)) calc(14 * var(--u));padding:calc(8 * var(--u)) calc(14 * var(--u));}
-  body.lay-ab .play-top,body.lay-ab .play-left,body.lay-ab .play-right,body.lay-ab .hud-col{display:contents;}
-  body.lay-ab #infoCol{display:flex;flex-direction:column;gap:calc(8 * var(--u));min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;grid-area:info;}
-  body.lay-ab .menu-wrap{grid-area:menu;align-self:center;}
-  /* 상단 바 1줄: WEEK/DAY 진행 · 장 속도 · 설정 */
-  body.lay-ab .hud{grid-area:hud;margin:0;flex-wrap:nowrap;white-space:nowrap;align-items:center;gap:calc(8 * var(--u));}
-  body.lay-ab .hud .day-track{flex:1 1 auto;min-width:calc(60 * var(--u));max-width:calc(420 * var(--u));}
-  body.lay-ab .top-settings{display:inline-block;}
-  body.lay-ab .hand-title,body.lay-ab .pos-title{display:none;}
-  body.lay-ab .play-left .news-row{grid-area:news;margin:0;min-width:0;}
-  body.lay-ab .play-left .chart-box{grid-area:chart;height:auto;min-height:0;margin:0;}
-  body.lay-ab .play-right .relic-bar{grid-area:relic;margin:0;}
-  body.lay-ab .play-right .relic-tip{grid-area:chart;align-self:start;justify-self:start;z-index:7;}
-  body.lay-ab .play-left .section-title{grid-area:qt;margin:0;}
-  body.lay-ab .play-left .quotes{grid-area:quotes;grid-template-columns:minmax(0, 1fr);align-content:start;overflow-y:auto;overflow-x:hidden;min-height:0;margin:0;}
-  /* 순자산·목표: 화면에서 가장 큰 수치 */
-  body.lay-ab .balance-main .total{font-size:var(--fs-p3);line-height:1.15;}
-  body.lay-ab .balance-main .total.long{font-size:var(--fs-p2);}
-  body.lay-ab .balance-main .target-track{height:calc(14 * var(--u));}
-  body.lay-ab .balance-main .target-line{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);}
-  body.lay-ab .assets-grid{margin:0;}
-  body.lay-ab .asset-card .val{font-size:var(--fs-v3);font-family:'VT323',var(--gv-v3),monospace;}
-  body.lay-ab .turn-bar{margin:0;}
-  /* 부채꼴 손패 (슬롯 수는 그대로, 최대 HAND_MAX장) */
-  body.lay-ab #handBox{grid-area:hand;background:none;box-shadow:none;padding:0;overflow:visible;align-self:end;}
-  body.lay-ab #handBox.fan{display:flex;justify-content:center;align-items:flex-end;height:calc(170 * var(--u));padding:calc(30 * var(--u)) 0 calc(22 * var(--u));gap:0;grid-template-columns:none;}
-  body.lay-ab #handBox.fan .card.cv{flex:none;width:calc(88 * var(--u));height:calc(132 * var(--u));aspect-ratio:auto;margin:0 calc(-9 * var(--u));z-index:var(--fi, 1);
-    transform-origin:50% 100%;transform:translateY(calc(var(--fy, 0) * var(--u))) rotate(calc(var(--fr, 0) * 1deg));animation:none;}
-  body.lay-ab #handBox.fan .card.cv:not(.disabled):is(:hover,.is-hover),body.lay-ab #handBox.fan .card.cv.tilt:not(.disabled),
-  body.lay-ab #handBox.fan .card.cv.selected{z-index:60;transform:translateY(calc(var(--fy, 0) * var(--u) - 22 * var(--u))) rotate(0deg) scale(1.1);}
-  /* 장 시작 = 우하단 대형 CTA / 전량 매도 = 좌하단 작게 */
-  body.lay-ab .open-btn{grid-area:open;position:static;align-self:end;margin:0;padding:calc(16 * var(--u)) calc(10 * var(--u));font-size:var(--fs-p2);line-height:1.3;min-height:calc(64 * var(--u));}
-  body.lay-ab .sell-all-btn{grid-area:sell;position:static;align-self:end;justify-self:start;margin:0;padding:calc(5 * var(--u)) calc(9 * var(--u));font-size:var(--fs-xs);width:auto;max-width:100%;}
-  body.lay-ab .toast-layer{left:calc(14 * var(--u));width:min(18vw, calc(340 * var(--u)));bottom:calc(210 * var(--u));}
-  /* 종목 목록: 화살표 · 가격만(등락 전부 0) */
-  body.lay-ab .q-chg.pnl-up::before{content:'▲ ';}
-  body.lay-ab .q-chg.pnl-down::before{content:'▼ ';}
-  body.lay-ab .q-chg .yd{display:none;}
-  body.lay-ab.quotes-flat .q-chg,body.lay-ab.quotes-flat .quote-row canvas{display:none !important;}
-  body.lay-ab.quotes-flat .play-left .quote-row{grid-template-columns:minmax(0, 1fr) auto;}
-  /* 포지션이 없으면 빈 패널 없음 */
-  body.lay-ab.no-pos #positionsBox{display:none;}
+  /* 더미는 손패 칸(grid-area:hand) 양옆에 겹쳐 놓는다: 손패 칸이 .hand-zone 대신 격자 자식이라, 더미는 같은 칸에 정렬 */
+  body.lay-f #pileDeck{grid-area:hand;position:static;justify-self:start;align-self:end;margin:0 0 calc(14 * var(--u)) 0;}
+  body.lay-f #pileDiscard{grid-area:hand;position:static;justify-self:end;align-self:end;margin:0 0 calc(14 * var(--u)) 0;}
 
-  /* ── A안: [정보열 20] [차트 53] [종목 27] ── */
-  body.lay-a #screen-play.active{
-    grid-template-columns:minmax(0, 20fr) minmax(0, 53fr) minmax(0, 27fr);
-    grid-template-rows:auto auto auto minmax(0, 1fr) auto auto auto;
-    grid-template-areas:
-      "menu  hud    hud"
-      "info  news   qt"
-      "info  relic  quotes"
-      "info  chart  quotes"
-      "info  pos    quotes"
-      "info  hand   quotes"
-      "sell  hand   open";
-  }
-  body.lay-a #positionsBox{grid-area:pos;display:flex;flex-direction:row;gap:calc(6 * var(--u));overflow-x:auto;overflow-y:hidden;min-height:0;max-height:none;margin:0;padding:calc(4 * var(--u));}
-  body.lay-a #positionsBox .pos-item{flex:0 0 calc(250 * var(--u));min-width:0;}
-  body.lay-a .balance-main{margin:0;padding:calc(8 * var(--u)) calc(10 * var(--u));}
-  body.lay-a .balance-main .total{margin-top:calc(4 * var(--u));overflow:hidden;white-space:nowrap;text-overflow:clip;}
-  body.lay-a .balance-main .target-line{flex-wrap:wrap;gap:0 calc(8 * var(--u));font-size:var(--fs-v1);}
-  body.lay-a .asset-card .val{font-size:var(--fs-v2);}
-  body.lay-a .turn-bar{display:grid;grid-template-columns:auto 1fr;gap:calc(5 * var(--u)) calc(8 * var(--u));align-items:center;padding:calc(6 * var(--u));}
-  body.lay-a .turn-bar .pile-text{grid-column:1 / -1;}
-  body.lay-a .turn-bar .mult-preview{grid-column:1 / -1;}
-  body.lay-a .turn-bar .deck-btn{grid-column:1 / -1;}
-  body.lay-a .play-left .quote-row{grid-template-columns:minmax(0, 1fr) calc(52 * var(--u)) auto auto;padding:calc(2 * var(--u)) calc(7 * var(--u));gap:calc(6 * var(--u));}
-  body.lay-a .play-left .quote-row canvas{display:block;width:calc(52 * var(--u));height:calc(16 * var(--u));}
-  body.lay-a .play-left .quote-row .q-price,body.lay-a .play-left .quote-row .q-chg{grid-column:auto;grid-row:auto;}
-  body.lay-a .play-left .quote-row .q-name{grid-row:auto;}
-  body.lay-a .play-left .quote-row .q-chg{min-width:calc(62 * var(--u));}
-  body.lay-a .play-left .quotes{gap:calc(2 * var(--u));}
-  body.lay-a .play-left .q-name{line-height:1.15;}
-  body.lay-a .play-left .q-sig{margin-top:0;line-height:1.1;}
-  body.lay-a .play-left .quote-row{padding:calc(1 * var(--u)) calc(7 * var(--u));}
-
-  /* ── B안: 차트 70% + 슬림 사이드 30%, 포지션은 차트 위 마커 ── */
-  body.lay-b #screen-play.active{
-    grid-template-columns:minmax(0, 14fr) minmax(0, 56fr) minmax(0, 30fr);
-    grid-template-rows:auto auto auto auto minmax(0, 1fr) auto auto;
-    grid-template-areas:
-      "menu  hud    hud"
-      "bal   bal    bal"
-      "news  news   info"
-      "relic relic  info"
-      "chart chart  quotes"
-      "sell  hand   quotes"
-      "sell  hand   open";
-  }
-  body.lay-b .play-left .section-title{display:none;}
-  body.lay-b .balance-main{grid-area:bal;margin:0;display:grid;grid-template-columns:auto minmax(0, 1fr);grid-template-areas:"total line" "total track";column-gap:calc(18 * var(--u));align-items:center;padding:calc(6 * var(--u)) calc(14 * var(--u));}
-  body.lay-b .balance-main .label{display:none;}
-  body.lay-b .balance-main .total{grid-area:total;margin:0;font-size:var(--fs-p3);}
-  body.lay-b .balance-main .target-line{grid-area:line;margin:0;}
-  body.lay-b .balance-main .target-track{grid-area:track;margin:0;height:calc(16 * var(--u));}
-  body.lay-b #infoCol{gap:calc(5 * var(--u));}
-  body.lay-b .assets-grid .asset-card{flex-direction:row;align-items:baseline;gap:calc(8 * var(--u));padding:calc(3 * var(--u)) calc(8 * var(--u));}
-  body.lay-b .turn-bar{flex-wrap:wrap;gap:calc(4 * var(--u)) calc(8 * var(--u));}
-  body.lay-b .turn-bar .deck-btn{display:none;}
-  body.lay-b .turn-bar .pile-text{white-space:nowrap;font-size:var(--fs-xs);}
-  body.lay-b .play-left .quotes{gap:calc(2 * var(--u));}
-  body.lay-b .play-left .quote-row{grid-template-columns:minmax(0, 1fr) auto auto;padding:calc(1 * var(--u)) calc(6 * var(--u));gap:calc(6 * var(--u));}
-  body.lay-b .play-left .quote-row canvas,body.lay-b .play-left .q-sig{display:none;}
-  body.lay-b .play-left .quote-row .q-price,body.lay-b .play-left .quote-row .q-chg{grid-column:auto;grid-row:auto;}
-  body.lay-b .play-left .quote-row .q-name{grid-row:auto;}
-  body.lay-b .play-left .quote-row .q-chg{min-width:calc(58 * var(--u));}
-  body.lay-b #positionsBox{grid-area:chart;align-self:start;justify-self:start;z-index:6;width:max-content;max-width:42%;margin:calc(26 * var(--u)) 0 0 calc(6 * var(--u));padding:0;
-    background:none;box-shadow:none;display:flex;flex-direction:column;gap:calc(4 * var(--u));overflow:visible;max-height:none;pointer-events:none;}
-  body.lay-b #positionsBox .pos-item{pointer-events:auto;background:color-mix(in srgb, var(--bg) 86%, transparent);padding:calc(3 * var(--u)) calc(6 * var(--u));}
-  body.lay-b #positionsBox .p-l2 .detail:nth-of-type(2){display:none;}
+  /* ── 우측: 종목 시세 + 포지션 통합 (행 순서는 종목 고정, 포지션 줄은 해당 종목 행 바로 아래) ── */
+  body.lay-f #stockList .section-title{flex:none;margin:0 0 calc(8 * var(--u));}
+  body.lay-f #quoteBox,body.lay-f #positionsBox{display:contents;}
+  body.lay-f.no-pos #positionsBox{display:none;}
+  body.lay-f .quote-row{display:grid;grid-template-columns:minmax(0, 1fr) calc(54 * var(--u)) calc(66 * var(--u)) calc(66 * var(--u));gap:calc(6 * var(--u));align-items:center;padding:calc(1 * var(--u)) calc(8 * var(--u));min-height:0;position:relative;}
+  body.lay-f .quote-row canvas{display:block;width:calc(54 * var(--u));height:calc(14 * var(--u));}
+  body.lay-f .quote-row .q-price,body.lay-f .quote-row .q-chg{grid-column:auto;grid-row:auto;}
+  body.lay-f .quote-row .q-name{grid-row:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;}
+  body.lay-f .q-pb{margin-left:calc(4 * var(--u));}
+  body.lay-f .q-pb .lev-badge{margin-left:calc(2 * var(--u));}
+  body.lay-f .q-sig{display:inline;font-size:0;margin:0 0 0 calc(5 * var(--u));}   /* 시그널은 아이콘만 (적중률은 호버 툴팁) */
+  body.lay-f .q-sig .sig-chip{font-size:var(--fs-xs);vertical-align:middle;}
+  body.lay-f .q-chg.pnl-up::before{content:'▲ ';}
+  body.lay-f .q-chg.pnl-down::before{content:'▼ ';}
+  body.lay-f .q-chg .yd{display:none;}
+  body.lay-f.quotes-flat .q-chg,body.lay-f.quotes-flat .quote-row canvas{display:none !important;}
+  body.lay-f.quotes-flat .quote-row{grid-template-columns:minmax(0, 1fr) auto;}
+  /* 보유 행: 왼쪽 강조 바 + 둘째 줄 */
+  body.lay-f .quote-row.held{border-radius:0;}
+  body.lay-f .quote-row.held::before,body.lay-f .pos-line::before{content:'';position:absolute;left:0;top:0;bottom:0;width:calc(4 * var(--u));background:var(--muted);}
+  body.lay-f .quote-row.held-up::before,body.lay-f .pos-line.pl-up::before{background:var(--green);}
+  body.lay-f .quote-row.held-down::before,body.lay-f .pos-line.pl-down::before{background:var(--red);}
+  body.lay-f .pos-line{display:flex;align-items:center;flex-wrap:nowrap;gap:calc(4 * var(--u));position:relative;margin:calc(-2 * var(--u)) 0 0;padding:calc(2 * var(--u)) calc(5 * var(--u)) calc(5 * var(--u)) calc(10 * var(--u));min-width:0;overflow:hidden;}
+  body.lay-f .pos-line .detail{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);color:var(--text2);white-space:nowrap;line-height:1.2;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;}
+  body.lay-f .pos-line .val{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);white-space:nowrap;margin-left:auto;line-height:1.2;flex:none;}
+  body.lay-f .pos-line .name{flex:none;}
+  body.lay-f .pos-line .sell-btn{flex:none;padding:0 calc(5 * var(--u));min-height:0;font-size:var(--fs-xs);line-height:1.3;}
+  body.lay-f .pos-line .p-icons{flex:none;font-size:var(--fs-xs);}
+  /* 심지 게이지는 포지션 줄 아래 가장자리의 얇은 선으로 (글자 자리를 안 먹게) */
+  body.lay-f .pos-line .p-margin{position:absolute;left:calc(10 * var(--u));right:calc(5 * var(--u));bottom:calc(1 * var(--u));height:calc(3 * var(--u));display:block;}
+  body.lay-f .pos-line .fuse{width:100%;height:100%;margin:0;}
 }
 </style>
 </head>
@@ -2217,7 +2221,6 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
           <span id="dayText">DAY 1/5 · 장전</span>
           <span class="boss-chip" id="bossChip" hidden></span>
           <div class="speed-btns" id="speedBtns" title="장중 속도 (키보드 1~4). 결과·확률은 그대로"></div>
-          <span class="layout-switch" id="layoutSwitch" title="전투 화면 레이아웃 비교 (현재 / A안 / B안) — 고르기 전 임시 스위치"></span>
           <button class="btn-chunky sm top-settings" id="topSettingsBtn" title="환경 설정" aria-label="환경 설정">⚙</button>
         </div>
         <div class="fss" id="fssBox" title="시장 카드(비둘기·매파·CEO 트윗·리딩방·작전 세력)를 쓸 때마다 쌓인다. 가득 차면 제재: 과징금 / 매수 금지 / 강제 청산.">
@@ -2251,6 +2254,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
     </div>
 
     <aside class="info-col" id="infoCol" aria-label="정보 열"></aside>
+    <div class="stock-list" id="stockList" aria-label="종목 시세"></div>
 
     <div class="play-left tx-grid">
       <div class="news-row">
@@ -2300,7 +2304,11 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
         <span class="px-tag">손패</span>
         <span id="handHint">카드를 눌러 사용</span>
       </div>
-      <div class="hand px-panel tx-felt" id="handBox"></div>
+      <div class="hand-zone" id="handZone">
+        <div class="pile pile-deck" id="pileDeck" title="뽑을 더미 — 남은 장수"><b id="pileDeckN">0</b><span>덱</span></div>
+        <div class="hand px-panel tx-felt" id="handBox"></div>
+        <div class="pile pile-discard" id="pileDiscard" title="버린 더미 · 소멸한 카드"><b id="pileDiscardN">0</b><span>버림</span><small id="pileExhN">소멸 0</small></div>
+      </div>
 
       <button class="btn-chunky breathe open-btn" id="openBtn">▶ 장 시작</button>
 
@@ -2498,38 +2506,33 @@ function uiScaleFor(mode){
   const fit = Math.floor(Math.min(window.innerWidth / UI_MIN_UNITS_W, window.innerHeight / UI_MIN_UNITS_H) / UI_SCALE_STEP) * UI_SCALE_STEP;
   return clampUi(Math.max(auto, Math.min(auto + off, fit)));
 }
-/* ── 전투 화면 레이아웃 비교: 현재(classic) / A안 / B안 (UI 전용, 엔진 무관) ──
-   A·B는 넓은 가로 화면(폭 ≥ 1200, 가로세로비 ≥ 1.45)에서만 켜지고, 그보다 좁으면 현재 레이아웃으로 돌아간다.
-   A·B일 때만 정보 요소(순자산·현금·행동력·칩·금감원)를 #infoCol로 옮긴다 (id·렌더 함수는 그대로). 주소 ?layout=A|B가 설정보다 우선 */
+/* ── 전투 화면 확정 레이아웃 (UI 전용, 엔진 무관) ──
+   넓은 가로 화면(폭 ≥ 1200, 가로세로비 ≥ 1.45)에서만 켜지고(body.lay-f), 그보다 좁거나 주소가 ?layout=classic이면 예전 레이아웃(classic) 그대로.
+   켜질 때만 정보 요소(현금·행동력·칩·금감원)를 #infoCol로, 종목 시세·포지션을 #stockList로 옮긴다 (id·렌더 함수는 그대로) */
 const LAYOUT_MQ = '(min-width: 1200px) and (min-aspect-ratio: 145/100)';
-const layoutWanted = () => { const q = new URLSearchParams(location.search).get('layout'); return q === 'A' || q === 'B' ? q : settings.layout; };
-const layoutNow = () => { const w = layoutWanted(); return (w === 'A' || w === 'B') && window.matchMedia(LAYOUT_MQ).matches ? w : 'classic'; };
+const layoutNow = () => new URLSearchParams(location.search).get('layout') !== 'classic' && window.matchMedia(LAYOUT_MQ).matches ? 'F' : 'classic';
 let layoutEls = null, layoutHome = null;
 function placeLayout(L){
   if(!layoutEls){
-    layoutEls = { bal: $('balanceBox'), assets: document.querySelector('.play-top .assets-grid'), turn: document.querySelector('.turn-bar'), chips: $('chipBox'), fss: $('fssBox') };
+    layoutEls = { assets: document.querySelector('.play-top .assets-grid'), turn: document.querySelector('.turn-bar'), chips: $('chipBox'), fss: $('fssBox'),
+                  qt: document.querySelector('.play-left .section-title'), quotes: $('quoteBox'), positions: $('positionsBox') };
     layoutHome = {};
     Object.keys(layoutEls).forEach(k => { const c = document.createComment('home:' + k); layoutEls[k].parentNode.insertBefore(c, layoutEls[k]); layoutHome[k] = c; });
   }
-  const col = $('infoCol'), want = L === 'A' ? ['bal', 'assets', 'fss', 'turn', 'chips'] : L === 'B' ? ['assets', 'turn', 'fss', 'chips'] : [];
-  Object.keys(layoutEls).forEach(k => { if(want.indexOf(k) < 0 && layoutEls[k].parentNode === col) layoutHome[k].parentNode.insertBefore(layoutEls[k], layoutHome[k].nextSibling); });
-  want.forEach(k => { if(layoutEls[k].parentNode !== col) col.appendChild(layoutEls[k]); });
+  const dest = L === 'F' ? { assets: 'infoCol', fss: 'infoCol', turn: 'infoCol', chips: 'infoCol', qt: 'stockList', quotes: 'stockList', positions: 'stockList' } : {};
+  Object.keys(layoutEls).forEach(k => {
+    const el = layoutEls[k];
+    if(dest[k]) $(dest[k]).appendChild(el);
+    else if(el.parentNode.id === 'infoCol' || el.parentNode.id === 'stockList') layoutHome[k].parentNode.insertBefore(el, layoutHome[k].nextSibling);
+  });
 }
 function applyLayout(){
   const L = layoutNow();
   placeLayout(L);
   document.body.dataset.layout = L;
-  document.body.classList.toggle('lay-ab', L !== 'classic');
-  document.body.classList.toggle('lay-a', L === 'A');
-  document.body.classList.toggle('lay-b', L === 'B');
-  const sw = $('layoutSwitch'), cur = layoutWanted();
-  const narrow = (cur === 'A' || cur === 'B') && L === 'classic';   // 창이 좁아 A·B를 못 켠 경우 알려 준다
-  const html = SETTING_OPTIONS.layout.map(([v, t]) => `<button class="btn-chunky sm ${v === cur ? 'on' : ''}" data-layout-set="${v}">${t}</button>`).join('') + (narrow ? '<span class="layout-note">창이 좁음(폭 1200+ · 가로형 필요)</span>' : '');
-  if(sw.dataset.h !== html){ sw.dataset.h = html; sw.innerHTML = html; }
+  document.body.classList.toggle('lay-f', L === 'F');
 }
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-layout-set]');
-  if(b){ settings.layout = b.dataset.layoutSet; saveSettings(); try { const u = new URL(location.href); u.searchParams.delete('layout'); history.replaceState(null, '', u); } catch(err) {} layoutUi(); return; }
   if(e.target.closest('#topSettingsBtn')){ settingsReturn = currentTab; switchTab('settings'); }
 });
 
@@ -2595,7 +2598,7 @@ function chartSeries(target, mode){
   return { data: cs.length ? cs : [{ open: prev, close: prev, high: prev, low: prev, gap: 0 }], slots: TICKS_PER_DAY, ref: prev };
 }
 const DAILY_SLOTS = 20;   // 일봉 탭에 보이는 날 수
-function renderChart(series, markers){
+function renderChart(series){
   if(!cc.clientWidth) return;
   const dpr = window.devicePixelRatio || 1;
   const k = Math.max(1, Math.round(uiScale * dpr));   // 기준 1px = 실제 픽셀 수 (배율 × 화면 밀도, 정수로 반올림해 픽셀이 고르게)
@@ -2604,7 +2607,7 @@ function renderChart(series, markers){
   cctx.imageSmoothingEnabled = false;
   cctx.fillStyle = '#000';
   cctx.fillRect(0,0,cc.width,cc.height);
-  drawCandles(cctx, cc.width, cc.height, series.data, k, { slots: series.slots, grid: true, priceLine: true, refLine: series.ref, geom: chartGeom, markers: markers || null });
+  drawCandles(cctx, cc.width, cc.height, series.data, k, { slots: series.slots, grid: true, priceLine: true, refLine: series.ref, geom: chartGeom });
 }
 
 /* 캔들 그리기 (메인 차트 · 타이틀 배경 공용). data를 slots칸에 왼쪽부터, offsetX(px)만큼 왼쪽으로 밀어서 그린다.
@@ -2625,7 +2628,7 @@ function drawCandles(ctx, W, H, data, k, o){
   }
   if(data.length===0) return;
 
-  const refs = (o.refLine ? [o.refLine] : []).concat((o.markers || []).map(m => m.price));   // (S7-15) 전일 종가 기준선도 화면 안에 들어오게
+  const refs = o.refLine ? [o.refLine] : [];   // (S7-15) 전일 종가 기준선도 화면 안에 들어오게
   const maxP = o.maxP !== undefined ? o.maxP : Math.max(...data.map(c=>c.high), ...refs)*1.02;
   const minP = o.minP !== undefined ? o.minP : Math.min(...data.map(c=>c.low), ...refs)*0.98;
   const range = maxP-minP||1;
@@ -2679,15 +2682,6 @@ function drawCandles(ctx, W, H, data, k, o){
     }
   });
 
-  (o.markers || []).forEach(m => {   // (B안) 보유 포지션 평단선: 금색 점선 + 라벨
-    const my = scaleY(m.price);
-    ctx.fillStyle = '#ffd700';
-    for(let x = 0; x < W; x += 8*k) ctx.fillRect(x, my, 5*k, k);
-    ctx.font = (8*k) + 'px "Press Start 2P","GP8",monospace';
-    const tw = ctx.measureText(m.label).width + 6*k, ty = Math.min(H - 12*k, Math.max(0, my - 12*k));
-    ctx.fillStyle = '#000'; ctx.fillRect(W - tw - 4*k, ty, tw, 11*k);
-    ctx.fillStyle = '#ffd700'; ctx.fillText(m.label, W - tw - k, ty + 9*k);
-  });
   if(o.refLine){   // 전일 종가: 회색 긴 점선 + 'PREV' 표시
     const ry = scaleY(o.refLine);
     ctx.fillStyle = '#8a96c4';
@@ -3993,6 +3987,7 @@ const CARD_TYPE_ICON = {
 };
 const cardTypeKind = card => card.type === 'stock' ? 'stock' : card.type === 'hold' ? 'hold' : card.type === 'status' ? 'status' : 'action';   // 매수·매도·방어·리포트 카드는 '행동'
 const CARD_TYPE_NAME = { stock:'종목 카드', action:'행동 카드', hold:'홀드 카드', status:'상태 카드' };
+const CARD_LOCK_ICON = `<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path d="M2 3V2h1V1h2v1h1v1H5V2H3v1z" fill="currentColor"/><path d="M1 3h6v5H1z" fill="currentColor"/><path d="M3 5h2v1H3z" fill="var(--bg)"/></svg>`;
 const CARD_RARITY_NAME = { common:'일반', uncommon:'고급', rare:'희귀', legendary:'전설', mythic:'신화' };
 function cardKeywords(card){
   const k = [];
@@ -4032,7 +4027,8 @@ function cardView(card, o){
       <div class="cv-name${card.name.length >= 6 ? ' long' : ''}">${card.name}</div>
       <div class="cv-line">${cardShort(card)}</div>
       <div class="cv-foot"><span class="cv-type k-${kind}" title="${CARD_TYPE_NAME[kind]}">${CARD_TYPE_ICON[kind]}</span><span class="cv-kws">${kws}${tags}</span></div>
-      <div class="cv-reason">${o.reason || ''}</div>
+      <div class="cv-reason" hidden>${o.reason || ''}</div>
+      ${o.reason ? `<span class="cv-lock" aria-label="사용 불가: ${o.reason}">${CARD_LOCK_ICON}</span>` : ''}
     </div>`;
 }
 function handCardHtml(card, o){ return cardView(card, Object.assign({}, o, { hand: true })); }
@@ -4082,7 +4078,7 @@ function showCardTip(el){
   cardTipEl.innerHTML = `<b>${card.name}</b>
     <span class="ct-meta">${TYPE_LABEL[card.type]} · ${RARITY_LABEL[card.rarity]} · 행동력 ${card.type === 'status' ? '—' : ap}${card.exhaust ? ' · 소멸' : ''}${card.target ? ' · 대상 ' + TARGET_LABEL[card.target] : ''}${stock ? ` · ₩${formatKrw(idx >= 0 && run ? stockCost(stock) : stock.cost)}${idx >= 0 && run ? ` · 현재가 ${fmtPrice(assets[stock.id].price)}` : ''} · ${stock.sector} · β ${stock.beta} · 변동성 ${stock.volatility}` : ''}</span>
     ${card.tags.length ? `<span class="ct-meta">태그 ${tagNames(card.tags)}${topTags().some(t => card.tags.indexOf(t) >= 0) ? ' — 내 덱 주력 태그 (보상·암시장 +' + Math.round(TAG_BIAS * 100) + '%)' : ''}</span>` : ''}${card.upgraded ? `<span class="ct-meta">✦ 강화판 — 원래: ${CARD_BY_ID[card.base].desc}</span>` : canUpgrade(card.id) ? `<span class="ct-meta">✦ 강화하면: ${CARD_BY_ID[card.id + '+'].desc}${CARD_BY_ID[card.id + '+'].ap !== card.ap ? ` (행동력 ${CARD_BY_ID[card.id + '+'].ap})` : ''}</span>` : ''}
-    ${settleColor(cardDesc(card))}${cardBossNote(card, idx)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
+    ${el.classList.contains('disabled') && el.querySelector('.cv-reason') && el.querySelector('.cv-reason').textContent ? `<span class="ct-meta" style="color:var(--red)">🔒 ${el.querySelector('.cv-reason').textContent}</span>` : ''}${settleColor(cardDesc(card))}${cardBossNote(card, idx)}${ev ? `<span class="ct-ev ${ev.cls}">${ev.text} — ${ev.title.replace(/\n/g, ' · ')}</span>` : ''}${stock && idx >= 0 && run && run.phase === 'premarket' ? cardSettleView(stock.id) : ''}`;
   cardTipEl.hidden = false;
   const r = el.getBoundingClientRect(), t = cardTipEl.getBoundingClientRect();
   let x = r.left, y = r.top - t.height - 6;
@@ -4186,8 +4182,8 @@ const dispChg = a => showYday() ? a.lastDayChg : a.price / a.dayOpen - 1;
 function renderMainChart(){
   const isIdx = chartTarget === 'idx';
   const a = isIdx ? null : assets[chartTarget];
-  renderChart(chartSeries(chartTarget, 'day'), document.body.classList.contains('lay-b') && !isIdx ? run.positions.filter(p => p.assetId === chartTarget).map(p => ({ price: avgPrice(p), label: (p.dir < 0 ? 'SHORT ' : '평단 ') + fmtPrice(avgPrice(p)) })) : null);
-  $('chartLabel').textContent = isIdx ? 'IDX' : STOCK_BY_ID[chartTarget].name;
+  renderChart(chartSeries(chartTarget, 'day'));
+  $('chartLabel').textContent = isIdx ? (document.body.classList.contains('lay-f') ? '시장 지수' : 'IDX') : STOCK_BY_ID[chartTarget].name;
   $('chartLabel').title = isIdx ? '시장 전체 흐름(지수). 종목은 이 흐름을 베타(β)만큼 따라간다 — β 2면 두 배로, 인버스는 반대로. 점선 = 전일 종가' : '점선 = 전일 종가';
   $('marketPriceText').textContent = isIdx ? Math.round(marketPrice).toLocaleString() : fmtPrice(a.price);
   const chg = isIdx ? 0 : dispChg(a);
@@ -4203,9 +4199,9 @@ function showChart(target){
 
 /* ── 종목 시세판 (클릭 = 큰 차트, 찌라시 대상 지정 중이면 대상 선택) ── */
 function buildQuotes(){
-  $('quoteBox').innerHTML = STOCKS.map(s => `
-    <div class="quote-row" data-q="${s.id}">
-      <div class="q-name" title="${s.name} · ${s.sector} · β${s.beta} · 변동성 ${s.volatility}">${s.name}<span class="q-lv" hidden></span><span class="q-tag"></span><span class="q-sig"></span></div>
+  $('quoteBox').innerHTML = STOCKS.map((s, i) => `
+    <div class="quote-row" data-q="${s.id}" style="order:${i * 2}">
+      <div class="q-name" title="${s.name} · ${s.sector} · β${s.beta} · 변동성 ${s.volatility}">${s.name}<span class="q-pb"></span><span class="q-lv" hidden></span><span class="q-tag"></span><span class="q-sig"></span></div>
       <canvas width="64" height="18"></canvas>
       <div class="q-price"></div>
       <div class="q-chg"></div>
@@ -4314,6 +4310,7 @@ function renderTurn(){
   $('apPips').innerHTML = pips;
   $('apText').textContent = `${run.ap}/${maxAp()}`;
   $('pileText').textContent = `덱 ${run.drawPile.length} · 버림 ${run.discard.length} · 소멸 ${run.exhausted.length}`;
+  $('pileDeckN').textContent = run.drawPile.length; $('pileDiscardN').textContent = run.discard.length; $('pileExhN').textContent = '소멸 ' + run.exhausted.length;
   renderMultPreview();
 
   const chips = [];
@@ -4426,17 +4423,18 @@ function renderHand(){
     handSig = sig;
     const compact = handCompact();
     const cols = compact ? HAND_COMPACT_COLS : run.hand.length > HAND_GRID_CELLS ? HAND_GRID_WIDE_COLS : HAND_GRID_COLS;   // 모바일: 10장(HAND_MAX)이면 4열
-    const fan = document.body.classList.contains('lay-ab');   // A·B안: 하단 중앙 부채꼴 (슬롯 수 HAND_MAX는 그대로)
+    const fan = document.body.classList.contains('lay-f');   // 확정 레이아웃: 하단 중앙 부채꼴 (슬롯 수 HAND_MAX는 그대로)
     box.classList.toggle('fan', fan);
     box.classList.toggle('compact', compact);
     box.classList.toggle('g4', !compact && cols === HAND_GRID_WIDE_COLS);
-    const n = run.hand.length, fanStep = Math.min(4.5, 36 / Math.max(1, n));
+    const n = run.hand.length, fanStep = Math.min(3.2, 24 / Math.max(1, n));
+    box.style.setProperty('--nm1', String(Math.max(1, n - 1)));
     const cells = fan ? n : compact ? cols * Math.max(1, Math.ceil(run.hand.length / cols)) : cols * HAND_GRID_ROWS;   // 컴팩트: 필요한 행만, 마지막 행의 빈 칸만 점선 슬롯
     box.innerHTML = run.hand.map((inst, i) => {
           const card = CARD_BY_ID[inst.id];
           const cls = (usable[i] === '1' ? '' : 'disabled' + (handBossBlock(i) ? ' boss-blocked' : '')) + (i === selectedIdx ? ' selected' : '') + (usable[i] === '1' && boostsSettle(i) ? ' boost' : '');
           const cost = card.stock ? stockCost(STOCK_BY_ID[card.stock]) : 0;
-          const ft = i - (n - 1) / 2, fanStyle = fan ? ` style="--fr:${(ft * fanStep).toFixed(2)};--fy:${(ft * ft * (n > 6 ? 1.1 : 1.6)).toFixed(2)};--fi:${i + 1}"` : '';
+          const ft = i - (n - 1) / 2, fanStyle = fan ? ` style="--kx:${ft.toFixed(2)};--fr:${(ft * fanStep).toFixed(2)};--fy:${(ft * ft * (n > 6 ? 0.55 : 0.9)).toFixed(2)};--fi:${i + 1}"` : '';
           return handCardHtml(card, { attrs: `data-idx="${i}"${fanStyle}`, cls, cost, ap: cardCost(card), reason: usable[i] === '1' ? '' : cardReason(i) });
         }).join('') + '<div class="g-slot"></div>'.repeat(Math.max(0, cells - run.hand.length));   // 빈 칸 = 점선 슬롯
     if(deal) playDeal(box);
@@ -4484,12 +4482,22 @@ function orderIcons(p){
 function renderPositions(){
   const box = $('positionsBox');
   const sig = run.positions.map(p => [p.id, p.lev, p.dir, Math.round(p.principal), p.stopLoss, p.takeProfit, p.trailing, p.protectedToday, p.diamond, p.daysHeld].join(':')).join() + '|' + run.relics.join()
-    + '|' + run.noSellToday + run.allProtectedToday;
+    + '|' + run.noSellToday + run.allProtectedToday + '|' + document.body.dataset.layout;
   if(sig !== posSig){
     posSig = sig;
+    const fin = document.body.classList.contains('lay-f');   // 확정 레이아웃: 포지션 줄이 종목 시세 행 바로 아래에 붙는다
     box.innerHTML = run.positions.length === 0
       ? `<div class="empty-note pos-empty">── NO POSITION ──<small>장전에 종목 카드를 써서 매수하세요</small></div>`
-      : run.positions.map(p => `
+      : fin ? run.positions.map(p => `
+        <div class="pos-item pos-line px-panel" data-id="${p.id}" data-asset="${p.assetId}" style="order:${STOCKS.findIndex(s => s.id === p.assetId) * 2 + 1}">
+          <span class="detail pl-days">보유 ${p.daysHeld}일째</span>
+          <span class="detail" data-f="price"></span>
+          <span class="detail">원금 ${formatKrw(p.principal)}</span>
+          <span class="val" data-f="pnl"></span>
+          ${orderIcons(p) ? `<span class="p-icons">${orderIcons(p)}</span>` : ''}
+          ${isMarginable(p) ? '<span class="p-margin"><span class="fuse" data-f="gauge"><i class="fz-cord"></i></span></span>' : ''}
+          <button class="btn-chunky sm sell-btn" data-sell="${p.id}" ${canSell(p) ? '' : 'disabled'}>매도</button>
+        </div>`).join('') : run.positions.map(p => `
         <div class="pos-item px-panel" data-id="${p.id}">
           <div class="p-l1">
             <span class="name">${p.name}${p.dir < 0 ? '<span class="lev-badge short">숏</span>' : ''}${p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : ''}</span>
@@ -4504,7 +4512,18 @@ function renderPositions(){
           </div>
         </div>`).join('');
   }
-  document.body.classList.toggle('no-pos', run.positions.length === 0);   // A·B안: 포지션이 없으면 우측/하단 빈 패널을 없앤다
+  document.body.classList.toggle('no-pos', run.positions.length === 0);   // 확정 레이아웃: 포지션이 없으면 빈 패널 없음
+  STOCKS.forEach(st => {   // 보유 종목 행: 왼쪽 강조 바 색(수익 초록 · 손실 빨강)
+    const row = document.querySelector(`[data-q="${st.id}"]`);
+    if(!row) return;
+    const mine = run.positions.filter(p => p.assetId === st.id), sum = mine.reduce((a, p) => a + posPnl(p), 0);
+    const pb = [...new Set(mine.map(p => (p.dir < 0 ? '<span class="lev-badge short">숏</span>' : '') + (p.lev > 1 ? `<span class="lev-badge lev${p.lev}">${p.lev}x</span>` : '')).filter(Boolean))].join('');   // 레버리지·숏 배지는 종목 행 이름 옆에
+    const pbEl = row.querySelector('.q-pb');
+    if(pbEl && pbEl.innerHTML !== pb) pbEl.innerHTML = pb;
+    row.classList.toggle('held', mine.length > 0);
+    row.classList.toggle('held-up', mine.length > 0 && sum >= 0);
+    row.classList.toggle('held-down', mine.length > 0 && sum < 0);
+  });
   const targets = selectedTargets('position');
   run.positions.forEach(p => {
     const el = box.querySelector(`[data-id="${p.id}"]`);
@@ -4515,7 +4534,7 @@ function renderPositions(){
     const danger = posInDanger(p);
     el.classList.toggle('fx-danger', danger);
     el.classList.toggle('px-panel-red', danger); el.classList.toggle('px-panel', !danger);   // 반대매매 경고 = 위험 패널
-    el.querySelector('[data-f=price]').textContent = `평단 ${fmtPrice(avgPrice(p))} → ${fmtPrice(assets[p.assetId].price)}`;
+    el.querySelector('[data-f=price]').textContent = document.body.classList.contains('lay-f') ? `평단 ${fmtPrice(avgPrice(p))}→${fmtPrice(assets[p.assetId].price)}` : `평단 ${fmtPrice(avgPrice(p))} → ${fmtPrice(assets[p.assetId].price)}`;
     const tip = `${p.name} · 원금 ₩${formatKrw(p.principal)} · 노출 ${fmtMoney(exposure(p))} · 보유 ${p.daysHeld}일`
       + (isMarginable(p) ? ` · ${marginText(p)}${isProtected(p) ? ' · 면제' : ''}` : '');
     if(el.title !== tip) el.title = tip;   // 노출액은 행 툴팁으로
@@ -6196,14 +6215,13 @@ const SETTING_OPTIONS = {
   fxSpeed: [['normal', '보통'], ['fast', '빠름'], ['min', '최소']],
   bgmVol: [[0, '0'], [25, '25'], [40, '40'], [50, '50'], [75, '75'], [100, '100']],
   uiSize: [['small', '작게'], ['auto', '자동'], ['large', '크게'], ['xlarge', '매우 크게']],
-  fontSize: [['normal', '보통'], ['large', '크게']],
-  layout: [['classic', '현재'], ['A', 'A안'], ['B', 'B안']]
+  fontSize: [['normal', '보통'], ['large', '크게']]
 };
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', sound: true, chainFx: true, unlockTips: true, playtest: false,
                            sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal',
-                           uiSize: 'auto', fontSize: 'normal', layout: 'classic' };
+                           uiSize: 'auto', fontSize: 'normal' };
 function loadSettings(){
   const s = Object.assign({}, DEFAULT_SETTINGS);
   let saved = null;
@@ -6467,6 +6485,33 @@ function tunerReset(){
 /* ══════════════════════════════════════════════════════════
    흐름 제어 — 탭 전환, 새 판 시작, 입력, 게임 루프
 ══════════════════════════════════════════════════════════ */
+/* ── 디버그 시나리오: 주소 ?scenario=full | nine,hand,long,multi,empty 로 화면 상태를 강제로 만든다 (UI 검증 전용, 일반 플레이에선 주소에 없다)
+   nine = 9종목 전부 보유(수익·손실 섞어서) · multi = 한 종목에 포지션 2개 · hand = 손패 HAND_MAX장 · long = 순자산 123억 4,567만 · empty = 보유 0개 · full = nine+hand+long
+   엔진 상태를 직접 바꾸므로 이 판의 결과는 의미 없다 */
+function applyScenario(){
+  const q = new URLSearchParams(location.search).get('scenario');
+  if(!q || !run) return;
+  const list = q === 'full' ? ['nine', 'hand', 'long'] : q.split(',');
+  if(list.indexOf('nine') >= 0 || list.indexOf('multi') >= 0){
+    run.cash = 300000;
+    STOCKS.slice(0, 9).forEach((st, i) => {
+      openPosition(st.id, 1000 + i * 300, i % 4 === 3 ? 2 : 1, i === 8 ? -1 : 1, true);
+      assets[st.id].price *= 1 + ((i % 3) - 1) * 0.045;
+      assets[st.id].lastDayChg = ((i % 5) - 2) * 0.017;
+    });
+    if(list.indexOf('multi') >= 0) openPosition(STOCKS[0].id, 800, 3, 1, true);
+    STOCKS.slice(9).forEach((st, i) => { assets[st.id].lastDayChg = (i % 2 ? 1 : -1) * 0.021; });
+    run.positions.forEach(p => { p.daysHeld = 1 + (p.id % 4); });
+  }
+  if(list.indexOf('hand') >= 0){
+    run.hand = ['stk_semi', 'stopLoss', 'hodl', 'credit', 'dove', 'stk_meme', 'takeProfit', 'yolo', 'hawk', 'pump'].slice(0, HAND_MAX).map(newCard);
+    run.ap = Math.min(run.ap, 1);   // 몇 장은 행동력 부족으로 비활성
+  }
+  if(list.indexOf('long') >= 0) run.cash += 1234567 - netEquity();
+  handSig = ''; posSig = '';
+  renderAll();
+}
+
 function startRun(){
   Fx.skipQueue();
   hideStreak();
@@ -6484,6 +6529,7 @@ function startRun(){
   startNewRun({ unlockWeek: loadUnlockWeek() });
   playtest.run = run;   // (온보딩) 지금까지 도달한 최고 주차 — 그 주차까지의 시스템은 처음부터 열림
   renderAll();
+  applyScenario();
   toast(`WEEK 1 개장 — 목표 ${fmtMoney(currentTarget())} · DAY 1 장전`, 'good');
 }
 

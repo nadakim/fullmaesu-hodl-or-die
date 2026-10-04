@@ -13,7 +13,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
     await p.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace(/const BOSS_COUNTERS_ON\s*=\s*false;/, 'const BOSS_COUNTERS_ON = true;') }); });
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     await p.evaluate(() => { window.tipChance = () => 0; settings.chainFx = false; });   // 장 마감 정산 무대는 이 테스트 밖 (daystage·plainstage)
 
@@ -169,7 +169,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 기본 상태 (플래그 꺼짐): 빌드 카운터 없음 · 일정 보장 없음
   { const p = await b.newPage({ viewport: { width: 1366, height: 768 } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
     const d = await p.evaluate(() => { let c = 0; for(let s = 1; s <= 60; s++){ setSeed(s); startNewRun({ unlockWeek: 8 }); c += BOSS_WEEK_ROUNDS.filter(r => BOSS_BY_ID[run.bossPlan[r]].build).length; } setSeed(null);
       return { flag: BOSS_COUNTERS_ON, n: BOSSES.length, builds: BOSSES.filter(b => b.build).length, planned: c, mult: BOSS_COUNTER_TARGET_MULT, held: BOSS_COUNTER_TARGET_HELD }; });
     ok('기본 상태: BOSS_COUNTERS_ON 꺼짐 · 보스 13종 · 일정에 카운터 없음 · 손잡이 꺼짐', !d.flag && d.n === 13 && d.builds === 0 && d.planned === 0 && d.mult === 0 && !d.held, d);

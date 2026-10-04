@@ -13,7 +13,7 @@ const closeStage = p => p.evaluate(() => { if(stage){ if(!stage.hold) stageSkip(
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 1) W1D1 · 종목 카드 1장 · 유물 없음 → 간이 무대
     await p.evaluate(() => { clearToasts(); run.relics = []; run.hand = ['stk_semi'].map(newCard); handSig = ''; renderAll(); });

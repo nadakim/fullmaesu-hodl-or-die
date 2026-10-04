@@ -7,7 +7,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for (const [w, h] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: w, height: h } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type()==='error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(300);
     await page.evaluate(() => { window.tipChance = () => 0; startMarket(); renderAll(); });
     const cases = [['up', 0, [1, 0]], ['down', 0, [0, 1]], ['flat', 1, [1]]];
@@ -45,7 +45,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   }
   // 사운드 끄기 → 전부 무음
   const page = await b.newPage(); page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type()==='error' && errs.push(m.text()));
-  await page.goto('http://127.0.0.1:8765/demo.html'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift'); await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
+  await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift'); await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
   const muted = await page.evaluate(() => { Sound.setEnabled(false); return ['coinDrop','billFlip','cashRegister','flatShrug','crashDown','crowdScream'].map(n => Sound.play(n)); });
   ok(muted.every(x => x === false), '사운드 끄기 → 새 효과음 전부 무음', muted);
   // 파일 덮어쓰기: 테스트용 wav를 SFX_FILES에 넣으면 합성음 대신 파일
