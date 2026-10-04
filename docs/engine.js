@@ -17,7 +17,7 @@ const MAX_ROUND         = ROUND_TARGETS.length;
 const IDX_SENS          = 0.6;     // 지수 움직임이 종목에 전달되는 비율 (× beta)
 const IDIO_SCALE        = 0.25;    // 종목 고유 변동 크기 (× volatility)
 const INVERSE_DECAY     = 0.0008;  // 인버스 ETF(beta < 0) 녹음: 틱당 기대 로그수익률 감소 (롤오버 비용·복리 손실).
-                                   // 평소 5일 보유 시 지수 인버스·곱버스 평균이 소폭 마이너스, 약세장(매파 발언) 하루 보유는 여전히 플러스
+                                   // 평소 5일 보유 시 지수 인버스 평균이 소폭 마이너스, 약세장(매파 발언) 하루 보유는 여전히 플러스
 const STOCK_DRIFT       = 0.001;   // 종목 틱당 기대 로그수익률 — 사면 이길 확률이 조금 더 높도록 (공매도는 그만큼 불리).
                                    // 0.001 = 지수 인버스도 1주 보유 시 반반(52%)이 되는 최소값. 우량주는 65% → 79%
 const ASSET_HISTORY     = 30;      // 시세 스파크라인 길이
@@ -248,7 +248,7 @@ const SHOP_PACKS = [
   { id:'ruin',   name:'파산각 팩', icon:'💀', price:666, desc:'고위험 카드만. 희귀 이상 60%.',
     weights:{ common:0,  uncommon:40, rare:35, legendary:19, mythic:6 },
     pool:['credit', 'short', 'avgDown', 'hodl', 'forgotPw', 'pump', 'ceoTweet', 'overdraft',
-          'stk_coin', 'stk_inv2', 'stk_sc', 'stk_meme', 'chaseLimit', 'yolo', 'fullBuy', 'hodlWins',
+          'stk_coin', 'stk_sc', 'stk_meme', 'chaseLimit', 'yolo', 'fullBuy', 'hodlWins',
           'lossGuard', 'antArmy', 'manip'] }
 ];
 /* 암시장 물가 (docs/design/SHOP_ECONOMY.md): 가격 = 기본가 × (1 + 계수 × (주차 − 1)), 10만 단위 반올림 → shopPrice()
@@ -278,7 +278,6 @@ const STOCKS = [
   { id:'gukbap', name:'국밥제약',   sector:'방어주',   cost:800,  beta: 0.4, volatility:0.01,  basePrice:8500,  rarity:'common' },
   { id:'meme',   name:'밈코인',     sector:'동전주',   cost:300,  beta: 5.0, volatility:0.20,  basePrice:420,   rarity:'common' },
   { id:'inv',    name:'지수 인버스', sector:'인버스',  cost:800,  beta:-1.0, volatility:0.004, basePrice:5000,  rarity:'common' },
-  { id:'inv2',   name:'곱버스',     sector:'인버스',   cost:600,  beta:-2.0, volatility:0.008, basePrice:3000,  rarity:'common' },
   // S7 추가 (D10 사용자 선택 — 실존 기업·티커를 흉내 내지 않은 '업종 + 밈' 이름)
   { id:'ev',     name:'전기차모터스', sector:'전기차', cost:1200, beta: 1.8, volatility:0.05,  basePrice:38000, rarity:'common' },
   { id:'bio',    name:'떡상바이오', sector:'바이오',   cost:700,  beta: 1.5, volatility:0.07,  basePrice:21000, rarity:'common' },
@@ -452,8 +451,8 @@ const RELICS = [
     desc:`매주 첫날 현금 +₩${RELIC_PAYDAY_BASE}만 × 주차.`,
     flavor:'통장을 스쳐 지나가는 데 걸리는 시간 0.3초.' },
   { id:'inverse',  icon:'🔄', name:'인버스 장인',     rarity:'common',
-    desc:`인버스 종목(지수 인버스·곱버스)을 카드로 살 때마다 카드 ${RELIC_INVERSE_DRAW}장을 뽑는다.`,
-    flavor:'"모두가 탐욕스러울 때 곱버스." 3년째 물려 있다.' },
+    desc:`인버스 종목(지수 인버스)을 카드로 살 때마다 카드 ${RELIC_INVERSE_DRAW}장을 뽑는다.`,
+    flavor:'"모두가 탐욕스러울 때 인버스." 3년째 물려 있다.' },
   { id:'coldwallet', icon:'🧊', name:'콜드월렛',      rarity:'common',
     desc: MAINTENANCE_MARGIN_ON ? `대장코인·밈코인 포지션의 담보유지비율 ${Math.round(MAINTENANCE_RATIO * 100)}% → ${Math.round((MAINTENANCE_RATIO - RELIC_COLD_WALLET_MAINT_CUT) * 100)}% (청산이 늦게 온다).`
       : `대장코인·밈코인 포지션의 청산 기준 증거금률 ${Math.round(MARGIN_CALL_RATIO * 100)}% → ${Math.round(RELIC_COLD_WALLET_RATIO * 100)}%.`,
@@ -623,9 +622,9 @@ const TIP_EVENTS = [
         { chance:1, tag:'확정', text:'논문 요약 블로그 광고 수익 (비자금)', effects:[{ kind:'slush', amount:TIP_SLUSH_SAFE }] } ] } ] },
   { id:'bigstep', headline:'[속보] 한은 총재 "빅스텝도 배제 안 해"', body:'금리가 오르면 누가 웃고 누가 우는가.', pick:false,
     choices:[
-      { label:'곱버스 풀매수', outcomes:[
-        { chance:0.5, tag:'대박', text:'폭락장 개막! 곱버스 파티', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:0.08 }, { kind:'market', state:'BEAR' }] },
-        { chance:0.5, tag:'쪽박', text:'"배제 안 한다"는 "안 한다"였다. 반등장', effects:[{ kind:'buy', stock:'inv2', amount:1000 }, { kind:'shock', stock:'inv2', pct:-0.08 }, { kind:'market', state:'BULL' }] } ] },
+      { label:'인버스 풀매수', outcomes:[
+        { chance:0.5, tag:'대박', text:'폭락장 개막! 인버스 파티', effects:[{ kind:'buy', stock:'inv', amount:1000 }, { kind:'shock', stock:'inv', pct:0.08 }, { kind:'market', state:'BEAR' }] },
+        { chance:0.5, tag:'쪽박', text:'"배제 안 한다"는 "안 한다"였다. 반등장', effects:[{ kind:'buy', stock:'inv', amount:1000 }, { kind:'shock', stock:'inv', pct:-0.08 }, { kind:'market', state:'BULL' }] } ] },
       { label:'레버리지 포지션 방어', outcomes:[
         { chance:1, tag:'회피', text:'오늘 모든 포지션 청산 면제. 담보부터 챙겼다', effects:[{ kind:'protect' }] } ] } ] },
   { id:'youtuber', headline:'[찌라시] 구독자 300만 유튜버 "인생 종목" 공개', body:'썸네일: 빨간 화살표 3개, 놀란 얼굴, "{stock} 이거 모르면 손해".', pick:true,
@@ -680,7 +679,7 @@ const TAGS = {
 };
 const TAG_BIAS = 0.3;
 const CARD_TAGS = {
-  stk_inv:['short'], stk_inv2:['short'], stk_delist:['manip'], stk_ailab:['manip'],
+  stk_inv:['short'], stk_delist:['manip'], stk_ailab:['manip'],
   credit:['lev'], yolo:['lev'], short:['short'], avgDown:['hodl'], ipo:['spread'], fullBuy:['spread'], chaseLimit:['scalp'], antArmy:['spread'],
   stopLoss:['scalp'], takeProfit:['scalp'], trailing:['scalp'], cutLoss:['scalp'], takeWin:['scalp'], escape:['scalp'], splitSell:['scalp'], topSpotter:['scalp'],
   hodl:['lev', 'hodl'], diamond:['hodl'], forcedLong:['hodl'], dividend:['spread'], forgotPw:['lev'], hodlWins:['hodl'], compound:['hodl'], valueGod:['hodl'],
@@ -699,7 +698,7 @@ const RELIC_TAGS = {
 
 /* 시작 덱 15장: 종목 8 + 증강 7 */
 const STARTER_DECK = [
-  'stk_semi', 'stk_semi', 'stk_gukbap', 'stk_coin', 'stk_sc', 'stk_meme', 'stk_inv', 'stk_inv2',
+  'stk_semi', 'stk_semi', 'stk_gukbap', 'stk_coin', 'stk_sc', 'stk_meme', 'stk_inv', 'stk_game',
   'credit', 'short', 'stopLoss', 'takeProfit', 'hodl', 'marginTopup', 'indicators'
 ];
 
@@ -712,7 +711,7 @@ const ONBOARDING_ON = true;
 const SYSTEM_UNLOCK_WEEK = { signals: 2, tips: 2, news: 2, short: 3, leverage: 3, shopTools: 3, sector: 4, fss: 4 };   // news = 화면만 (뉴스 효과는 늘 있다)
 const SYSTEM_CARDS = {   // 시스템별 카드 (기본 id — 강화판 포함). 섹터 리포트(종류 report)는 sector
   signals:  ['indicators', 'analyst'],
-  short:    ['short', 'stk_inv', 'stk_inv2', 'hedge'],
+  short:    ['short', 'stk_inv', 'hedge'],
   leverage: ['credit', 'yolo', 'forgotPw', 'hodl', 'marginTopup', 'interestFree', 'overdraft', 'lossGuard', 'circuit', 'levEtf', 'relist', 'delever'],
   fss:      ['pump', 'dove', 'hawk', 'ceoTweet', 'manip', 'confess', 'stk_delist', 'stk_ailab']
 };
@@ -723,7 +722,7 @@ const SYSTEM_RELICS = {   // 시스템별 유물 (결산 보상·암시장 진�
   fss:      ['vip', 'lawyer', 'fssconnect', 'timemachine', 'fssVip']
 };
 const SYSTEM_BOSSES = { shortBan: 'short', bigStep: 'leverage', marginHike: 'leverage', fssCrackdown: 'fss', tipBomb: 'tips', levCap: 'leverage' };   // 잠긴 시스템을 겨냥한 보스
-const ONBOARDING_STARTER_SUBS = { stk_inv: 'stk_ev', stk_inv2: 'stk_game' };   // 시작 덱에서 잠긴 카드 대신 넣는 카드 (없으면 그냥 뺀다)
+const ONBOARDING_STARTER_SUBS = { stk_inv: 'stk_ev' };   // 시작 덱에서 잠긴 카드 대신 넣는 카드 (없으면 그냥 뺀다)
 
 /* ══ 보스 주간 (S9, docs/design/BOSS_WEEKS.md) ══
    BOSS_WEEK_ROUNDS 주차는 일반 보스(한 판에 중복 없음), BOSS_FINAL_ROUND 주차는 최종 보스.
