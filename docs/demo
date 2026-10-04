@@ -1939,6 +1939,86 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   .play-right .p-l1 .val{font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);}
   .play-right .positions-wrap{gap:calc(5 * var(--u));}
 }
+
+/* ══ 공용 카드 컴포넌트 .card.cv (cardView) ═════════════════════════════════════════════
+   2:3 세로. 희귀도 = 테두리 색(--rc) + 모서리 보석 모양 + 이름 색. 선택 = 흰 윤곽선 + 상승(희귀도와 다른 방식).
+   색은 UI 리디자인 규칙 5번: 일반 muted · 고급 green2 · 희귀 cyan · 전설 purple · 신화 gold (희귀 파랑은 쓰지 않는다). 종류는 색이 아니라 아이콘. */
+.card.cv{
+  --cv-lift:calc(8 * var(--u));
+  --cv-nc:var(--text);
+  --rc:var(--muted);
+  display:grid;grid-template-rows:minmax(0, 1fr) auto auto auto;gap:calc(2 * var(--u));
+  padding:calc(6 * var(--u));box-sizing:border-box;overflow:visible;
+  background:var(--panel2);cursor:pointer;
+  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;
+  transform:none;animation:none;
+}
+.card.cv::before,.card.cv::after{display:none;}
+.card.cv.r-common{--rc:var(--muted);--cv-nc:var(--text);}
+.card.cv.r-uncommon{--rc:var(--green2);--cv-nc:var(--green);}
+.card.cv.r-rare{--rc:var(--cyan);--cv-nc:var(--cyan);}
+.card.cv.r-legendary{--rc:var(--purple);--cv-nc:var(--purple);}
+.card.cv.r-mythic{--rc:var(--gold);--cv-nc:var(--gold);}
+.card.cv.t-status{--rc:var(--muted);--cv-nc:var(--muted);}
+.card.cv.up{--cc:var(--rc);}
+/* 크기: 표준(보상·암시장·덱·도감) 152×228 / 손패는 칸 너비 × 2:3 */
+.card.cv-std{width:calc(152 * var(--u));min-width:calc(152 * var(--u));height:calc(228 * var(--u));}
+.card.cv-hand{width:100%;height:auto;aspect-ratio:2 / 3;min-width:0;min-height:0;padding:calc(4 * var(--u));gap:calc(1 * var(--u));}
+.hand,.hand.compact,.hand.g4{grid-auto-rows:auto;}
+.hand .g-slot{aspect-ratio:2 / 3;}
+/* 보석: 등급마다 모양이 다르다 (clip-path 직선만) */
+.cv-gem{position:absolute;top:calc(5 * var(--u));right:calc(5 * var(--u));width:calc(13 * var(--u));height:calc(13 * var(--u));background:var(--rc);}
+.cv-hand .cv-gem{top:calc(3 * var(--u));right:calc(3 * var(--u));width:calc(11 * var(--u));height:calc(11 * var(--u));}
+.cv-gem.g-common{clip-path:polygon(15% 15%,85% 15%,85% 85%,15% 85%);}
+.cv-gem.g-uncommon{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);}
+.cv-gem.g-rare{clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);}
+.cv-gem.g-legendary{clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%);}
+.cv-gem.g-mythic{clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);}
+/* 코스트 배지 (좌상단, 큰 숫자 VT323) */
+.cv-cost{position:absolute;left:calc(-5 * var(--u));top:calc(-5 * var(--u));z-index:2;min-width:calc(30 * var(--u));height:calc(30 * var(--u));padding:0 calc(3 * var(--u));box-sizing:border-box;
+  display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc);
+  font-family:'VT323',var(--gv-v3),monospace;font-size:var(--fs-v3);line-height:1;}
+.cv-hand .cv-cost{min-width:calc(26 * var(--u));height:calc(26 * var(--u));left:calc(-4 * var(--u));top:calc(-4 * var(--u));}
+/* 아트 슬롯: 지금은 이모지, CARD_ART에 경로를 넣으면 스프라이트 */
+.cv-art{min-height:0;display:flex;align-items:center;justify-content:center;background:var(--panel);overflow:hidden;}
+.cv-glyph{font-size:calc(46 * var(--u));line-height:1;}
+.cv-hand .cv-glyph{font-size:calc(28 * var(--u));}
+.cv-img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;}
+.cv-name{font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.2;text-align:center;color:var(--cv-nc);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;min-height:1.2em;}
+.cv-name.long{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
+.cv-hand .cv-name,.cv-hand .cv-name.long{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.15;}
+.cv-line{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.3;text-align:center;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:clip;}
+.cv-hand .cv-line{display:none;}   /* 5열 손패는 칸이 좁아 16px 이상 글자로는 14자 한 줄이 안 들어간다 — 손패는 툴팁으로 (보상·암시장·덱은 표시) */
+.cv-foot{display:flex;align-items:center;justify-content:space-between;gap:calc(3 * var(--u));min-height:calc(14 * var(--u));}
+.cv-type{display:inline-flex;width:calc(14 * var(--u));height:calc(14 * var(--u));color:var(--text2);flex:none;}
+.cv-type svg{width:100%;height:100%;image-rendering:pixelated;}
+.cv-kws{display:flex;align-items:center;gap:calc(2 * var(--u));font-size:var(--fs-xs);line-height:1;color:var(--text2);white-space:nowrap;}
+.cv-kw{font-family:var(--gf-xs),monospace;}
+.cv-hand .cv-kws{font-size:var(--fs-xs);}
+/* 이유 문구 (disabled 때만) */
+.cv-reason{display:none;position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:3;padding:calc(4 * var(--u)) calc(2 * var(--u));text-align:center;
+  background:var(--bg);color:var(--text);font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.2;box-shadow:0 0 0 calc(2 * var(--u)) var(--red);}
+.card.cv.disabled .cv-reason{display:block;}
+.card.cv.disabled{opacity:1;cursor:not-allowed;box-shadow:0 0 0 calc(3 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+.card.cv.disabled::after{display:block;content:'';position:absolute;inset:0;z-index:1;background:color-mix(in srgb, var(--bg) 72%, transparent);}
+.card.cv.disabled:hover{transform:none;background:var(--panel2);box-shadow:0 0 0 calc(3 * var(--u)) var(--line),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
+/* hover: 8 상승 + ±2도 기울기 (tiltFrame이 --rx·--ry를 넣는다 — 여기서 ±2도로 자른다) */
+.card.cv:not(.disabled):is(:hover,.is-hover){background:var(--panel);   /* .is-hover = 상태 시트(shots/card-states.png) 전용 */
+  transform:translateY(calc(-1 * var(--cv-lift)));
+  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+.card.cv.tilt:not(.disabled){transform:perspective(calc(520 * var(--u))) translateY(calc(-1 * var(--cv-lift))) rotateX(clamp(-2deg, var(--rx, 0deg), 2deg)) rotateY(clamp(-2deg, var(--ry, 0deg), 2deg));}
+.card.cv.tilt:not(.disabled):active{transform:perspective(calc(520 * var(--u))) translateY(calc(-1 * var(--cv-lift) + 3 * var(--u)));}
+.card.cv.tilt.r-rare,.card.cv.tilt.r-legendary,.card.cv.tilt.r-mythic{background-image:none;}
+/* selected: 희귀도 링 바깥에 흰 윤곽선 + 8 상승 (희귀도 표시와 겹치지 않는 방식) */
+.card.cv.selected,.card.cv.selected:hover,.card.cv.selected.tilt{background:var(--panel);transform:translateY(calc(-1 * var(--cv-lift)));
+  box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) var(--text),calc(8 * var(--u)) calc(10 * var(--u)) 0 #000;}
+/* played: 날아가는 복제본 */
+.card.cv.played{transform:none;box-shadow:0 0 0 calc(3 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;pointer-events:none;}
+/* 도감·덱 확인(보기 전용)은 호버해도 안 움직인다 */
+.coll-grid .card.cv:hover,.deck-list:not(.shop-singles):not(.shop-remove) .card.cv:not([data-remove]):not([data-upgrade]):hover{transform:none;box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+.card.cv.picked{box-shadow:0 0 0 calc(3 * var(--u)) var(--rc),0 0 0 calc(6 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
+@media (prefers-reduced-motion: reduce){.card.cv,.card.cv.tilt:not(.disabled){transition:none;}}
 </style>
 </head>
 <body>
@@ -3410,12 +3490,13 @@ function playCardFx(idx, targetId, opts){
   const inst = run.hand[idx];
   const card = inst ? CARD_BY_ID[inst.id] : null;
   const rect = rectOf(el), ghost = el ? el.cloneNode(true) : null;
+  if(ghost){ ghost.classList.remove('selected', 'tilt'); ghost.classList.add('played'); }
   lastBoughtPosId = -1;
   const ok = playCard(idx, targetId, opts);
   renderAll();
   if(!ok || !ghost || !card) return ok;
   const target = card.target === 'position' ? posRowEl(targetId) : card.target === 'asset' ? quoteRowEl(targetId)
-               : lastBoughtPosId >= 0 ? posRowEl(lastBoughtPosId) : null;
+               : lastBoughtPosId >= 0 ? posRowEl(lastBoughtPosId) : $('chartBox');   // 대상이 없으면 차트 쪽으로
   const n = noteCardChain();
   Fx.cardFly(ghost, rect, target, null, n >= 2 ? Math.min(3, n - 1) : 0);   // 2장째부터 잔상
   if(n >= 3) Fx.chip(n + '연속', rectOf($('handBox')), 'gold');   // 카드 연속 사용 (수익 콤보와 헷갈리지 않게 'COMBO'는 쓰지 않는다)
@@ -3699,30 +3780,88 @@ function onGameEvent(type, d){
 const HAND_GRID_COLS = 3, HAND_GRID_WIDE_COLS = 4, HAND_GRID_ROWS = 3, HAND_GRID_CELLS = HAND_GRID_COLS * HAND_GRID_ROWS;   // 모바일(≤900px) 기존 격자
 const HAND_COMPACT_COLS = 5;   // 데스크톱 컴팩트 격자: 5열 × 필요한 행만 (10장 = HAND_MAX면 2행)
 const handCompact = () => window.matchMedia('(min-width: 901px)').matches;
-function handCardHtml(card, o){
-  const stock = card.stock ? STOCK_BY_ID[card.stock] : null;
-  const foot = [card.target ? TARGET_LABEL[card.target] : '', card.exhaust ? '소멸' : ''].filter(Boolean).join(' · ');
+/* ── 공용 카드 컴포넌트 cardView (UI 전용 — 손패·보상·암시장·덱·도감 전부 이 하나) ──
+   2:3 세로. 좌상단 코스트 배지 / 모서리 보석(등급 모양) / 아트 슬롯 / 카드명 / 핵심 효과 1줄(≤14자) / 하단 타입 아이콘 + 키워드 아이콘.
+   희귀도 = 테두리 색 + 보석 모양 + 이름 색 (3중, 색맹 대응). 선택 = 흰 윤곽선 + 8px 상승 (희귀도와 다른 방식).
+   상태 클래스: (idle) · hover(.tilt, JS tiltFrame) · selected · disabled(+ .cv-reason 이유 문구) · played(날아가는 복제본).
+   아트 교체: CARD_ART[카드 id]에 스프라이트 경로를 적으면 이모지 대신 <img>로 (픽셀 그대로, image-rendering: pixelated). 엔진·카드 데이터는 건드리지 않는다 */
+const CARD_ART = {};   // 예: CARD_ART.stk_semi = 'assets/cards/stk_semi.png' — 비어 있으면 아래 임시 이모지
+const CARD_GLYPH_BY_TYPE = { stock:'📈', buy:'💸', sell:'✂️', hold:'💎', action:'📣', defense:'🛡️', report:'📊', status:'☠️' };
+const CARD_GLYPH = { stk_semi:'💾', stk_coin:'🪙', stk_sc:'🧲', stk_gukbap:'💊', stk_meme:'🐕', stk_inv:'🐻', stk_inv2:'🧸', stk_ev:'🚗', stk_bio:'🧬', stk_build:'🏗️', stk_game:'🎮', stk_delist:'🎰', stk_ailab:'🤖',
+  credit:'💳', yolo:'🔥', short:'📉', stopLoss:'🛑', takeProfit:'🎯', hodl:'🧘', diamond:'💎', pump:'📢', dove:'🕊️', hawk:'🦅', coffee:'☕', manip:'🕴️', fullBuy:'🛒', antArmy:'🐜', trauma:'☠️' };
+const CARD_SHORT_MAX = 14;
+/* 핵심 효과 1줄 (UI 문구 — 전문은 툴팁). 종목 카드는 데이터의 섹터·β, 리포트는 설명의 앞 토막을 그대로 쓴다 */
+const CARD_SHORT = {
+  credit:'다음 매수 레버 2x', yolo:'원금 2배 · 레버 3x', short:'다음 매수 숏 전환', avgDown:'손실 포지션 추매', ipo:'공짜 종목 ₩250만', fullBuy:'손패 종목 전부 매수',
+  chaseLimit:'1위 종목 ₩600만', antArmy:'종목 AP 0 +드로우', stopLoss:'−10%면 자동 매도', takeProfit:'+15%면 자동 매도', trailing:'고점 −7%p 매도', cutLoss:'손실 매도·50% 보상',
+  takeWin:'수익 매도·50% 보너스', escape:'전량 청산 +2장', splitSell:'1/3 매도 +1장', topSpotter:'익절 AP 0 +30%', hodl:'오늘 청산 면제', diamond:'매도불가·이익 60%',
+  forcedLong:'손실의 4% 배당', dividend:'포지션당 ₩80만', forgotPw:'청산 면제·매도불가', hodlWins:'손실 30% 회복', compound:'이익 50% 원금화', valueGod:'장마감 원금 1.5%',
+  pump:'70% 급등/30% 하락', dove:'강세장 70% 판정', hawk:'약세장 70% 판정', ceoTweet:'변동성장 70% 판정', indicators:'2장 + 적중 +20%p', analyst:'오늘 추세 100% 공개',
+  coffee:'행동력 +2', rotation:'섹터 수만큼 드로우', manip:'오늘+20% 내일−12%', marginTopup:'₩500만 대출 상환', cashOut:'절반 매도 현금화', hedge:'노출 30% 인버스',
+  interestFree:'이자 면제 +1장', overdraft:'현금 +₩1,500만', confess:'금감원 게이지 −40', savings:'현금 +₩300만', delever:'레버 전부 1x로', lossGuard:'청산 손실 50% 환급',
+  circuit:'−8%면 즉시 마감', split:'포지션 둘로 분할', levEtf:'레버리지 ×2', reinvest:'정산금 원금 추가', timeLoop:'오늘 정산 한 번 더', allIn:'한 종목만 남기고 매도',
+  futures:'정산 ×3, 다음 ×0.5', coinFlip:'50% ×10/50% 0', relist:'청산 포지션 부활', trauma:'사용 불가'
+};
+function cardShort(card){
+  const id = card.base || card.id;
+  let t = CARD_SHORT[id];
+  if(!t) t = card.type === 'report' ? String(card.desc).split(' — ')[0] : card.type === 'stock' ? String(card.desc) : String(card.desc).split(/[.。]/)[0];
+  t = t.trim();
+  return t.length > CARD_SHORT_MAX ? t.slice(0, CARD_SHORT_MAX - 1) + '…' : t;
+}
+/* 타입 아이콘 3종 (종목·행동·홀드, + 상태): 8×8 픽셀 SVG, 색은 currentColor */
+const CARD_TYPE_ICON = {
+  stock:  `<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path d="M1 5h1v2H1zM3 3h1v4H3zM5 1h1v6H5z" fill="currentColor"/><path d="M0 7h8v1H0z" fill="currentColor"/></svg>`,
+  action: `<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path d="M4 0h2v1H5v2h2v1H4v1h1v1H3V5h1V4H1V3h3z" fill="currentColor"/><path d="M2 6h1v2H2z" fill="currentColor"/></svg>`,
+  hold:   `<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path d="M2 3V2h1V1h2v1h1v1h1v4H1V3z" fill="currentColor"/><path d="M3 4h2v2H3z" fill="var(--panel2)"/></svg>`,
+  status: `<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path d="M1 1h2v1h2V1h2v2H6v2h1v2H5V6H3v1H1V5h1V3H1z" fill="currentColor"/></svg>`
+};
+const cardTypeKind = card => card.type === 'stock' ? 'stock' : card.type === 'hold' ? 'hold' : card.type === 'status' ? 'status' : 'action';   // 매수·매도·방어·리포트 카드는 '행동'
+const CARD_TYPE_NAME = { stock:'종목 카드', action:'행동 카드', hold:'홀드 카드', status:'상태 카드' };
+const CARD_RARITY_NAME = { common:'일반', uncommon:'고급', rare:'희귀', legendary:'전설', mythic:'신화' };
+function cardKeywords(card){
+  const k = [];
+  if(card.exhaust) k.push(['🔥', '소멸 — 쓰면 이번 판에서 사라진다']);
+  if(card.retain)  k.push(['📌', '보존 — 장 마감에 버리지 않는다']);
+  if(card.target)  k.push(['🎯', card.target === 'position' ? '포지션을 골라 쓴다' : '종목을 골라 쓴다']);
+  if(card.upgraded) k.push(['＋', '강화판']);
+  return k;
+}
+/* 손패에서 못 쓰는 이유 (checkPlay의 거절 코드 → 짧은 문구). 카드 위에 직접 띄운다 */
+const CARD_REASON = { phase:'장전에만 사용', ap:'행동력 부족', invalid:'지금은 불가', target:'대상 없음', unplayable:'사용 불가', locked:'매도 불가', relicRule:'유물 규칙', banned:'금감원 제재', amount:'금액 부족', boss:'보스 제한', sysLocked:'잠긴 시스템', none:'카드 없음' };
+function cardReason(idx){
+  if(!run || run.phase !== 'premarket') return CARD_REASON.phase;
+  const card = CARD_BY_ID[run.hand[idx].id];
+  if(card.type === 'status') return CARD_REASON.unplayable;
+  if(handBossBlock(idx)) return CARD_REASON.boss;
+  if(card.target && validTargetIds(idx).length === 0) return CARD_REASON.target;
+  return CARD_REASON[checkPlay(idx, null)] || CARD_REASON.invalid;
+}
+function cardArtHtml(card){
+  const id = card.base || card.id, src = CARD_ART[id];
+  return src ? `<img class="cv-img" src="${src}" alt="" draggable="false">` : `<span class="cv-glyph" aria-hidden="true">${CARD_GLYPH[id] || CARD_GLYPH_BY_TYPE[card.type] || '🃏'}</span>`;
+}
+function cardView(card, o){
+  o = o || {};
+  const status = card.type === 'status', kind = cardTypeKind(card);
+  const ap = status ? '✕' : (o.ap !== undefined ? o.ap : card.ap);
+  const rar = status ? 'common' : card.rarity;
+  const kws = cardKeywords(card).map(([ic, tip]) => `<span class="cv-kw" title="${tip}">${ic}</span>`).join('');
+  const tags = card.tags.length ? `<span class="cv-kw cv-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span>` : '';
   return `
-    <div class="card gcard t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
-      <div class="g-top"><span class="c-ap">${card.type === 'status' ? '✕' : o.ap}</span><span class="g-band"></span><span class="g-rar" title="${card.type === 'status' ? '상태' : RARITY_LABEL[card.rarity]}"></span></div>
-      <div class="g-name${card.name.length >= 6 || Math.max(...card.name.split(/\s+/).map(w => w.length)) >= 5 ? ' long' : ''}">${card.name}</div>
-      <div class="g-foot">${card.tags.length ? `<span class="c-tags">${tagIcons(card.tags)}</span> ` : ''}${foot}</div>
+    <div class="card cv ${o.hand ? 'gcard cv-hand' : 'cv-std'} t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}
+         aria-label="${card.name} · ${status ? '상태' : CARD_RARITY_NAME[rar]} · ${CARD_TYPE_NAME[kind]}">
+      <i class="cv-gem g-${rar}" title="${status ? '상태' : CARD_RARITY_NAME[rar]}"></i>
+      <span class="cv-cost" title="행동력">${ap}</span>
+      <div class="cv-art">${cardArtHtml(card)}</div>
+      <div class="cv-name${card.name.length >= 6 ? ' long' : ''}">${card.name}</div>
+      <div class="cv-line">${cardShort(card)}</div>
+      <div class="cv-foot"><span class="cv-type k-${kind}" title="${CARD_TYPE_NAME[kind]}">${CARD_TYPE_ICON[kind]}</span><span class="cv-kws">${kws}${tags}</span></div>
+      <div class="cv-reason">${o.reason || ''}</div>
     </div>`;
 }
-
-function cardHtml(card, o){
-  const stock = card.stock ? STOCK_BY_ID[card.stock] : null;
-  const foot = [card.target ? TARGET_LABEL[card.target] : '', card.exhaust ? '소멸' : ''].filter(Boolean).join(' ');
-  return `
-    <div class="card t-${card.type} r-${card.rarity} ${card.upgraded ? 'up' : ''} ${o.cls || ''}" data-cid="${card.id}" ${o.attrs || ''}>
-      <div class="c-top"><span class="c-ap">${card.type === 'status' ? '✕' : (o.ap !== undefined ? o.ap : card.ap)}</span><span class="c-type">${TYPE_LABEL[card.type]}</span></div>
-      <div class="sym">${card.name}</div>
-      ${stock ? `<div class="c-cost">₩${formatKrw(o.cost || stock.cost)}</div>` : ''}
-      <div class="c-desc">${cardDesc(card)}</div>
-      ${o.ev ? `<div class="c-ev ${o.ev.cls}" title="${o.ev.title}">${o.ev.text}</div>` : ''}
-      <div class="c-foot"><span>${card.tags.length ? `<span class="c-tags" title="${tagNames(card.tags)}">${tagIcons(card.tags)}</span> ` : ''}${foot}</span><span class="c-rar ${card.rarity}">${card.type === 'status' ? '' : RARITY_LABEL[card.rarity]}</span></div>
-    </div>`;
-}
+function handCardHtml(card, o){ return cardView(card, Object.assign({}, o, { hand: true })); }
+function cardHtml(card, o){ return cardView(card, o); }
 
 /* ── 카드 설명이 카드(124×180)에 다 안 들어가면: 첫 문장만 남기고(문구는 그대로, 뒤를 숨길 뿐) 전문은 툴팁으로 ──
    글꼴이 다 읽힌 뒤, 보이는 카드만 한 번씩 잰다 (숨은 화면의 카드는 보일 때 다시). 잘린 카드 id는 cardClampedIds에 모인다 */
@@ -4117,7 +4256,7 @@ function renderHand(){
           const card = CARD_BY_ID[inst.id];
           const cls = (usable[i] === '1' ? '' : 'disabled' + (handBossBlock(i) ? ' boss-blocked' : '')) + (i === selectedIdx ? ' selected' : '') + (usable[i] === '1' && boostsSettle(i) ? ' boost' : '');
           const cost = card.stock ? stockCost(STOCK_BY_ID[card.stock]) : 0;
-          return handCardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, ap: cardCost(card) });
+          return handCardHtml(card, { attrs: `data-idx="${i}"`, cls, cost, ap: cardCost(card), reason: usable[i] === '1' ? '' : cardReason(i) });
         }).join('') + '<div class="g-slot"></div>'.repeat(Math.max(0, cells - run.hand.length));   // 빈 칸 = 점선 슬롯
     if(deal) playDeal(box);
   }
