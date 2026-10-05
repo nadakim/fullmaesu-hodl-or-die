@@ -14,7 +14,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     for (const [kind, choice, chances] of cases) {
       await page.evaluate(([ch, k]) => { window.tipChances = () => ch; Sound.stats.played = {}; if(k !== 'flat') run.cash = 6000; openTip('mom'); renderAll(); }, [chances, kind]);
       await page.waitForTimeout(250);
-      await page.locator(`#overlayBox [data-tip-choice="${choice}"]`).click();
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, `#overlayBox [data-tip-choice="${choice}"]`), page.locator(`#overlayBox [data-tip-choice="${choice}"]`)).click();
       await page.waitForTimeout(kind === 'up' ? 1100 : 700);
       const st = await page.evaluate(() => { const el = document.querySelector('.gap-alert.tip-res');
         return el && { cls: el.className, tape: el.querySelector('.ga-tape').textContent, name: el.querySelector('.ga-name').textContent, amt: el.querySelector('.ga-pct').textContent,
@@ -32,13 +32,13 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
       const after = await page.evaluate(() => [!!document.querySelector('.gap-alert.tip-res'), overlayOpen, $('overlayBox').textContent.includes('확인 — 장 계속'), Fx.queueBusy]);
       ok(!after[0] && after[1] && after[2] && !after[3], `${w} ${kind}: ${kind === 'down' ? '스페이스 스킵' : '끝난 뒤'} → 결과 요약 오버레이`, after);
       if (kind === 'up') { const sfx = await page.evaluate(() => Object.keys(Sound.stats.played)); ok(sfx.includes('cashRegister'), `${w} up tier3: cashRegister`, sfx); }
-      await page.locator('#overlayBox [data-act="close"]').click(); await page.waitForTimeout(150);
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), page.locator('#overlayBox [data-act="close"]')).click(); await page.waitForTimeout(150);
     }
     // ≡ 메뉴 → 찌라시 기록 (탭 대신)
     await page.evaluate(() => { if(overlayOpen) hideOverlay(); showTipLog(); });
     const log = await page.evaluate(() => [overlayOpen, $('overlayBox').querySelectorAll('.tip-log li').length, run.tipLog.length]);
     ok(log[0] && log[1] === log[2] && log[2] > 0, `${w} 찌라시 기록 오버레이 = run.tipLog`, log);
-    await page.locator('#overlayBox [data-act="close"]').click(); await page.waitForTimeout(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), page.locator('#overlayBox [data-act="close"]')).click(); await page.waitForTimeout(100);
     const hw = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
     ok(hw, `${w} 가로 넘침 없음`);
     await page.close();

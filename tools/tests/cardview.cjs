@@ -87,7 +87,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // selected: 대상 지정 카드(손절 예약 → 포지션 필요) 대신 종목 카드로 클릭 선택이 되는지 — 선택 상태는 UI의 selectedIdx
   await p.evaluate(() => { run.positions.length || playCard(0, null); run.hand = ['stopLoss', 'stk_coin', 'dove'].map(newCard); handSig = ''; renderAll(); });
   await sleep(600);
-  await p.locator('#handBox .card').first().click(); await sleep(300);
+  await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), p.locator('#handBox .card').first()).click(); await sleep(300);
   const sel = await p.evaluate(() => { const c = document.querySelector('#handBox .card.selected'); if(!c) return null; const cs = getComputedStyle(c); return { shadow: cs.boxShadow, transform: cs.transform, rc: cs.getPropertyValue('--rc').trim() }; });
   ok('선택 상태: 흰 윤곽선(--text) + 위로 상승, 희귀도 링과 별개', !!sel && sel.shadow.includes('rgb(212, 222, 255)') && sel.transform !== 'none', sel);
   await p.keyboard.press('Escape'); await sleep(200);

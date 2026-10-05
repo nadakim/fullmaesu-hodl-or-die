@@ -51,7 +51,7 @@ const state = page => page.evaluate(() => ({ chainList: !!document.getElementByI
     if (W !== 1366) await page.screenshot({ path: S + '/next-' + W + '.png' });
     await page.keyboard.press('Space'); await sleep(100);
     ok((await state(page)).hold, W + ' 결과 화면에서 스페이스 → 넘어가지 않음');
-    await page.locator('[data-act="chainNext"]').click(); await sleep(200);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), page.locator('[data-act="chainNext"]')).click(); await sleep(200);
     st = await state(page);
     ok(st.result && !st.hold, W + ' ▶ 다음 클릭 → showRoundResult', st);
     // 2) 재생 중 스킵 → 결과에서 멈춤, 0.5초 가드, 엔터로 진행
@@ -62,7 +62,7 @@ const state = page => page.evaluate(() => ({ chainList: !!document.getElementByI
     ok(!st.playing && st.hold && st.chainList && !st.result && st.stamps === 2 && st.sum, W + ' 재생 중 스페이스 → 최종 결과로 점프해서 멈춤', st);
     await page.keyboard.press('Enter'); await sleep(60);
     ok((await state(page)).hold, W + ' 결과가 뜬 뒤 0.5초 안 엔터 → 무시');
-    await page.locator('[data-act="chainNext"]').click(); await sleep(60);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), page.locator('[data-act="chainNext"]')).click(); await sleep(60);
     ok((await state(page)).hold, W + ' 0.5초 안 버튼 클릭 → 무시');
     await sleep(500);
     await page.keyboard.press('Enter'); await sleep(200);
@@ -81,7 +81,7 @@ const state = page => page.evaluate(() => ({ chainList: !!document.getElementByI
     const title = await page.evaluate(() => document.querySelector('#overlayBox .ov-title').textContent);
     ok(st.hold && st.next && !st.result && title === '결산 요약' && /정산 합계/.test(st.sum), W + " 결산 연출 끔 → '결산 요약' + ▶ 다음", [st, title]);
     if (W === 390) await page.screenshot({ path: S + '/next-summary-390.png' });
-    await sleep(500); await page.locator('[data-act="chainNext"]').click(); await sleep(200);
+    await sleep(500); await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), page.locator('[data-act="chainNext"]')).click(); await sleep(200);
     ok((await state(page)).result, W + ' 요약에서 ▶ 다음 → showRoundResult');
     // 5) 보정 없는 결산 (유물 없음) → 요약 + 버튼 (시드 4 = 크리티컬도 안 나오는 시드)
     await page.evaluate(() => { settings.chainFx = true; });

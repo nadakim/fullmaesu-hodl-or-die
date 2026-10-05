@@ -113,12 +113,12 @@ const ok = (n, c, i) => R.push([c ? 'PASS' : 'FAIL', n, i === undefined ? '' : (
   ok('결산 체인 중 BGM 20% → 끝나면 weekClear 스팅어', ch.d1 <= 0.25 && ch.ins.includes('weekClear'), ch);
 
   // 9. 암시장 · 기록
-  await page.locator('[data-act="toReward"]').click(); await sleep(200);
-  const r = page.locator('[data-reward]'); if(await r.count()) await r.first().click(); else await page.locator('[data-act="skip"]').click();
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="toReward"]'), page.locator('[data-act="toReward"]')).click(); await sleep(200);
+  const r = page.locator('[data-reward]'); if(await r.count()) await r.first().click(); else await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="skip"]'), page.locator('[data-act="skip"]')).click();
   await sleep(200); const rr = page.locator('[data-relic-reward]'); if(await rr.count()) await rr.first().click();
   await sleep(1400);
   ok('암시장 → shop', (await st()).track === 'shop');
-  await page.locator('#shopLeaveBtn').click(); await sleep(1400);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#shopLeaveBtn'), page.locator('#shopLeaveBtn')).click(); await sleep(1400);
   ok('다음 주 개장 → premarket', (await st()).track === 'premarket');
 
   // 10. 파산 → gameOver 스팅어 → records
@@ -127,21 +127,21 @@ const ok = (n, c, i) => R.push([c ? 'PASS' : 'FAIL', n, i === undefined ? '' : (
     while(Fx.queueLength) await new Promise(r => setTimeout(r, 50)); await new Promise(r => setTimeout(r, 300)); const a = { phase: run.phase, ins: Music.instances.map(i => i.name + (i.stopping ? '(끝)' : '')) };
     await new Promise(r => setTimeout(r, 7500)); a.after = Music.track; return a; });
   ok('파산 → gameOver 스팅어 (BGM 멈춤) → 끝나면 records', go.phase === 'over' && go.ins.includes('gameOver') && go.after === 'records', go);
-  await page.locator('[data-act="title"]').click(); await sleep(1400);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="title"]'), page.locator('[data-act="title"]')).click(); await sleep(1400);
   ok('타이틀로 → title', (await st()).track === 'title');
 
   // 11. 설정 즉시 반영
   await page.click('#settingsBtn'); await sleep(1400);
   ok('설정 화면 → records', (await st()).track === 'records');
-  await page.locator('[data-row="bgm"] button', { hasText: '끄기' }).click(); await sleep(600);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="bgm"] button'), page.locator('[data-row="bgm"] button', { hasText: '끄기' })).click(); await sleep(600);
   const off = await st();
   ok('배경음악 끄기 → 즉시 정지 (볼륨 행 비활성)', off.inst.length === 0 && await page.evaluate(() => document.querySelector('[data-row="bgmVol"] button').disabled), off);
-  await page.locator('[data-row="bgm"] button', { hasText: '켜기' }).click(); await sleep(1300);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="bgm"] button'), page.locator('[data-row="bgm"] button', { hasText: '켜기' })).click(); await sleep(1300);
   ok('다시 켜기 → records 재개', (await st()).track === 'records');
-  await page.locator('[data-row="sound"] button', { hasText: '끄기' }).click(); await sleep(600);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="sound"] button'), page.locator('[data-row="sound"] button', { hasText: '끄기' })).click(); await sleep(600);
   ok('사운드 끄기 → BGM도 정지', (await st()).inst.length === 0);
-  await page.locator('[data-row="sound"] button', { hasText: '켜기' }).click(); await sleep(1300);
-  await page.locator('[data-row="bgmVol"] button', { hasText: '100' }).click(); await sleep(200);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="sound"] button'), page.locator('[data-row="sound"] button', { hasText: '켜기' })).click(); await sleep(1300);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="bgmVol"] button'), page.locator('[data-row="bgmVol"] button', { hasText: '100' })).click(); await sleep(200);
   ok('볼륨 100 저장', await page.evaluate(() => JSON.parse(localStorage.getItem('hodl.settings')).bgmVol === 100));
   await page.screenshot({ path: S + '/bgm-settings-1366.png' });
 

@@ -53,9 +53,9 @@ const measure = () => {
     await sleep(700); await shot('settle-chain');
     await p.evaluate(() => { if (typeof chainNext === 'function' && chainHold) chainNext(); }); await sleep(400); await shot('settle-result');
     if (await p.locator('[data-act="toReward"]').count()) {
-      await p.locator('[data-act="toReward"]').click(); await sleep(250);
-      await p.locator('[data-reward]').first().click(); await sleep(250);
-      if (await p.locator('[data-relic-reward]').count()) await p.locator('[data-relic-reward]').first().click();
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="toReward"]'), p.locator('[data-act="toReward"]')).click(); await sleep(250);
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-reward]'), p.locator('[data-reward]').first()).click(); await sleep(250);
+      if (await p.locator('[data-relic-reward]').count()) await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-relic-reward]'), p.locator('[data-relic-reward]').first()).click();
       await sleep(400); await p.evaluate(() => { run.slush += 3000; renderAll(); }); await shot('shop');
     }
     await p.close();

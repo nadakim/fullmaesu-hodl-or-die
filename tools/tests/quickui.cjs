@@ -20,7 +20,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // 배속
     const sb = await p.evaluate(() => { const el = $('speedBtns'); const r = el.getBoundingClientRect(); return [el.querySelectorAll('button').length, r.width > 0 && r.right <= innerWidth + 1]; });
     ok(W + ' HUD 배속 버튼 4개 · 화면 안', sb[0] === 4 && sb[1], sb);
-    await p.locator('#speedBtns [data-speed="0.5"]').click(); await sleep(80);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#speedBtns [data-speed="0.5"]'), p.locator('#speedBtns [data-speed="0.5"]')).click(); await sleep(80);
     ok(W + ' 0.5× 버튼 → 설정 저장', await p.evaluate(() => settings.speed === 0.5 && JSON.parse(localStorage.getItem('hodl.settings')).speed === 0.5));
     await p.keyboard.press('4'); await sleep(50);
     ok(W + ' 키 4 → 4×', await p.evaluate(() => settings.speed === 4 && document.querySelector('#speedBtns .on').dataset.speed === '4'));
@@ -28,7 +28,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.click('#openBtn'); await sleep(100);
     await p.evaluate(() => Fx.skipQueue());   // S8 장 시작 카운트다운 건너뛰기
     await p.click('#candlestickChart'); await sleep(150);
-    await p.locator('[data-cz="meme"]').click(); await sleep(100);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-cz="meme"]'), p.locator('[data-cz="meme"]')).click(); await sleep(100);
     const t0 = await p.evaluate(() => marketTickN);   // 누적 틱 (tickInDay는 하루가 끝나면 0으로 돌아간다)
     await p.evaluate(() => Fx.skipQueue()); await sleep(1500);
     const z = await p.evaluate(t0 => [!$('chartZoom').hidden, $('czHead').textContent.includes('밈코인'), marketTickN > t0, overlayOpen], t0);
@@ -40,7 +40,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ok(W + ' 시그널 색 칩', await p.evaluate(() => document.querySelectorAll('#quoteBox .sig-chip').length === STOCKS.filter(hasRegime).length));
     await p.evaluate(() => setSpeed(0.5));   // 4×로 두면 장 마감 정산 무대가 메뉴 클릭과 겹칠 수 있다
     await p.click('#menuBtn'); await sleep(80);
-    await p.locator('[data-menu="signalGuide"]').click(); await sleep(150);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-menu="signalGuide"]'), p.locator('[data-menu="signalGuide"]')).click(); await sleep(150);
     ok(W + ' ≡ → 시그널 설명서', await p.evaluate(() => overlayOpen && $('overlayBox').textContent.includes('시그널 설명서') && $('overlayBox').textContent.includes('적중 65%')));
     await p.screenshot({ path: `${S}/quickui-guide-${W}.png` });
     await p.close();

@@ -17,7 +17,7 @@ const closeStage = p => p.evaluate(() => { if(stage){ if(!stage.hold) stageSkip(
     await p.click('#startBtn'); await sleep(460);
     // 1) W1D1 · 종목 카드 1장 · 유물 없음 → 간이 무대
     await p.evaluate(() => { clearToasts(); run.relics = []; run.hand = ['stk_semi'].map(newCard); handSig = ''; renderAll(); });
-    await p.locator('#handBox .card.gcard').first().click(); await sleep(200); await p.keyboard.press('Enter'); await sleep(300);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card.gcard'), p.locator('#handBox .card.gcard').first()).click(); await sleep(200); await p.keyboard.press('Enter'); await sleep(300);
     const setup = await p.evaluate(() => [run.round, run.day, run.positions.length, run.relics.length]);
     ok(W + ' W1D1 종목 카드 1장 · 유물 없음', setup[0] === 1 && setup[1] === 1 && setup[2] === 1 && setup[3] === 0, setup);
     await p.evaluate(runDay(1.003));

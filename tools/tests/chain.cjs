@@ -30,7 +30,7 @@ async function setupWeek(page, opt){
   }, opt);
 }
 // 결산 결과에서 멈춘 뒤 '▶ 다음' (0.5초 가드 뒤)
-const passNext = async page => { for(let i = 0; i < 60 && !(await page.evaluate(() => !!chainHold)); i++) await sleep(100); await sleep(560); await page.locator('[data-act="chainNext"]').click(); await sleep(150); };
+const passNext = async page => { for(let i = 0; i < 60 && !(await page.evaluate(() => !!chainHold)); i++) await sleep(100); await sleep(560); await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), page.locator('[data-act="chainNext"]')).click(); await sleep(150); };
 // 금액 문구는 페이지의 formatKrw 그대로 (큰 수 단위 표기)
 let fmtSigned, fmtMoney;
 const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.toString(), fmtMoney.toString(), formatKrw.toString(), 'const KRW_UNITS = ' + JSON.stringify(KRW_UNITS) + ', KRW_SIG_FROM = ' + KRW_SIG_FROM]);

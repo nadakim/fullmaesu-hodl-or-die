@@ -55,7 +55,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
     // ── C9 동전 폭포 (수익 매도)
     await p.evaluate(() => { hideOverlay(); run.positions.slice().forEach(x => closePosition(x, 0)); run.phase = 'premarket'; openPosition('semi', 3000, 1, 1, true); renderAll(); });
     await p.evaluate(() => { assets.semi.price *= 1.3; posSig = ''; renderAll(); __snd.length = 0; });
-    await p.locator('#positionsBox .sell-btn').first().click();
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#positionsBox .sell-btn'), p.locator('#positionsBox .sell-btn').first()).click();
     await sleep(120);
     if(W === 1920) await p.screenshot({ path: `${S}/esc-cashout-${W}.png` });
     await sleep(1500);

@@ -37,7 +37,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(250);
   s = await st(); ok('Enter → 영끌 출격: 번쩍 → 0.2초 뒤 TR룸 장전', flashed && s.tab === 'play' && s.phase === 'premarket', { flashed, s });
   // ≡ → 타이틀 → 이어하기 보임
-  await p.click('#menuBtn'); await p.locator('[data-menu="title"]').click(); await sleep(400);
+  await p.click('#menuBtn'); await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-menu="title"]'), p.locator('[data-menu="title"]')).click(); await sleep(400);
   s = await st(); ok('판 있음 → 이어하기 표시', s.tab === 'title' && s.cont, s);
   // 영끌 출격 확인
   await p.evaluate(() => { run.cash = 12345; setTitleSel(titleItems().indexOf($('startBtn')), false); });

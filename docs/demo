@@ -5141,26 +5141,32 @@ function fitPages(host, opts){
   bar._host = host;
   const firstBtn = [...host.children].find(c => c.matches('.ov-btn,.ov-btns'));
   host.insertBefore(bar, firstBtn || null);
-  let cut = 0, pages = [], page = 0;
-  for(let iter = 0; iter < 5; iter++){
-    blocks.concat(wraps).forEach(b => b.classList.remove('pg-hide'));
-    const rs = blocks.map(b => b.getBoundingClientRect()), top0 = Math.min(...rs.map(r => r.top)), bottom = Math.max(...rs.map(r => r.bottom));
-    const avail = (bottom - top0) - (host.scrollHeight - host.clientHeight) - cut;
-    pages = []; let start = top0, cur = 0;
-    rs.forEach((r, i) => { if(r.bottom - start > avail + 0.5 && r.top > start + 0.5){ cur++; start = r.top; } pages.push(cur); });
-    for(let i = blocks.length - 2; i >= 0; i--)   // 소제목이 쪽 끝에 홀로 남지 않게 다음 쪽으로
-      if(blocks[i].matches(PG_HEAD) && pages[i + 1] > pages[i] && (i === 0 || pages[i - 1] === pages[i])) pages[i] = pages[i + 1];
-    const n = Math.max(...pages) + 1;
-    page = Math.max(0, Math.min(n - 1, opts.page !== undefined ? opts.page : (+host.dataset.pg || 0)));
-    blocks.forEach((b, i) => b.classList.toggle('pg-hide', pages[i] !== page));
+  // 쪽 나누기는 요청한 쪽과 무관하게 한 번만 정한다 — 같은 줄(격자 한 줄)의 블록은 한 묶음, 묶음을 하나씩 더해 보며 칸에 들어가는 만큼 한 쪽
+  const rs = blocks.map(b => b.getBoundingClientRect()), groups = [];
+  blocks.forEach((b, i) => { const g = groups[groups.length - 1]; if(g && Math.abs(rs[g[0]].top - rs[i].top) < 1 && blocks[g[0]].parentElement === b.parentElement) g.push(i); else groups.push([i]); });
+  const pageOf = new Array(blocks.length).fill(0);
+  const show = pg => {
+    blocks.forEach((b, i) => b.classList.toggle('pg-hide', pageOf[i] !== pg));
     wraps.slice().reverse().forEach(w => w.classList.toggle('pg-hide', ![...w.children].some(c => !c.classList.contains('pg-hide') && !skip(c))));
-    bar.querySelector('.pg-n').textContent = `${page + 1}/${n}`;
-    bar.querySelector('[data-pg="-1"]').disabled = page === 0;
-    bar.querySelector('[data-pg="1"]').disabled = page === n - 1;
-    bar.dataset.n = n;
-    if(!over()) break;
-    cut += host.scrollHeight - host.clientHeight + 1;
+  };
+  let n = 0, g = 0;
+  while(g < groups.length){
+    let end = g;   // 이번 쪽 = groups[g..end]
+    const set = (a, z) => { groups.forEach((gr, k) => { if(k >= a) gr.forEach(i => { pageOf[i] = k <= z ? n : -1; }); }); show(n); };   // 앞 쪽들은 그대로
+    set(g, end);
+    while(end + 1 < groups.length){ set(g, end + 1); if(over()){ set(g, end); break; } end++; }
+    const head = groups[end].every(i => blocks[i].matches(PG_HEAD));
+    if(head && end > g && end + 1 < groups.length) end--;   // 소제목이 쪽 끝에 홀로 남지 않게
+    groups.forEach((gr, k) => { if(k >= g && k <= end) gr.forEach(i => { pageOf[i] = n; }); });
+    n++; g = end + 1;
   }
+  groups.forEach((gr, k) => gr.forEach(i => { if(pageOf[i] < 0) pageOf[i] = n - 1; }));
+  const page = Math.max(0, Math.min(n - 1, opts.page !== undefined ? opts.page : (+host.dataset.pg || 0)));
+  show(page);
+  bar.querySelector('.pg-n').textContent = `${page + 1}/${n}`;
+  bar.querySelector('[data-pg="-1"]').disabled = page === 0;
+  bar.querySelector('[data-pg="1"]').disabled = page === n - 1;
+  bar.dataset.n = n;
   host.dataset.pg = String(page);
 }
 document.addEventListener('click', e => {

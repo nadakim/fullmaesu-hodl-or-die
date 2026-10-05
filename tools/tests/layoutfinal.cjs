@@ -68,7 +68,7 @@ const measure = p => p.evaluate(() => {
     if (SHOTS) await p.screenshot({ path: `${SHOTS}/nine-${t}.png` });
     // 매도 버튼 동작: 한 포지션 매도
     const before = await p.evaluate(() => run.positions.length);
-    await p.locator('#positionsBox .hold-row .sell-btn').first().click(); await sleep(300);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#positionsBox .hold-row .sell-btn'), p.locator('#positionsBox .hold-row .sell-btn').first()).click(); await sleep(300);
     const after = await p.evaluate(() => run.positions.length);
     ok(`${t} 매도 버튼 동작`, after === before - 1, [before, after]);
     ok(`${t} pageerror 없음`, p.errs.length === 0, p.errs); await p.close();

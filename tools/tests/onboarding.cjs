@@ -31,10 +31,10 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
       delist: !!document.querySelector('.quote-row[data-q="delist"]').offsetParent, news: !!document.querySelector('.news-row').offsetParent }));
     ok(W + ' 1주차: 시그널·인버스·작전주·뉴스 숨김', !w1.sig && !w1.inv && !w1.delist && !w1.news, w1);
     ok(W + ' 1주차: 시작 덱에 잠긴 카드 없음 (롱 종목 + 손절/익절)', w1.deck.length === 10 && w1.held.indexOf('short') >= 0 && w1.deck.indexOf('credit') < 0, w1.deck);
-    await p.locator('#menuBtn').click(); await sleep(150);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#menuBtn'), p.locator('#menuBtn')).click(); await sleep(150);
     const menu = await p.evaluate(() => [...document.querySelectorAll('#menuPanel button')].filter(e => e.offsetParent).map(e => e.dataset.menu));
     ok(W + ' 1주차: 메뉴에 찌라시·시그널 설명서·섹터 없음', menu.indexOf('tips') < 0 && menu.indexOf('signalGuide') < 0 && menu.indexOf('sectors') < 0 && menu.indexOf('deck') >= 0, menu);
-    await p.locator('#menuBtn').click(); await sleep(100);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#menuBtn'), p.locator('#menuBtn')).click(); await sleep(100);
     const blk = await p.evaluate(() => { run.hand = ['short', 'credit', 'stk_semi'].map(newCard); handSig = ''; renderAll(); return [checkPlay(0), checkPlay(1), checkPlay(2, undefined, { amount: 1000 })]; });
     ok(W + ' 1주차: 잠긴 카드 사용 차단 (엔진 sysLocked)', blk[0] === 'sysLocked' && blk[1] === 'sysLocked' && blk[2] === null, blk);
     const pools = await p.evaluate(() => [CARDS.filter(c => cardAllowed(c.id)).some(c => ['short', 'credit', 'dove', 'rpt_semi'].indexOf(c.base) >= 0 || c.type === 'report'), tipChance()]);
@@ -62,7 +62,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
       if(i === 0 && W === 1920) await p.screenshot({ path: `${S}/onboarding-popup-${W}.png` });
       const lines = await p.evaluate(() => $('overlayBox').querySelectorAll('.unlock-lines p').length);
       if(lines > 3) titles.push('TOO_LONG');
-      await p.locator('[data-act="unlockNext"]').click(); await sleep(350);
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="unlockNext"]'), p.locator('[data-act="unlockNext"]')).click(); await sleep(350);
     }
     ok(W + ' 2주차: 해금 소개 3장 (시그널·찌라시·뉴스), 한 장 3줄 이내', titles.length === 3 && titles.join().includes('시그널') && titles.join().includes('찌라시') && titles.join().includes('뉴스'), titles);
     const w2 = await p.evaluate(() => ({ round: run.round, sig: [...document.querySelectorAll('.q-sig')].some(e => e.offsetParent), inv: !!document.querySelector('.quote-row[data-q="inv"]').offsetParent,
@@ -80,7 +80,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
       await p.waitForFunction(() => overlayOpen && $('overlayBox').textContent.includes('새 시스템 해금'), null, { timeout: 3000 }).catch(() => {});
       const t = await p.evaluate(() => overlayOpen && $('overlayBox').textContent.includes('새 시스템 해금') ? $('overlayBox').querySelector('.ov-title').textContent : '');
       if(!t) break;
-      t3.push(t); await p.locator('[data-act="unlockNext"]').click(); await sleep(300);
+      t3.push(t); await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="unlockNext"]'), p.locator('[data-act="unlockNext"]')).click(); await sleep(300);
     }
     const w3 = await p.evaluate(() => ({ round: run.round, inv: !!document.querySelector('.quote-row[data-q="inv"]').offsetParent, deck: ['credit', 'short', 'hodl', 'marginTopup', 'stk_inv'].every(id => run.masterDeck.indexOf(id) >= 0),
       held: run.heldCards.length, fss: !!$('fssBox').offsetParent || document.body.classList.contains('lock-fss') }));
