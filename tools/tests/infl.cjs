@@ -24,10 +24,10 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     ok(/1주차 대비 \+36%/.test(w4.bar) && /유물 \+30%/.test(w4.bar), W + ' 상단 바 "물가 상승률: 1주차 대비 +36%"', w4.bar.slice(-60));
     ok(w4.packs.every(([t, p]) => t.startsWith('💼 ' + p.toLocaleString() + '만') && t.endsWith('(▲36%)')) && w4.packs[1][1] === 680, W + ' 팩 가격 = packPrice (주도주 500→680) + ▲36%', w4.packs);
     ok(w4.single.indexOf(w4.singleP.toLocaleString() + '만') >= 0 && /▲36%/.test(w4.single) && /▲30%/.test(w4.relic) && w4.relic.indexOf(w4.relicP.toLocaleString()) >= 0 && w4.relicP === 1170, W + ' 낱장 ▲36% · 유물 ▲30% (캐피탈 900→1170)', [w4.single, w4.relic]);
-    await page.locator('[data-pack-info="leader"]').click(); await page.waitForTimeout(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pack-info="leader"]'), page.locator('[data-pack-info="leader"]')).click(); await page.waitForTimeout(150);
     const pop = await page.evaluate(() => [document.querySelector('.pki-price').textContent, document.querySelector('[data-pack-buy]').textContent]);
     ok(/680만 \(▲36%\)/.test(pop[0]) && /구매 💼 680만/.test(pop[1]), W + ' 팩 팝업 가격 = 인상가', pop);
-    await page.locator('[data-act="close"]').click(); await page.waitForTimeout(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="close"]'), page.locator('[data-act="close"]')).click(); await page.waitForTimeout(100);
     // 실제 차감
     // 낱장을 먼저 산다 (팩이 먼저면 같은 카드가 나와 낱장이 '덱에 있음'이 될 수 있다)
     const spent = await page.evaluate(() => { const singleP = singlePrice(run.shop.singles[0]); const s2 = run.slush; buySingle(0); const si = s2 - run.slush;

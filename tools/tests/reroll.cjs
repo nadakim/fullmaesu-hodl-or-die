@@ -16,7 +16,7 @@ const box = (page, k) => page.evaluate(k => { const b = document.querySelector(`
     ok(/🔄 새로고침 💼 100만/.test(s.txt) && s.next === '다음 150 → 230' && /💼 250만/.test(r.txt) && r.next === '다음 380 → 560', W + ' 버튼 가격·다음 두 단계 (낱장 100, 유물 250)', [s, r]);
     // 1개 사고 낱장 새로고침
     const pre = await page.evaluate(() => { buySingle(0); renderShop(); return { singles: run.shop.singles.slice(), bought: run.shop.singles[0], slush: run.slush }; });
-    await page.locator('[data-reroll="single"]').click();
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-reroll="single"]'), page.locator('[data-reroll="single"]')).click();
     await page.waitForTimeout(60);
     const outN = await page.evaluate(() => document.querySelectorAll('#shopBox .shop-singles .rr-out').length);
     await page.waitForTimeout(250);
@@ -31,7 +31,7 @@ const box = (page, k) => page.evaluate(k => { const b = document.querySelector(`
     if (W !== 1366) { await page.waitForTimeout(100); await page.screenshot({ path: `${S}/reroll-${W}.png` }); }
     // 유물 새로고침
     const r0 = await page.evaluate(() => ({ relics: run.shop.relics.slice(), slush: run.slush }));
-    await page.locator('[data-reroll="relic"]').click(); await page.waitForTimeout(300);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-reroll="relic"]'), page.locator('[data-reroll="relic"]')).click(); await page.waitForTimeout(300);
     const r1 = await page.evaluate(() => ({ relics: run.shop.relics.slice(), slush: run.slush, anim: document.querySelectorAll('#shopBox .relic-row .rr-in').length }));
     ok(r0.slush - r1.slush === 250 && r1.relics.length === 3 && r1.relics.every(id => r0.relics.indexOf(id) < 0) && new Set(r1.relics).size === 3 && r1.anim === 3, W + ' 유물 새로고침: 250 차감, 3칸 모두 다른 유물, 뒤집히며 등장', [r0, r1]);
     // 비자금 부족 → 비활성

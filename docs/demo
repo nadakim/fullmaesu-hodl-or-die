@@ -1255,6 +1255,8 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .fx-skip{position:fixed;left:50%;bottom:calc(14 * var(--u));transform:translateX(-50%);z-index:200;--bk-ring:var(--text);background:var(--panel2);color:var(--text);
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);padding:calc(5 * var(--u)) calc(14 * var(--u));}
 .fx-skip[hidden]{display:none;}
+.ov-row{display:flex;gap:calc(8 * var(--u));}
+.ov-row .ov-btn{flex:1 1 0;margin-top:0;margin-bottom:0;min-width:0;}
 /* 스크롤 없는 화면: 쪽 넘김 (fitPages) */
 .pg-hide{display:none !important;}
 .pg-bar{display:flex;align-items:center;justify-content:center;gap:calc(10 * var(--u));margin:calc(6 * var(--u)) 0;font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);color:var(--text);}
@@ -5115,7 +5117,7 @@ function showOverlay(html){ glossaryOpen = false; $('overlay').classList.remove(
    host = 높이가 정해진 칸(오버레이 상자 · 데스크톱 화면). 제목·필터·버튼(PG_KEEP)은 매 쪽에 남기고, 나머지 블록을 칸 높이에 맞춰 쪽으로 나눈다.
    블록이 칸 높이의 절반보다 크면 그 안의 자식(카드 격자·목록 행·통계 칸)으로 내려가서 나눈다 (카드·.pg-atom은 쪼개지 않음).
    쪽 넘김 = ◀ n/N ▶ 막대(.pg-bar, 클릭). 내용이 들어가면 아무것도 하지 않는다. 다시 그려도 지금 쪽(host.dataset.pg)을 유지 */
-const PG_KEEP = '#overlayBox > .ov-title,#overlayBox .result-kicker,#overlayBox > .ov-btn,#overlayBox > .ov-btns,.gloss > .ov-title,.pg-keep,.pg-bar,.coll-filter,.shop-title,.shop-sub,.shop-bar,.coll-head,.deck-tabs';
+const PG_KEEP = '#overlayBox > .ov-title,#overlayBox .result-kicker,#overlayBox .ov-btn,#overlayBox .ov-btns,#overlayBox [data-act="close"],.gloss > .ov-title,.pg-keep,.pg-bar,.coll-filter,.shop-title,.shop-sub,.shop-bar,.coll-head,.deck-tabs';
 const PG_HEAD = '.section-label,.shop-sec-head,.pile-title,.stat-caption';
 function fitPages(host, opts){
   if(!host) return;
@@ -5167,6 +5169,18 @@ document.addEventListener('click', e => {
   const host = b.closest('.pg-bar')._host;
   fitPages(host, { page: (+host.dataset.pg || 0) + (+b.dataset.pg) });
 });
+/* 쪽으로 나뉜 칸에서 요소가 가려져 있으면 그 요소가 있는 쪽으로 넘긴다 (클릭 전용 조작·자동 점검 공용) */
+function revealPaged(t){
+  const el = typeof t === 'string' ? document.querySelector(t) : t;
+  if(!el) return false;
+  if(!el.closest('.pg-hide')) return true;
+  let host = el.parentElement;
+  while(host && ![...host.children].some(c => c.classList.contains('pg-bar'))) host = host.parentElement;
+  if(!host) return false;
+  const n = +[...host.children].find(c => c.classList.contains('pg-bar')).dataset.n || 1;
+  for(let pg = 0; pg < n; pg++){ fitPages(host, { page: pg }); if(!el.closest('.pg-hide')) return true; }
+  return false;
+}
 function fitActiveScreen(){   // 타이틀·전투 화면은 자체 배치 (넘침 없음) — 나머지 데스크톱 화면만
   const scr = document.querySelector('.screen.active');
   if(scr && scr.id !== 'screen-play' && scr.id !== 'screen-title' && !isMobileLayout()) fitPages(scr);
@@ -5184,9 +5198,11 @@ function showReward(d){
     <div class="ov-cards">${run.rewardChoices.length
       ? run.rewardChoices.map(id => cardHtml(CARD_BY_ID[id], { attrs: `data-reward="${id}"` })).join('')
       : '<div class="empty-note">덱에 없는 카드가 더 이상 없습니다</div>'}</div>
-    <button class="btn-chunky ov-btn alt" data-act="upgradeMode" ${run.masterDeck.some(canUpgrade) ? '' : 'disabled'}>✦ 카드 강화 (덱의 카드 1장 → +)</button>
-    <button class="btn-chunky ov-btn alt" data-act="removeMode" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거 (덱 압축)</button>
-    <button class="btn-chunky ov-btn alt" data-act="skip">▷ 건너뛰기</button>`);
+    <div class="ov-btns ov-row">
+      <button class="btn-chunky ov-btn alt" data-act="upgradeMode" title="덱의 카드 1장을 강화판(+)으로" ${run.masterDeck.some(canUpgrade) ? '' : 'disabled'}>✦ 카드 강화</button>
+      <button class="btn-chunky ov-btn alt" data-act="removeMode" title="덱에서 카드 1장 빼기 (덱 압축)" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거</button>
+      <button class="btn-chunky ov-btn alt" data-act="skip">▷ 건너뛰기</button>
+    </div>`);   /* 버튼 한 줄 — 카드 3장이 쪽 넘김 없이 첫 화면에 보이게 */
 }
 
 /* 보상 대신 카드 강화: 덱에서 강화할 수 있는 카드 1장 (이미 +인 카드·상태 카드 제외) */

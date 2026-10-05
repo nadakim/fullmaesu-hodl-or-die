@@ -9,9 +9,9 @@ const S = process.argv[2];
   await p.locator('#shopBox .relic-row:not(.own-relics)').scrollIntoViewIfNeeded();
   const r = await p.evaluate(() => ({ phase: run.phase, n: run.shop.relics.length, tiles: document.querySelectorAll('#shopBox .relic-row:not(.own-relics) .relic-tile').length, odds: document.querySelector('.relic-odds') && document.querySelector('.relic-odds').textContent }));
   const s0 = await p.evaluate(() => run.slush);
-  await p.locator('[data-buy-relic]').nth(1).click(); await p.waitForTimeout(200);
+  await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-buy-relic]'), p.locator('[data-buy-relic]').nth(1)).click(); await p.waitForTimeout(200);
   const bought = await p.evaluate(s0 => [run.relics.length, s0 - run.slush], s0);
-  await p.locator('[data-reroll="relic"]').click(); await p.waitForTimeout(700);
+  await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-reroll="relic"]'), p.locator('[data-reroll="relic"]')).click(); await p.waitForTimeout(700);
   const rr = await p.evaluate(() => [run.shop.relics.length, document.querySelectorAll('#shopBox .relic-row:not(.own-relics) .relic-tile').length]);
   await p.locator('#shopBox .relic-row:not(.own-relics)').scrollIntoViewIfNeeded(); await p.screenshot({ path: `${S}/w/shoprel-${W}.png` });
   console.log(W, JSON.stringify(r), 'buy', bought, 'reroll', rr); await p.close(); }

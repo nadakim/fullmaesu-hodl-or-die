@@ -27,8 +27,8 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     ok(Math.abs(r2.a - 4.2) < 1e-9 && Math.abs(r2.b - 4.8) < 1e-9 && r2.order === 'dopamine,seal', W + ' 칸 순서대로 정산 (+ 앞 4.8 > × 앞 4.2)', r2);
     // 3) ◀▶ 버튼 · ←→ 키 · 장중 불가
     await page.evaluate(() => { relicSig = ''; renderAll(); });
-    await page.locator('#relicBar [data-relic="seal"]').click(); await sleep(100);
-    await page.locator('#relicTip [data-relic-move="-1"]').click(); await sleep(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#relicBar [data-relic="seal"]'), page.locator('#relicBar [data-relic="seal"]')).click(); await sleep(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#relicTip [data-relic-move="-1"]'), page.locator('#relicTip [data-relic-move="-1"]')).click(); await sleep(100);
     const r3 = await page.evaluate(() => run.relics.join());
     await page.keyboard.press('ArrowRight'); await sleep(100);
     const r3b = await page.evaluate(() => run.relics.join());
@@ -51,32 +51,32 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
       return { full, extra, phase: run.phase }; });
     ok(r5.full && !r5.extra && r5.phase === 'reward', W + ' 6칸이면 gainRelic 실패', r5);
     for(let i = 0; i < 40 && !(await page.evaluate(() => !!chainHold)); i++) await sleep(100);
-    await sleep(560); await page.locator('[data-act="chainNext"]').click(); await sleep(200);
-    await page.locator('[data-act="toReward"]').click(); await sleep(150);
-    await page.locator('[data-act="skip"]').click(); await sleep(200);
+    await sleep(560); await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), page.locator('[data-act="chainNext"]')).click(); await sleep(200);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="toReward"]'), page.locator('[data-act="toReward"]')).click(); await sleep(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="skip"]'), page.locator('[data-act="skip"]')).click(); await sleep(200);
     const rewardId = await page.evaluate(() => run.relicChoices[0]);
-    await page.locator('[data-relic-reward]').first().click(); await sleep(200);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-relic-reward]'), page.locator('[data-relic-reward]').first()).click(); await sleep(200);
     ok(await page.locator('[data-swap-pick]').count() === 6, W + ' 가득 찬 칸 → 교체할 유물 6개 표시');
     if(W === 1920) await page.screenshot({ path: S + '/relicslots-swap.png' });
-    await page.locator('[data-swap-pick="capital"]').click(); await sleep(200);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-swap-pick="capital"]'), page.locator('[data-swap-pick="capital"]')).click(); await sleep(200);
     const r5b = await page.evaluate(() => ({ relics: run.relics.slice(), phase: run.phase }));
     ok(r5b.relics.length === 6 && r5b.relics.indexOf('capital') < 0 && r5b.relics[3] === rewardId && r5b.phase === 'shop', W + ' 교체: 캐피탈 칸(4번)에 새 유물', r5b);
     // 6) 암시장: 보유 유물 ◀▶ · 판매(두 번) · 가득 찬 칸 구매 → 교체
     await sleep(300);
     const before = await page.evaluate(() => ({ slush: run.slush, price: relicSellPrice('payday') }));
-    await page.locator('[data-own-sell="payday"]').click(); await sleep(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-own-sell="payday"]'), page.locator('[data-own-sell="payday"]')).click(); await sleep(100);
     const armed = await page.evaluate(() => hasRelic('payday'));
-    await page.locator('[data-own-sell="payday"]').click(); await sleep(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-own-sell="payday"]'), page.locator('[data-own-sell="payday"]')).click(); await sleep(150);
     const after = await page.evaluate(() => ({ slush: run.slush, has: hasRelic('payday'), n: run.relics.length }));
     ok(armed && !after.has && after.n === 5 && after.slush === before.slush + before.price && before.price > 0, W + ' 판매: 두 번 눌러야 · 비자금 +판매가', [before, after]);
-    await page.locator('[data-own-move="1"][data-own-relic="dopamine"]').click(); await sleep(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-own-move="1"][data-own-relic="dopamine"]'), page.locator('[data-own-move="1"][data-own-relic="dopamine"]')).click(); await sleep(150);
     ok(await page.evaluate(() => run.relics[1] === 'dopamine'), W + ' 암시장 ▶ 버튼으로 칸 이동');
     const r6 = await page.evaluate(() => {   // 칸 채우기: 보유·진열에 없는 유물 (보상으로 vip가 나왔을 수도 있어 고정 id를 쓰지 않는다)
       const fill = RELICS.map(r => r.id).find(x => !hasRelic(x) && run.shop.relics.indexOf(x) < 0); gainRelic(fill, 't'); run.slush = 99999; const id = run.shop.relics.find(x => !hasRelic(x)); renderShop(); return id; });
     ok(await page.evaluate(() => relicSlotsFull()), W + ' 암시장: 6칸 가득');
-    await page.locator(`[data-buy-relic="${r6}"]`).click(); await sleep(200);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, `[data-buy-relic="${r6}"]`), page.locator(`[data-buy-relic="${r6}"]`)).click(); await sleep(200);
     ok(await page.locator('[data-swap-pick]').count() === 6, W + ' 가득 찬 칸에서 구매 → 교체 오버레이');
-    await page.locator('[data-act="swapGiveUp"]').click(); await sleep(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="swapGiveUp"]'), page.locator('[data-act="swapGiveUp"]')).click(); await sleep(150);
     ok(await page.evaluate(id => !hasRelic(id) && run.slush === 99999, r6), W + ' 사지 않기 → 비자금 그대로');
     if(W === 1920){ await page.evaluate(() => renderShop()); await page.screenshot({ path: S + '/relicslots-shop.png', fullPage: false }); }
     await page.close();

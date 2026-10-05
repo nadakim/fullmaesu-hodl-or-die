@@ -18,9 +18,9 @@ const st = page => page.evaluate(() => ({ title: [...document.querySelectorAll('
     ok(/이번 주 0회 제거 · 다음 제거 💼 400만/.test(s.title) && /400 → 640 → 1,020/.test(s.ladder), W + ' 제목·다음 두 단계 가격 (1주차 400 → 640 → 1,020)', [s.title, s.ladder.slice(0, 40)]);
     const prices = [];
     for (let k = 0; k < 3; k++) {
-      await page.locator('[data-shop-remove="0"]').click(); await page.waitForTimeout(80);
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-shop-remove="0"]'), page.locator('[data-shop-remove="0"]')).click(); await page.waitForTimeout(80);
       const before = await st(page);
-      await page.locator('#shopRemoveBtn').click(); await page.waitForTimeout(120);
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#shopRemoveBtn'), page.locator('#shopRemoveBtn')).click(); await page.waitForTimeout(120);
       const after = await st(page);
       prices.push(before.slush - after.slush);
       if (k === 0) {
@@ -31,7 +31,7 @@ const st = page => page.evaluate(() => ({ title: [...document.querySelectorAll('
     }
     s = await st(page);
     ok(prices.join() === '400,640,1020' && s.removed === 3 && /3회 제거 · 다음 제거 💼 1,640만/.test(s.title) && /1,640 → 2,620 → 4,190/.test(s.ladder), W + ' 같은 주 3번 제거: 400 → 640 → 1,020 차감, 다음 1,640', [prices, s.title]);
-    await page.locator('[data-shop-remove="0"]').click(); await page.waitForTimeout(80);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-shop-remove="0"]'), page.locator('[data-shop-remove="0"]')).click(); await page.waitForTimeout(80);
     s = await st(page);
     ok(s.dis && /비자금 부족 \(💼 1,640만\)/.test(s.btn), W + ' 비자금 부족 → 비활성 + 이유', s.btn);
     // 다음 주: 초기화 + 기본가 +200
