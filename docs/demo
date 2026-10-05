@@ -5310,8 +5310,10 @@ function showRemove(){
   showOverlay(`
     <div class="ov-title" style="color:var(--red)">카드 제거</div>
     <div class="ov-sub">덱에서 없앨 카드 1장을 고르세요.</div>
-    <div class="deck-list">${run.masterDeck.map((id, i) => cardHtml(CARD_BY_ID[id], { attrs: `data-remove="${i}"` })).join('')}</div>
+    <div class="deck-list scroll-list" id="removeList">${run.masterDeck.map((id, i) => cardHtml(CARD_BY_ID[id], { attrs: `data-remove="${i}"` })).join('')}</div>
     <button class="btn-chunky ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
+  $('overlayBox').classList.add('ov-wide');
+  fitPages($('overlayBox'), { page: 0 });
 }
 
 /* 덱 확인 (스크롤 없음): 더미 탭 · 작은 카드 격자(칸에 들어가는 만큼 + ◀ n/N ▶) · 카드를 누르면 오른쪽 고정 상세 패널에 전문 */

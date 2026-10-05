@@ -14,7 +14,7 @@ let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SIZES = [[1920, 1080], [1280, 800], [1280, 720]];
-const ALLOW = { shop: '#shopScroll', upgrade: '#upgradeList', deck: '#deckGrid', collection: '#collectionBox' };   // 허용 목록
+const ALLOW = { shop: '#shopScroll', upgrade: '#upgradeList', remove: '#removeList', deck: '#deckGrid', collection: '#collectionBox' };   // 허용 목록
 const ALLOW_ALL = Object.values(ALLOW).join(',');
 
 // ── CSS 정적 검사: overflow(-x|-y): auto|scroll (모바일 @media (max-width: 900px) 블록 안은 제외) ──
@@ -48,7 +48,8 @@ const STATES = [
   { name: 'reward-card', qs: 'scenario=nine', play: true, fn: () => { run.phase = 'reward'; run.rewardStep = 'card'; run.rewardChoices = rollRewardChoices(); run.relicChoices = []; showReward(); } },
   { name: 'reward-upgrade', qs: 'scenario=nine', play: true, list: 'upgrade', many: true, fixed: ['[data-act="backReward"]'], fn: () => { run.phase = 'reward'; run.rewardStep = 'card'; run.rewardChoices = rollRewardChoices(); run.masterDeck = CARDS.filter(c => c.type !== 'status' && !/\+$/.test(c.id) && canUpgrade(c.id)).map(c => c.id).slice(0, 36); showUpgradePick(); } },
   { name: 'reward-upgrade-few', qs: 'scenario=nine', play: true, list: 'upgrade', many: false, fixed: ['[data-act="backReward"]'], fn: () => { run.phase = 'reward'; run.rewardStep = 'card'; run.rewardChoices = rollRewardChoices(); run.masterDeck = CARDS.filter(c => c.type !== 'status' && !/\+$/.test(c.id) && canUpgrade(c.id)).map(c => c.id).slice(0, 4); showUpgradePick(); } },
-  { name: 'reward-remove', qs: 'scenario=nine', play: true, fn: () => { run.phase = 'reward'; run.rewardStep = 'card'; run.rewardChoices = rollRewardChoices(); showRemove(); } },
+  { name: 'reward-remove', qs: 'scenario=nine', play: true, list: 'remove', many: true, fixed: ['[data-act="backReward"]'], fn: () => { run.phase = 'reward'; run.rewardStep = 'card'; run.rewardChoices = rollRewardChoices(); run.masterDeck = CARDS.filter(c => c.type !== 'status').map(c => c.id).slice(0, 36); showRemove(); } },
+  { name: 'reward-remove-few', qs: 'scenario=nine', play: true, list: 'remove', many: false, fixed: ['[data-act="backReward"]'], fn: () => { run.phase = 'reward'; run.rewardStep = 'card'; run.rewardChoices = rollRewardChoices(); run.masterDeck = CARDS.filter(c => c.type !== 'status').map(c => c.id).slice(0, 4); showRemove(); } },
   { name: 'reward-relic', qs: 'scenario=nine', play: true, fn: () => { run.phase = 'reward'; run.rewardStep = 'relic'; run.relicChoices = rollRelics(3); showRelicReward(); } },
   { name: 'relic-swap', qs: 'scenario=nine', play: true, fn: () => { RELICS.slice(0, RELIC_SLOTS).forEach(r => gainRelic(r.id, 't')); run.phase = 'reward'; run.rewardStep = 'relic'; run.relicChoices = rollRelics(3); showRelicSwap('reward', run.relicChoices[0]); } },
   { name: 'shop', qs: 'scenario=nine', play: true, list: 'shop', many: true, fixed: ['#shopLeaveBtn', '.shop-bar'], fn: () => { RELICS.slice(0, 4).forEach(r => gainRelic(r.id, 't')); run.masterDeck = CARDS.filter(c => c.type !== 'status').map(c => c.id).slice(0, 40); run.slush = 50000; openShop(); switchTab('shop'); renderAll(); } },
