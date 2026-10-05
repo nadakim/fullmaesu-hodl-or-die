@@ -5,7 +5,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of sizes) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(W + ' ' + e.message)); p.on('console', m => m.type() === 'error' && errs.push(W + ' ' + m.text()));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await p.evaluate(() => document.fonts.ready);
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await p.evaluate(() => document.fonts.ready);
     await p.click('#startBtn'); await sleep(300);
     const setup = n => p.evaluate(n => { window.tipChance = () => 0; clearToasts && clearToasts();
       run.hand = ['stk_semi','dove','pump','indicators','credit','stopLoss','hodl','yolo','cutLoss','ipo'].slice(0, n).map(newCard); handSig=''; run.ap = 9;

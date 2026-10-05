@@ -10,7 +10,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920, 1080], [1280, 800]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
     await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
     await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(900);
     await p.evaluate(() => { window.tipChance = () => 0; });
@@ -25,7 +25,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
         reasons: cs.filter(c => c.classList.contains('disabled')).map(c => c.querySelector('.cv-reason').textContent),
         reasonVisible: cs.filter(c => c.classList.contains('disabled')).some(c => getComputedStyle(c.querySelector('.cv-reason')).display !== 'none'),
         lockVisible: cs.filter(c => c.classList.contains('disabled')).every(c => getComputedStyle(c.querySelector('.cv-lock')).display !== 'none'),
-        gems: [...new Set(cs.map(c => getComputedStyle(c.querySelector('.cv-gem')).clipPath))].length };
+        gems: [...new Set(cs.map(c => c.querySelector('.cv-gem path').getAttribute('d')))].length };   // 보석 = 등급별 7×7 픽셀 SVG
     });
     ok(`${W} 손패 6장 전부 cardView`, hand.n === 6 && hand.cv && hand.old === 0, hand);
     ok(`${W} 손패 2:3 비율`, hand.ratio.every(r => Math.abs(r - 2 / 3) < 0.02), hand.ratio);
@@ -78,7 +78,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 5) 상태 시트 + 선택·비활성·날아가기 (1920×1080)
   const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
   await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(900);
   await p.evaluate(() => { window.tipChance = () => 0; });
@@ -87,7 +87,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // selected: 대상 지정 카드(손절 예약 → 포지션 필요) 대신 종목 카드로 클릭 선택이 되는지 — 선택 상태는 UI의 selectedIdx
   await p.evaluate(() => { run.positions.length || playCard(0, null); run.hand = ['stopLoss', 'stk_coin', 'dove'].map(newCard); handSig = ''; renderAll(); });
   await sleep(600);
-  await p.locator('#handBox .card').first().click(); await sleep(300);
+  await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), p.locator('#handBox .card').first()).click(); await sleep(300);
   const sel = await p.evaluate(() => { const c = document.querySelector('#handBox .card.selected'); if(!c) return null; const cs = getComputedStyle(c); return { shadow: cs.boxShadow, transform: cs.transform, rc: cs.getPropertyValue('--rc').trim() }; });
   ok('선택 상태: 흰 윤곽선(--text) + 위로 상승, 희귀도 링과 별개', !!sel && sel.shadow.includes('rgb(212, 222, 255)') && sel.transform !== 'none', sel);
   await p.keyboard.press('Escape'); await sleep(200);

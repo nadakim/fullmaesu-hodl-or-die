@@ -9,14 +9,14 @@ const CLEAR_BODY = `window.tipChance = () => 0; run.cash += currentTarget() * 1.
 const CLEAR_WEEK = `(() => { ${CLEAR_BODY} return run.phase; })()`;
 async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상 화면
   for(let i = 0; i < 60 && !(await p.evaluate(() => !!chainHold)); i++) await sleep(100);
-  await sleep(560); await p.locator('[data-act="chainNext"]').click(); await sleep(200);
+  await sleep(560); await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), p.locator('[data-act="chainNext"]')).click(); await sleep(200);
 }
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 일정
     const plan = await p.evaluate(() => ({ plan: run.bossPlan, boss: run.boss, chip: $('bossChip').hidden,
@@ -27,15 +27,15 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
     await p.evaluate(CLEAR_WEEK); await throughResult(p);
     ok(W + ' 결산 결과에 다음 주 보스 예고', await p.evaluate(id => !!document.querySelector(`#overlayBox .boss-notice[data-boss="${id}"]`), plan.plan[2]));
     await p.screenshot({ path: `${S}/boss-result-${W}.png` });
-    await p.locator('[data-act="toReward"]').click(); await sleep(200);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="toReward"]'), p.locator('[data-act="toReward"]')).click(); await sleep(200);
     ok(W + ' 카드 보상에 예고', await p.evaluate(id => !!document.querySelector(`#overlayBox .boss-notice[data-boss="${id}"]`), plan.plan[2]));
-    await p.locator('[data-act="skip"]').click(); await sleep(200);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="skip"]'), p.locator('[data-act="skip"]')).click(); await sleep(200);
     ok(W + ' 유물 보상에 예고', await p.evaluate(id => !!document.querySelector(`#overlayBox .boss-notice[data-boss="${id}"]`), plan.plan[2]));
-    await p.locator('[data-act="skipRelic"]').click(); await sleep(300);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="skipRelic"]'), p.locator('[data-act="skipRelic"]')).click(); await sleep(300);
     ok(W + ' 암시장에 예고', await p.evaluate(id => currentTab === 'shop' && !!document.querySelector(`#shopBox .boss-notice[data-boss="${id}"]`), plan.plan[2]));
     await p.screenshot({ path: `${S}/boss-shop-${W}.png` });
     // 2주 개장 → 보스 경보 + HUD 배지
-    await p.locator('#shopLeaveBtn').click(); await sleep(400);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#shopLeaveBtn'), p.locator('#shopLeaveBtn')).click(); await sleep(400);
     const st = await p.evaluate(() => [run.round, run.boss, !!document.querySelector('.boss-alert'), Fx.queueBusy, !$('bossChip').hidden, $('bossChip').textContent]);
     ok(W + ' 보스 주 시작: 중앙 경보(시장 정지) + HUD 배지', st[0] === 2 && st[1] === plan.plan[2] && st[2] && st[3] && st[4] && st[5].includes(BOSS_NAME_PLACEHOLDER(st[1])), st);
     await p.screenshot({ path: `${S}/boss-alert-${W}.png` });
@@ -138,7 +138,7 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
     await p.screenshot({ path: `${S}/boss-over-${W}.png` });
     // 도감 보스 필터
     await p.evaluate(() => { hideOverlay(); switchTab('collection'); });
-    await p.locator('#collectionFilter [data-rarity="boss"]').click(); await sleep(150);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#collectionFilter [data-rarity="boss"]'), p.locator('#collectionFilter [data-rarity="boss"]')).click(); await sleep(150);
     ok(W + ' 도감 👹 보스: 전부 (최종 2 · 정산 카운터 3 · 빌드 카운터는 플래그 켬일 때 4)', await p.evaluate(() => [document.querySelectorAll('#collectionBox .boss-tile').length, document.querySelectorAll('#collectionBox .boss-tile.final').length, document.querySelectorAll('#collectionBox .boss-tile.counter').length, document.querySelectorAll('#collectionBox .boss-tile.build').length].join() === [BOSSES.length, 2, 3, BOSS_COUNTERS_ON ? 4 : 0].join()));
     await p.screenshot({ path: `${S}/boss-collection-${W}.png` });
     await p.evaluate(() => switchTab('records'));

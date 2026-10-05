@@ -7,7 +7,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const b = await chromium.launch(); const errs = [];
   const p = await b.newPage({ viewport: { width: 1366, height: 768 } });
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
   await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(500);
   const cls = () => p.evaluate(() => [$('fxStreak').className, $('fxStreak').textContent]);

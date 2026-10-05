@@ -7,7 +7,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function open(b, W, H, unlockWeek) {
   const p = await b.newPage({ viewport: { width: W, height: H } });
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
   if (unlockWeek) await p.evaluate(w => { try { localStorage.setItem('hodl.unlockWeek', w); } catch(e) {} }, unlockWeek);
   await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(500);
   await p.evaluate(() => { window.tipChance = () => 0; });

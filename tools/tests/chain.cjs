@@ -30,7 +30,7 @@ async function setupWeek(page, opt){
   }, opt);
 }
 // 결산 결과에서 멈춘 뒤 '▶ 다음' (0.5초 가드 뒤)
-const passNext = async page => { for(let i = 0; i < 60 && !(await page.evaluate(() => !!chainHold)); i++) await sleep(100); await sleep(560); await page.locator('[data-act="chainNext"]').click(); await sleep(150); };
+const passNext = async page => { for(let i = 0; i < 60 && !(await page.evaluate(() => !!chainHold)); i++) await sleep(100); await sleep(560); await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), page.locator('[data-act="chainNext"]')).click(); await sleep(150); };
 // 금액 문구는 페이지의 formatKrw 그대로 (큰 수 단위 표기)
 let fmtSigned, fmtMoney;
 const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.toString(), fmtMoney.toString(), formatKrw.toString(), 'const KRW_UNITS = ' + JSON.stringify(KRW_UNITS) + ', KRW_SIG_FROM = ' + KRW_SIG_FROM]);
@@ -41,7 +41,7 @@ const bindFmt = async page => { const f = await page.evaluate(() => [fmtSigned.t
   for(const [W, H] of [[1920, 1080], [1366, 768]]){
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(W + ': ' + e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await sleep(200);

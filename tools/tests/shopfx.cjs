@@ -11,7 +11,7 @@ const played = (p, n) => p.evaluate(n => __snd.filter(s => s[0] === n).length, n
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.evaluate(HOOK);
     await p.click('#startBtn'); await sleep(460);
     // 입장
@@ -41,7 +41,7 @@ const played = (p, n) => p.evaluate(n => __snd.filter(s => s[0] === n).length, n
     await p.screenshot({ path: `${S}/shopfx-pack-${W}.png` });
     await sleep(700);
     ok(W + ' 뒤집히며 등급 음', await played(p, 'packFlip') === 1);
-    await p.locator('#overlayBox [data-act="close"]').click(); await sleep(120);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), p.locator('#overlayBox [data-act="close"]')).click(); await sleep(120);
     // 신화: 암전 → 금빛 기둥 + 합창 → 회전 등장 → 화면 돌아옴
     const myth = await p.evaluate(() => CARDS.find(c => c.rarity === 'mythic').id);
     await p.evaluate(m => { __snd = []; onGameEvent('packOpened', { packId: SHOP_PACKS[0].id, cardId: m, deckSize: 12 }); }, myth);
@@ -54,9 +54,10 @@ const played = (p, n) => p.evaluate(n => __snd.filter(s => s[0] === n).length, n
     await p.screenshot({ path: `${S}/shopfx-mythic-${W}.png` });
     await sleep(1300);
     ok(W + ' 신화: 등장 뒤 화면이 돌아온다', await p.evaluate(() => !$('overlay').classList.contains('pk-dark') && getComputedStyle(document.querySelector('#overlayBox .ov-btn')).visibility === 'visible'));
-    await p.locator('#overlayBox [data-act="close"]').click(); await sleep(120);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), p.locator('#overlayBox [data-act="close"]')).click(); await sleep(120);
     // 유물 구매: 칸에 철컥
     await p.evaluate(() => { __snd = []; });
+    await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#shopBox [data-buy-relic]:not([disabled])');
     const rb = p.locator('#shopBox [data-buy-relic]:not([disabled])').first();
     const rid = await rb.getAttribute('data-buy-relic');
     await rb.click(); await sleep(80);

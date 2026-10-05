@@ -38,7 +38,7 @@ const measure = () => {
   for (const [W, H] of sizes) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(W + ' ' + e.message)); p.on('console', m => m.type() === 'error' && errs.push(W + ' ' + m.text()));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await p.evaluate(() => document.fonts.ready); await sleep(300);
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift'); await p.evaluate(() => document.fonts.ready); await sleep(300);
     const tag = `${W}x${H}`;
     const shot = async (name, full) => { await p.mouse.move(1, 1); await sleep(350); await p.screenshot({ path: `${S}/w/${name}-${tag}.png`, fullPage: !!full }); rows.push({ tag, name, ...(await p.evaluate(measure)) }); };
     await shot('title');
@@ -53,9 +53,9 @@ const measure = () => {
     await sleep(700); await shot('settle-chain');
     await p.evaluate(() => { if (typeof chainNext === 'function' && chainHold) chainNext(); }); await sleep(400); await shot('settle-result');
     if (await p.locator('[data-act="toReward"]').count()) {
-      await p.locator('[data-act="toReward"]').click(); await sleep(250);
-      await p.locator('[data-reward]').first().click(); await sleep(250);
-      if (await p.locator('[data-relic-reward]').count()) await p.locator('[data-relic-reward]').first().click();
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="toReward"]'), p.locator('[data-act="toReward"]')).click(); await sleep(250);
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-reward]'), p.locator('[data-reward]').first()).click(); await sleep(250);
+      if (await p.locator('[data-relic-reward]').count()) await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-relic-reward]'), p.locator('[data-relic-reward]').first()).click();
       await sleep(400); await p.evaluate(() => { run.slush += 3000; renderAll(); }); await shot('shop');
     }
     await p.close();

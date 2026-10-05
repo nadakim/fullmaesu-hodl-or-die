@@ -21,7 +21,6 @@ const { chromium } = loadPlaywright();
   const out = await page.evaluate(n => {
     onGameEvent = () => {}; tipChance = () => 0;
     const CASES = [
-      { name: '곱버스 1x (인버스 ETF)', stock: 'inv2', lev: 1, dir: 1 },
       { name: '지수 인버스 1x', stock: 'inv', lev: 1, dir: 1 },
       { name: '공매도 반도체 1x', stock: 'semi', lev: 1, dir: -1 },
       { name: '공매도 대장코인 1x', stock: 'coin', lev: 1, dir: -1 },

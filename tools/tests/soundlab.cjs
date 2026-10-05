@@ -5,7 +5,7 @@ const S = process.argv[2];
 let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const BASE = 'http://127.0.0.1:8765/demo.html?layout=classic';
+const BASE = 'http://127.0.0.1:8765/demo.html?crt=0&layout=classic';
 const spy = p => p.evaluate(() => { window.__plays = []; Sound.play = (n, o) => { __plays.push([n, o || {}]); return true; }; window.__stingers = []; const so = Music.stinger; Music.stinger = (n, o) => { __stingers.push(n); return so(n, o); }; });
 const plays = p => p.evaluate(() => __plays.splice(0));
 

@@ -7,7 +7,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for (const [w, h] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: w, height: h } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type()==='error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(300);
     const vis = await page.evaluate(() => typeof window.__debug === 'object' && !document.body.innerText.includes('giveRelic') && !document.querySelector('[onclick*=giveRelic],[data-debug]'));
     ok(vis, `${w} __debug는 콘솔 전용 (화면에 없음)`);
@@ -35,10 +35,10 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     if (w !== 1366) await page.screenshot({ path: `${S}/grow-lv5-${w}.png` });
     await page.waitForTimeout(1400);
     // 툴팁
-    await page.locator('[data-relic="moonSavings"]').click(); await page.waitForTimeout(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-relic="moonSavings"]'), page.locator('[data-relic="moonSavings"]')).click(); await page.waitForTimeout(100);
     const tip = await page.evaluate(() => $('relicTip').textContent);
     ok(/현재 5스택/.test(tip) && /정산 ×1\.05/.test(tip) && /초기화: 하락 콤보 10/.test(tip) && /최고 5스택/.test(tip), `${w} 툴팁: 스택·효과·초기화·최고`, tip.slice(0, 160));
-    await page.locator('[data-relic="moonSavings"]').click();
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-relic="moonSavings"]'), page.locator('[data-relic="moonSavings"]')).click();
     // 하락 콤보 10 → 초기화
     await page.evaluate(() => { Sound.stats.played = {}; const p = run.positions[0]; run.combo = { up: 0, down: 9 }; run.comboPnl = { [p.id]: posPnl(p) + 100 }; updateCombo(); renderAll(); });
     await page.waitForTimeout(800);

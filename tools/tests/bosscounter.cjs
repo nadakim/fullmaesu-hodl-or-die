@@ -13,7 +13,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
     await p.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace(/const BOSS_COUNTERS_ON\s*=\s*false;/, 'const BOSS_COUNTERS_ON = true;') }); });
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     await p.evaluate(() => { window.tipChance = () => 0; settings.chainFx = false; });   // 장 마감 정산 무대는 이 테스트 밖 (daystage·plainstage)
 
@@ -132,7 +132,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.evaluate(() => { relicSig = ''; renderAll(); });
     const bar = await p.evaluate(() => { const r = document.querySelectorAll('#relicBar .relic'); return [r[0].classList.contains('seized'), !!r[0].querySelector('.rl-seize'), r[1].classList.contains('seized'), /압류/.test(r[0].title)]; });
     ok(W + ' 유물 압류: 1번 칸에 "압류" 딱지 + 툴팁 (2번 칸은 정상)', bar[0] && bar[1] && !bar[2] && bar[3], bar);
-    await p.locator('#relicBar .relic').first().click(); await sleep(150);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#relicBar .relic'), p.locator('#relicBar .relic').first()).click(); await sleep(150);
     ok(W + ' 유물 압류: 유물 설명에 압류 안내', await p.evaluate(() => /유물 압류/.test($('relicTip').textContent)));
     await p.screenshot({ path: `${S}/bosscounter-seize-${W}.png` });
     await p.evaluate(() => { relicTipId = ''; relicSig = ''; run.relics = []; run.boss = ''; renderAll(); });
@@ -149,17 +149,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.evaluate(() => { Fx.skipQueue(); run.boss = ''; run.positions = []; run.bossPlan[run.round + 1] = 'levCap';
       run.cash += currentTarget() * 1.2; run.day = DAYS_PER_ROUND; run.phase = 'premarket'; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } renderAll(); });
     for(let i = 0; i < 60 && !(await p.evaluate(() => !!chainHold)); i++) await sleep(100);
-    await sleep(560); await p.locator('[data-act="chainNext"]').click(); await sleep(250);
+    await sleep(560); await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="chainNext"]'), p.locator('[data-act="chainNext"]')).click(); await sleep(250);
     const note = await p.evaluate(() => { const n = document.querySelector('#overlayBox .boss-notice[data-boss="levCap"]'); return n ? n.textContent : ''; });
     ok(W + ' 결산 예고: 빌드 카운터 + 표적(레버리지 탑·영끌 대출) + 대비책', /빌드 카운터/.test(note) && /표적/.test(note) && /레버리지 탑/.test(note) && /대비책/.test(note) && /개미 군단 깃발/.test(note), note.slice(0, 160));
     await p.screenshot({ path: `${S}/bosscounter-notice-${W}.png` });
 
     // ── 도감 ──
     await p.evaluate(() => { hideOverlay(); switchTab('collection'); });
-    await p.locator('#collectionFilter [data-rarity="boss"]').click(); await sleep(150);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#collectionFilter [data-rarity="boss"]'), p.locator('#collectionFilter [data-rarity="boss"]')).click(); await sleep(150);
     const col = await p.evaluate(() => [...document.querySelectorAll('#collectionBox .boss-tile.build')].map(t => [t.dataset.boss, t.querySelectorAll('.b-vs').length, /빌드 카운터/.test(t.textContent)]));
     ok(W + ' 도감: 빌드 카운터 4장 · 표적·대비책 줄', col.length === 4 && col.every(c => c[1] === 2 && c[2]), col);
-    await p.locator('#collectionBox .boss-tile.build').first().scrollIntoViewIfNeeded();
+    await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#collectionBox .boss-tile.build');
     await p.screenshot({ path: `${S}/bosscounter-collection-${W}.png` });
     // 글자 잘림: 도감 타일 안 글자가 타일 밖으로 나가지 않는다
     const overflow = await p.evaluate(() => [...document.querySelectorAll('#collectionBox .boss-tile.build')].filter(t => t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1).length);
@@ -169,7 +169,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 기본 상태 (플래그 꺼짐): 빌드 카운터 없음 · 일정 보장 없음
   { const p = await b.newPage({ viewport: { width: 1366, height: 768 } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
     const d = await p.evaluate(() => { let c = 0; for(let s = 1; s <= 60; s++){ setSeed(s); startNewRun({ unlockWeek: 8 }); c += BOSS_WEEK_ROUNDS.filter(r => BOSS_BY_ID[run.bossPlan[r]].build).length; } setSeed(null);
       return { flag: BOSS_COUNTERS_ON, n: BOSSES.length, builds: BOSSES.filter(b => b.build).length, planned: c, mult: BOSS_COUNTER_TARGET_MULT, held: BOSS_COUNTER_TARGET_HELD }; });
     ok('기본 상태: BOSS_COUNTERS_ON 꺼짐 · 보스 13종 · 일정에 카운터 없음 · 손잡이 꺼짐', !d.flag && d.n === 13 && d.builds === 0 && d.planned === 0 && d.mult === 0 && !d.held, d);

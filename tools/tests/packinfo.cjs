@@ -7,14 +7,14 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for (const [W, H] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type() === 'error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
     await page.evaluate(() => { run.masterDeck.push('yolo', 'antArmy'); run.slush = 600; openShop(); renderShop(); });   // 신화 1장 보유 → 나머지 신화는 한도 제외
     await page.waitForTimeout(300);
     ok(await page.evaluate(() => !document.querySelector('.pk-detail') && document.querySelectorAll('[data-pack-info]').length === SHOP_PACKS.length), W + ' 기존 <details> 제거 · ? 버튼 = 팩 수 (N3 리서치 팩 포함 4개)');
     for (const id of ['junk', 'leader', 'ruin']) {
       const before = await page.evaluate(() => ({ slush: run.slush, deck: run.masterDeck.length }));
-      await page.locator(`[data-pack-info="${id}"]`).click(); await page.waitForTimeout(200);
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, `[data-pack-info="${id}"]`), page.locator(`[data-pack-info="${id}"]`)).click(); await page.waitForTimeout(200);
       const r = await page.evaluate(id => {
         const pk = SHOP_PACK_BY_ID[id], cOdds = packCardOdds(pk), rOdds = packRarityOdds(pk);
         const shown = [...document.querySelectorAll('#overlayBox [data-pki-card]')].map(e => [e.dataset.pkiCard, e.querySelector('.odds').textContent]);
@@ -40,22 +40,22 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
       if (id === 'ruin' || W === 390) { const bb = await page.locator('[data-act="close"]').boundingBox(); ok(bb && bb.y + bb.height <= H + 1, `${W} ${id}: 닫기 버튼이 화면 안(스크롤 하단 고정)`, bb); }
       if (W !== 1366 && id === 'leader') await page.screenshot({ path: `${S}/packinfo-${W}.png` });
       if (W === 390 && id === 'leader') { await page.evaluate(() => { $('overlayBox').scrollTop = 99999; }); await page.waitForTimeout(100); await page.screenshot({ path: `${S}/packinfo-390-bottom.png` }); }
-      await page.locator('[data-act="close"]').click(); await page.waitForTimeout(150);
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="close"]'), page.locator('[data-act="close"]')).click(); await page.waitForTimeout(150);
       ok(await page.evaluate(() => !overlayOpen), `${W} ${id}: 닫기`);
     }
     // 팝업에서 구매
-    await page.locator('[data-pack-info="junk"]').click(); await page.waitForTimeout(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pack-info="junk"]'), page.locator('[data-pack-info="junk"]')).click(); await page.waitForTimeout(150);
     const b0 = await page.evaluate(() => ({ slush: run.slush, deck: run.masterDeck.length }));
-    await page.locator('[data-pack-buy="junk"]').click(); await page.waitForTimeout(300);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pack-buy="junk"]'), page.locator('[data-pack-buy="junk"]')).click(); await page.waitForTimeout(300);
     const b1 = await page.evaluate(() => ({ slush: run.slush, deck: run.masterDeck.length, flip: !!document.querySelector('.flip-card') }));
     ok(b1.slush === b0.slush - 250 && b1.deck === b0.deck + 1 && b1.flip, `${W} 팝업 '구매' → 팩 개봉 화면`, [b0, b1]);
-    await page.locator('#overlayBox [data-act="close"]').click(); await page.waitForTimeout(150);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), page.locator('#overlayBox [data-act="close"]')).click(); await page.waitForTimeout(150);
     // 팩 본체 클릭은 여전히 구매
     await page.evaluate(() => { run.slush += 250; renderShop(); });
     const c0 = await page.evaluate(() => run.masterDeck.length);
-    await page.locator('[data-pack="junk"]').click(); await page.waitForTimeout(250);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pack="junk"]'), page.locator('[data-pack="junk"]')).click(); await page.waitForTimeout(250);
     ok(await page.evaluate(c0 => run.masterDeck.length === c0 + 1, c0), `${W} 팩 본체 클릭 → 기존대로 구매`);
-    await page.locator('#overlayBox [data-act="close"]').click(); await page.waitForTimeout(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), page.locator('#overlayBox [data-act="close"]')).click(); await page.waitForTimeout(100);
     if (W !== 390) await page.screenshot({ path: `${S}/packrow-${W}.png`, clip: { x: 0, y: 0, width: W, height: Math.min(H, 700) } });
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), W + ' 가로 넘침 없음');
     await page.close();

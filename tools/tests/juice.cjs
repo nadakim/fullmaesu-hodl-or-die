@@ -13,7 +13,7 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
     const ctx = await b.newContext({ viewport: vp, reducedMotion: (opts && opts.reduced) ? 'reduce' : 'no-preference' });
     const page = await ctx.newPage();
     page.on('pageerror', e => errs.push(e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => { try { localStorage.clear(); } catch(e) {} });
     await page.reload(); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');   // (온보딩) 전 시스템 열린 상태로
     return page;
@@ -51,22 +51,22 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
   const sRows = await page.evaluate(() => ['sound','sfxVol','tickSound','hitStop','shake'].map(k => !!document.querySelector(`[data-row="${k}"]`)));
   ok('설정 화면에 사운드·볼륨·틱·히트스톱·흔들림 행', sRows.every(Boolean), sRows);
   await page.evaluate(() => Sound.play('victory'));
-  await page.locator('[data-row="sound"] button', { hasText: '끄기' }).click(); await sleep(50);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="sound"] button'), page.locator('[data-row="sound"] button', { hasText: '끄기' })).click(); await sleep(50);
   const off = await page.evaluate(() => ({ voices: Sound.activeVoices, play: Sound.play('buy'), saved: JSON.parse(localStorage.getItem('hodl.settings')).sound,
                                            volDisabled: document.querySelector('[data-row="sfxVol"] button').disabled }));
   ok('사운드 끄기 → 울리던 소리 즉시 끊김 · 이후 재생 안 됨 · 저장 · 볼륨 행 비활성', off.voices === 0 && off.play === false && off.saved === false && off.volDisabled, off);
-  await page.locator('[data-row="sound"] button', { hasText: '켜기' }).click();
-  await page.locator('[data-row="sfxVol"] button', { hasText: '100' }).click(); await sleep(50);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="sound"] button'), page.locator('[data-row="sound"] button', { hasText: '켜기' })).click();
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="sfxVol"] button'), page.locator('[data-row="sfxVol"] button', { hasText: '100' })).click(); await sleep(50);
   const vol = await page.evaluate(() => ({ play: Sound.play('buy'), saved: JSON.parse(localStorage.getItem('hodl.settings')).sfxVol }));
   ok('다시 켜기 · 볼륨 100 즉시 반영', vol.play === true && vol.saved === 100, vol);
   // 흔들림 끄기 → 흔들림·글리치·히트스톱 모두 꺼짐 (파티클은 유지)
-  await page.locator('[data-row="shake"] button', { hasText: '끄기' }).click(); await sleep(50);
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="shake"] button'), page.locator('[data-row="shake"] button', { hasText: '끄기' })).click(); await sleep(50);
   const so = await page.evaluate(() => { const hs = Fx.hitStop(100); Fx.shake(3); Fx.glitch(); Fx.burst(100, 100, 5, ['--gold']);
     const cab = document.querySelector('.cabinet');
     return { motion: Fx.motion, hitStop: hs, shakeCls: cab.className, parts: Fx.particleCount, hsRowDisabled: document.querySelector('[data-row="hitStop"] button').disabled }; });
   ok('흔들림 끄기 → 흔들림·글리치·히트스톱 꺼짐, 파티클은 유지, 히트스톱 행 비활성', !so.motion && so.hitStop === 0 && !/shake|glitch/.test(so.shakeCls) && so.parts > 0 && so.hsRowDisabled, so);
-  await page.locator('[data-row="shake"] button', { hasText: '켜기' }).click();
-  await page.locator('[data-row="sfxVol"] button', { hasText: '50' }).click();
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="shake"] button'), page.locator('[data-row="shake"] button', { hasText: '켜기' })).click();
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-row="sfxVol"] button'), page.locator('[data-row="sfxVol"] button', { hasText: '50' })).click();
   await sleep(1500);
   ok('파티클이 다 사라지면 rAF 정지', await page.evaluate(() => !Fx.running && Fx.particleCount === 0));
   await page.screenshot({ path: S + '/j-settings-1920.png' });
@@ -76,8 +76,8 @@ const spy = () => { window.__sfx = []; if(window.__spyOn) return; window.__spyOn
   await page.click('#startBtn'); await sleep(80); await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260));   // 진행 중인 판 → 한 번 더 눌러 확인 await sleep(200);
   await page.evaluate(spy);
   await page.evaluate(() => { window.tipChance = () => 0; setSeed(21); startRun(); run.hand = ['stk_meme', 'credit'].map(newCard); handSig = ''; renderAll(); });
-  await page.locator('#handBox .card').nth(1).click(); await sleep(100);   // 신용 2x
-  await page.locator('#handBox .card').first().click(); await sleep(100); await page.keyboard.press('Enter'); await sleep(500);  // 밈코인 → 카드가 포지션으로 날아간다
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), page.locator('#handBox .card').nth(1)).click(); await sleep(100);   // 신용 2x
+  await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), page.locator('#handBox .card').first()).click(); await sleep(100); await page.keyboard.press('Enter'); await sleep(500);  // 밈코인 → 카드가 포지션으로 날아간다
   const buySfx = await page.evaluate(() => __sfx.map(x => x[0]));
   ok('카드 사용 → cardPlay · 2x 매수 buy', buySfx.includes('cardPlay') && buySfx.includes('buy'), buySfx);
   await page.evaluate(() => { startMarket(); renderAll(); });

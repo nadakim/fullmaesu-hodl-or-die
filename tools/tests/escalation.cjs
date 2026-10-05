@@ -22,7 +22,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(500);
     await p.evaluate(spy);
 
@@ -55,7 +55,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
     // ── C9 동전 폭포 (수익 매도)
     await p.evaluate(() => { hideOverlay(); run.positions.slice().forEach(x => closePosition(x, 0)); run.phase = 'premarket'; openPosition('semi', 3000, 1, 1, true); renderAll(); });
     await p.evaluate(() => { assets.semi.price *= 1.3; posSig = ''; renderAll(); __snd.length = 0; });
-    await p.locator('#positionsBox .sell-btn').first().click();
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#positionsBox .sell-btn'), p.locator('#positionsBox .sell-btn').first()).click();
     await sleep(120);
     if(W === 1920) await p.screenshot({ path: `${S}/esc-cashout-${W}.png` });
     await sleep(1500);
@@ -104,7 +104,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
   // ── 흔들림 끔: 번쩍임·암전 없이 소리만
   const q = await b.newPage({ viewport: { width: 1366, height: 768 } });
   q.on('pageerror', e => errs.push(e.message));
-  await q.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await q.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await q.keyboard.press('Shift');
+  await q.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await q.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await q.keyboard.press('Shift');
   await q.click('#startBtn'); await sleep(400);
   await q.evaluate(spy);
   const nm = await q.evaluate(() => { settings.shake = false; applySettings(); __snd.length = 0; __screens.length = 0;
@@ -115,7 +115,7 @@ const cnt = (arr, n) => arr.filter(x => x === n).length;
 
   // ── 튜너에 새 수치
   const t = await b.newPage();
-  await t.goto('http://127.0.0.1:8765/demo.html?layout=classic&tuner=1'); await t.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(400);
+  await t.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic&tuner=1'); await t.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(400);
   const keys = ['multHitStopMs.2', 'blackoutMs', 'unitPopScale', 'critFreezeMs', 'rocketPct', 'comboSlamMs', 'closeTicks', 'cashoutMaxDings', 'dangerMuffleHz.1', 'squeakMax', 'slowMoMs'];
   const miss = await t.evaluate(ks => ks.filter(k => !document.querySelector(`[data-tn="${k}"]`)), keys);
   ok('튜너에 새 수치', miss.length === 0, miss);

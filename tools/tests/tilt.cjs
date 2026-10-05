@@ -10,13 +10,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(400);
     // 마우스를 카드 오른쪽 위로 옮겨 기울기 상태를 읽는다
     const hover = async (sel, shot) => {
       const c = p.locator(sel).first();
       if(!(await c.count())) return null;
-      await c.scrollIntoViewIfNeeded(); await sleep(120);
+      await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, sel); await sleep(120);
       const bb = await c.boundingBox();
       await p.mouse.move(bb.x + 4, bb.y + 4); await p.mouse.move(bb.x + bb.width * 0.8, bb.y + bb.height * 0.2, { steps: 4 }); await sleep(250);
       const r = await p.evaluate(s => { const el = document.querySelector(s), cs = getComputedStyle(el);
@@ -36,19 +36,19 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await p.evaluate(() => { run.day = DAYS_PER_ROUND; run.cash += 1e5; startMarket(); while(run.phase === 'market'){ if(run.pendingTip) resolveTip(1); tick(); } Fx.skipQueue(); });
     await p.waitForFunction(() => !!chainHold || !!chainPlay, null, { timeout: 8000 }).catch(() => {});
     await p.evaluate(() => { if(chainPlay) skipSettlementChain(); if(chainHold){ chainHold.readyAt = 0; chainNext(); } });
-    await sleep(300); await p.locator('[data-act="toReward"]').click(); await sleep(600);
+    await sleep(300); await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="toReward"]'), p.locator('[data-act="toReward"]')).click(); await sleep(600);
     const rw = await hover('#overlayBox .card[data-reward]', 'reward');
     ok(W + ' 보상 카드 기울기 · 발광', tilted(rw) && rw.glow, rw);
-    await p.locator('[data-act="upgradeMode"]').click(); await sleep(400);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="upgradeMode"]'), p.locator('[data-act="upgradeMode"]')).click(); await sleep(400);
     const up = await hover('#overlayBox .card[data-upgrade]');
     ok(W + ' 보상 카드 강화 목록 기울기', tilted(up) && up.glow, up);
-    await p.locator('[data-act="backReward"]').click(); await sleep(300);
-    await p.locator('[data-act="removeMode"]').click(); await sleep(400);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="backReward"]'), p.locator('[data-act="backReward"]')).click(); await sleep(300);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="removeMode"]'), p.locator('[data-act="removeMode"]')).click(); await sleep(400);
     const rm = await hover('#overlayBox .card[data-remove]');
     ok(W + ' 보상 카드 제거 목록 기울기', tilted(rm), rm);
-    await p.locator('[data-act="backReward"]').click(); await sleep(300);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="backReward"]'), p.locator('[data-act="backReward"]')).click(); await sleep(300);
     // 암시장
-    await p.locator('[data-act="skip"]').click(); await sleep(400);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="skip"]'), p.locator('[data-act="skip"]')).click(); await sleep(400);
     const rr = await hover('#overlayBox .relic-tile[data-relic-reward]', 'relicReward');
     ok(W + ' 유물 보상 기울기 · 발광', !rr || (tilted(rr) && rr.glow), rr);
     await p.evaluate(() => { hideOverlay(); if(run.rewardStep === 'card') chooseReward('skip'); if(run.rewardStep === 'relic') chooseRelicReward(''); hideOverlay(); run.slush = 5000; renderAll(); });
@@ -66,7 +66,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // 보기만 하는 카드: 덱 확인은 움직이지 않는다
     await p.evaluate(() => { leaveShop(); renderAll(); showDeck && showDeck(); });
     await sleep(400);
-    const dk = await hover('#overlayBox .deck-list .card');
+    const dk = await hover('#deckGrid .card');
     ok(W + ' 덱 확인(보기 전용)은 기울지 않음', !dk || (!dk.tilt && dk.tr === 'none'), dk);
     await p.close();
   }

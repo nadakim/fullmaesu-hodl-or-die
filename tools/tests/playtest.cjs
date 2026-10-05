@@ -9,7 +9,7 @@ const open = async (b, W, H, q) => {
   const ctx = await b.newContext({ viewport: { width: W, height: H } });
   const p = await ctx.newPage();
   p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic' + (q || ''));
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic' + (q || ''));
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); localStorage.removeItem('hodl.playtestLog'); } catch(e) {} });
   await p.keyboard.press('Shift');
   return { ctx, p };
@@ -37,13 +37,13 @@ const endNow = p => p.evaluate(() => { window.tipChance = () => 0; clearToasts()
         log: JSON.parse(localStorage.getItem('hodl.playtestLog') || '[]').length }));
       ok(W + ' 게임오버: 설문 3문항(1~5) · 한 줄 후기 · 📋 판 기록 복사 · 기록 1판 저장', box.q === 3 && box.btns === 15 && box.note && box.copy && box.log === 1, box);
       if(W === 1920) await p.screenshot({ path: `${S}/playtest-over-${W}.png` });
-      await p.locator('[data-pt-q="fun"][data-pt-v="4"]').click();
-      await p.locator('[data-pt-q="fair"][data-pt-v="2"]').click();
-      await p.locator('[data-pt-q="again"][data-pt-v="5"]').click();
-      await p.locator('#ptNote').click(); await p.keyboard.type('3주차 보스 억까'); await p.keyboard.press('Space'); await p.keyboard.type('ㅠ'); await sleep(100);
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pt-q="fun"][data-pt-v="4"]'), p.locator('[data-pt-q="fun"][data-pt-v="4"]')).click();
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pt-q="fair"][data-pt-v="2"]'), p.locator('[data-pt-q="fair"][data-pt-v="2"]')).click();
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pt-q="again"][data-pt-v="5"]'), p.locator('[data-pt-q="again"][data-pt-v="5"]')).click();
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#ptNote'), p.locator('#ptNote')).click(); await p.keyboard.type('3주차 보스 억까'); await p.keyboard.press('Space'); await p.keyboard.type('ㅠ'); await sleep(100);
       const still = await p.evaluate(() => overlayOpen && !!$('ptBox'));
       ok(W + ' 한 줄 후기 입력 중 Space가 단축키로 새지 않음 (창 그대로)', still);
-      await p.locator('[data-act="ptCopy"]').click(); await sleep(300);
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-act="ptCopy"]'), p.locator('[data-act="ptCopy"]')).click(); await sleep(300);
       const cp = await p.evaluate(() => { const t = window.__playtestLastCopy || '', j = JSON.parse(t.split('\nJSON: ')[1] || '{}'); return { head: t.split('\n')[0], j,
         on: !!document.querySelector('[data-pt-q="fun"][data-pt-v="4"].on') }; });
       const j = cp.j;
@@ -58,7 +58,7 @@ const endNow = p => p.evaluate(() => { window.tipChance = () => 0; clearToasts()
       await endNow(p); await p.waitForFunction(() => overlayOpen && !!$('ptBox'), null, { timeout: 8000 }).catch(() => {});
       await p.evaluate(() => { hideOverlay(); startRun(); switchTab('play'); renderAll(); }); await sleep(300);
       const menuVis = await p.evaluate(() => getComputedStyle($('menuPlaytest')).display !== 'none');
-      await p.locator('#menuBtn').click(); await sleep(150); await p.locator('[data-menu="playtestLog"]').click(); await sleep(300);
+      await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#menuBtn'), p.locator('#menuBtn')).click(); await sleep(150); await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-menu="playtestLog"]'), p.locator('[data-menu="playtestLog"]')).click(); await sleep(300);
       const all = await p.evaluate(() => { const t = window.__playtestLastCopy || ''; return { head: t.split('\n')[0], lines: (t.split('JSONL:\n')[1] || '').trim().split('\n').length, runs: JSON.parse(localStorage.getItem('hodl.playtestLog')).map(r => r.sessionRun) }; });
       ok(W + ' ≡ 전체 기록 복사: 2판 JSONL · 세션 판 번호 1·2', menuVis && all.head.includes('2판') && all.lines === 2 && all.runs.join() === '1,2', { menuVis, all });
       errs.push(...p.errs); await ctx.close(); }

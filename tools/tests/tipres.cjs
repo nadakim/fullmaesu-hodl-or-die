@@ -7,14 +7,14 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for (const [w, h] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: w, height: h } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type()==='error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(300);
     await page.evaluate(() => { window.tipChance = () => 0; startMarket(); renderAll(); });
     const cases = [['up', 0, [1, 0]], ['down', 0, [0, 1]], ['flat', 1, [1]]];
     for (const [kind, choice, chances] of cases) {
       await page.evaluate(([ch, k]) => { window.tipChances = () => ch; Sound.stats.played = {}; if(k !== 'flat') run.cash = 6000; openTip('mom'); renderAll(); }, [chances, kind]);
       await page.waitForTimeout(250);
-      await page.locator(`#overlayBox [data-tip-choice="${choice}"]`).click();
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, `#overlayBox [data-tip-choice="${choice}"]`), page.locator(`#overlayBox [data-tip-choice="${choice}"]`)).click();
       await page.waitForTimeout(kind === 'up' ? 1100 : 700);
       const st = await page.evaluate(() => { const el = document.querySelector('.gap-alert.tip-res');
         return el && { cls: el.className, tape: el.querySelector('.ga-tape').textContent, name: el.querySelector('.ga-name').textContent, amt: el.querySelector('.ga-pct').textContent,
@@ -32,20 +32,20 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
       const after = await page.evaluate(() => [!!document.querySelector('.gap-alert.tip-res'), overlayOpen, $('overlayBox').textContent.includes('확인 — 장 계속'), Fx.queueBusy]);
       ok(!after[0] && after[1] && after[2] && !after[3], `${w} ${kind}: ${kind === 'down' ? '스페이스 스킵' : '끝난 뒤'} → 결과 요약 오버레이`, after);
       if (kind === 'up') { const sfx = await page.evaluate(() => Object.keys(Sound.stats.played)); ok(sfx.includes('cashRegister'), `${w} up tier3: cashRegister`, sfx); }
-      await page.locator('#overlayBox [data-act="close"]').click(); await page.waitForTimeout(150);
+      await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), page.locator('#overlayBox [data-act="close"]')).click(); await page.waitForTimeout(150);
     }
     // ≡ 메뉴 → 찌라시 기록 (탭 대신)
     await page.evaluate(() => { if(overlayOpen) hideOverlay(); showTipLog(); });
     const log = await page.evaluate(() => [overlayOpen, $('overlayBox').querySelectorAll('.tip-log li').length, run.tipLog.length]);
     ok(log[0] && log[1] === log[2] && log[2] > 0, `${w} 찌라시 기록 오버레이 = run.tipLog`, log);
-    await page.locator('#overlayBox [data-act="close"]').click(); await page.waitForTimeout(100);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#overlayBox [data-act="close"]'), page.locator('#overlayBox [data-act="close"]')).click(); await page.waitForTimeout(100);
     const hw = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
     ok(hw, `${w} 가로 넘침 없음`);
     await page.close();
   }
   // 사운드 끄기 → 전부 무음
   const page = await b.newPage(); page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type()==='error' && errs.push(m.text()));
-  await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift'); await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
+  await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift'); await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
   const muted = await page.evaluate(() => { Sound.setEnabled(false); return ['coinDrop','billFlip','cashRegister','flatShrug','crashDown','crowdScream'].map(n => Sound.play(n)); });
   ok(muted.every(x => x === false), '사운드 끄기 → 새 효과음 전부 무음', muted);
   // 파일 덮어쓰기: 테스트용 wav를 SFX_FILES에 넣으면 합성음 대신 파일

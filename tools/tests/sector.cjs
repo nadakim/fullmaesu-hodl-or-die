@@ -9,13 +9,13 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     await p.evaluate(() => { clearToasts(); run.hand = ['rpt_crypto', 'rpt_crypto+', 'stk_coin'].map(newCard); run.ap = 3; handSig = ''; renderAll(); });
     await sleep(150);
     // 리포트 두 장 → 암시장 Lv.3, 소멸
-    await p.locator('#handBox .card', { hasText: '반감기' }).first().click(); await sleep(200);
-    await p.locator('#handBox .card', { hasText: '반감기' }).first().click(); await sleep(250);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), p.locator('#handBox .card', { hasText: '반감기' }).first()).click(); await sleep(200);
+    await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), p.locator('#handBox .card', { hasText: '반감기' }).first()).click(); await sleep(250);
     const lv = await p.evaluate(() => [run.sectorLevel['암호화폐'], run.exhausted.filter(c => c.id.indexOf('rpt_') === 0).length, document.body.innerText.includes('Lv.3')]);
     ok(W + ' 리포트 2장 → 암호화폐 Lv.3 · 소멸 · 알림', lv[0] === 3 && lv[1] === 2 && lv[2], lv);
     const badge = await p.evaluate(() => { const r = document.querySelector('[data-q="coin"] .q-lv'), o = document.querySelector('[data-q="semi"] .q-lv'); return [!r.hidden, r.textContent, o.hidden]; });

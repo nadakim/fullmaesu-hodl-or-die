@@ -7,7 +7,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for (const [w, h] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: w, height: h } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type()==='error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.evaluate(() => setSeed(7));
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(300);
     await page.evaluate(() => { window.tipChance = () => 0; });
@@ -21,7 +21,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     ok(news[0].startsWith('📰 오늘 개장:') && /(확정|루머 60%)/.test(news[0]), w + ' 장전 뉴스 배너', news);
     // 카드 EV: 포지션 → 비둘기·리딩방·작전 세력
     await page.evaluate(() => { run.hand = ['stk_semi','dove','pump','manip','indicators','analyst'].map(newCard); handSig=''; renderAll(); });
-    await page.locator('#handBox .card').first().click(); await page.waitForTimeout(150); await page.keyboard.press('Enter'); await page.waitForTimeout(200);
+    await (await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox .card'), page.locator('#handBox .card').first()).click(); await page.waitForTimeout(150); await page.keyboard.press('Enter'); await page.waitForTimeout(200);
     // 격자 카드: EV는 툴팁 (cardEvView = 툴팁이 쓰는 값)
     const ev = await page.evaluate(() => [...document.querySelectorAll('#handBox .card')].map(c => { const v = cardEvView(CARD_BY_ID[c.dataset.cid]); return v ? [c.querySelector('.cv-name').textContent, v.text, v.cls, v.title] : null; }).filter(Boolean));
     ok(ev.length === 3 && ev.some(e => /비둘기/.test(e[0]) && /^EV [+−±]₩/.test(e[1])) && ev.some(e => /리딩방/.test(e[0]) && e[1] === 'EV +3.2%') && ev.some(e => /작전/.test(e[0]) && e[1] === 'EV +5.6%'), w + ' 카드 EV (비둘기 ₩, 리딩방 +3.2%, 작전 +5.6%)', ev.map(e => e.slice(0,2)));
@@ -32,7 +32,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.mouse.move(1, 1);
     if (w === 1920) await page.screenshot({ path: S + '/rm-hand-1920.png' });
     if (w === 1366) await page.screenshot({ path: S + '/rm-hand-1366.png' });
-    if (w === 390) { await page.locator('#handBox').scrollIntoViewIfNeeded(); await page.screenshot({ path: S + '/rm-hand-390.png' }); }
+    if (w === 390) { await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox'); await page.screenshot({ path: S + '/rm-hand-390.png' }); }
     // 보조지표: 85%로 다시 판독
     const acc = await page.evaluate(() => { const i = run.hand.findIndex(c => c.id === 'indicators'); playCard(i); renderAll(); return [STOCKS.filter(hasRegime).map(s => run.signals[s.id].acc), document.querySelector('[data-q="semi"] .q-sig').textContent]; });
     ok(acc[0].every(a => Math.abs(a - 0.85) < 1e-9) && /적중 85%/.test(acc[1]), w + ' 보조지표 → 85%', acc);
