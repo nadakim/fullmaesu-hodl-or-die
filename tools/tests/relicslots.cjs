@@ -37,10 +37,12 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.evaluate(() => { relicSig = ''; renderAll(); });
     const drag = await page.evaluate(() => !!document.querySelector('#relicBar [draggable="true"]'));
     ok(!r3c.m && r3c.order === 'dopamine,seal' && !drag, W + ' 장중에는 순서 변경 불가 (끌기도 꺼짐)', r3c);
-    // 4) 끌어서 옮기기 (장전)
+    // 4) 클릭으로 옮기기 (장전): 유물을 눌러 고르고 ◀ 앞으로 두 번 (끌기는 없앴다 — 클릭 전용)
     await page.evaluate(() => { startRun(); ['seal', 'theme', 'dopamine'].forEach(id => gainRelic(id, 't')); relicSig = ''; renderAll(); });
-    await page.dragAndDrop('#relicBar [data-relic="dopamine"]', '#relicBar [data-relic="seal"]'); await sleep(150);
-    ok(await page.evaluate(() => run.relics.join()) === 'dopamine,seal,theme', W + ' 끌어서 1번 칸으로', await page.evaluate(() => run.relics.join()));
+    await page.click('#relicBar [data-relic="dopamine"]'); await sleep(150);
+    await page.click('#relicTip [data-relic-move="-1"]'); await sleep(150);
+    await page.click('#relicTip [data-relic-move="-1"]'); await sleep(150);
+    ok(await page.evaluate(() => run.relics.join()) === 'dopamine,seal,theme' && !(await page.evaluate(() => !!document.querySelector('#relicBar [draggable="true"]'))), W + ' 클릭 → ◀ 앞으로 두 번 = 1번 칸 (끌기 없음)', await page.evaluate(() => run.relics.join()));
     if(W === 1920) await page.screenshot({ path: S + '/relicslots-bar.png' });
     // 5) 가득 찬 칸: 보상 → 교체 오버레이 → 교체
     const r5 = await page.evaluate(() => { ['capital', 'payday', 'lawyer'].forEach(id => gainRelic(id, 't'));

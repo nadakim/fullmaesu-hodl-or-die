@@ -66,7 +66,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     // 보기만 하는 카드: 덱 확인은 움직이지 않는다
     await p.evaluate(() => { leaveShop(); renderAll(); showDeck && showDeck(); });
     await sleep(400);
-    const dk = await hover('#overlayBox .deck-list .card');
+    const dk = await hover('#deckGrid .card');
     ok(W + ' 덱 확인(보기 전용)은 기울지 않음', !dk || (!dk.tilt && dk.tr === 'none'), dk);
     await p.close();
   }

@@ -45,7 +45,7 @@ const TITLE_WAIT = 450;   // 타이틀 메뉴 확정 뒤 전환(TITLE_CONFIRM_MS
   await p.locator('#overlayBox [data-act="close"]').click(); await sleep(150);
   // 덱 확인
   await p.click('#menuBtn'); await p.locator('[data-menu="deck"]').click(); await sleep(150);
-  ok('메뉴 → 덱 확인', await p.evaluate(() => overlayOpen && !!$('overlayBox').querySelector('.deck-list')));
+  ok('메뉴 → 덱 확인', await p.evaluate(() => overlayOpen && !!$('overlayBox').querySelector('#deckGrid')));
   await p.evaluate(() => hideOverlay());
   // 설정 → 돌아가기
   await p.click('#menuBtn'); await p.locator('[data-menu="settings"]').click(); await sleep(150);
