@@ -56,7 +56,7 @@ const measure = p => p.evaluate(() => {
     const hold = await p.evaluate(() => { const ranks = [...document.querySelectorAll('#positionsBox .hold-row')].map(r => quoteRank(r.dataset.asset)); return { sorted: ranks.every((r, i) => !i || ranks[i - 1] <= r), head: document.querySelector('#holdTotal').textContent, prin: document.querySelector('#holdPrin').textContent }; });
     ok(`${t} (a) 보유 패널: 행 순서 = 그룹 순서 · 헤더 총 평가손익(금액·%)·총 원금`, hold.sorted && /[+\-−].*\(.*%\)/.test(hold.head) && /원금/.test(hold.prin), hold);
     const pair = await p.evaluate(() => [...document.querySelectorAll('#chartPair .chart-box')].filter(e => e.offsetParent).map(e => { const r = e.getBoundingClientRect(); return { w: r.width, h: r.height, t: r.top }; }));
-    ok(`${t} (a) IDX 차트(≈60%) + 지수 인버스 차트(≈40%) 같은 높이`, pair.length === 2 && Math.abs(pair[0].h - pair[1].h) < 1 && Math.abs(pair[0].t - pair[1].t) < 1 && Math.abs(pair[0].w / (pair[0].w + pair[1].w) - 0.6) < 0.03, pair);
+    ok(`${t} (a) 메인 차트는 IDX 하나(전체 폭) — 인버스 차트 병치 없음`, pair.length === 1 && pair[0].w > 0.9 * m.blocks.chart.w, pair);
     ok(`${t} (a) 블록끼리 겹침 없음`, m.over.length === 0, m.over);
     ok(`${t} (a) 가로·세로 스크롤 없음`, m.docX <= 0 && m.docY <= 0, [m.docX, m.docY]);
     ok(`${t} 상단 바 ≈ 55u · 좌측 열 171u · 차트 ≥ 229u`, Math.abs(m.blocks.top.h / U - 55) < 6 && Math.abs(m.blocks.info.w / U - 171) < 3 && m.blocks.chart.h / U >= 228, [m.blocks.top.h / U, m.blocks.info.w / U, m.blocks.chart.h / U]);
@@ -143,7 +143,8 @@ const measure = p => p.evaluate(() => {
       ok(`${t} 시장 지도(${qs}) → 타일 ${n}개 · 목록 숨김 · 겹침·넘침 없음 · 보유 ★ · 상승/하락 요약 · 설정 저장`, mp.n === n && mp.list === 'none' && mp.ov === 0 && mp.inside && mp.held && mp.sum && mp.caps >= 3 && mp.saved === 'map', mp);
       const id = await p.evaluate(() => document.querySelector('.qm-tile').dataset.q);
       await p.click(`.qm-tile[data-q="${id}"]`); await sleep(250);
-      ok(`${t} 지도 타일 클릭 = 그 종목 큰 차트 (목록 행과 같은 동작)`, await p.evaluate(i => chartTarget === i, id));
+      ok(`${t} 지도 타일 클릭 = 그 종목 큰 차트 창 (목록 행과 같은 동작) · 메인 차트는 IDX 그대로`, await p.evaluate(i => zoomTarget === i && chartTarget === 'idx', id));
+      await p.evaluate(() => closeChartZoom());
       await p.click('[data-qview="list"]'); await sleep(200);
       ok(`${t} 목록으로 되돌림`, await p.evaluate(() => getComputedStyle(document.querySelector('#quoteMap')).display === 'none' && settings.quoteView === 'list'));
       await p.close();
