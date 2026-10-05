@@ -1,0 +1,148 @@
+{
+ "log": [
+  {
+   "step": 1,
+   "sec": 2,
+   "file": "01-title-first-view.png",
+   "label": "title-first-view",
+   "note": "첫 입력 전(PRESS 안내)",
+   "phase": "title",
+   "tab": "title",
+   "overlay": false,
+   "buttons": 6
+  },
+  {
+   "step": 2,
+   "sec": 4,
+   "file": "02-title-menu.png",
+   "label": "title-menu",
+   "note": "",
+   "phase": "title",
+   "tab": "title",
+   "overlay": false,
+   "buttons": 6
+  },
+  {
+   "step": 3,
+   "sec": 6,
+   "file": "03-W1D1-premarket.png",
+   "label": "W1D1-premarket",
+   "note": "장전: 손패 10장 · 목표 · 행동력",
+   "phase": "title",
+   "tab": "play",
+   "overlay": false,
+   "buttons": 12
+  },
+  {
+   "step": 4,
+   "sec": 7,
+   "file": "04-after-card-click.png",
+   "label": "after-card-click",
+   "note": "카드 클릭 직후(금액 창 또는 즉시 매수)",
+   "phase": "title",
+   "tab": "play",
+   "overlay": true,
+   "buttons": 18
+  },
+  {
+   "step": 5,
+   "sec": 7,
+   "file": "05-amount-picker.png",
+   "label": "amount-picker",
+   "note": "금액 창",
+   "phase": "title",
+   "tab": "play",
+   "overlay": true,
+   "buttons": 18
+  },
+  {
+   "step": 6,
+   "sec": 8,
+   "file": "06-bought.png",
+   "label": "bought",
+   "note": "매수 뒤",
+   "phase": "title",
+   "tab": "play",
+   "overlay": false,
+   "buttons": 13
+  },
+  {
+   "step": 7,
+   "sec": 11,
+   "file": "07-market-countdown-or-open.png",
+   "label": "market-countdown-or-open",
+   "note": "▶ 장 시작 직후",
+   "phase": "title",
+   "tab": "play",
+   "overlay": false,
+   "buttons": 12
+  },
+  {
+   "step": 8,
+   "sec": 19,
+   "file": "08-market-t8s.png",
+   "label": "market-t8s",
+   "note": "장중 진행",
+   "phase": "title",
+   "tab": "play",
+   "overlay": false,
+   "buttons": 12
+  },
+  {
+   "step": 9,
+   "sec": 27,
+   "file": "09-market-t16s.png",
+   "label": "market-t16s",
+   "note": "장중 진행",
+   "phase": "title",
+   "tab": "play",
+   "overlay": true,
+   "buttons": 14
+  },
+  {
+   "step": 10,
+   "sec": 35,
+   "file": "10-market-t24s.png",
+   "label": "market-t24s",
+   "note": "장중 진행",
+   "phase": "title",
+   "tab": "play",
+   "overlay": true,
+   "buttons": 14
+  },
+  {
+   "step": 11,
+   "sec": 35,
+   "file": "11-day-end.png",
+   "label": "day-end",
+   "note": "장 마감 직후(정산 무대 또는 간이 무대)",
+   "phase": "title",
+   "tab": "play",
+   "overlay": true,
+   "buttons": 14
+  },
+  {
+   "step": 12,
+   "sec": 38,
+   "file": "12-day-end-after.png",
+   "label": "day-end-after",
+   "note": "정산 뒤",
+   "phase": "title",
+   "tab": "play",
+   "overlay": true,
+   "buttons": 14
+  },
+  {
+   "step": 13,
+   "sec": 40,
+   "file": "13-W1D2-premarket.png",
+   "label": "W1D2-premarket",
+   "note": "다음 날 장전 — 이 시점이 약 몇 초째인지 sec 열 참고",
+   "phase": "title",
+   "tab": "play",
+   "overlay": false,
+   "buttons": 13
+  }
+ ],
+ "errs": []
+}
