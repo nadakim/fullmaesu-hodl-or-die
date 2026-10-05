@@ -1,5 +1,34 @@
 # Session Handoff
 
+**Date:** 2026-10-05
+**main:** PR #47 머지됨(`10ee996`). 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md` 순서로 읽는다. 사용자와는 한국어로, UI 작업은 CLAUDE.md `## UI 리디자인 규칙`(5해상도 스크린샷·변경 전 먼저 저장·보고 5줄·결정은 목록).
+
+## 이번 세션 (2026-10-05, 브랜치 `claude/great-wozniak-wauvn8` → PR #47 머지 완료)
+
+**한 일** (엔진 변경은 1번뿐, 나머지 표현 계층)
+1. 곱버스(inv2) 제거 — `docs/engine.js` STOCKS·카드 풀, 시작 덱 `stk_inv2`→`stk_game`, 찌라시 '인버스 풀매수'. 테스트·`tools/sim/bearbet.cjs` 정리.
+2. 카드 등급 4중 표시(`cardView`) — 색은 `:root --rar-*`, 희귀 = `--cyan`.
+3. 전투 화면 `body.lay-f`: IDX + 지수 인버스 차트 나란히(`#chartPair`), 시세 그룹 `GROUP_ORDER`, 보유 패널 `renderHoldings`/`holdLayout`, 시장 지도 `renderQuoteMap`(squarify).
+4. 스크롤 없음·클릭 전용: `fitPages`/`revealPaged` 쪽 넘김, 덱 확인 재설계, 유물 클릭 ◀▶, '스킵 ▶' `#fxSkipBtn`, 튜너 `?debug=1`·백틱. 테스트 `tools/tests/no-scroll.cjs`.
+5. CRT 화면 효과(C1) `#crtLayer`: 비네트 30%·스캔라인 20%·둥근 모서리·유리 반사, 설정 [-] 값 [+] 스테퍼 `stepRow`, `?crt=0`이면 숨김(픽셀 동일). 모든 회귀 테스트는 `?crt=0`으로 연다.
+6. CRT 곡률(배럴): `applyCurve` → html에 SVG feDisplacementMap(`#crtSvg`), 기본 30%(k 0.012, 사용자 확정), 0%·끔·`?crt=0`·모바일이면 제거. 클릭 보정 `crtRemap`(window capture에서 진짜 이벤트를 막고 `crtSrc` 좌표 요소로 재발송, 호버 over/out/enter/leave 포함). 역 `crtSeen`은 테스트용. 게이트 `tools/tests/crt-curve.cjs`(555건 통과, 보정 끄면 23~35/69 빗나감). 프레임 시간 `?perf=1` → `#perfHud`.
+
+**검증:** `tools/verify-ui.sh all` 52개 전부 통과(마지막 실행). 스크린샷 `shots/crt/`, `shots/crt-curve/`, `shots/crt-sharpness-*.png`, `shots/crt-c1-text.png`.
+**데모 아티팩트:** https://claude.ai/artifact/4xMZZX43yS4Nako9V66Sv7 (`docs/demo` 사본을 같은 경로로 재게시하면 URL 유지).
+
+**알려진 한계 / 대기**
+- 곡률 성능: VM(GPU 없음) 전투 화면 60fps → 8fps. 사용자가 PC·스팀 덱에서 `?perf=1`로 실측 예정 → 결과 따라 기본값 0% 또는 곡률 제거 결정.
+- 곡률 중 CSS `:hover`·커서 모양은 보정 안 됨(가장자리 최대 ~4px), 터치 길게 누르기 미보정, 100%에선 모서리 작은 한글이 계단 현상.
+- 결정 대기: 유리 반사 별도 설정 여부, 설정 화면 쪽 수 늘어남(섹션 분리?), 암시장 8쪽 → 탭 구성, 폭 901~1199 예전 레이아웃 잘림, `docs/design/ONBOARDING.md` 곱버스 언급 정리.
+- `sector`·`rulebreakers`·`tipres` 테스트는 가끔 흔들림(난수 미고정).
+- 로컬 stash `stash@{0}`(C1 커밋 시점 WIP)는 정리해도 됨.
+
+**다음 단계(제안):** 사용자 성능 실측 결과 반영 → 위 결정 대기 항목 처리. 새 작업은 최신 main에서 시작.
+
+---
+
+## 이전 세션 기록
+
 **Date:** 2026-10-01
 **main:** S0~S9 + N1까지 머지됨. 먼저 `/CLAUDE.md` → 이 파일 → `docs/design/MASTER_PLAN.md`(§0 규칙, §9 체크리스트) 순서로 읽는다. 사용자와는 한국어로.
 
