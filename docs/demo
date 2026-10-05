@@ -865,6 +865,9 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--muted);line-height:1.8;
 }
 .shop-locked small{display:block;margin-top:calc(10 * var(--u));font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);}
+#screen-shop > .shop-title,#screen-shop > .shop-sub{display:inline-block;vertical-align:baseline;}   /* 한 줄로 — 목록 칸을 넓힌다 */
+#screen-shop > .shop-title{margin-right:calc(14 * var(--u));}
+#screen-shop > .shop-sub{margin-bottom:calc(10 * var(--u));}
 .shop-bar{
   display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:calc(10 * var(--u));
   padding:calc(10 * var(--u)) calc(12 * var(--u));--pc:var(--purple);
@@ -1445,9 +1448,8 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
 .deck-tabs{display:flex;justify-content:center;gap:calc(6 * var(--u));margin-bottom:calc(8 * var(--u));}
 .deck-tabs button{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);}
 .deck-tabs .on{--bk-ring:var(--cyan);color:var(--cyan);}
-.deck-view{display:grid;grid-template-columns:minmax(0, 1fr) calc(200 * var(--u));gap:calc(12 * var(--u));height:min(calc(92vh - 120 * var(--u)), calc(380 * var(--u)));text-align:left;}
-.deck-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(calc(66 * var(--u)), 1fr));grid-auto-rows:max-content;gap:calc(10 * var(--u)) calc(8 * var(--u));align-content:start;overflow:hidden;min-height:0;padding:calc(6 * var(--u));}
-.deck-grid .pg-bar{grid-column:1 / -1;margin:0;}
+.deck-view{display:grid;grid-template-columns:minmax(0, 1fr) calc(200 * var(--u));gap:calc(12 * var(--u));height:min(calc(92vh - 175 * var(--u)), calc(520 * var(--u)));text-align:left;}   /* 175u = 제목·탭·메모·닫기·여백 (상자 max-height 92vh 안에 닫기까지 들어가게) */
+.deck-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(calc(66 * var(--u)), 1fr));grid-auto-rows:max-content;gap:calc(10 * var(--u)) calc(8 * var(--u));align-content:start;min-height:0;padding:calc(10 * var(--u)) calc(8 * var(--u)) 0;}
 .deck-cell{cursor:pointer;position:relative;}
 .deck-cell .card{pointer-events:none;}
 .deck-cell.on{outline:calc(2 * var(--u)) solid var(--text);outline-offset:calc(3 * var(--u));}
@@ -1465,6 +1467,10 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
 /* 보기만 하는 카드(도감·덱 확인)는 호버해도 움직이지 않는다. 고를 수 있는 카드(보상 강화·제거, 암시장 낱장·제거)는 빼야 기울기·발광이 산다 */
 .coll-grid .card:hover,.deck-list:not(.shop-singles):not(.shop-remove) .card:not([data-remove]):not([data-upgrade]):hover{transform:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--cc),0 0 0 calc(4 * var(--u)) var(--rc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .deck-list .card[data-remove],.deck-list .card[data-upgrade],.shop-singles .card{cursor:pointer;}
+/* 스크롤 목록 — 암시장·카드 강화·덱 확인·도감 4곳의 아이템 목록만 (헤더·잔액·진행/닫기 버튼은 밖에 고정). 스크롤 표시는 어떤 것도 두지 않고(스크롤바·화살표·페이드·문구 없음),
+   높이는 fitScrollList가 '보이는 행 + 0.5행'으로 --list-h에 계산한다. 휠·트랙패드·터치(+키보드 ↑↓·PageUp/Down·Home/End)만 — 끌기 스크롤 없음 */
+.scroll-list{box-sizing:border-box;height:var(--list-h, auto);min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none;padding:calc(10 * var(--u)) calc(8 * var(--u)) 0;}
+.scroll-list::-webkit-scrollbar{display:none;width:0;height:0;}
 
 /* 환경 설정 */
 #screen-settings{padding:calc(18 * var(--u)) calc(14 * var(--u)) calc(28 * var(--u));}
@@ -1807,6 +1813,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
   /* 화면마다 게임 영역 안에서만 스크롤 */
   .screen{min-height:0;}
   .screen.active{flex:1;min-height:0;overflow-y:auto;}
+  #screen-shop.active,#screen-collection.active{overflow:hidden;}   /* 이 두 화면은 안의 .scroll-list 하나만 스크롤 */
   #screen-shop,#screen-collection,#screen-records,#screen-settings{padding:calc(22 * var(--u)) calc(28 * var(--u)) calc(28 * var(--u));}
   .set-list,.rec-list{max-width:none;}
   .pack-row{display:grid;grid-template-columns:repeat(auto-fill, minmax(calc(190 * var(--u)), 1fr));}
@@ -2497,7 +2504,7 @@ body.no-motion .card.cv.r-mythic .cv-gem{animation:none;}
       <button class="btn-chunky sm back-btn" id="collectionBack">◀ 타이틀</button>
     </div>
     <div class="coll-filter" id="collectionFilter"></div>
-    <div id="collectionBox"></div>
+    <div id="collectionBox" class="scroll-list"></div>
   </section>
 
   <!-- ====== 환경 설정 (타이틀 > 환경 설정) ====== -->
@@ -5119,9 +5126,59 @@ function showOverlay(html){ glossaryOpen = false; $('overlay').classList.remove(
    쪽 넘김 = ◀ n/N ▶ 막대(.pg-bar, 클릭). 내용이 들어가면 아무것도 하지 않는다. 다시 그려도 지금 쪽(host.dataset.pg)을 유지 */
 const PG_KEEP = '#overlayBox > .ov-title,#overlayBox .result-kicker,#overlayBox .ov-btn,#overlayBox .ov-btns,#overlayBox [data-act="close"],.gloss > .ov-title,.pg-keep,.pg-bar,.coll-filter,.shop-title,.shop-sub,.shop-bar,.coll-head,.deck-tabs';
 const PG_HEAD = '.section-label,.shop-sec-head,.pile-title,.stat-caption';
+/* ── 스크롤 목록 높이 = '보이는 행 수 + 0.5행' (암시장·카드 강화·덱 확인·도감의 .scroll-list) ──
+   목록 칸에 쓸 수 있는 높이 A를 재고, 아이템(카드·팩·유물·보스 칸)을 같은 줄끼리 묶어 '마지막으로 절반이 A 안에 드는 줄'의 한가운데를 높이로 정한다 → 첫 화면에서 그 줄이 반쯤 걸쳐 보인다(다음 줄이 20% 이상 보이면 A 그대로).
+   내용이 A 이내면 높이를 정하지 않는다(딱 맞게, 걸침 없음). 끝까지 내리면 마지막 줄은 완전히 보인다. 결과는 CSS 변수 --list-h */
+const SL_ITEM = '.card,.shop-item,.relic-tile,.pack,.deck-cell,.boss-tile';
+function fitScrollList(list){
+  const host = list.closest('#overlayBox,.screen');
+  if(!host || !list.offsetParent) return;
+  const inOverlay = host.id === 'overlayBox', top0 = list.scrollTop;
+  list.scrollTop = 0;
+  list.style.removeProperty('--list-h');
+  const natural = list.scrollHeight;
+  list.style.setProperty('--list-h', '0px');
+  let A;   // 목록 칸(테두리 상자)에 쓸 수 있는 높이
+  if(list.parentElement.classList.contains('deck-view')) A = list.parentElement.clientHeight;   // 덱 확인: 칸 높이가 CSS로 정해져 있다
+  else if(inOverlay) A = parseFloat(getComputedStyle(host).maxHeight) - (host.scrollHeight - list.offsetHeight);
+  else A = host.getBoundingClientRect().bottom - parseFloat(getComputedStyle(host).paddingBottom) - list.getBoundingClientRect().top;
+  list.style.removeProperty('--list-h');
+  if(!(A > 0) || natural <= A + 1){ list.scrollTop = top0; return; }
+  const lr = list.getBoundingClientRect(), rows = [];
+  [...list.querySelectorAll(SL_ITEM)].filter(e => e.offsetParent && !e.parentElement.closest(SL_ITEM))
+    .map(e => { const r = e.getBoundingClientRect(); return [r.top - lr.top, r.bottom - lr.top]; }).sort((a, b) => a[0] - b[0])
+    .forEach(([t, b]) => { const r = rows[rows.length - 1]; if(r && t < r[1] - 1) r[1] = Math.max(r[1], b); else rows.push([t, b]); });
+  let cut = A, k = -1;
+  rows.forEach((r, i) => { if((r[0] + r[1]) / 2 <= A){ cut = (r[0] + r[1]) / 2; k = i; } });
+  const nx = rows[k + 1];   // 다음 줄이 A에서 이미 20~50%쯤 보이면 그 자리에서 자른다 (키 큰 줄이 이어질 때 빈 칸이 크게 남지 않게)
+  if(nx && (A - nx[0]) / (nx[1] - nx[0]) >= 0.2) cut = A;
+  list.style.setProperty('--list-h', Math.floor(cut) + 'px');
+  list.scrollTop = top0;
+}
+function fitScrollLists(host){
+  if(host.classList.contains('screen') && isMobileLayout()) return;   // 모바일은 화면 전체가 스크롤 (예전 그대로)
+  host.querySelectorAll('.scroll-list').forEach(fitScrollList);
+}
+/* 보조 키: ↑↓ 한 줄 · PageUp/Down 한 쪽 · Home/End 처음·끝 (열려 있는 스크롤 목록 하나) */
+function activeScrollList(){
+  if(overlayOpen) return $('overlayBox').querySelector('.scroll-list');
+  return currentTab === 'shop' ? $('shopScroll') : currentTab === 'collection' ? $('collectionBox') : null;
+}
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || !/^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End)$/.test(e.key)) return;
+  if(e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const list = activeScrollList();
+  if(!list || !list.offsetParent) return;
+  const it = list.querySelector(SL_ITEM), line = it ? it.getBoundingClientRect().height + 12 * uiScale : 40 * uiScale;
+  e.preventDefault();
+  if(e.key === 'Home') list.scrollTop = 0;
+  else if(e.key === 'End') list.scrollTop = list.scrollHeight;
+  else list.scrollTop += e.key === 'ArrowUp' ? -line : e.key === 'ArrowDown' ? line : (e.key === 'PageUp' ? -1 : 1) * list.clientHeight * 0.9;
+});
 function fitPages(host, opts){
   if(!host) return;
   opts = opts || {};
+  fitScrollLists(host);
   host.querySelectorAll('.pg-hide').forEach(e => e.classList.remove('pg-hide'));
   host.querySelectorAll('.pg-bar').forEach(e => e.remove());
   const over = () => host.scrollHeight - host.clientHeight > 1;
@@ -5219,8 +5276,10 @@ function showUpgradePick(){
   showOverlay(`
     <div class="ov-title" style="color:var(--gold)">✦ 카드 강화</div>
     <div class="ov-sub">강화할 카드 1장을 고르세요. 강화한 카드는 이 판 끝까지 + 상태입니다. (마우스를 올리면 강화 후 효과)</div>
-    <div class="deck-list">${run.masterDeck.map((id, i) => canUpgrade(id) ? cardHtml(CARD_BY_ID[id], { attrs: `data-upgrade="${i}"` }) : '').join('')}</div>
+    <div class="deck-list scroll-list" id="upgradeList">${run.masterDeck.map((id, i) => canUpgrade(id) ? cardHtml(CARD_BY_ID[id], { attrs: `data-upgrade="${i}"` }) : '').join('')}</div>
     <button class="btn-chunky ov-btn alt" data-act="backReward">◀ 보상 선택으로</button>`);
+  $('overlayBox').classList.add('ov-wide');   // 한 줄에 카드가 더 들어가게
+  fitPages($('overlayBox'), { page: 0 });
 }
 
 function showRelicReward(){
@@ -5267,14 +5326,13 @@ function showDeck(tab, pickId){
     <div class="ov-title" style="color:var(--cyan)">덱 확인</div>
     <div class="deck-tabs">${Object.keys(piles).map(k => `<button class="btn-chunky sm${k === deckTab ? ' on' : ''}" data-deck-tab="${k}">${piles[k][0]} ${piles[k][1].length}</button>`).join('')}</div>
     <div class="deck-view pg-atom">
-      <div class="deck-grid" id="deckGrid">${ids.length ? ids.map(id => `<div class="deck-cell${id === pick ? ' on' : ''}" data-deck-card="${id}" role="button" tabindex="0" aria-label="${CARD_BY_ID[id].name}">${handCardHtml(CARD_BY_ID[id], {})}</div>`).join('') : '<div class="empty-note">비어 있음</div>'}</div>
+      <div class="deck-grid scroll-list" id="deckGrid">${ids.length ? ids.map(id => `<div class="deck-cell${id === pick ? ' on' : ''}" data-deck-card="${id}" role="button" tabindex="0" aria-label="${CARD_BY_ID[id].name}">${handCardHtml(CARD_BY_ID[id], {})}</div>`).join('') : '<div class="empty-note">비어 있음</div>'}</div>
       <div class="deck-detail" id="deckDetail">${pick ? deckDetailHtml(pick) : ''}</div>
     </div>
     ${deckTab === 'draw' ? '<div class="deck-note">뽑을 카드는 순서를 감추고 정렬해서 보여 줍니다.</div>' : ''}
     <button class="btn-chunky ov-btn alt" data-act="close">✕ 닫기</button>`);
   $('overlayBox').classList.add('ov-wide');
   fitPages($('overlayBox'), { page: 0 });
-  fitPages($('deckGrid'), { page: 0 });
 }
 function deckDetailHtml(id){
   const c = CARD_BY_ID[id];
@@ -6485,6 +6543,7 @@ function renderShop(){
       <small>주간 결산에서 목표를 달성하고 보상을 고르면, 다음 주 개장 전까지 열립니다.</small></div>`;
     return;
   }
+  const keepTop = ($('shopScroll') || {}).scrollTop || 0;   // 다시 그려도 보던 자리 유지
   const sh = run.shop, nextRemove = shopRemoveCost();
   const canRemove = run.masterDeck.length > MIN_DECK_SIZE;   // 횟수 제한 없음 — 누진 비용 + 덱 최소 장수만
   if(shopPickIdx >= run.masterDeck.length) shopPickIdx = -1;
@@ -6495,8 +6554,8 @@ function renderShop(){
         물가 상승률: 1주차 대비 <b class="infl">+${Math.round(shopInflation('pack') * 100)}%</b> (팩·낱장 · 유물 +${Math.round(shopInflation('relic') * 100)}%)</span>
       <button class="btn-chunky open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
     </div>
+    <div class="scroll-list" id="shopScroll">
     ${nextBossId() ? bossNotice(nextBossId(), '⚠ 다음 주 보스 — 여기서 대비할 카드·유물을 사 두세요') : ''}
-    <div class="shop-note">암시장은 비자금만 받습니다. 계좌 돈(순자산)은 그대로 — 비자금은 주간 목표를 넘긴 만큼 더 쌓입니다 (기본 ${fmtSlush(SLUSH_WEEKLY_BASE)} + 초과분의 ${Math.round(SLUSH_EXCESS_RATE * 100)}%).</div>
 
     <span class="section-label">▌ 카드 팩 — 덱에 없는 카드 중 1장 무작위 · 희귀도 확률 공개</span>
     <div class="pack-row">${SHOP_PACKS.filter(packOpen).map(packHtml).join('')}</div>
@@ -6539,13 +6598,14 @@ function renderShop(){
     <div class="shop-services">${SHOP_SERVICES.map(([kind, label, note]) => {
       const price = shopServiceCost(kind), ok = shopPickIdx >= 0 && canService(kind, shopPickIdx);
       return `<button class="btn-chunky ov-btn alt" data-service="${kind}" title="${note}" ${ok && run.slush >= price ? '' : 'disabled'}>${label} ${fmtSlush(price)}</button>`;
-    }).join('')}</div>` : ''}`;   // (온보딩) 카드 제거·덱 조작은 shopTools 해금 뒤
+    }).join('')}</div>` : ''}
+    </div>`;   // (온보딩) 카드 제거·덱 조작은 shopTools 해금 뒤
   if(relicClackId){   // (S8-33) 방금 산 유물이 칸에 "철컥"
     const i = run.relics.indexOf(relicClackId), el = box.querySelectorAll('.own-relics .relic-tile')[i];
     relicClackId = '';
     if(el){ el.classList.add('slot-in'); setTimeout(() => { Sound.play('relicClack'); const r = rectOf(el); if(r) Fx.sparks(r, 1, 10, '--gold'); }, 230); }
   }
-  if(currentTab === 'shop') fitActiveScreen();   // 스크롤 없음: 넘치면 쪽으로
+  if(currentTab === 'shop'){ fitActiveScreen(); if($('shopScroll')) $('shopScroll').scrollTop = keepTop; }   // 목록 높이 = 보이는 행 + 0.5행
 }
 
 const SHOP_SERVICES = [['upgrade', '✦ 리모델링', '고른 카드를 강화(+)'], ['transform', '🔀 변환', '같은 등급의 다른 카드로 무작위 교체 (태그 가중)'],
