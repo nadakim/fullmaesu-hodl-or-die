@@ -16,7 +16,7 @@ async function throughResult(p){   // 결산 요약 → 결과 화면 → 보상
   for (const [W, H] of [[1920,1080],[1366,768]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(460);
     // 일정
     const plan = await p.evaluate(() => ({ plan: run.bossPlan, boss: run.boss, chip: $('bossChip').hidden,

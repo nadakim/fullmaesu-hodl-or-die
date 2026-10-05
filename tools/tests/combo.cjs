@@ -5,7 +5,7 @@ let pass = 0, fail = 0;
 const ok = (name, c, info) => { if(c) pass++; else fail++; console.log((c ? 'PASS ' : 'FAIL ') + name + (info !== undefined ? '  ' + JSON.stringify(info) : '')); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const HOOK = `(() => { window.__snd = []; const o = Sound.play; Sound.play = (n, op) => { __snd.push([n, op && op.pitch]); return o(n, op); }; })()`;
-const URL = 'http://127.0.0.1:8765/demo.html?layout=classic';
+const URL = 'http://127.0.0.1:8765/demo.html?crt=0&layout=classic';
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const [W, H] of [[1920,1080],[1366,768]]) {

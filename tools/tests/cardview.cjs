@@ -10,7 +10,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   for (const [W, H] of [[1920, 1080], [1280, 800]]) {
     const p = await b.newPage({ viewport: { width: W, height: H } });
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
     await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
     await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(900);
     await p.evaluate(() => { window.tipChance = () => 0; });
@@ -78,7 +78,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // 5) 상태 시트 + 선택·비활성·날아가기 (1920×1080)
   const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
   p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic');
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic');
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
   await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(900);
   await p.evaluate(() => { window.tipChance = () => 0; });

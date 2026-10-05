@@ -4,7 +4,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   const ok = (n, c, i) => res.push(`${c ? 'PASS' : 'FAIL'} ${n}${c ? '' : ' ' + JSON.stringify(i)}`);
   const p = await b.newPage({ viewport: { width: 1615, height: 900 } });
   p.on('pageerror', e => errs.push(e.message)); p.on('console', m => m.type() === 'error' && errs.push(m.text()));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(300);
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(300);
   const st = () => p.evaluate(() => ({ tab: currentTab, phase: run && run.phase, sel: (document.querySelector('#screen-title .sel') || {}).id, cont: !$('continueBtn').hidden, press: !$('titlePress').hidden, intro: $('screen-title').className, quit: !$('quitBtn').hidden }));
   let s = await st(); ok('처음: 안내 문구 · 이어하기 없음 · 종료 숨김(웹)', s.press && !s.cont && !s.quit, s);
   // 첫 입력(Enter)은 메뉴 선택으로 쓰지 않는다
@@ -71,7 +71,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // Electron 구멍
   const p2 = await b.newPage({ viewport: { width: 1366, height: 768 } });
   await p2.addInitScript(() => { window.electronAPI = { quit: () => { window.__quit = true; } }; });
-  await p2.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p2.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(300); await p2.keyboard.press('Shift'); await sleep(100);
+  await p2.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p2.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await sleep(300); await p2.keyboard.press('Shift'); await sleep(100);
   const q = await p2.evaluate(() => !$('quitBtn').hidden);
   await p2.click('#quitBtn'); await sleep(350);
   ok('electronAPI 있으면 [종료] 표시 · 누르면 quit()', q && await p2.evaluate(() => !!window.__quit));

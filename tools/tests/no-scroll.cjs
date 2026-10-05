@@ -85,7 +85,7 @@ const scan = (p, all) => p.evaluate(all => {
     for (const st of STATES) {
       const p = await b.newPage({ viewport: { width: W, height: H } });
       const errs = []; p.on('pageerror', e => errs.push(e.message));
-      await p.goto('http://127.0.0.1:8765/demo.html' + (st.qs ? '?' + st.qs : ''));
+      await p.goto('http://127.0.0.1:8765/demo.html?crt=0' + (st.qs ? '&' + st.qs : ''));
       await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); localStorage.removeItem('hodl.settings'); } catch(e) {} });
       await p.reload();
       await p.keyboard.press('Shift'); await sleep(300);

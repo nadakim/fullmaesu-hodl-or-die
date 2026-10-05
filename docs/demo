@@ -198,25 +198,19 @@ html,body{
   overflow-x:hidden;
 }
 
-/* ── CRT LAYER ───────────────────────────────────────────── */
-body::before{
-  content:'';
-  position:fixed;inset:0;z-index:9999;
-  pointer-events:none;
-  background:repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent calc(2 * var(--u)),
-    rgba(0,0,0,.08) calc(2 * var(--u)),
-    rgba(0,0,0,.08) calc(4 * var(--u))
-  );
-}
-body::after{
-  content:'';
-  position:fixed;inset:0;z-index:9998;
-  pointer-events:none;
-  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.55) 100%);
-}
+/* ── CRT 화면 효과 레이어 (#crtLayer, UI 전용) ───────────────────────────
+   맨 위에 덮는 효과 4개 — 각각 CSS 변수 하나로 세기를 정한다 (applyCrt가 설정값을 넣는다):
+   --crt-vig 비네트(0~1) · --crt-scan 스캔라인(0~1, 1080p 기준 선 간격 3px = --crt-pitch, JS가 화면 픽셀 정수로) · --crt-round 둥근 모서리 + 검은 베젤(0/1) · --crt-glass 유리 반사(아주 약하게).
+   포인터는 전부 통과(pointer-events:none). 끄면 레이어 자체를 숨겨(hidden) 효과 없을 때와 픽셀까지 같다 */
+.crt-layer{position:fixed;inset:0;z-index:9999;pointer-events:none;
+  --crt-vig:.3;--crt-scan:.2;--crt-round:1;--crt-glass:1;--crt-pitch:3px;--crt-line:1px;}
+.crt-layer[hidden]{display:none;}
+.crt-layer > i{position:absolute;inset:0;pointer-events:none;display:block;}
+.crt-scan{opacity:calc(var(--crt-scan) * .45);
+  background:repeating-linear-gradient(180deg, transparent 0 calc(var(--crt-pitch) - var(--crt-line)), #000 0 var(--crt-pitch));}   /* 가는 가로줄 — 세기 100%여도 45%까지만 어둡게 */
+.crt-vig{opacity:var(--crt-vig);background:radial-gradient(ellipse at center, transparent 55%, #000 115%);}
+.crt-glass{opacity:var(--crt-glass);background:radial-gradient(ellipse 45% 35% at 22% 14%, color-mix(in srgb, var(--text) 5%, transparent), transparent 70%);}
+.crt-bezel{opacity:var(--crt-round);border-radius:calc(22 * var(--u));box-shadow:0 0 0 calc(60 * var(--u)) #000, inset 0 0 calc(10 * var(--u)) calc(2 * var(--u)) rgba(0,0,0,.6);}   /* 둥근 화면 바깥(모서리)은 검은 베젤 — CRT 유리 테두리라 픽셀 직각 규칙의 예외 */
 
 /* ── CABINET (MAIN UI CONTAINER) ────────────────────────── */
 .cabinet{
@@ -1484,10 +1478,11 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
 .seg button:disabled{cursor:not-allowed;}
 .set-danger{color:var(--red);--bk-ring:var(--red2);}
 .set-danger.armed{color:var(--bg);background:var(--red);}
-/* CRT 강도·배경 연출 (body 속성으로 전환) */
-body[data-crt="weak"]::before{opacity:.5;}
-body[data-crt="weak"]::after{opacity:.55;}
-body[data-crt="off"]::before,body[data-crt="off"]::after{display:none;}
+/* 화면 효과: [-] 값 [+] 클릭 스테퍼 (슬라이더·드래그 없음 — 클릭 전용) */
+.stepper{display:flex;align-items:center;gap:calc(6 * var(--u));}
+.stepper .st-val{min-width:calc(48 * var(--u));text-align:center;font-family:'VT323',var(--gv-v2),monospace;font-size:var(--fs-v2);color:var(--text);}
+.stepper button{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);padding:calc(6 * var(--u)) calc(12 * var(--u));cursor:pointer;background:var(--bg);color:var(--text);border:none;}
+.set-row.sub{margin-left:calc(18 * var(--u));}
 
 /* 파산 기록 */
 #screen-records{padding:calc(18 * var(--u)) calc(14 * var(--u)) calc(28 * var(--u));}
@@ -2292,6 +2287,7 @@ body.no-motion .card.cv.r-mythic .cv-gem{animation:none;}
 <body>
 
 
+ <div class="crt-layer" id="crtLayer" aria-hidden="true"><i class="crt-scan"></i><i class="crt-vig"></i><i class="crt-glass"></i><i class="crt-bezel"></i></div>
 <button class="btn-chunky sm fx-skip" id="fxSkipBtn" hidden aria-label="연출 넘기기 (Space)">스킵 ▶</button>
 <div class="cabinet">
 
@@ -2706,6 +2702,7 @@ function layoutUi(){
   fitNews();
   fitRelicEmpty();
   if(currentTab === 'title') layoutTitleLogo();
+  applyCrt();   // 스캔라인 간격 = 새 배율
   if(overlayOpen) fitPages($('overlayBox'));   // 창 크기가 바뀌면 쪽 다시 나누기
   fitActiveScreen();
 }
@@ -6683,10 +6680,13 @@ function buildCollection(){
 }
 /* ── 환경 설정 (UI 전용 — 엔진 규칙에는 영향 없음) ── */
 const SETTINGS_KEY = 'hodl.settings';
+const CRT_PCT = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(v => [v, v + '%']);
 const SETTING_OPTIONS = {
   speed: [[0.5, '0.5x'], [1, '1x'], [2, '2x'], [4, '4x']],
   shake: [[true, '켜기'], [false, '끄기']],
-  crt:   [['off', '끄기'], ['weak', '약'], ['strong', '강']],
+  crtOn: [[true, '켜기'], [false, '끄기']],   // 화면 효과(CRT) 전체
+  crtVig: CRT_PCT, crtScan: CRT_PCT,          // 비네트·스캔라인 세기 (0~100%, 10% 단위 — [-] 값 [+])
+  crtRound: [[true, '켜기'], [false, '끄기']], // 둥근 모서리 + 베젤
   sound: [[true, '켜기'], [false, '끄기']],
   chainFx: [[true, '켜기'], [false, '끄기']],
   unlockTips: [[true, '켜기'], [false, '끄기']],
@@ -6703,7 +6703,7 @@ const SETTING_OPTIONS = {
 };
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crt: 'strong', sound: true, chainFx: true, unlockTips: true, playtest: false,
+const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crtOn: true, crtVig: 30, crtScan: 20, crtRound: true, sound: true, chainFx: true, unlockTips: true, playtest: false,
                            sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal',
                            uiSize: 'auto', fontSize: 'normal', quoteView: 'list' };
 function loadSettings(){
@@ -6714,6 +6714,7 @@ function loadSettings(){
     Object.keys(SETTING_OPTIONS).forEach(k => {   // 허용된 값만 받는다 (깨진 값이면 기본값)
       if(SETTING_OPTIONS[k].some(o => o[0] === saved[k])) s[k] = saved[k];
     });
+    if(saved.crtOn === undefined && saved.crt === 'off') s.crtOn = false;   // 예전 'CRT 효과: 끄기'는 화면 효과 끔으로
   }
   return s;
 }
@@ -6732,9 +6733,32 @@ function applySettings(){
   Fx.setChainCounter(false);   // (S8-46) 연쇄 'CHAIN ×n' 대신 수익 콤보 숫자 하나만
   document.documentElement.dataset.font = settings.fontSize;   // 글자 크기: --fs-* 한 단계 위 (CSS html[data-font="large"])
   layoutUi();
-  document.body.dataset.crt = settings.crt;
+  applyCrt();
   document.body.classList.toggle('playtest-on', playtestOn());   // ≡ 메뉴 '전체 기록 복사'
   applyQuoteView();
+}
+/* ── CRT 화면 효과 (UI 전용): 설정값 → #crtLayer CSS 변수. 주소 ?crt=0이면 저장값과 무관하게 끔(스크린샷·테스트용) ── */
+const CRT_URL_OFF = /[?&]crt=0(&|$)/.test(location.search);
+const CRT_STEP = 10;
+function applyCrt(){
+  const L = $('crtLayer'), on = settings.crtOn && !CRT_URL_OFF;
+  L.hidden = !on;
+  if(!on) return;
+  L.style.setProperty('--crt-vig', String(settings.crtVig / 100));
+  L.style.setProperty('--crt-scan', String(settings.crtScan / 100));
+  L.style.setProperty('--crt-round', settings.crtRound ? '1' : '0');
+  const pitch = Math.max(2, Math.round(3 * uiScale / 1.75));   // 1080p(배율 1.75)에서 3px — 화면 픽셀 정수로 맞춰 물결 무늬가 안 생기게
+  L.style.setProperty('--crt-pitch', pitch + 'px');
+  L.style.setProperty('--crt-line', Math.max(1, Math.round(pitch / 3)) + 'px');
+}
+function stepRow(key, label, desc, disabled){   // [-] 값 [+] (10% 단위, 0~100)
+  const v = settings[key];
+  return `<div class="set-row px-panel sub ${disabled ? 'disabled' : ''}" data-row="${key}">
+    <div><div class="sr-label">${label}</div><div class="sr-desc">${desc}</div></div>
+    <div class="stepper"><button class="btn-chunky sm" data-step="${key}" data-d="-${CRT_STEP}" aria-label="${label} 낮추기" ${disabled || v <= 0 ? 'disabled' : ''}>−</button>
+      <span class="st-val">${v}%</span>
+      <button class="btn-chunky sm" data-step="${key}" data-d="${CRT_STEP}" aria-label="${label} 높이기" ${disabled || v >= 100 ? 'disabled' : ''}>+</button></div>
+  </div>`;
 }
 function settingRow(key, label, desc, disabled){
   return `<div class="set-row px-panel ${disabled ? 'disabled' : ''}" data-row="${key}">
@@ -6751,7 +6775,10 @@ function buildSettings(){
     ${settingRow('shake', '화면 흔들림 · 번쩍임 · 글리치', '청산·갭 때 흔들림·번쩍임·글리치. 끄면 히트스톱도 꺼짐 (시스템 동작 줄이기면 기본 끔).')}
     ${settingRow('hitStop', '히트스톱', '청산·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
     ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·청산·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
-    ${settingRow('crt', 'CRT 효과', '스캔라인·가장자리 어두움(비네팅) 강도.')}
+    ${settingRow('crtOn', '화면 효과', '옛 CRT 모니터 느낌(비네트·스캔라인·둥근 모서리·유리 반사). 끄면 효과가 하나도 없습니다.')}
+    ${stepRow('crtVig', '비네트', '화면 가장자리를 어둡게. 기본 30%.', !settings.crtOn)}
+    ${stepRow('crtScan', '스캔라인', '가는 가로줄. 작은 글자가 읽기 어려우면 낮추세요. 기본 20%.', !settings.crtOn)}
+    ${settingRow('crtRound', '둥근 모서리', '화면 모서리를 둥글게 자르고 바깥을 검은 베젤로.', !settings.crtOn)}
     ${settingRow('playtest', '플레이테스트 모드', '테스터용. 판이 끝나면 📋 판 기록 복사 버튼이 뜨고 기록이 쌓인다 (≡ 메뉴 › 전체 기록 복사). 설문은 주소에 ?playtest=1을 붙였을 때만.')}
     ${settingRow('unlockTips', '해금 소개', '새 시스템(찌라시·공매도·레버리지…)이 처음 열리는 주에 짧은 소개 창을 띄웁니다. 끄면 알림 한 줄만.')}
     ${settingRow('chainFx', '결산 연출', '주간 결산을 통과하면 유물·보너스가 포지션 손익을 불린 순서를 칩으로 보여줍니다. 끄면 바로 결산 요약.')}
@@ -6774,6 +6801,12 @@ $('settingsBox').addEventListener('click', e => {
     if(!b.classList.contains('armed')){ b.classList.add('armed'); b.textContent = '정말 지울까요? 한 번 더 누르면 삭제'; return; }
     clearRecords();
     b.classList.remove('armed'); b.textContent = '✓ 기록을 지웠습니다';
+    return;
+  }
+  if(b.dataset.step){   // [-] 값 [+]
+    const k = b.dataset.step;
+    settings[k] = Math.max(0, Math.min(100, settings[k] + (+b.dataset.d)));
+    saveSettings(); applySettings(); buildSettings();
     return;
   }
   if(!b.dataset.set) return;

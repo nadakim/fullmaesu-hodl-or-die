@@ -9,7 +9,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for(const [W, H] of [[1920, 1080], [1366, 768]]){
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(W + ': ' + e.message));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await sleep(460);
     // 1) 6칸 표시 + 빈 칸
     const r1 = await page.evaluate(() => { window.tipChance = () => 0; ['seal', 'dopamine'].forEach(id => gainRelic(id, 't')); relicSig = ''; renderAll();

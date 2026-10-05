@@ -10,7 +10,7 @@ const SIZES = [[1920, 1080], [1280, 800], [2560, 1080]];
 const open = async (b, W, H, qs) => {
   const p = await b.newPage({ viewport: { width: W, height: H } });
   p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html' + (qs ? '?' + qs : ''));
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0' + (qs ? '&' + qs : ''));
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); } catch(e) {} });
   await p.keyboard.press('Shift'); await p.click('#startBtn'); await sleep(1500);
   await p.evaluate(() => { window.tipChance = () => 0; });

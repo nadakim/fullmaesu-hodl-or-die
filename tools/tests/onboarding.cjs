@@ -21,7 +21,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
     const ctx = await b.newContext({ viewport: { width: W, height: H } });
     const p = await ctx.newPage();
     p.on('pageerror', e => errs.push(e.message));
-    await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.keyboard.press('Shift');
+    await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.keyboard.press('Shift');
     await p.evaluate(() => { localStorage.removeItem('hodl.unlockWeek'); }); await p.reload(); await p.keyboard.press('Shift');
     await p.click('#startBtn'); await sleep(900);
     // 1) 1주차: 잠긴 UI 숨김
@@ -100,7 +100,7 @@ const vis = (p, sel) => p.evaluate(s => { const e = document.querySelector(s); r
   const ctx = await b.newContext({ viewport: { width: 1366, height: 768 } });
   await ctx.route('**/engine.js', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace('const ONBOARDING_ON = true', 'const ONBOARDING_ON = false') }); });
   const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await p.keyboard.press('Shift'); await p.evaluate(() => localStorage.removeItem('hodl.unlockWeek'));
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await p.keyboard.press('Shift'); await p.evaluate(() => localStorage.removeItem('hodl.unlockWeek'));
   await p.click('#startBtn'); await sleep(900);
   const off = await p.evaluate(() => ({ flag: ONBOARDING_ON, cls: document.body.className, deck: run.masterDeck.length, sig: [...document.querySelectorAll('.q-sig')].some(e => e.offsetParent),
     rows: [...document.querySelectorAll('.quote-row')].filter(e => e.offsetParent).length, news: !!document.querySelector('.news-row').offsetParent, play: (run.hand = ['short'].map(newCard), checkPlay(0)) }));

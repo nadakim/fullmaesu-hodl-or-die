@@ -7,7 +7,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
   for (const [W, H] of [[1920,1080],[1366,768],[390,844]]) {
     const page = await b.newPage({ viewport: { width: W, height: H } });
     page.on('pageerror', e => errs.push(e.message)); page.on('console', m => m.type() === 'error' && errs.push(m.text()));
-    await page.goto('http://127.0.0.1:8765/demo.html?layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
+    await page.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic'); await page.evaluate(() => { try { localStorage.setItem("hodl.unlockWeek", "8"); } catch(e) {} }); await page.keyboard.press('Shift');
     await page.click('#startBtn'); await new Promise(r => setTimeout(r, 260)); await page.waitForTimeout(200);
     await page.evaluate(() => { run.masterDeck.push('yolo', 'antArmy'); run.slush = 600; openShop(); renderShop(); });   // 신화 1장 보유 → 나머지 신화는 한도 제외
     await page.waitForTimeout(300);

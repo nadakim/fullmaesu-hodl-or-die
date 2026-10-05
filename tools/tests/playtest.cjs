@@ -9,7 +9,7 @@ const open = async (b, W, H, q) => {
   const ctx = await b.newContext({ viewport: { width: W, height: H } });
   const p = await ctx.newPage();
   p.errs = []; p.on('pageerror', e => p.errs.push(e.message));
-  await p.goto('http://127.0.0.1:8765/demo.html?layout=classic' + (q || ''));
+  await p.goto('http://127.0.0.1:8765/demo.html?crt=0&layout=classic' + (q || ''));
   await p.evaluate(() => { try { localStorage.setItem('hodl.unlockWeek', '8'); localStorage.removeItem('hodl.playtestLog'); } catch(e) {} });
   await p.keyboard.press('Shift');
   return { ctx, p };
