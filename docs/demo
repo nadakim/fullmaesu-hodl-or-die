@@ -5127,7 +5127,8 @@ function fitPages(host, opts){
   const over = () => host.scrollHeight - host.clientHeight > 1;
   if(!host.clientHeight || !over()){ host.dataset.pg = '0'; return; }
   const H = host.clientHeight, blocks = [], wraps = [];
-  const skip = c => c.matches(PG_KEEP) || /^(none|contents)$/.test(getComputedStyle(c).display) || /absolute|fixed/.test(getComputedStyle(c).position);
+  const keepBox = c => host.id === 'overlayBox' && !!c.querySelector('.ov-btn,[data-act="close"]') && !c.querySelector('.card');   // 오버레이 버튼 묶음(예: 팩 팝업 구매·닫기)도 매 쪽에
+  const skip = c => c.matches(PG_KEEP) || keepBox(c) || /^(none|contents)$/.test(getComputedStyle(c).display) || /absolute|fixed/.test(getComputedStyle(c).position);
   const collect = el => [...el.children].forEach(c => {
     if(skip(c)) return;
     if(c.getBoundingClientRect().height > H * 0.5 && c.children.length >= 1 && !c.matches('.card,.pg-atom')){ wraps.push(c); collect(c); }

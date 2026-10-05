@@ -16,7 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const hover = async (sel, shot) => {
       const c = p.locator(sel).first();
       if(!(await c.count())) return null;
-      await c.scrollIntoViewIfNeeded(); await sleep(120);
+      await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, sel); await sleep(120);
       const bb = await c.boundingBox();
       await p.mouse.move(bb.x + 4, bb.y + 4); await p.mouse.move(bb.x + bb.width * 0.8, bb.y + bb.height * 0.2, { steps: 4 }); await sleep(250);
       const r = await p.evaluate(s => { const el = document.querySelector(s), cs = getComputedStyle(el);

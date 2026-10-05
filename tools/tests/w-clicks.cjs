@@ -50,6 +50,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-pack-info]'), p.locator('[data-pack-info]').first()).click(); await sleep(250);
     ok('pack popup open', await p.evaluate(() => overlayOpen));
     await p.keyboard.press('Escape'); await p.evaluate(() => { if(overlayOpen) hideOverlay(); }); await sleep(200);
+    await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '[data-single]:not([disabled])');
     const btn = p.locator('[data-single]:not([disabled])').first();
     ok('single buy hit', await hit('[data-single]:not([disabled])'));
     const d0 = await p.evaluate(() => run.masterDeck.length);

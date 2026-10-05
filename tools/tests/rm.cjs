@@ -32,7 +32,7 @@ const ok = (c, name, info) => { if(c) pass++; else fail++; console.log((c ? 'PAS
     await page.mouse.move(1, 1);
     if (w === 1920) await page.screenshot({ path: S + '/rm-hand-1920.png' });
     if (w === 1366) await page.screenshot({ path: S + '/rm-hand-1366.png' });
-    if (w === 390) { await page.locator('#handBox').scrollIntoViewIfNeeded(); await page.screenshot({ path: S + '/rm-hand-390.png' }); }
+    if (w === 390) { await page.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#handBox'); await page.screenshot({ path: S + '/rm-hand-390.png' }); }
     // 보조지표: 85%로 다시 판독
     const acc = await page.evaluate(() => { const i = run.hand.findIndex(c => c.id === 'indicators'); playCard(i); renderAll(); return [STOCKS.filter(hasRegime).map(s => run.signals[s.id].acc), document.querySelector('[data-q="semi"] .q-sig').textContent]; });
     ok(acc[0].every(a => Math.abs(a - 0.85) < 1e-9) && /적중 85%/.test(acc[1]), w + ' 보조지표 → 85%', acc);

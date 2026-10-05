@@ -159,7 +159,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     await (await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#collectionFilter [data-rarity="boss"]'), p.locator('#collectionFilter [data-rarity="boss"]')).click(); await sleep(150);
     const col = await p.evaluate(() => [...document.querySelectorAll('#collectionBox .boss-tile.build')].map(t => [t.dataset.boss, t.querySelectorAll('.b-vs').length, /빌드 카운터/.test(t.textContent)]));
     ok(W + ' 도감: 빌드 카운터 4장 · 표적·대비책 줄', col.length === 4 && col.every(c => c[1] === 2 && c[2]), col);
-    await p.locator('#collectionBox .boss-tile.build').first().scrollIntoViewIfNeeded();
+    await p.evaluate(s => window.revealPaged ? revealPaged(s) : true, '#collectionBox .boss-tile.build');
     await p.screenshot({ path: `${S}/bosscounter-collection-${W}.png` });
     // 글자 잘림: 도감 타일 안 글자가 타일 밖으로 나가지 않는다
     const overflow = await p.evaluate(() => [...document.querySelectorAll('#collectionBox .boss-tile.build')].filter(t => t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1).length);
