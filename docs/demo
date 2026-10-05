@@ -5127,7 +5127,7 @@ function showOverlay(html){ glossaryOpen = false; $('overlay').classList.remove(
 const PG_KEEP = '#overlayBox > .ov-title,#overlayBox .result-kicker,#overlayBox .ov-btn,#overlayBox .ov-btns,#overlayBox [data-act="close"],.gloss > .ov-title,.pg-keep,.pg-bar,.coll-filter,.shop-title,.shop-sub,.shop-bar,.coll-head,.deck-tabs';
 const PG_HEAD = '.section-label,.shop-sec-head,.pile-title,.stat-caption';
 /* ── 스크롤 목록 높이 = '보이는 행 수 + 0.5행' (암시장·카드 강화·덱 확인·도감의 .scroll-list) ──
-   목록 칸에 쓸 수 있는 높이 A를 재고, 아이템(카드·팩·유물·보스 칸)을 같은 줄끼리 묶어 '마지막으로 절반이 A 안에 드는 줄'의 한가운데를 높이로 정한다 → 첫 화면에서 그 줄이 반쯤 걸쳐 보인다(다음 줄이 20% 이상 보이면 A 그대로).
+   목록 칸에 쓸 수 있는 높이 A를 재고, 아이템(카드·팩·유물·보스 칸)을 같은 줄끼리 묶어 '마지막으로 절반이 A 안에 드는 줄'의 한가운데를 높이로 정한다 → 첫 화면에서 그 줄이 반쯤 걸쳐 보인다(반 줄이 칸을 15% 넘게 비우면 칸 끝까지).
    내용이 A 이내면 높이를 정하지 않는다(딱 맞게, 걸침 없음). 끝까지 내리면 마지막 줄은 완전히 보인다. 결과는 CSS 변수 --list-h */
 const SL_ITEM = '.card,.shop-item,.relic-tile,.pack,.deck-cell,.boss-tile';
 function fitScrollList(list){
@@ -5148,10 +5148,10 @@ function fitScrollList(list){
   [...list.querySelectorAll(SL_ITEM)].filter(e => e.offsetParent && !e.parentElement.closest(SL_ITEM))
     .map(e => { const r = e.getBoundingClientRect(); return [r.top - lr.top, r.bottom - lr.top]; }).sort((a, b) => a[0] - b[0])
     .forEach(([t, b]) => { const r = rows[rows.length - 1]; if(r && t < r[1] - 1) r[1] = Math.max(r[1], b); else rows.push([t, b]); });
-  let cut = A, k = -1;
-  rows.forEach((r, i) => { if((r[0] + r[1]) / 2 <= A){ cut = (r[0] + r[1]) / 2; k = i; } });
-  const nx = rows[k + 1];   // 다음 줄이 A에서 이미 20~50%쯤 보이면 그 자리에서 자른다 (키 큰 줄이 이어질 때 빈 칸이 크게 남지 않게)
-  if(nx && (A - nx[0]) / (nx[1] - nx[0]) >= 0.2) cut = A;
+  let cut = A;   // 기본 = 칸 끝까지 (아래가 비지 않게). 정확히 반 줄에서 자르는 쪽이 칸을 크게 낭비하지 않을 때만(낭비 ≤ 칸의 15%) 반 줄에 맞춘다
+  rows.forEach(r => { const mid = (r[0] + r[1]) / 2; if(mid <= A && A - mid <= A * 0.15) cut = mid; });
+  const hit = rows.find(r => r[0] < cut && cut < r[1] && (cut - r[0]) / (r[1] - r[0]) > 0.85);   // 거의 다 보이는 줄은 걸침이 안 보이니 85%에서 자른다
+  if(hit) cut = hit[0] + (hit[1] - hit[0]) * 0.85;
   list.style.setProperty('--list-h', Math.floor(cut) + 'px');
   list.scrollTop = top0;
 }

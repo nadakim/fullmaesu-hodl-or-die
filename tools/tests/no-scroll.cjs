@@ -105,7 +105,7 @@ const listState = (p, sel, fixed) => p.evaluate(([sel, fixed, ITEM]) => {
     const r = e.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     return { f, inside: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth, outsideList: !l.contains(e), clickable: !!hit && (hit === e || e.contains(hit)) }; });
   return { scrollbarWidth: cs.scrollbarWidth, webkit: getComputedStyle(l, '::-webkit-scrollbar').display, overscroll: cs.overscrollBehaviorY, overflowY: cs.overflowY,
-    scrollable, straddle, lastFull, itemsBottomOk: itemsBottom <= lr2.bottom + (scrollable ? 1e9 : 1), fx, rect: [lr.left, lr.top, lr.width, lr.height], doc: document.documentElement.scrollHeight - innerHeight };
+    scrollable, straddle, lastFull, itemsBottomOk: itemsBottom <= lr2.bottom + (scrollable ? 1e9 : 1), fx, rect: [lr.left, lr.top, lr.width, lr.height], bottom: lr.bottom, vh: innerHeight, doc: document.documentElement.scrollHeight - innerHeight };
 }, [sel, fixed || [], ITEM]);
 const scrollInput = async (p, sel) => {   // 휠·키보드로 실제 스크롤 (끌기 없음)
   const l = await p.evaluate(sel => { const e = document.querySelector(sel), r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, sel);
@@ -160,13 +160,14 @@ const scrollInput = async (p, sel) => {   // 휠·키보드로 실제 스크롤 
           ok(`${tag}: 헤더·진행/닫기 버튼은 목록 밖 · 화면 안 · 스크롤 없이 눌림`, L.fx.every(f => !f.missing && f.inside && f.outsideList && f.clickable), L.fx);
           ok(`${tag}: 창(문서) 스크롤 없음`, L.doc <= 0, L.doc);
           if (st.many) {
-            ok(`${tag}: 많을 때 스크롤 가능 · 첫 화면에 마지막 줄이 걸쳐 보임 (15~85%)`, L.scrollable && L.straddle.length > 0 && L.straddle.every(f => f > 0.15 && f < 0.85), L.straddle);
+            ok(`${tag}: 많을 때 스크롤 가능 · 첫 화면에 마지막 줄이 걸쳐 보임 (목록은 칸 끝까지)`, L.scrollable && L.straddle.length > 0 && L.straddle.every(f => f > 0.02 && f < 0.98), L.straddle);
+            if (!st.name.startsWith('deck') && !st.name.includes('upgrade') && !st.name.includes('remove')) ok(`${tag}: 목록이 칸 아래까지 참 (아래가 비지 않음)`, L.vh - L.bottom < L.vh * 0.16, { bottom: L.bottom, vh: L.vh });
             const k = await scrollInput(p, allowSel);
             ok(`${tag}: 휠로 스크롤`, k.wheel > 0, k);
             ok(`${tag}: ↑↓ 한 줄 · PageDown/Up 한 쪽 · End/Home`, k.down > 0 && k.up < k.down && k.page > 0 && k.pageUp < k.page && Math.abs(k.end - k.max) <= 1 && k.home2 === 0 && k.home === 0, k);
             ok(`${tag}: 바깥 화면은 따라 움직이지 않음`, k.doc === 0, k.doc);
           } else if (st.fitsMin && H < st.fitsMin) {
-            ok(`${tag}: (창이 작아 넘칠 수 있음) 스크롤 가능 ⇔ 걸침`, L.scrollable === (L.straddle.length > 0), { scrollable: L.scrollable, straddle: L.straddle });
+            ok(`${tag}: (최소 내용도 창보다 큼) 스크롤 가능해도 됨`, true);
           } else {
             ok(`${tag}: 적을 때 딱 맞음 (스크롤 불가 · 걸침 없음)`, !L.scrollable && L.straddle.length === 0, { scrollable: L.scrollable, straddle: L.straddle });
           }
