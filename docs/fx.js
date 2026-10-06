@@ -20,6 +20,13 @@ const FX_STAMP_MS      = 950;
 const FX_QUEUE_SPEED   = { normal: { gap: 450, dur: 1 }, fast: { gap: 250, dur: 0.65 }, min: { gap: 100, dur: 0.45 } };
 
 const Fx = (() => {
+  /* ── 연출 시간 스케일 (한 곳) ── motionScale = 모션 강도 설정 × 장 속도 보정 (demo가 setMotionScale로 값 또는 함수를 준다).
+     정산 무대(rAF 가상 시간)·결산 체인(setTimeout)·연출 큐(setTimeout)는 연출 시간을 전부 motionTime(ms)로 바꿔 쓴다.
+     1 = 원래 시간 그대로 · 0 = 연출 없이 최종 상태로 (세 모델은 그대로 따로 돈다 — 시간 값만 이 함수를 거친다) */
+  let scaleSrc = 1;
+  const motionScale = () => { const v = typeof scaleSrc === 'function' ? scaleSrc() : scaleSrc; return v > 0 ? v : 0; };
+  const setMotionScale = v => { scaleSrc = v; };
+  const motionTime = ms => ms * motionScale();
   let motion = true, hitStopOn = true;
   let frozenUntil = 0, unfreezeTimer = null, shakeTimer = null, boxShakeTimer = null, glitchTimer = null, lastStampAt = 0;
   const colorCache = {};
@@ -353,13 +360,13 @@ const Fx = (() => {
     chainN++;
     showChain(chainN);
     syncBlocker();
-    const dur = Math.round(playing.duration * speedCfg().dur);
+    const dur = Math.round(motionTime(playing.duration * speedCfg().dur));
     try { playing.play({ chain: chainN, duration: dur, speed }); } catch(e) { console.error(e); }
     qTimer = setTimeout(() => {
       const it = playing;
       playing = null;
       if(it && it.stop) try { it.stop(); } catch(e) {}
-      if(queue.length){ syncBlocker(); gapTimer = setTimeout(nextItem, speedCfg().gap); }
+      if(queue.length){ syncBlocker(); gapTimer = setTimeout(nextItem, motionTime(speedCfg().gap)); }
       else nextItem();
     }, dur);
   }
@@ -382,7 +389,7 @@ const Fx = (() => {
   }
   const onSkip = fn => onSkipHooks.push(fn);
 
-  return { setOptions, setUiScale, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
+  return { setOptions, setUiScale, motionTime, setMotionScale, get motionScale(){ return motionScale(); }, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
            get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, coinRain, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, billRain, shatter, sparks, burst,

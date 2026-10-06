@@ -5674,8 +5674,15 @@ const JUICE_CONFIG = {
   survivedOpenMs: 90,            //       SURVIVED: 로우패스가 "확" 풀리는 시간
   squeakMax: 1.03,               // (D11) 턱걸이 통과: 목표의 100% ~ 이 비율
   slowMoMs: 300,                 //       슬로모션 시간
-  slowMoRate: 0.3                //       슬로모션 배속
+  slowMoRate: 0.3,               //       슬로모션 배속
+  // ── 모션 시간 스케일 (motionTime 한 곳) ── motionScale = 모션 강도 설정(%) × 장 속도 보정. 정산 무대·결산 체인·연쇄 연출 큐가 읽는다
+  motionSpeedScale: { x0_5: 1, x1: 1, x2: 0.7, x4: 0.4 }   // 장중 속도(0.5×·1×·2×·4×) → 연출 시간 배율 (1× = 1.0 기준, 표에 없는 속도는 1)
 };
+/* 연출 시간 스케일: 이 값 하나를 Fx.motionTime(ms)이 읽는다 (fx.js). 1×·100% = 1 → 원래 시간 그대로 */
+const motionSpeedKey = v => 'x' + String(v).replace('.', '_');   // 0.5 → x0_5 (튜너 경로가 '.'로 나뉘므로 키에 점을 안 쓴다)
+const motionScaleNow = () => (settings.motion / 100) * (JUICE_CONFIG.motionSpeedScale[motionSpeedKey(settings.speed)] ?? 1);
+const motionTime = ms => Fx.motionTime(ms);
+Fx.setMotionScale(motionScaleNow);
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
 let stageBest = { run: null, payout: 0 };   // 이번 판 최고 정산금 (세기 기준, UI 전용)
@@ -5903,7 +5910,7 @@ function playDayStage(d){
   on(0, () => Sound.play('settleThud'));
   ev.sort((a, b) => a.t - b.t);
   stage = { run, d, rows, events: ev, idx: 0, vt: 0, speed: small ? JUICE_CONFIG.smallSpeed : 1, clicks: 0, raf: 0, last: performance.now(), hold: false, readyAt: 0, end: t };
-  stage.raf = requestAnimationFrame(stageFrame);
+  stageStart();
 }
 /* 간이 무대 (stage-every-day): 보정 없는 날 — 포지션별 칩이 톡톡 → 배수 ×1 고정 → 합계 카운트업 → 순자산 → 낮은 "둥" (≈ 1초).
    불타기·크리티컬 릴·흔들림 없음. 손실 날은 빨간 숫자 + 내려가는 음. 클릭·SPACE 한 번 = 결과로 */
@@ -5966,6 +5973,10 @@ function playPlainStage(d){
   on(() => Sound.play('settleThud'));
   ev.sort((a, b) => a.t - b.t);
   stage = { run, d, rows, events: ev, idx: 0, vt: 0, speed: small ? JUICE_CONFIG.smallSpeed : 1, clicks: 0, raf: 0, last: performance.now(), hold: false, readyAt: 0, end: t, plain: true };
+  stageStart();
+}
+function stageStart(){   // 모션 0% = 재생 없이 결과로 ('결과로' 스킵과 같은 최종 상태)
+  if(Fx.motionScale === 0){ stageToResult(); return; }
   stage.raf = requestAnimationFrame(stageFrame);
 }
 function stageFrame(now){
@@ -5974,7 +5985,7 @@ function stageFrame(now){
   if(!$('stageList')){ stageClose(); return; }   // 다른 오버레이가 덮었으면 그만
   if(Fx.frozenFor() > 0){ s.last = now; s.raf = requestAnimationFrame(stageFrame); return; }   // 히트스톱 동안 무대 시간도 멈춘다
   s.vt += (now - s.last) * s.speed; s.last = now;
-  while(s.idx < s.events.length && s.events[s.idx].t <= s.vt) s.events[s.idx++].fn();
+  while(s.idx < s.events.length && motionTime(s.events[s.idx].t) <= s.vt) s.events[s.idx++].fn();   // 이벤트 시각(1배 기준 ms) → 모션 시간
   if(s.idx >= s.events.length){ stageHold(); return; }
   s.raf = requestAnimationFrame(stageFrame);
 }
@@ -5983,6 +5994,10 @@ function stageSkip(){   // 한 번 = 빨리 감기, 두 번 = 결과로 (소리�
   if(!s || s.hold) return;
   s.clicks++;
   if(s.clicks === 1 && !s.plain){ s.speed = Math.max(s.speed, JUICE_CONFIG.ffSpeed); return; }
+  stageToResult();
+}
+function stageToResult(){   // 남은 이벤트 중 최종 상태를 만드는 것(quiet)만 → 결과에서 멈춤
+  const s = stage;
   while(s.idx < s.events.length){ const e = s.events[s.idx++]; if(e.quiet) e.fn(); }
   Sound.play('settleThud');
   stageHold();
@@ -6064,11 +6079,11 @@ function playSettlementChain(chain, onDone, opts){
     </div>
     ${animate ? '<div class="chain-skip">클릭 · SPACE = 건너뛰기</div>' : ''}`);
   chainPlay = { run, timers: [], onDone, sum, rows, squeak: !!opts.squeak };
-  if(!animate){ enterChainHold(false); return; }
+  if(!animate || Fx.motionScale === 0){ enterChainHold(false); return; }   // 모션 0% = 재생 없이 최종 결과
   Music.duck('chain', 0.2);   // 결산 체인 효과음이 주인공
   const list = $('chainList');
   let t = 0;
-  const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, ms));   // 오버레이가 바뀌었으면 아무것도 안 한다
+  const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, motionTime(ms)));   // 단계 시각(1배 기준 ms) → 모션 시간   // 오버레이가 바뀌었으면 아무것도 안 한다
   const setTotal = (el, v) => { el.textContent = fmtSigned(v); el.className = 'chain-total ' + (v >= 0 ? 'up' : 'down'); };
   const countUp = (elFn, from, to, start, dur, semi) => {   // 8칸 카운트업 + 칸마다 블립, 마지막 칸은 정확한 값
     for(let k = 1; k <= CHAIN_COUNT_STEPS; k++) at(start + dur * k / CHAIN_COUNT_STEPS, () => {
@@ -6129,7 +6144,7 @@ function playSettlementChain(chain, onDone, opts){
     list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
     list.querySelectorAll('.chain-rest, .chain-sum').forEach(e => e.classList.remove('pending'));
   });
-  chainPlay.timers.push(setTimeout(() => enterChainHold(false), t));   // 다 보여주면 그대로 멈춘다 (자동으로 넘어가지 않음)
+  chainPlay.timers.push(setTimeout(() => enterChainHold(false), motionTime(t)));   // 다 보여주면 그대로 멈춘다 (자동으로 넘어가지 않음)
 }
 /* 최종 프레임: 모든 행의 칩·최종 손익·도장을 채운다 (스킵했을 때 여기로 점프) */
 function renderChainFinal(rows){
@@ -6700,6 +6715,7 @@ const SETTING_OPTIONS = {
   hitStop: [[true, '켜기'], [false, '끄기']],
   bgm: [[true, '켜기'], [false, '끄기']],
   fxSpeed: [['normal', '보통'], ['fast', '빠름'], ['min', '최소']],
+  motion: CRT_PCT,                            // 모션 강도 (0~100%, 10% 단위) — 연출 시간 배율. 0% = 연출 없이 최종 상태 (motionScaleNow)
   bgmVol: [[0, '0'], [25, '25'], [40, '40'], [50, '50'], [75, '75'], [100, '100']],
   uiSize: [['small', '작게'], ['auto', '자동'], ['large', '크게'], ['xlarge', '매우 크게']],
   fontSize: [['normal', '보통'], ['large', '크게']],
@@ -6708,7 +6724,7 @@ const SETTING_OPTIONS = {
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crtOn: true, crtVig: 30, crtScan: 20, crtCurve: 30, crtRound: true, sound: true, chainFx: true, unlockTips: true, playtest: false,
-                           sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal',
+                           sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal', motion: 100,
                            uiSize: 'auto', fontSize: 'normal', quoteView: 'list' };
 function loadSettings(){
   const s = Object.assign({}, DEFAULT_SETTINGS);
@@ -6900,6 +6916,7 @@ function buildSettings(){
     ${settingRow('shake', '화면 흔들림 · 번쩍임 · 글리치', '청산·갭 때 흔들림·번쩍임·글리치. 끄면 히트스톱도 꺼짐 (시스템 동작 줄이기면 기본 끔).')}
     ${settingRow('hitStop', '히트스톱', '청산·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
     ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·청산·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
+    ${stepRow('motion', '모션 강도', '정산 무대·결산 체인·연쇄 연출의 재생 시간. 0%면 연출 없이 결과만. 장중 속도 2×·4×에선 자동으로 더 짧게. 기본 100%.')}
     ${settingRow('crtOn', '화면 효과', '옛 CRT 모니터 느낌(비네트·스캔라인·둥근 모서리·유리 반사). 끄면 효과가 하나도 없습니다.')}
     ${stepRow('crtVig', '비네트', '화면 가장자리를 어둡게. 기본 30%.', !settings.crtOn)}
     ${stepRow('crtScan', '스캔라인', '가는 가로줄. 작은 글자가 읽기 어려우면 낮추세요. 기본 20%.', !settings.crtOn)}
