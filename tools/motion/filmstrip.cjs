@@ -135,7 +135,7 @@ const INIT = `(() => {
     for(const ft of sc.frames){
       while(t < ft){ await page.clock.runFor(STEP_MS); t += STEP_MS; await page.evaluate(() => window.__freeze()); }
       await page.evaluate(() => window.__freeze());
-      if(process.env.FS_DEBUG) console.log(name, ft, await page.evaluate(() => JSON.stringify({ vt: stage ? stage.vt.toFixed(2) + '/' + stage.idx : null, dn: Date.now() % 100000, pn: performance.now(), fz: Math.round(Fx.frozenFor()), q: Fx.queueLength })));
+      if(process.env.FS_DEBUG) console.log(name, ft, await page.evaluate(() => JSON.stringify({ vt: stage ? stage.vt.toFixed(2) + '/' + stage.idx : null, dn: Date.now() % 100000, cab: document.querySelector('.cabinet').className, pn: performance.now(), fz: Math.round(Fx.frozenFor()), q: Fx.queueLength })));
       const f = path.join(dir, `${name}-t${String(ft).padStart(4, '0')}.png`);
       await page.evaluate(() => { document.getAnimations().forEach(a => a.effect && a.effect.getComputedTiming && a.effect.getComputedTiming()); return document.body.getBoundingClientRect().width; });
       await new Promise(r => setTimeout(r, SETTLE_MS));   // 실시간으로 잠깐: 멈춘 애니메이션의 새 currentTime이 합성 스레드까지 반영되게 (가짜 시계는 멈춰 있다)

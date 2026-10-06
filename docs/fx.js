@@ -14,8 +14,8 @@ const FX_LEVEL_BIG     = 0.67;   // intensity 이 이상 = 강 (대략 상위 10
 const FX_MAX_PARTICLES = 150;    // 동시 파티클 상한
 const FX_PUNCH_MIN     = 0.0025; // 순자산 변화가 이 비율 미만이면 숫자 펀치 없음 (장중 자잘한 움직임은 무시)
 const FX_COMBO_MS      = 1500;   // 같은 방향 변화가 이 안에 이어지면 콤보
-const FX_GLITCH_MS     = 380;
-const FX_STAMP_MS      = 950;
+const FX_SHAKE_CLEAR_MS = 700;         // 흔들림 클래스 뒷정리 (가장 긴 --dur-shake-3 560ms + 여유)
+const FX_ANIM_FALLBACK_PAD_MS = 250;   // 뒷정리 예비 타이머 여유: animationend가 안 오면(애니메이션 꺼짐·탭 숨김) --dur 값 + 이만큼 뒤 (히트스톱 최대 170ms보다 길게)
 // 연출 큐: 한 틱에 여러 이벤트가 나면 하나씩 이어서 재생 (간격 ms · 길이 배율). '최소'는 간격 0.1초
 const FX_QUEUE_SPEED   = { normal: { gap: 450, dur: 1 }, fast: { gap: 250, dur: 0.65 }, min: { gap: 100, dur: 0.45 } };
 
@@ -27,6 +27,20 @@ const Fx = (() => {
   const motionScale = () => { const v = typeof scaleSrc === 'function' ? scaleSrc() : scaleSrc; return v > 0 ? v : 0; };
   const setMotionScale = v => { scaleSrc = v; };
   const motionTime = ms => ms * motionScale();
+  /* ── 연출 시간 단일 출처 ── 지속시간은 demo :root의 --dur-* 한 곳에만 쓴다. JS는 dur('이름')(ms)으로 같은 값을 읽는다.
+     요소·클래스 뒷정리는 afterAnim — 그 요소의 CSS 애니메이션이 끝나는 순간(animationend, 히트스톱으로 멈춘 만큼 같이 늦다).
+     애니메이션이 안 돌면(꺼짐·탭 숨김) 예비 타이머가 같은 --dur 값 + FX_ANIM_FALLBACK_PAD_MS 뒤에 정리한다 */
+  function dur(name){
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--dur-' + name).trim(), n = parseFloat(v);
+    return Number.isFinite(n) ? (/ms$/.test(v) ? n : n * 1000) : 0;
+  }
+  function afterAnim(el, ms, fn, name){   // name = 기다릴 @keyframes 이름 (같은 요소의 다른 애니메이션이 먼저 끝나도 안 끊기게)
+    let done = false, t = 0;
+    const fin = () => { if(done) return; done = true; el.removeEventListener('animationend', onEnd); clearTimeout(t); fn(); };
+    const onEnd = e => { if(e.target === el && !e.pseudoElement && (!name || e.animationName === name)) fin(); };
+    el.addEventListener('animationend', onEnd);
+    t = setTimeout(fin, ms + FX_ANIM_FALLBACK_PAD_MS);
+  }
   let motion = true, hitStopOn = true;
   let frozenUntil = 0, unfreezeTimer = null, shakeTimer = null, boxShakeTimer = null, glitchTimer = null, lastStampAt = 0;
   const colorCache = {};
@@ -70,14 +84,14 @@ const Fx = (() => {
     void cab.offsetWidth;
     cab.classList.add('shake-' + lvl);
     clearTimeout(shakeTimer);
-    shakeTimer = setTimeout(() => cab.classList.remove('shake-' + lvl), 700);
+    shakeTimer = setTimeout(() => cab.classList.remove('shake-' + lvl), FX_SHAKE_CLEAR_MS);
     const box = document.querySelector('.overlay.show .overlay-box.stage-live');   // 정산 무대가 열려 있으면 상자도 (오버레이는 .cabinet 밖이라 안 흔들린다)
     if(box){
       box.classList.remove('ov-shake-1', 'ov-shake-2', 'ov-shake-3');
       void box.offsetWidth;
       box.classList.add('ov-shake-' + lvl);
       clearTimeout(boxShakeTimer);
-      boxShakeTimer = setTimeout(() => box.classList.remove('ov-shake-' + lvl), 700);
+      boxShakeTimer = setTimeout(() => box.classList.remove('ov-shake-' + lvl), FX_SHAKE_CLEAR_MS);
     }
   }
   function glitch(){
@@ -85,11 +99,11 @@ const Fx = (() => {
     const cab = cabinet();
     cab.classList.remove('fx-glitch'); void cab.offsetWidth; cab.classList.add('fx-glitch');
     clearTimeout(glitchTimer);
-    glitchTimer = setTimeout(() => cab.classList.remove('fx-glitch'), FX_GLITCH_MS);
+    glitchTimer = setTimeout(() => cab.classList.remove('fx-glitch'), dur('glitch'));   // .cabinet 위 클래스 뒷정리는 흔들림·글리치가 같은 animation 칸을 다투므로 타이머 그대로 (키프레임 겹침 정리 단계에서 바꾼다)
     const scan = document.createElement('div');   // 스캔라인 떨림
     scan.className = 'fx-scan';
     document.body.appendChild(scan);
-    setTimeout(() => scan.remove(), FX_GLITCH_MS);
+    afterAnim(scan, dur('glitch'), () => scan.remove());
   }
   let lastStampText = '';
   function stamp(text, tone, size){   // 화면 가운데 큰 도장 (tone: '' 빨강 · 'up' 초록 · 'gold' · 'cyan' / size: '' 대 · 'sm' 소)
@@ -99,12 +113,14 @@ const Fx = (() => {
     el.className = 'fx-stamp ' + (tone || '') + (size ? ' ' + size : '');
     el.textContent = text;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), FX_STAMP_MS);
+    afterAnim(el, dur('stamp'), () => el.remove());
   }
-  function flash(el, cls){   // 요소 한 번 번쩍 (cls: fx-hit · fx-goal)
+  const FLASH_DUR = { 'fx-hit': ['hit', 'fxHit'], 'fx-goal': ['goal', 'fxGoal'], 'fx-jiggle': ['jiggle', 'fxJiggle'], 'fx-relic-on': ['relic-on', 'relicOn'], 'rm-up': ['rm-up', 'rmUp'] };   // 클래스 → [--dur-*, @keyframes]
+  function flash(el, cls){   // 요소 한 번 번쩍 (cls: fx-hit · fx-goal · fx-jiggle · fx-relic-on · rm-up)
     if(!el) return;
     el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
-    setTimeout(() => el.classList.remove(cls), 650);
+    const f = FLASH_DUR[cls] || ['goal'];
+    afterAnim(el, dur(f[0]), () => el.classList.remove(cls), f[1]);
   }
   function jiggle(el){ flash(el, motion ? 'fx-jiggle' : 'fx-hit'); }
 
@@ -130,7 +146,7 @@ const Fx = (() => {
       tag.style.color = c;
       tag.textContent = 'COMBO ×' + st.combo;
       document.body.appendChild(tag);
-      setTimeout(() => tag.remove(), 900);
+      afterAnim(tag, dur('pop'), () => tag.remove());
     }
   }
 
@@ -290,7 +306,7 @@ const Fx = (() => {
       el.style.left = Math.round(rect.left + rect.width / 2) + 'px';
       el.style.top = Math.round(rect.top) + 'px';
       document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1100);
+      afterAnim(el, dur('chip'), () => el.remove());
     }, delayMs || 0);
   }
 
@@ -389,7 +405,7 @@ const Fx = (() => {
   }
   const onSkip = fn => onSkipHooks.push(fn);
 
-  return { setOptions, setUiScale, motionTime, setMotionScale, get motionScale(){ return motionScale(); }, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
+  return { setOptions, setUiScale, dur, afterAnim, motionTime, setMotionScale, get motionScale(){ return motionScale(); }, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
            get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, coinRain, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, billRain, shatter, sparks, burst,

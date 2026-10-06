@@ -115,6 +115,30 @@ small{font-size:inherit;}   /* 브라우저 기본 smaller(83%)는 허용 크기
   --rar-w-rare:calc(1.75 * var(--u));
   --rar-w-legendary:calc(2 * var(--u));
   --rar-w-mythic:calc(2.3 * var(--u));
+  /* 연출 시간 단일 출처 (motion-cleanup): CSS 애니메이션과 그 뒷정리 JS가 같은 값을 쓴다 — JS는 Fx.dur('이름')으로 읽는다.
+     뒷정리는 Fx.afterAnim(animationend, 안 오면 이 값 + 여유 뒤). JUICE_CONFIG와 묶인 값(haze-in·pack-flip·myth-spin·combo-cool)은
+     여기 값으로 JUICE_CONFIG를 채우고, 튜너로 바꾸면 syncDurVars가 다시 여기에 쓴다 */
+  --dur-toast:2600ms;      /* 알림 (toastIn·toastInUp) */
+  --dur-red-flash:500ms;   /* 청산 적색 섬광 */
+  --dur-newhigh:600ms;     /* 포지션 신고가 번쩍 */
+  --dur-hit:450ms;         /* Fx.flash fx-hit */
+  --dur-goal:600ms;        /* Fx.flash fx-goal */
+  --dur-jiggle:300ms;      /* Fx.jiggle 금감원 게이지 */
+  --dur-relic-on:500ms;    /* Fx.flash 유물 발동 */
+  --dur-rm-up:600ms;       /* Fx.flash 내일 뉴스 버튼 */
+  --dur-shake-1:250ms;     /* .cabinet.shake-1 · .overlay-box.ov-shake-1 */
+  --dur-shake-2:400ms;     /* .cabinet.shake-2(.shake) · ov-shake-2 */
+  --dur-shake-3:560ms;     /* .cabinet.shake-3 · ov-shake-3 */
+  --dur-glitch:380ms;      /* .cabinet.fx-glitch · .fx-scan */
+  --dur-stamp:950ms;       /* 화면 가운데 도장 */
+  --dur-pop:900ms;         /* .popnum · COMBO ×n 태그 (pixelPop) */
+  --dur-chip:1100ms;       /* 효과 칩 */
+  --dur-shine:700ms;       /* 희귀 카드 드로우 반짝 (2회 반복) */
+  --dur-lost:1100ms;       /* 성장형 유물 초기화: 떨어지는 숫자 */
+  --dur-haze-in:1200ms;    /* 암시장 입장 (JUICE hazeInMs) */
+  --dur-pack-flip:600ms;   /* 팩 카드 뒤집기 (JUICE packFlipMs) */
+  --dur-myth-spin:1200ms;  /* 신화 회전 등장 (JUICE mythSpinMs) */
+  --dur-combo-cool:1600ms; /* 콤보 끊김 '최대 ×N' (JUICE comboCoolMs) */
 }
 
 .px-border{
@@ -719,7 +743,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   position:absolute;
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);
   pointer-events:none;z-index:10;
-  animation:pixelPop .9s steps(8) forwards;
+  animation:pixelPop var(--dur-pop) steps(8) forwards;
   image-rendering:pixelated;
 }
 @keyframes pixelPop{
@@ -801,7 +825,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .fx-relic-big{position:fixed;left:50%;top:45%;z-index:96;font-size:var(--fs-xxl);line-height:1;pointer-events:none;transform:translate(-50%,-50%);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
 .fx-relic-big.crack{filter:grayscale(.7) contrast(1.6) brightness(.8);animation:relicCrack .12s steps(2) infinite;}
 @keyframes relicCrack{50%{margin-left:calc(3 * var(--u));}}
-.fx-lost{position:fixed;z-index:96;pointer-events:none;font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);line-height:1.2;color:var(--red);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;animation:lostFall 1.1s steps(11) forwards;}
+.fx-lost{position:fixed;z-index:96;pointer-events:none;font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);line-height:1.2;color:var(--red);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;animation:lostFall var(--dur-lost) steps(11) forwards;}
 @keyframes lostFall{to{transform:translate(var(--dx),calc(160 * var(--u))) rotate(var(--rot));opacity:0;}}
 .relic-empty{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);}
 /* 유물 칸 (RELIC_SLOTS): 빈 칸 점선 · 종류 표시(+ 합산 배수 / × 곱 배수 / ＋ 칩) · 끌어서 순서 바꾸기 (장전·암시장) */
@@ -920,7 +944,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .pack .pk-icon{font-size:var(--fs-v3);font-family:'VT323',var(--gv-v3),monospace;}
 .infl{color:var(--red);}
 .rm-next{color:var(--gold);display:inline-block;}
-.rm-next.rm-up{animation:rmUp .6s steps(6);}
+.rm-next.rm-up{animation:rmUp var(--dur-rm-up) steps(6);}
 @keyframes rmUp{0%,50%{color:var(--red);text-shadow:0 0 0 var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--red-dim);}}
 .rm-ladder span{color:var(--muted);} .rm-ladder span.now{color:var(--gold);}
 .pack .pk-price{color:var(--gold);font-size:var(--fs-v2);font-family:'VT323',var(--gv-v2),monospace;line-height:1;}
@@ -972,7 +996,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 
 /* 팩 개봉: 카드가 한 번 뒤집히는 것뿐 */
 .flip-stage{perspective:calc(600 * var(--u));display:flex;justify-content:center;padding:calc(10 * var(--u)) 0 calc(16 * var(--u));}
-.flip-card{position:relative;width:calc(124 * var(--u));height:calc(180 * var(--u));transform-style:preserve-3d;animation:cardFlip .6s steps(6) .2s both;}
+.flip-card{position:relative;width:calc(124 * var(--u));height:calc(180 * var(--u));transform-style:preserve-3d;animation:cardFlip var(--dur-pack-flip) steps(6) .2s both;}
 @keyframes cardFlip{from{transform:rotateY(180deg);}to{transform:rotateY(0);}}
 .flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
 .flip-face .card{cursor:default;}
@@ -1008,7 +1032,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
   background-image:conic-gradient(var(--purple) 25%, transparent 0 50%, var(--purple) 0 75%, transparent 0);
   background-size:calc(16 * var(--u)) calc(16 * var(--u));animation:hazeDrift 14s steps(28) infinite;}
 @keyframes hazeDrift{from{background-position:0 0;}to{background-position:calc(32 * var(--u)) calc(-64 * var(--u));}}
-#screen-shop.haze-in #shopBox{animation:hazeIn 1.2s steps(8) both;}
+#screen-shop.haze-in #shopBox{animation:hazeIn var(--dur-haze-in) steps(8) both;}
 @keyframes hazeIn{0%{filter:saturate(.1) brightness(.6);}100%{filter:none;}}
 /* 호버: 진열된 카드가 둥실, 팩·유물은 아이콘만 (누르는 자리가 움직이지 않게) */
 #shopBox .shop-item:hover .card,#shopBox .pack:not(.disabled):hover .pk-icon,#shopBox .relic-row:not(.own-relics) .relic-tile:hover .rt-icon{animation:shopFloat 1.4s steps(8) infinite;}
@@ -1027,7 +1051,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 @keyframes pkPillar{0%{opacity:0;transform:scaleY(0);}15%{opacity:.75;transform:scaleY(1);}100%{opacity:.22;transform:scaleY(1);}}
 .flip-stage.common{--pk-col:var(--muted);}.flip-stage.uncommon{--pk-col:var(--green2);}.flip-stage.rare{--pk-col:var(--blue);}
 .flip-stage.legendary{--pk-col:var(--purple);}.flip-stage.mythic{--pk-col:var(--gold);}
-.flip-stage.mythic .pk-float .flip-card{animation:mythSpin 1.2s steps(12) var(--pk-shake) both;}
+.flip-stage.mythic .pk-float .flip-card{animation:mythSpin var(--dur-myth-spin) steps(12) var(--pk-shake) both;}
 @keyframes mythSpin{from{transform:rotateY(1260deg) scale(.6);}to{transform:rotateY(0) scale(1);}}
 .overlay.pk-dark{background:#000;}
 .overlay.pk-dark .overlay-box{background:#000;box-shadow:none;}
@@ -1236,7 +1260,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
   background:#000;color:var(--cyan);
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.7;padding:calc(8 * var(--u)) calc(10 * var(--u));
   box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
-  animation:toastIn 2.6s steps(13) forwards;
+  animation:toastIn var(--dur-toast) steps(13) forwards;
 }
 .toast.bad{color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .toast.good{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
@@ -1354,9 +1378,9 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 @media (prefers-reduced-motion: reduce){.overlay-box.stage-live.stage-rage::before,.sh-steam i{animation:none;}.sh-steam i{display:none;}}
 body.no-motion .overlay-box.stage-live.stage-rage::before,body.no-motion .sh-steam i{animation:none;}
 body.no-motion .sh-steam i{display:none;}
-.overlay-box.ov-shake-1{animation:ovShake1 .25s steps(4);}
-.overlay-box.ov-shake-2{animation:ovShake2 .4s steps(6);}
-.overlay-box.ov-shake-3{animation:ovShake3 .56s steps(8);}
+.overlay-box.ov-shake-1{animation:ovShake1 var(--dur-shake-1) steps(4);}
+.overlay-box.ov-shake-2{animation:ovShake2 var(--dur-shake-2) steps(6);}
+.overlay-box.ov-shake-3{animation:ovShake3 var(--dur-shake-3) steps(8);}
 @keyframes ovShake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}66%{transform:translate(calc(2 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}}
 @keyframes ovShake2{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}40%{transform:translate(calc(4 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}60%{transform:translate(calc(-3 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}80%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
 @keyframes ovShake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u) * var(--ovk, 2)),calc(4 * var(--u) * var(--ovk, 2)));}25%{transform:translate(calc(7 * var(--u) * var(--ovk, 2)),calc(-5 * var(--u) * var(--ovk, 2)));}37%{transform:translate(calc(-6 * var(--u) * var(--ovk, 2)),calc(-3 * var(--u) * var(--ovk, 2)));}50%{transform:translate(calc(6 * var(--u) * var(--ovk, 2)),calc(3 * var(--u) * var(--ovk, 2)));}62%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}75%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}87%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
@@ -1514,28 +1538,28 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
   .rec-row .rr-stats{grid-column:2 / -1;}
 }
 
-.cabinet.shake{animation:shake .4s steps(6);}
+.cabinet.shake{animation:shake var(--dur-shake-2) steps(6);}
 @keyframes shake{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u)),calc(2 * var(--u)));}40%{transform:translate(calc(4 * var(--u)),calc(-2 * var(--u)));}60%{transform:translate(calc(-3 * var(--u)),calc(-1 * var(--u)));}80%{transform:translate(calc(3 * var(--u)),calc(1 * var(--u)));}}
-.red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut .5s steps(5) forwards;}
+.red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut var(--dur-red-flash) steps(5) forwards;}
 @keyframes fadeOut{to{opacity:0;}}
 
 /* ── 타격감 (fx.js) — 흔들림 3단계 · 히트스톱 · 글리치 · 도장 · 번쩍임 · 파티클 캔버스. 전부 steps() 끊김 모션 ── */
-.cabinet.shake-1{animation:shake1 .25s steps(4);}
-.cabinet.shake-2{animation:shake .4s steps(6);}
-.cabinet.shake-3{animation:shake3 .56s steps(8);}
-.cabinet.fx-glitch{animation:fxGlitch .38s steps(6);}
-.cabinet.shake-3.fx-glitch{animation:shake3 .56s steps(8),fxGlitch .38s steps(6);}
+.cabinet.shake-1{animation:shake1 var(--dur-shake-1) steps(4);}
+.cabinet.shake-2{animation:shake var(--dur-shake-2) steps(6);}
+.cabinet.shake-3{animation:shake3 var(--dur-shake-3) steps(8);}
+.cabinet.fx-glitch{animation:fxGlitch var(--dur-glitch) steps(6);}
+.cabinet.shake-3.fx-glitch{animation:shake3 var(--dur-shake-3) steps(8),fxGlitch var(--dur-glitch) steps(6);}
 @keyframes shake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u)),calc(1 * var(--u)));}66%{transform:translate(calc(2 * var(--u)),calc(-1 * var(--u)));}}
 @keyframes shake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u)),calc(4 * var(--u)));}25%{transform:translate(calc(7 * var(--u)),calc(-5 * var(--u)));}37%{transform:translate(calc(-6 * var(--u)),calc(-3 * var(--u)));}50%{transform:translate(calc(6 * var(--u)),calc(3 * var(--u)));}62%{transform:translate(calc(-4 * var(--u)),calc(2 * var(--u)));}75%{transform:translate(calc(3 * var(--u)),calc(-2 * var(--u)));}87%{transform:translate(calc(-2 * var(--u)),calc(1 * var(--u)));}}
 @keyframes fxGlitch{0%,100%{filter:none;}20%{filter:drop-shadow(calc(4 * var(--u)) 0 0 var(--red)) drop-shadow(calc(-4 * var(--u)) 0 0 var(--cyan));}40%{filter:drop-shadow(calc(-3 * var(--u)) 0 0 var(--red)) drop-shadow(calc(3 * var(--u)) 0 0 var(--cyan));}60%{filter:drop-shadow(calc(5 * var(--u)) 0 0 var(--red)) drop-shadow(calc(-2 * var(--u)) 0 0 var(--cyan));}80%{filter:none;}}
 body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-play-state:paused !important;}   /* 히트스톱: 화면을 잠깐 얼린다 */
-.fx-scan{position:fixed;inset:0;z-index:86;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 calc(2 * var(--u)),transparent calc(2 * var(--u)) calc(4 * var(--u)));animation:fxScan .38s steps(6) forwards;}
+.fx-scan{position:fixed;inset:0;z-index:86;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 calc(2 * var(--u)),transparent calc(2 * var(--u)) calc(4 * var(--u)));animation:fxScan var(--dur-glitch) steps(6) forwards;}
 @keyframes fxScan{0%{transform:none;opacity:1;}25%{transform:translateY(calc(3 * var(--u)));}50%{transform:translate(calc(2 * var(--u)),calc(-2 * var(--u)));}75%{transform:translateY(calc(4 * var(--u)));}100%{transform:none;opacity:0;}}
 .fx-stamp{
   position:fixed;left:50%;top:44%;z-index:93;pointer-events:none;white-space:nowrap;
   font-family:var(--gf-xxl),monospace;font-size:var(--fs-xxl);line-height:1.2;padding:calc(14 * var(--u)) calc(18 * var(--u)) calc(10 * var(--u));
   color:var(--red);background:#000;box-shadow:0 0 0 calc(4 * var(--u)) var(--red2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;
-  transform:translate(-50%,-50%) rotate(-6deg);animation:fxStamp .95s steps(10) forwards;
+  transform:translate(-50%,-50%) rotate(-6deg);animation:fxStamp var(--dur-stamp) steps(10) forwards;
 }
 .fx-stamp.up{color:var(--green);box-shadow:0 0 0 calc(4 * var(--u)) var(--green2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;}
 @keyframes fxStamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(2.6);}15%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}75%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}}
@@ -1565,15 +1589,15 @@ body.no-motion.closing #dayText,body.no-motion.closing #openBtn{animation:none;}
 @keyframes totalPulse{50%{transform:scale(1.14);}}
 body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed{display:none;}
 @media (prefers-reduced-motion: reduce){.fx-close-edge,.fx-screen,.fx-speed{display:none;} .unit-pop,body.closing #dayText,body.closing #openBtn{animation:none;}}
-.fx-hit{animation:fxHit .45s steps(4);}
+.fx-hit{animation:fxHit var(--dur-hit) steps(4);}
 @keyframes fxHit{0%,50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--panel2);}}
-.balance-main.fx-goal{animation:fxGoal .6s steps(6);}
+.balance-main.fx-goal{animation:fxGoal var(--dur-goal) steps(6);}
 @keyframes fxGoal{0%,40%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green2),0 0 0 calc(6 * var(--u)) #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;background:var(--green-dim);}}
-.fss-track.fx-jiggle{animation:fxJiggle .3s steps(4);}
+.fss-track.fx-jiggle{animation:fxJiggle var(--dur-jiggle) steps(4);}
 @keyframes fxJiggle{25%{transform:translate(calc(-2 * var(--u)),0);}50%{transform:translate(calc(2 * var(--u)),calc(-1 * var(--u)));}75%{transform:translate(calc(-1 * var(--u)),calc(1 * var(--u)));}}
 .fss.hot .fss-track{box-shadow:0 0 0 calc(2 * var(--u)) var(--red);animation:fssPulse 1s steps(2) infinite;}   /* 내사 착수: 테두리가 빨갛게 맥동 */
 @keyframes fssPulse{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),0 0 0 calc(4 * var(--u)) var(--red-dim);}}
-.fx-combo{position:fixed;z-index:94;pointer-events:none;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;animation:pixelPop .9s steps(8) forwards;}
+.fx-combo{position:fixed;z-index:94;pointer-events:none;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;animation:pixelPop var(--dur-pop) steps(8) forwards;}
 .fx-card-ghost{position:fixed;z-index:91;pointer-events:none;margin:0;}
 .fx-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:92;pointer-events:none;image-rendering:pixelated;}
 
@@ -1590,17 +1614,17 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 .fx-chip{
   position:fixed;z-index:94;pointer-events:none;transform:translate(-50%,-100%);white-space:nowrap;padding:calc(3 * var(--u)) calc(6 * var(--u)) calc(2 * var(--u));
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;color:var(--red);background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--red2);
-  animation:chipUp 1.1s steps(11) forwards;
+  animation:chipUp var(--dur-chip) steps(11) forwards;
 }
 .fx-chip.up{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green2);}
 .fx-chip.gold{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 @keyframes chipUp{0%{opacity:0;transform:translate(-50%,-60%) scale(1.6);}15%{opacity:1;transform:translate(-50%,-100%) scale(1);}80%{opacity:1;transform:translate(-50%,-180%);}100%{opacity:0;transform:translate(-50%,-200%);}}
 .fx-afterimage{filter:grayscale(1) brightness(1.5);}
-.relic.fx-relic-on{animation:relicOn .5s steps(5);}
+.relic.fx-relic-on{animation:relicOn var(--dur-relic-on) steps(5);}
 @keyframes relicOn{0%,40%{background:var(--text);transform:scale(1.6);box-shadow:0 0 0 calc(2 * var(--u)) var(--text),0 0 0 calc(4 * var(--u)) var(--gold);}}
 .fx-stamp.gold{color:var(--gold);box-shadow:0 0 0 calc(4 * var(--u)) var(--gold2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;}
 .fx-stamp.sm{top:22%;font-family:var(--gf-md),monospace;font-size:var(--fs-md);padding:calc(8 * var(--u)) calc(10 * var(--u)) calc(6 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
-.target-track.fx-goal{animation:fxGoal .6s steps(6);}
+.target-track.fx-goal{animation:fxGoal var(--dur-goal) steps(6);}
 .fx-blink-up{animation:blinkUp .25s steps(2) infinite;}
 .fx-blink-down{animation:blinkDown .25s steps(2) infinite;}
 @keyframes blinkUp{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--green-dim);}}
@@ -1610,7 +1634,7 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 /* (30) 장전 드로우: 손패 밑에서 부채꼴로 한 장씩 펼쳐진다. 희귀 이상은 등급 색으로 반짝 */
 #handBox .card.gcard.deal{animation:dealIn var(--deal-ms) steps(6) both;animation-delay:calc(var(--deal-i) * var(--deal-gap));}
 @keyframes dealIn{0%{opacity:0;transform:translate(calc(var(--deal-x) * var(--u)),calc(70 * var(--u))) rotate(var(--deal-r)) scale(.55);}60%{opacity:1;}100%{opacity:1;transform:none;}}
-#handBox .card.gcard.shine{animation:rareShine .7s steps(4) 2;}
+#handBox .card.gcard.shine{animation:rareShine var(--dur-shine) steps(4) 2;}
 @keyframes rareShine{50%{filter:brightness(1.7);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc),0 0 0 calc(5 * var(--u)) var(--rc),0 0 0 calc(7 * var(--u)) #000;}}
 /* (31) 장 시작 카운트다운 3·2·1 → OPEN */
 .countdown{position:fixed;inset:0;z-index:93;pointer-events:none;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);}
@@ -1625,7 +1649,7 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 .pos-item.flame-3{animation:flame3 .3s steps(2) infinite;}
 @keyframes flame2{0%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),0 0 0 calc(4 * var(--u)) var(--green-dim),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}}
 @keyframes flame3{0%{background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(5 * var(--u)) var(--green2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}50%{background:var(--green-dim);box-shadow:0 0 0 calc(3 * var(--u)) var(--green),0 0 0 calc(6 * var(--u)) var(--green-dim),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}}
-.pos-item.fx-newhigh{animation:newHigh .6s steps(4);}
+.pos-item.fx-newhigh{animation:newHigh var(--dur-newhigh) steps(4);}
 @keyframes newHigh{0%,50%{background:var(--panel2);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(5 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}}
 .pos-item.fx-danger{animation:dangerPulse var(--beat-ms,900ms) steps(2) infinite;}
 @keyframes dangerPulse{0%{box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}50%{background:var(--red-dim);box-shadow:0 0 0 calc(3 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}}
@@ -1706,7 +1730,7 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 @keyframes jackpotFlash{50%{background:#000;color:var(--gold);}}
 .fx-streak.bump:not(.c4):not(.c5){animation:comboBump .22s steps(3);}
 @keyframes comboBump{0%{transform:scale(calc(var(--streak-scale,1) * 1.35));}100%{transform:scale(var(--streak-scale,1));}}
-.fx-streak.cool{color:var(--muted);box-shadow:0 0 0 calc(2 * var(--u)) var(--muted),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;animation:streakBreak 1.6s steps(8) forwards;}
+.fx-streak.cool{color:var(--muted);box-shadow:0 0 0 calc(2 * var(--u)) var(--muted),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;animation:streakBreak var(--dur-combo-cool) steps(8) forwards;}
 @keyframes rainbow{0%{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green);}25%{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold);}50%{color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan);}75%{color:var(--purple);box-shadow:0 0 0 calc(2 * var(--u)) var(--purple);}}
 .fx-streak.d1{color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
 .fx-streak.d2{color:var(--red2);background:var(--red-dim);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
@@ -2962,7 +2986,7 @@ function toast(text, kind = 'info'){
   t.className = 'toast ' + kind;
   t.textContent = text;
   $('toastLayer').appendChild(t);
-  setTimeout(() => t.remove(), 2600);
+  Fx.afterAnim(t, Fx.dur('toast'), () => t.remove());
 }
 
 const posRowEl   = id => $('positionsBox').querySelector(`[data-id="${id}"]`);
@@ -3205,7 +3229,7 @@ function enqueueLiquidation(d){
     const T = FX_TIER[4];
     Sound.play('marginCall', { pitch: chainPitch(ctx) });
     Fx.hitStop(T.hs);
-    if(settings.shake){ const f = document.createElement('div'); f.className = 'red-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 600); }
+    if(settings.shake){ const f = document.createElement('div'); f.className = 'red-flash'; document.body.appendChild(f); Fx.afterAnim(f, Fx.dur('red-flash'), () => f.remove()); }
     Fx.shatter(item.payload.rect, T.parts);
     Fx.afterStop(() => { Fx.shake(3); Fx.glitch(); });
     item.timers.push(setTimeout(() => Fx.stamp('청산'), Math.round(ctx.duration * 0.2)));
@@ -3361,7 +3385,7 @@ function enqueueRelicShatter(d){
         s.style.setProperty('--dx', Math.round((Math.random() - 0.5) * 200 * uiScale) + 'px');
         s.style.setProperty('--rot', Math.round((Math.random() - 0.5) * 120) + 'deg');
         document.body.appendChild(s);
-        setTimeout(() => s.remove(), 1200);
+        Fx.afterAnim(s, Fx.dur('lost'), () => s.remove());
       }
     }, Math.round(ctx.duration * 0.45)));
   };
@@ -3705,7 +3729,7 @@ function playDeal(box){
     setTimeout(() => Sound.play('cardDeal', { pitch: stagePitch(i) }), at);
     setTimeout(() => {
       el.classList.remove('deal');
-      if(J.shineRarities.indexOf(rarity) >= 0 && el.isConnected){ el.classList.add('shine'); Sound.play('rareDraw', { rarity }); setTimeout(() => el.classList.remove('shine'), 1400); }
+      if(J.shineRarities.indexOf(rarity) >= 0 && el.isConnected){ el.classList.add('shine'); Sound.play('rareDraw', { rarity }); Fx.afterAnim(el, 2 * Fx.dur('shine'), () => el.classList.remove('shine'), 'rareShine'); }
     }, at + J.dealMs);
   });
 }
@@ -3755,7 +3779,7 @@ function notePosTicks(){
     if(pnl > s.best + 1e-9 && pnl > 0 && marketTickN - s.highTick >= J.newHighGapTicks && posFx.map[p.id]){
       s.highTick = marketTickN;
       const el = posRowEl(p.id);
-      if(el){ el.classList.remove('fx-newhigh'); void el.offsetWidth; el.classList.add('fx-newhigh'); setTimeout(() => el.classList.remove('fx-newhigh'), 650); }
+      if(el){ el.classList.remove('fx-newhigh'); void el.offsetWidth; el.classList.add('fx-newhigh'); Fx.afterAnim(el, Fx.dur('newhigh'), () => el.classList.remove('fx-newhigh'), 'newHigh'); }
     }
     s.best = Math.max(s.best, pnl);
     s.last = pnl;
@@ -5626,13 +5650,13 @@ const JUICE_CONFIG = {
   newHighGapTicks: 4,            //      같은 포지션 신고가 번쩍 최소 간격 (틱)
   heartMs: [1100, 350],          //      심장 박동 간격: 경고선(MAINT_WARN_HEALTH) → 반대매매 직전(건강도 1)
   // ── S8 암시장 (33) ──
-  hazeInMs: 1200,                // 입장: 채도가 빠졌다 돌아오는 시간 (CSS hazeIn과 같게)
+  hazeInMs: Fx.dur('haze-in'),   // 입장: 채도가 빠졌다 돌아오는 시간 (값은 :root --dur-haze-in 하나 — 튜너로 바꾸면 syncDurVars가 CSS에 쓴다)
   shopPadVolume: 0.8,            // 입장 몽환 패드 볼륨
   hoverGapMs: 120,               // 호버 "띠잉~" 최소 간격
   packShakeMs: 520,              // 팩 개봉: 공중에서 흔들리는 시간 → 터짐
-  packFlipMs: 600,               //          터진 뒤 뒤집히는 시간 (CSS cardFlip과 같게)
+  packFlipMs: Fx.dur('pack-flip'),   //      터진 뒤 뒤집히는 시간 (값은 :root --dur-pack-flip 하나)
   mythDarkMs: 700,               // 신화: 암전 시간 → 금빛 기둥
-  mythSpinMs: 1200,              //       회전 등장 시간 (CSS mythSpin과 같게)
+  mythSpinMs: Fx.dur('myth-spin'),   //   회전 등장 시간 (값은 :root --dur-myth-spin 하나)
   // ── S8 수익 콤보 (46) ──
   comboTiers: [3, 5, 8, 12],     // 단계 경계: 1~2 / 3~4 / 5~7 / 8~11 / 12+ JACKPOT
   comboShowFrom: 2,              // 이 수부터 화면에 'COMBO ×n'
@@ -5641,7 +5665,7 @@ const JUICE_CONFIG = {
   comboShake: { 2: 0, 3: 1, 4: 2, 5: 3 },        // 단계가 오를 때 흔들림
   comboParts: { 2: 10, 3: 18, 4: 30, 5: 64 },    // 단계가 오를 때 파티클 수
   comboIdleMs: 6000,             // 수익 이벤트가 이 시간(ms) 동안 없으면 콤보 표시(JACKPOT 포함)가 식으며 사라진다 — 장이 끝나거나 멈춰도 안 남게
-  comboCoolMs: 1600,             // 끊긴 뒤 '최대 ×N'이 남아 있는 시간
+  comboCoolMs: Fx.dur('combo-cool'),   // 끊긴 뒤 '최대 ×N'이 남아 있는 시간 (값은 :root --dur-combo-cool 하나 — CSS streakBreak와 같은 값)
   // ── 손에 잡히는 화면 (ui-tactile) ──
   tiltMaxDeg: 8,                 // 카드 기울기 최대 각도 (도) — 손패·보상·암시장 카드
   btnHoverGapMs: 60,             // .btn-chunky 호버 틱 최소 간격 (연타 방지)
@@ -6623,7 +6647,9 @@ $('shopBox').addEventListener('mouseover', e => {
 function enterShopHaze(){
   const el = $('screen-shop');
   el.classList.remove('haze-in'); void el.offsetWidth; el.classList.add('haze-in');
-  setTimeout(() => el.classList.remove('haze-in'), JUICE_CONFIG.hazeInMs + 50);
+  const box = $('shopBox');
+  if(box) Fx.afterAnim(box, JUICE_CONFIG.hazeInMs, () => el.classList.remove('haze-in'), 'hazeIn');   // 안개 애니메이션은 #shopBox에 걸린다
+  else el.classList.remove('haze-in');
   Sound.play('shopPad', { volume: JUICE_CONFIG.shopPadVolume });
 }
 let relicClackId = '';   // 방금 암시장에서 산 유물: renderShop 뒤 그 칸에 꽂는다
@@ -7035,7 +7061,7 @@ function showPopNum(text, isUp){
   pop.style.textShadow = isUp ? '1px 1px 0 #003a14' : '1px 1px 0 #5c0010';
   pop.textContent = text;
   document.getElementById('chartBox').appendChild(pop);
-  setTimeout(()=>pop.remove(), 900);
+  Fx.afterAnim(pop, Fx.dur('pop'), () => pop.remove());
 }
 
 function cashRain(n){ Fx.billRain(n || 40); }   // 지폐 비 — fx.js 파티클 캔버스 (예전 DOM 지폐 대신)
@@ -7068,7 +7094,10 @@ function tunerLeaves(obj, path, out){   // 숫자 칸 목록 [{ path: ['stageMs'
   return out;
 }
 const tunerGet = (root, path) => path.reduce((o, k) => (o == null ? undefined : o[k]), root);
-function tunerSet(path, v){ const parent = tunerGet(JUICE_CONFIG, path.slice(0, -1)); if(parent && typeof parent[path[path.length - 1]] === 'number') parent[path[path.length - 1]] = v; }
+function tunerSet(path, v){ const parent = tunerGet(JUICE_CONFIG, path.slice(0, -1)); if(parent && typeof parent[path[path.length - 1]] === 'number') parent[path[path.length - 1]] = v; if(path.length === 1 && DUR_LINKS[path[0]]) syncDurVars(); }
+/* JUICE_CONFIG ↔ :root --dur-* 묶음: 튜너로 바꾼 값을 CSS 애니메이션에도 (기본값은 CSS 쪽 하나) */
+const DUR_LINKS = { hazeInMs: 'haze-in', packFlipMs: 'pack-flip', mythSpinMs: 'myth-spin', comboCoolMs: 'combo-cool' };
+function syncDurVars(){ Object.keys(DUR_LINKS).forEach(k => document.documentElement.style.setProperty('--dur-' + DUR_LINKS[k], JUICE_CONFIG[k] + 'ms')); }
 function tunerLoad(){
   try {
     const saved = JSON.parse(localStorage.getItem(TUNER_KEY) || 'null');
