@@ -14,7 +14,7 @@ const FX_LEVEL_BIG     = 0.67;   // intensity 이 이상 = 강 (대략 상위 10
 const FX_MAX_PARTICLES = 150;    // 동시 파티클 상한
 const FX_PUNCH_MIN     = 0.0025; // 순자산 변화가 이 비율 미만이면 숫자 펀치 없음 (장중 자잘한 움직임은 무시)
 const FX_COMBO_MS      = 1500;   // 같은 방향 변화가 이 안에 이어지면 콤보
-const FX_SHAKE_CLEAR_MS = 700;         // 흔들림 클래스 뒷정리 (가장 긴 --dur-shake-3 560ms + 여유)
+const FX_SHAKE_CLEAR_MS = 700;         // 흔들림 클래스는 최소 이만큼 남긴다 (예전과 같은 창 — 애니메이션은 --dur-shake-N, 그보다 길어지면 끝날 때까지)
 const FX_ANIM_FALLBACK_PAD_MS = 250;   // 뒷정리 예비 타이머 여유: animationend가 안 오면(애니메이션 꺼짐·탭 숨김) --dur 값 + 이만큼 뒤 (히트스톱 최대 170ms보다 길게)
 // 연출 큐: 한 틱에 여러 이벤트가 나면 하나씩 이어서 재생 (간격 ms · 길이 배율). '최소'는 간격 0.1초
 const FX_QUEUE_SPEED   = { normal: { gap: 450, dur: 1 }, fast: { gap: 250, dur: 0.65 }, min: { gap: 100, dur: 0.45 } };
@@ -42,7 +42,7 @@ const Fx = (() => {
     t = setTimeout(fin, ms + FX_ANIM_FALLBACK_PAD_MS);
   }
   let motion = true, hitStopOn = true;
-  let frozenUntil = 0, unfreezeTimer = null, shakeTimer = null, boxShakeTimer = null, glitchTimer = null, lastStampAt = 0;
+  let frozenUntil = 0, unfreezeTimer = null, lastStampAt = 0;
   const colorCache = {};
   const punchState = {};   // 요소 id → { dir, at, combo }
   const now = () => performance.now();
@@ -76,30 +76,37 @@ const Fx = (() => {
   const frozenFor = () => Math.max(0, frozenUntil - now());
   const afterStop = fn => { const w = frozenFor(); if(w > 0) setTimeout(fn, w); else fn(); };
 
-  /* ── 흔들림 · 글리치 · 스탬프 · 번쩍임 ── */
+  /* ── 흔들림 · 글리치 · 스탬프 · 번쩍임 ── 흔들림(transform)·글리치(filter)는 .cabinet animation 목록의 다른 칸 (demo CSS --cab-shake · --cab-glitch) */
+  const SHAKE_KF = { 1: 'shake1', 2: 'shake', 3: 'shake3' };   // .cabinet.shake-N의 @keyframes 이름
+  const shakeTok = new WeakMap();   // 요소 → 마지막 흔들림 번호 (다시 흔들면 옛 뒷정리는 아무것도 안 한다)
+  function clearShakeLater(el, cls, lvl, kf){   // 흔들림 애니메이션이 끝나고(animationend) FX_SHAKE_CLEAR_MS도 지난 뒤 클래스를 뗀다
+    const tok = (shakeTok.get(el) || 0) + 1, t0 = now();
+    shakeTok.set(el, tok);
+    afterAnim(el, dur('shake-' + lvl), () => {
+      const rm = () => { if(shakeTok.get(el) === tok) el.classList.remove(cls); }, left = FX_SHAKE_CLEAR_MS - (now() - t0);
+      if(left > 0) setTimeout(rm, left); else rm();
+    }, kf);
+  }
   function shake(lvl){
     if(!motion || !lvl) return;
     const cab = cabinet();
     cab.classList.remove('shake', 'shake-1', 'shake-2', 'shake-3');
     void cab.offsetWidth;
     cab.classList.add('shake-' + lvl);
-    clearTimeout(shakeTimer);
-    shakeTimer = setTimeout(() => cab.classList.remove('shake-' + lvl), FX_SHAKE_CLEAR_MS);
+    clearShakeLater(cab, 'shake-' + lvl, lvl, SHAKE_KF[lvl]);   // 흔들림 칸이 끝난 뒤 (글리치 칸이 먼저 끝나도 안 끊긴다)
     const box = document.querySelector('.overlay.show .overlay-box.stage-live');   // 정산 무대가 열려 있으면 상자도 (오버레이는 .cabinet 밖이라 안 흔들린다)
     if(box){
       box.classList.remove('ov-shake-1', 'ov-shake-2', 'ov-shake-3');
       void box.offsetWidth;
       box.classList.add('ov-shake-' + lvl);
-      clearTimeout(boxShakeTimer);
-      boxShakeTimer = setTimeout(() => box.classList.remove('ov-shake-' + lvl), FX_SHAKE_CLEAR_MS);
+      clearShakeLater(box, 'ov-shake-' + lvl, lvl, 'ovShake' + lvl);
     }
   }
   function glitch(){
     if(!motion) return;
     const cab = cabinet();
     cab.classList.remove('fx-glitch'); void cab.offsetWidth; cab.classList.add('fx-glitch');
-    clearTimeout(glitchTimer);
-    glitchTimer = setTimeout(() => cab.classList.remove('fx-glitch'), dur('glitch'));   // .cabinet 위 클래스 뒷정리는 흔들림·글리치가 같은 animation 칸을 다투므로 타이머 그대로 (키프레임 겹침 정리 단계에서 바꾼다)
+    afterAnim(cab, dur('glitch'), () => cab.classList.remove('fx-glitch'), 'fxGlitch');
     const scan = document.createElement('div');   // 스캔라인 떨림
     scan.className = 'fx-scan';
     document.body.appendChild(scan);

@@ -1374,14 +1374,18 @@ body.no-motion .pk-pillar{opacity:.22;}
 @keyframes steamUp{0%{transform:translate(0,0);opacity:0;}15%{opacity:.9;}100%{transform:translate(calc(6 * var(--u) * var(--sway, 1)), calc(-1 * var(--steam-rise, 72) * var(--u)));opacity:0;}}
 body.no-motion .overlay-box.stage-live.stage-rage::before,body.no-motion .sh-steam i{animation:none;}
 body.no-motion .sh-steam i{display:none;}
-.overlay-box.ov-shake-1{animation:ovShake1 var(--dur-shake-1) steps(4);}
-.overlay-box.ov-shake-2{animation:ovShake2 var(--dur-shake-2) steps(6);}
-.overlay-box.ov-shake-3{animation:ovShake3 var(--dur-shake-3) steps(8);}
+/* 정산 상자 흔들림(ov-shake, transform)과 금액 직전 흔들림(pre-shake, 개별 속성 translate)은 칸을 따로 — 둘이 겹쳐도 합쳐진다.
+   폭주 배경(stage-rage)은 ::before 가상요소라 원래 충돌 없음 */
+.overlay-box{animation:var(--ov-shake, none),var(--ov-pre, none);}
+body.no-motion .overlay-box,body.no-motion .cabinet{animation:none;}   /* 모션 끔: 두 칸 다 (흔들림·직전 흔들림·글리치) */
+.overlay-box.ov-shake-1{--ov-shake:ovShake1 var(--dur-shake-1) steps(4);}
+.overlay-box.ov-shake-2{--ov-shake:ovShake2 var(--dur-shake-2) steps(6);}
+.overlay-box.ov-shake-3{--ov-shake:ovShake3 var(--dur-shake-3) steps(8);}
 @keyframes ovShake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}66%{transform:translate(calc(2 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}}
 @keyframes ovShake2{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}40%{transform:translate(calc(4 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}60%{transform:translate(calc(-3 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}80%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
 @keyframes ovShake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u) * var(--ovk, 2)),calc(4 * var(--u) * var(--ovk, 2)));}25%{transform:translate(calc(7 * var(--u) * var(--ovk, 2)),calc(-5 * var(--u) * var(--ovk, 2)));}37%{transform:translate(calc(-6 * var(--u) * var(--ovk, 2)),calc(-3 * var(--u) * var(--ovk, 2)));}50%{transform:translate(calc(6 * var(--u) * var(--ovk, 2)),calc(3 * var(--u) * var(--ovk, 2)));}62%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}75%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}87%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
 /* 동작 줄이기·흔들림 끔: 흔들림·팝·일렁임 없음. 불꽃은 정지한 모양으로 남는다 (정적 대체) */
-body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame i,body.no-motion .overlay-box[class*="ov-shake-"]{animation:none;}
+body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame i{animation:none;}
 .stage-reel{display:inline-block;min-width:calc(46 * var(--u));text-align:center;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--bg);background:var(--gold);padding:calc(3 * var(--u)) calc(6 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 .stage-reel.spin{animation:stageJitter .06s steps(2) infinite;}
 .stage-pay{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);margin-top:calc(6 * var(--u));}
@@ -1401,9 +1405,9 @@ body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame 
 .sf-hint{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.3;color:var(--muted);max-width:calc(84 * var(--u));white-space:normal;text-align:left;}
 @keyframes sfHit{0%{transform:none;}35%{transform:translateY(calc(-6 * var(--u))) scale(1.18);}100%{transform:none;}}
 .slot-d{display:inline-block;min-width:.5em;} .slot-d.spin{color:var(--text2);}
-.overlay-box.pre-shake{animation:preShake var(--shake-ms, .2s) steps(6);}
-@keyframes preShake{20%{transform:translate(var(--amp), 0);}40%{transform:translate(calc(-1 * var(--amp)), var(--amp));}60%{transform:translate(var(--amp), calc(-1 * var(--amp)));}80%{transform:translate(calc(-1 * var(--amp)), 0);}}
-body.no-motion .sf-box.hit,body.no-motion .overlay-box.pre-shake{animation:none;}
+.overlay-box.pre-shake{--ov-pre:preShake var(--shake-ms, .2s) steps(6);}
+@keyframes preShake{20%{translate:var(--amp) 0;}40%{translate:calc(-1 * var(--amp)) var(--amp);}60%{translate:var(--amp) calc(-1 * var(--amp));}80%{translate:calc(-1 * var(--amp)) 0;}}   /* translate 속성 = ov-shake의 transform과 합성 */
+body.no-motion .sf-box.hit{animation:none;}
 body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stage-reel.spin{animation:none;}
 .chain-list{display:flex;flex-direction:column;gap:calc(12 * var(--u));margin:calc(12 * var(--u)) 0;text-align:left;}
 .chain-row{position:relative;background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--line);padding:calc(9 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));animation:chainIn .24s steps(4) both;}
@@ -1530,17 +1534,18 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
   .rec-row .rr-stats{grid-column:2 / -1;}
 }
 
-.cabinet.shake{animation:shake var(--dur-shake-2) steps(6);}
 @keyframes shake{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u)),calc(2 * var(--u)));}40%{transform:translate(calc(4 * var(--u)),calc(-2 * var(--u)));}60%{transform:translate(calc(-3 * var(--u)),calc(-1 * var(--u)));}80%{transform:translate(calc(3 * var(--u)),calc(1 * var(--u)));}}
 .red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut var(--dur-red-flash) steps(5) forwards;}
 @keyframes fadeOut{to{opacity:0;}}
 
 /* ── 타격감 (fx.js) — 흔들림 3단계 · 히트스톱 · 글리치 · 도장 · 번쩍임 · 파티클 캔버스. 전부 steps() 끊김 모션 ── */
-.cabinet.shake-1{animation:shake1 var(--dur-shake-1) steps(4);}
-.cabinet.shake-2{animation:shake var(--dur-shake-2) steps(6);}
-.cabinet.shake-3{animation:shake3 var(--dur-shake-3) steps(8);}
-.cabinet.fx-glitch{animation:fxGlitch var(--dur-glitch) steps(6);}
-.cabinet.shake-3.fx-glitch{animation:shake3 var(--dur-shake-3) steps(8),fxGlitch var(--dur-glitch) steps(6);}
+/* 흔들림(transform)과 글리치(filter)는 animation 목록의 칸을 하나씩 따로 쓴다 — 동시에 돌아도 서로 덮지 않는다.
+   칸 = 변수 하나 (--cab-shake · --cab-glitch). 예전엔 shake-1·2 + 글리치가 같은 animation 속성을 다퉈 나중 규칙(글리치)만 남았다 */
+.cabinet{animation:var(--cab-shake, none),var(--cab-glitch, none);}
+.cabinet.shake,.cabinet.shake-2{--cab-shake:shake var(--dur-shake-2) steps(6);}
+.cabinet.shake-1{--cab-shake:shake1 var(--dur-shake-1) steps(4);}
+.cabinet.shake-3{--cab-shake:shake3 var(--dur-shake-3) steps(8);}
+.cabinet.fx-glitch{--cab-glitch:fxGlitch var(--dur-glitch) steps(6);}
 @keyframes shake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u)),calc(1 * var(--u)));}66%{transform:translate(calc(2 * var(--u)),calc(-1 * var(--u)));}}
 @keyframes shake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u)),calc(4 * var(--u)));}25%{transform:translate(calc(7 * var(--u)),calc(-5 * var(--u)));}37%{transform:translate(calc(-6 * var(--u)),calc(-3 * var(--u)));}50%{transform:translate(calc(6 * var(--u)),calc(3 * var(--u)));}62%{transform:translate(calc(-4 * var(--u)),calc(2 * var(--u)));}75%{transform:translate(calc(3 * var(--u)),calc(-2 * var(--u)));}87%{transform:translate(calc(-2 * var(--u)),calc(1 * var(--u)));}}
 @keyframes fxGlitch{0%,100%{filter:none;}20%{filter:drop-shadow(calc(4 * var(--u)) 0 0 var(--red)) drop-shadow(calc(-4 * var(--u)) 0 0 var(--cyan));}40%{filter:drop-shadow(calc(-3 * var(--u)) 0 0 var(--red)) drop-shadow(calc(3 * var(--u)) 0 0 var(--cyan));}60%{filter:drop-shadow(calc(5 * var(--u)) 0 0 var(--red)) drop-shadow(calc(-2 * var(--u)) 0 0 var(--cyan));}80%{filter:none;}}
