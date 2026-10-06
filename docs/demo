@@ -3654,7 +3654,7 @@ function juiceSellAll(d){
   let k = 0;
   rows.forEach(el => {
     const v = posPnlSnap[el.dataset.id];
-    if(v > 0) cashout(rectOf(el), Fx.intensity(v, eq), k++ * JUICE_CONFIG.cashoutRowGapMs);
+    if(v > 0) cashout(rectOf(el), Fx.intensity(v, eq), Fx.stagger(k++ * JUICE_CONFIG.cashoutRowGapMs));
   });
   if(!k && d.pnl > 0) cashout(rectOf($('positionsBox')), Fx.intensity(d.pnl, eq), 0);
 }
@@ -3826,7 +3826,7 @@ function juiceBought(d){
   setTimeout(() => {
     Sound.play('buy', { lev: d.pos.lev, dir: d.pos.dir, pitch: Sound.semis(i) });
     if(i > 0) Fx.flash(posRowEl(d.pos.id), 'fx-hit');
-  }, i * 110);
+  }, Fx.stagger(i * 110));
 }
 
 /* 큐가 비면 실행 (게임오버·결산 화면은 연쇄가 끝난 뒤에) */
@@ -5696,13 +5696,18 @@ const JUICE_CONFIG = {
   slowMoMs: 300,                 //       슬로모션 시간
   slowMoRate: 0.3,               //       슬로모션 배속
   // ── 모션 시간 스케일 (motionTime 한 곳) ── motionScale = 모션 강도 설정(%) × 장 속도 보정. 정산 무대·결산 체인·연쇄 연출 큐가 읽는다
-  motionSpeedScale: { x0_5: 1, x1: 1, x2: 0.7, x4: 0.4 }   // 장중 속도(0.5×·1×·2×·4×) → 연출 시간 배율 (1× = 1.0 기준, 표에 없는 속도는 1)
+  motionSpeedScale: { x0_5: 1, x1: 1, x2: 0.7, x4: 0.4 },  // 장중 속도(0.5×·1×·2×·4×) → 연출 시간 배율 (1× = 1.0 기준, 표에 없는 속도는 1)
+  // ── 쌓임 정책 (Fx.setStackPolicy) ── 장중 속도가 이 이상이면: 연출 사이 간격 × stackStaggerMul, 동시 진행 연출 stackMax개 초과분은 가장 오래된 것부터 즉시 최종 상태로
+  stackFromSpeed: 2,             // 이 장중 속도(×)부터 켠다 (1×·0.5×는 꺼짐 = 원래 그대로)
+  stackMax: 6,                   // 동시 진행 연출 상한 (요소·클래스 연출 + 연출 큐 재생 항목 + 날아가는 카드)
+  stackStaggerMul: 0.5           // 연출 사이 간격(큐 간격·카드 잔상·칩 지연·동전 간격·전량 매도 행 간격·매수음 순번) 배율
 };
 /* 연출 시간 스케일: 이 값 하나를 Fx.motionTime(ms)이 읽는다 (fx.js). 1×·100% = 1 → 원래 시간 그대로 */
 const motionSpeedKey = v => 'x' + String(v).replace('.', '_');   // 0.5 → x0_5 (튜너 경로가 '.'로 나뉘므로 키에 점을 안 쓴다)
 const motionScaleNow = () => (settings.motion / 100) * (JUICE_CONFIG.motionSpeedScale[motionSpeedKey(settings.speed)] ?? 1);
 const motionTime = ms => Fx.motionTime(ms);
 Fx.setMotionScale(motionScaleNow);
+Fx.setStackPolicy(() => ({ on: settings.speed >= JUICE_CONFIG.stackFromSpeed, max: Math.round(JUICE_CONFIG.stackMax), staggerMul: JUICE_CONFIG.stackStaggerMul }));
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
 let stageBest = { run: null, payout: 0 };   // 이번 판 최고 정산금 (세기 기준, UI 전용)

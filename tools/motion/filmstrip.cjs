@@ -128,6 +128,10 @@ const INIT = `(() => {
     await page.clock.runFor(3000);   // 드로우·초기 연출 정리
     if(sc.setup) await page.evaluate(sc.setup);
     await page.clock.runFor(1000);
+    // 준비 단계 알림(토스트): 예전 코드는 가짜 시계 타이머로 지웠고, 지금은 animationend로 지운다 — 준비 단계엔 CSS 시간이 실제 시간이라
+    // 안 끝나므로 그 애니메이션만 끝낸다 (나머지 준비 단계 애니메이션은 예전처럼 첫 __freeze에서 0초부터)
+    await page.evaluate(() => document.querySelectorAll('#toastLayer .toast').forEach(t => t.getAnimations().forEach(a => a.finish())));
+    await page.clock.runFor(0);
     await page.evaluate(() => { const st = document.createElement('style'); st.textContent = '*{caret-color:transparent !important;}'; document.head.appendChild(st); });
     await page.evaluate(async () => { await window.__freeze(); window.__reseed(); });
     await page.evaluate(sc.trigger);
