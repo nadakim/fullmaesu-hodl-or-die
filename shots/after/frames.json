@@ -1,0 +1,1037 @@
+{
+ "speed": 1,
+ "motion": null,
+ "shake": null,
+ "prm": false,
+ "step": 10,
+ "viewport": [
+  1920,
+  1080
+ ],
+ "scenes": {
+  "stage": [
+   {
+    "t": 0,
+    "file": "stage/stage-t0000.png"
+   },
+   {
+    "t": 400,
+    "file": "stage/stage-t0400.png"
+   },
+   {
+    "t": 800,
+    "file": "stage/stage-t0800.png"
+   },
+   {
+    "t": 1200,
+    "file": "stage/stage-t1200.png"
+   },
+   {
+    "t": 1600,
+    "file": "stage/stage-t1600.png"
+   },
+   {
+    "t": 2000,
+    "file": "stage/stage-t2000.png"
+   },
+   {
+    "t": 2400,
+    "file": "stage/stage-t2400.png"
+   },
+   {
+    "t": 2800,
+    "file": "stage/stage-t2800.png"
+   },
+   {
+    "t": 3200,
+    "file": "stage/stage-t3200.png"
+   },
+   {
+    "t": 3600,
+    "file": "stage/stage-t3600.png"
+   },
+   {
+    "t": 4000,
+    "file": "stage/stage-t4000.png"
+   },
+   {
+    "t": 4400,
+    "file": "stage/stage-t4400.png"
+   },
+   {
+    "t": 4800,
+    "file": "stage/stage-t4800.png"
+   },
+   {
+    "t": 5200,
+    "file": "stage/stage-t5200.png"
+   },
+   {
+    "t": 5600,
+    "file": "stage/stage-t5600.png"
+   },
+   {
+    "t": 6000,
+    "file": "stage/stage-t6000.png"
+   },
+   {
+    "t": 6400,
+    "file": "stage/stage-t6400.png"
+   },
+   {
+    "t": 6800,
+    "file": "stage/stage-t6800.png"
+   },
+   {
+    "t": 7200,
+    "file": "stage/stage-t7200.png"
+   }
+  ],
+  "plainstage": [
+   {
+    "t": 0,
+    "file": "plainstage/plainstage-t0000.png"
+   },
+   {
+    "t": 100,
+    "file": "plainstage/plainstage-t0100.png"
+   },
+   {
+    "t": 200,
+    "file": "plainstage/plainstage-t0200.png"
+   },
+   {
+    "t": 300,
+    "file": "plainstage/plainstage-t0300.png"
+   },
+   {
+    "t": 400,
+    "file": "plainstage/plainstage-t0400.png"
+   },
+   {
+    "t": 500,
+    "file": "plainstage/plainstage-t0500.png"
+   },
+   {
+    "t": 600,
+    "file": "plainstage/plainstage-t0600.png"
+   },
+   {
+    "t": 700,
+    "file": "plainstage/plainstage-t0700.png"
+   },
+   {
+    "t": 800,
+    "file": "plainstage/plainstage-t0800.png"
+   },
+   {
+    "t": 900,
+    "file": "plainstage/plainstage-t0900.png"
+   },
+   {
+    "t": 1000,
+    "file": "plainstage/plainstage-t1000.png"
+   },
+   {
+    "t": 1100,
+    "file": "plainstage/plainstage-t1100.png"
+   },
+   {
+    "t": 1200,
+    "file": "plainstage/plainstage-t1200.png"
+   },
+   {
+    "t": 1300,
+    "file": "plainstage/plainstage-t1300.png"
+   },
+   {
+    "t": 1400,
+    "file": "plainstage/plainstage-t1400.png"
+   },
+   {
+    "t": 1500,
+    "file": "plainstage/plainstage-t1500.png"
+   }
+  ],
+  "chain": [
+   {
+    "t": 0,
+    "file": "chain/chain-t0000.png"
+   },
+   {
+    "t": 300,
+    "file": "chain/chain-t0300.png"
+   },
+   {
+    "t": 600,
+    "file": "chain/chain-t0600.png"
+   },
+   {
+    "t": 900,
+    "file": "chain/chain-t0900.png"
+   },
+   {
+    "t": 1200,
+    "file": "chain/chain-t1200.png"
+   },
+   {
+    "t": 1500,
+    "file": "chain/chain-t1500.png"
+   },
+   {
+    "t": 1800,
+    "file": "chain/chain-t1800.png"
+   },
+   {
+    "t": 2100,
+    "file": "chain/chain-t2100.png"
+   },
+   {
+    "t": 2400,
+    "file": "chain/chain-t2400.png"
+   },
+   {
+    "t": 2700,
+    "file": "chain/chain-t2700.png"
+   },
+   {
+    "t": 3000,
+    "file": "chain/chain-t3000.png"
+   },
+   {
+    "t": 3300,
+    "file": "chain/chain-t3300.png"
+   },
+   {
+    "t": 3600,
+    "file": "chain/chain-t3600.png"
+   },
+   {
+    "t": 3900,
+    "file": "chain/chain-t3900.png"
+   },
+   {
+    "t": 4200,
+    "file": "chain/chain-t4200.png"
+   },
+   {
+    "t": 4500,
+    "file": "chain/chain-t4500.png"
+   },
+   {
+    "t": 4800,
+    "file": "chain/chain-t4800.png"
+   }
+  ],
+  "queue": [
+   {
+    "t": 0,
+    "file": "queue/queue-t0000.png"
+   },
+   {
+    "t": 150,
+    "file": "queue/queue-t0150.png"
+   },
+   {
+    "t": 300,
+    "file": "queue/queue-t0300.png"
+   },
+   {
+    "t": 450,
+    "file": "queue/queue-t0450.png"
+   },
+   {
+    "t": 600,
+    "file": "queue/queue-t0600.png"
+   },
+   {
+    "t": 750,
+    "file": "queue/queue-t0750.png"
+   },
+   {
+    "t": 900,
+    "file": "queue/queue-t0900.png"
+   },
+   {
+    "t": 1050,
+    "file": "queue/queue-t1050.png"
+   },
+   {
+    "t": 1200,
+    "file": "queue/queue-t1200.png"
+   },
+   {
+    "t": 1350,
+    "file": "queue/queue-t1350.png"
+   },
+   {
+    "t": 1500,
+    "file": "queue/queue-t1500.png"
+   },
+   {
+    "t": 1650,
+    "file": "queue/queue-t1650.png"
+   },
+   {
+    "t": 1800,
+    "file": "queue/queue-t1800.png"
+   },
+   {
+    "t": 1950,
+    "file": "queue/queue-t1950.png"
+   },
+   {
+    "t": 2100,
+    "file": "queue/queue-t2100.png"
+   },
+   {
+    "t": 2250,
+    "file": "queue/queue-t2250.png"
+   },
+   {
+    "t": 2400,
+    "file": "queue/queue-t2400.png"
+   },
+   {
+    "t": 2550,
+    "file": "queue/queue-t2550.png"
+   },
+   {
+    "t": 2700,
+    "file": "queue/queue-t2700.png"
+   },
+   {
+    "t": 2850,
+    "file": "queue/queue-t2850.png"
+   },
+   {
+    "t": 3000,
+    "file": "queue/queue-t3000.png"
+   },
+   {
+    "t": 3150,
+    "file": "queue/queue-t3150.png"
+   },
+   {
+    "t": 3300,
+    "file": "queue/queue-t3300.png"
+   },
+   {
+    "t": 3450,
+    "file": "queue/queue-t3450.png"
+   },
+   {
+    "t": 3600,
+    "file": "queue/queue-t3600.png"
+   },
+   {
+    "t": 3750,
+    "file": "queue/queue-t3750.png"
+   },
+   {
+    "t": 3900,
+    "file": "queue/queue-t3900.png"
+   },
+   {
+    "t": 4050,
+    "file": "queue/queue-t4050.png"
+   },
+   {
+    "t": 4200,
+    "file": "queue/queue-t4200.png"
+   }
+  ],
+  "toast": [
+   {
+    "t": 0,
+    "file": "toast/toast-t0000.png"
+   },
+   {
+    "t": 200,
+    "file": "toast/toast-t0200.png"
+   },
+   {
+    "t": 400,
+    "file": "toast/toast-t0400.png"
+   },
+   {
+    "t": 600,
+    "file": "toast/toast-t0600.png"
+   },
+   {
+    "t": 800,
+    "file": "toast/toast-t0800.png"
+   },
+   {
+    "t": 1000,
+    "file": "toast/toast-t1000.png"
+   },
+   {
+    "t": 1200,
+    "file": "toast/toast-t1200.png"
+   },
+   {
+    "t": 1400,
+    "file": "toast/toast-t1400.png"
+   },
+   {
+    "t": 1600,
+    "file": "toast/toast-t1600.png"
+   },
+   {
+    "t": 1800,
+    "file": "toast/toast-t1800.png"
+   },
+   {
+    "t": 2000,
+    "file": "toast/toast-t2000.png"
+   },
+   {
+    "t": 2200,
+    "file": "toast/toast-t2200.png"
+   },
+   {
+    "t": 2400,
+    "file": "toast/toast-t2400.png"
+   },
+   {
+    "t": 2600,
+    "file": "toast/toast-t2600.png"
+   },
+   {
+    "t": 2800,
+    "file": "toast/toast-t2800.png"
+   }
+  ],
+  "shake1": [
+   {
+    "t": 0,
+    "file": "shake1/shake1-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "shake1/shake1-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "shake1/shake1-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "shake1/shake1-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "shake1/shake1-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "shake1/shake1-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "shake1/shake1-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "shake1/shake1-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "shake1/shake1-t0320.png"
+   }
+  ],
+  "shake2": [
+   {
+    "t": 0,
+    "file": "shake2/shake2-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "shake2/shake2-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "shake2/shake2-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "shake2/shake2-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "shake2/shake2-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "shake2/shake2-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "shake2/shake2-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "shake2/shake2-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "shake2/shake2-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "shake2/shake2-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "shake2/shake2-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "shake2/shake2-t0440.png"
+   },
+   {
+    "t": 480,
+    "file": "shake2/shake2-t0480.png"
+   }
+  ],
+  "shake3": [
+   {
+    "t": 0,
+    "file": "shake3/shake3-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "shake3/shake3-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "shake3/shake3-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "shake3/shake3-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "shake3/shake3-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "shake3/shake3-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "shake3/shake3-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "shake3/shake3-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "shake3/shake3-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "shake3/shake3-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "shake3/shake3-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "shake3/shake3-t0440.png"
+   },
+   {
+    "t": 480,
+    "file": "shake3/shake3-t0480.png"
+   },
+   {
+    "t": 520,
+    "file": "shake3/shake3-t0520.png"
+   },
+   {
+    "t": 560,
+    "file": "shake3/shake3-t0560.png"
+   },
+   {
+    "t": 600,
+    "file": "shake3/shake3-t0600.png"
+   },
+   {
+    "t": 640,
+    "file": "shake3/shake3-t0640.png"
+   }
+  ],
+  "glitch": [
+   {
+    "t": 0,
+    "file": "glitch/glitch-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "glitch/glitch-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "glitch/glitch-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "glitch/glitch-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "glitch/glitch-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "glitch/glitch-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "glitch/glitch-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "glitch/glitch-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "glitch/glitch-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "glitch/glitch-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "glitch/glitch-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "glitch/glitch-t0440.png"
+   }
+  ],
+  "shake2glitch": [
+   {
+    "t": 0,
+    "file": "shake2glitch/shake2glitch-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "shake2glitch/shake2glitch-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "shake2glitch/shake2glitch-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "shake2glitch/shake2glitch-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "shake2glitch/shake2glitch-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "shake2glitch/shake2glitch-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "shake2glitch/shake2glitch-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "shake2glitch/shake2glitch-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "shake2glitch/shake2glitch-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "shake2glitch/shake2glitch-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "shake2glitch/shake2glitch-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "shake2glitch/shake2glitch-t0440.png"
+   },
+   {
+    "t": 480,
+    "file": "shake2glitch/shake2glitch-t0480.png"
+   }
+  ],
+  "shake3glitch": [
+   {
+    "t": 0,
+    "file": "shake3glitch/shake3glitch-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "shake3glitch/shake3glitch-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "shake3glitch/shake3glitch-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "shake3glitch/shake3glitch-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "shake3glitch/shake3glitch-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "shake3glitch/shake3glitch-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "shake3glitch/shake3glitch-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "shake3glitch/shake3glitch-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "shake3glitch/shake3glitch-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "shake3glitch/shake3glitch-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "shake3glitch/shake3glitch-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "shake3glitch/shake3glitch-t0440.png"
+   },
+   {
+    "t": 480,
+    "file": "shake3glitch/shake3glitch-t0480.png"
+   },
+   {
+    "t": 520,
+    "file": "shake3glitch/shake3glitch-t0520.png"
+   },
+   {
+    "t": 560,
+    "file": "shake3glitch/shake3glitch-t0560.png"
+   },
+   {
+    "t": 600,
+    "file": "shake3glitch/shake3glitch-t0600.png"
+   },
+   {
+    "t": 640,
+    "file": "shake3glitch/shake3glitch-t0640.png"
+   }
+  ],
+  "ovshake": [
+   {
+    "t": 0,
+    "file": "ovshake/ovshake-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "ovshake/ovshake-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "ovshake/ovshake-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "ovshake/ovshake-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "ovshake/ovshake-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "ovshake/ovshake-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "ovshake/ovshake-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "ovshake/ovshake-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "ovshake/ovshake-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "ovshake/ovshake-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "ovshake/ovshake-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "ovshake/ovshake-t0440.png"
+   },
+   {
+    "t": 480,
+    "file": "ovshake/ovshake-t0480.png"
+   },
+   {
+    "t": 520,
+    "file": "ovshake/ovshake-t0520.png"
+   },
+   {
+    "t": 560,
+    "file": "ovshake/ovshake-t0560.png"
+   },
+   {
+    "t": 600,
+    "file": "ovshake/ovshake-t0600.png"
+   },
+   {
+    "t": 640,
+    "file": "ovshake/ovshake-t0640.png"
+   }
+  ],
+  "ovpreshake": [
+   {
+    "t": 0,
+    "file": "ovpreshake/ovpreshake-t0000.png"
+   },
+   {
+    "t": 20,
+    "file": "ovpreshake/ovpreshake-t0020.png"
+   },
+   {
+    "t": 40,
+    "file": "ovpreshake/ovpreshake-t0040.png"
+   },
+   {
+    "t": 60,
+    "file": "ovpreshake/ovpreshake-t0060.png"
+   },
+   {
+    "t": 80,
+    "file": "ovpreshake/ovpreshake-t0080.png"
+   },
+   {
+    "t": 100,
+    "file": "ovpreshake/ovpreshake-t0100.png"
+   },
+   {
+    "t": 120,
+    "file": "ovpreshake/ovpreshake-t0120.png"
+   },
+   {
+    "t": 140,
+    "file": "ovpreshake/ovpreshake-t0140.png"
+   },
+   {
+    "t": 160,
+    "file": "ovpreshake/ovpreshake-t0160.png"
+   },
+   {
+    "t": 180,
+    "file": "ovpreshake/ovpreshake-t0180.png"
+   },
+   {
+    "t": 200,
+    "file": "ovpreshake/ovpreshake-t0200.png"
+   },
+   {
+    "t": 220,
+    "file": "ovpreshake/ovpreshake-t0220.png"
+   },
+   {
+    "t": 240,
+    "file": "ovpreshake/ovpreshake-t0240.png"
+   },
+   {
+    "t": 260,
+    "file": "ovpreshake/ovpreshake-t0260.png"
+   },
+   {
+    "t": 280,
+    "file": "ovpreshake/ovpreshake-t0280.png"
+   }
+  ],
+  "ovrage": [
+   {
+    "t": 0,
+    "file": "ovrage/ovrage-t0000.png"
+   },
+   {
+    "t": 150,
+    "file": "ovrage/ovrage-t0150.png"
+   },
+   {
+    "t": 300,
+    "file": "ovrage/ovrage-t0300.png"
+   },
+   {
+    "t": 450,
+    "file": "ovrage/ovrage-t0450.png"
+   },
+   {
+    "t": 600,
+    "file": "ovrage/ovrage-t0600.png"
+   },
+   {
+    "t": 750,
+    "file": "ovrage/ovrage-t0750.png"
+   },
+   {
+    "t": 900,
+    "file": "ovrage/ovrage-t0900.png"
+   },
+   {
+    "t": 1050,
+    "file": "ovrage/ovrage-t1050.png"
+   },
+   {
+    "t": 1200,
+    "file": "ovrage/ovrage-t1200.png"
+   },
+   {
+    "t": 1350,
+    "file": "ovrage/ovrage-t1350.png"
+   },
+   {
+    "t": 1500,
+    "file": "ovrage/ovrage-t1500.png"
+   },
+   {
+    "t": 1650,
+    "file": "ovrage/ovrage-t1650.png"
+   },
+   {
+    "t": 1800,
+    "file": "ovrage/ovrage-t1800.png"
+   }
+  ],
+  "ovcombo": [
+   {
+    "t": 0,
+    "file": "ovcombo/ovcombo-t0000.png"
+   },
+   {
+    "t": 40,
+    "file": "ovcombo/ovcombo-t0040.png"
+   },
+   {
+    "t": 80,
+    "file": "ovcombo/ovcombo-t0080.png"
+   },
+   {
+    "t": 120,
+    "file": "ovcombo/ovcombo-t0120.png"
+   },
+   {
+    "t": 160,
+    "file": "ovcombo/ovcombo-t0160.png"
+   },
+   {
+    "t": 200,
+    "file": "ovcombo/ovcombo-t0200.png"
+   },
+   {
+    "t": 240,
+    "file": "ovcombo/ovcombo-t0240.png"
+   },
+   {
+    "t": 280,
+    "file": "ovcombo/ovcombo-t0280.png"
+   },
+   {
+    "t": 320,
+    "file": "ovcombo/ovcombo-t0320.png"
+   },
+   {
+    "t": 360,
+    "file": "ovcombo/ovcombo-t0360.png"
+   },
+   {
+    "t": 400,
+    "file": "ovcombo/ovcombo-t0400.png"
+   },
+   {
+    "t": 440,
+    "file": "ovcombo/ovcombo-t0440.png"
+   },
+   {
+    "t": 480,
+    "file": "ovcombo/ovcombo-t0480.png"
+   },
+   {
+    "t": 520,
+    "file": "ovcombo/ovcombo-t0520.png"
+   },
+   {
+    "t": 560,
+    "file": "ovcombo/ovcombo-t0560.png"
+   },
+   {
+    "t": 600,
+    "file": "ovcombo/ovcombo-t0600.png"
+   },
+   {
+    "t": 640,
+    "file": "ovcombo/ovcombo-t0640.png"
+   }
+  ],
+  "modal": [
+   {
+    "t": 0,
+    "file": "modal/modal-t0000.png"
+   },
+   {
+    "t": 50,
+    "file": "modal/modal-t0050.png"
+   },
+   {
+    "t": 100,
+    "file": "modal/modal-t0100.png"
+   },
+   {
+    "t": 150,
+    "file": "modal/modal-t0150.png"
+   },
+   {
+    "t": 200,
+    "file": "modal/modal-t0200.png"
+   },
+   {
+    "t": 250,
+    "file": "modal/modal-t0250.png"
+   },
+   {
+    "t": 300,
+    "file": "modal/modal-t0300.png"
+   },
+   {
+    "t": 350,
+    "file": "modal/modal-t0350.png"
+   },
+   {
+    "t": 400,
+    "file": "modal/modal-t0400.png"
+   }
+  ]
+ }
+}

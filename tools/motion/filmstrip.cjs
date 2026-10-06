@@ -5,7 +5,7 @@
 //   - CSS 애니메이션·트랜지션·WAAPI(el.animate)는 document.getAnimations()로 발견 즉시 pause → 매 스텝 currentTime = (가짜 시각 − 발견 시각).
 //   - UI 연출 난수(Math.random)는 시드 고정 PRNG로 바꿔 둔다 (파티클·슬롯 숫자·밈 문구가 매번 같게). 엔진은 setSeed.
 // 한계: 히트스톱의 CSS 일시정지(body.fx-hitstop → animation-play-state)는 pause()가 덮어써서 반영되지 않는다 (전/후 같은 조건).
-//   [--shake 0|1] [--prm 1] — 모션 끔 상태 확인용
+//   [--shake 0|1] [--prm 1] — 모션 끔 상태 확인용 · [--finish-ended] — 끝난 애니메이션의 종료 이벤트를 보낸다(2×·4× 끊김·남음 확인)
 // 결과: <폴더>/<장면>/<장면>-t0000.png … + <폴더>/<장면>-strip.png (한 장 요약) + <폴더>/frames.json
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
@@ -14,6 +14,7 @@ const OUT = args[0];
 const opt = k => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : null; };
 const URL = (opt('url') || 'http://127.0.0.1:8765/demo.html') + '?crt=0';
 const SPEED = +(opt('speed') || 1), MOTION = opt('motion') === null ? null : +opt('motion');
+const FINISH_ENDED = args.includes('--finish-ended');   // 끝에 닿은 애니메이션을 finish() → onfinish·animationend가 실제 브라우저처럼 온다 (2×·4× 확인용. 기준선 비교엔 안 씀 — 기준선은 이 옵션 없이 찍었다)
 const SHAKE = opt('shake') === null ? null : opt('shake') === '1', PRM = opt('prm') === '1';   // --shake 0 = 설정 '화면 흔들림' 끔 · --prm 1 = 시스템 동작 줄이기(prefers-reduced-motion) 흉내
 const STEP_MS = 10;
 const SETTLE_MS = 60;
@@ -67,6 +68,7 @@ const SCENES = {
 const pick = (opt('scenes') || Object.keys(SCENES).join(',')).split(',');
 
 const INIT = `(() => {
+  const FINISH_ENDED = ${FINISH_ENDED};
   let s = 0x2F6E2B1;   // mulberry32 — UI 연출 난수 고정 (트리거 직전에 다시 심는다: 그 전의 실시간 구간 호출 수와 무관하게)
   window.__reseed = () => { s = 0x2F6E2B1; };
   Math.random = () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -82,6 +84,8 @@ const INIT = `(() => {
     for(const a of document.getAnimations()){
       if(!born.has(a)) continue;
       const want = now - born.get(a);
+      const end = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming().endTime : Infinity;
+      if(FINISH_ENDED && Number.isFinite(end) && want >= end){ if(a.playState !== 'finished') a.finish(); continue; }
       if(a.currentTime !== want) a.currentTime = want;
     }
   };
@@ -131,7 +135,6 @@ const INIT = `(() => {
     // 준비 단계 알림(토스트): 예전 코드는 가짜 시계 타이머로 지웠고, 지금은 animationend로 지운다 — 준비 단계엔 CSS 시간이 실제 시간이라
     // 안 끝나므로 그 애니메이션만 끝낸다 (나머지 준비 단계 애니메이션은 예전처럼 첫 __freeze에서 0초부터)
     await page.evaluate(() => document.querySelectorAll('#toastLayer .toast').forEach(t => t.getAnimations().forEach(a => a.finish())));
-    await page.clock.runFor(0);
     await page.evaluate(() => { const st = document.createElement('style'); st.textContent = '*{caret-color:transparent !important;}'; document.head.appendChild(st); });
     await page.evaluate(async () => { await window.__freeze(); window.__reseed(); });
     await page.evaluate(sc.trigger);
@@ -159,7 +162,7 @@ const INIT = `(() => {
     const sp = await b.newPage({ viewport: { width: 5 * 384 + 60, height: 300 } });
     const imgs = files.map(x => 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, x.file)).toString('base64'));
     await sp.setContent(`<body style="margin:0;background:#111;color:#ddd;font:14px monospace;padding:10px">
-      <div>${name}${SPEED !== 1 ? ' · speed ' + SPEED : ''}${MOTION !== null ? ' · motion ' + MOTION : ''}${SHAKE !== null ? ' · shake ' + (SHAKE ? 1 : 0) : ''}${PRM ? ' · reduced-motion' : ''}</div>
+      <div>${name}${SPEED !== 1 ? ' · speed ' + SPEED : ''}${MOTION !== null ? ' · motion ' + MOTION : ''}${SHAKE !== null ? ' · shake ' + (SHAKE ? 1 : 0) : ''}${PRM ? ' · reduced-motion' : ''}${FINISH_ENDED ? ' · finish-ended' : ''}</div>
       <div style="display:grid;grid-template-columns:repeat(5,384px);gap:10px">${files.map((x, i) => `<figure style="margin:0"><img src="${imgs[i]}" width="384" height="216" style="display:block"><figcaption>${x.t}ms</figcaption></figure>`).join('')}</div></body>`);
     await sp.waitForTimeout(100);
     await sp.screenshot({ path: path.join(OUT, `${name}-strip.png`), fullPage: true });
