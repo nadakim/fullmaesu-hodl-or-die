@@ -5,6 +5,7 @@
 //   - CSS 애니메이션·트랜지션·WAAPI(el.animate)는 document.getAnimations()로 발견 즉시 pause → 매 스텝 currentTime = (가짜 시각 − 발견 시각).
 //   - UI 연출 난수(Math.random)는 시드 고정 PRNG로 바꿔 둔다 (파티클·슬롯 숫자·밈 문구가 매번 같게). 엔진은 setSeed.
 // 한계: 히트스톱의 CSS 일시정지(body.fx-hitstop → animation-play-state)는 pause()가 덮어써서 반영되지 않는다 (전/후 같은 조건).
+//   [--shake 0|1] [--prm 1] — 모션 끔 상태 확인용
 // 결과: <폴더>/<장면>/<장면>-t0000.png … + <폴더>/<장면>-strip.png (한 장 요약) + <폴더>/frames.json
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
@@ -13,6 +14,7 @@ const OUT = args[0];
 const opt = k => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : null; };
 const URL = (opt('url') || 'http://127.0.0.1:8765/demo.html') + '?crt=0';
 const SPEED = +(opt('speed') || 1), MOTION = opt('motion') === null ? null : +opt('motion');
+const SHAKE = opt('shake') === null ? null : opt('shake') === '1', PRM = opt('prm') === '1';   // --shake 0 = 설정 '화면 흔들림' 끔 · --prm 1 = 시스템 동작 줄이기(prefers-reduced-motion) 흉내
 const STEP_MS = 10;
 const SETTLE_MS = 60;
 const T0 = Date.parse('2026-01-05T09:00:00Z');
@@ -94,7 +96,7 @@ const INIT = `(() => {
   for(const name of pick){
     const sc = SCENES[name];
     if(!sc){ console.error('unknown scene', name); continue; }
-    const page = await b.newPage({ viewport: { width: W, height: H } });
+    const page = await b.newPage({ viewport: { width: W, height: H }, reducedMotion: PRM ? 'reduce' : 'no-preference' });
     page.on('pageerror', e => errs.push(name + ': ' + e.message));
     await page.clock.install({ time: T0 });
     await page.clock.pauseAt(T0 + 1000);   // 페이지를 열기 전부터 시간은 runFor로만 흐른다 (실시간 흐름 없음 → 가짜 rAF 16ms 격자 위상도 판마다 같다)
@@ -112,7 +114,8 @@ const INIT = `(() => {
     await page.clock.runFor(2000);
     await page.click('#startBtn');
     await page.clock.runFor(1500);
-    await page.evaluate(({ speed, motion }) => {
+    await page.evaluate(({ speed, motion, shake }) => {
+      if(shake !== null) settings.shake = shake;
       window.tipChance = () => 0;
       settings.speed = speed;
       settings.sound = false;   // 소리·BGM 끔: 화면엔 영향 없고, 오디오 시계(실시간)에 묶인 Math.random 호출을 없앤다
@@ -120,7 +123,7 @@ const INIT = `(() => {
       applySettings();
       setSeed(4242); startRun(); Fx.skipQueue(); stageQueued = false; dealPending = false;
       run.hand = ['stk_semi', 'credit', 'stk_coin', 'stopLoss', 'stk_meme'].filter(id => CARD_BY_ID[id]).map(newCard); handSig = ''; renderAll();
-    }, { speed: SPEED, motion: MOTION });
+    }, { speed: SPEED, motion: MOTION, shake: SHAKE });
     await page.mouse.move(W - 1, Math.round(H / 2));   // 호버 상태가 프레임마다 섞이지 않게 마우스를 오른쪽 테두리로
     await page.clock.runFor(3000);   // 드로우·초기 연출 정리
     if(sc.setup) await page.evaluate(sc.setup);
@@ -152,14 +155,14 @@ const INIT = `(() => {
     const sp = await b.newPage({ viewport: { width: 5 * 384 + 60, height: 300 } });
     const imgs = files.map(x => 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, x.file)).toString('base64'));
     await sp.setContent(`<body style="margin:0;background:#111;color:#ddd;font:14px monospace;padding:10px">
-      <div>${name}${SPEED !== 1 ? ' · speed ' + SPEED : ''}${MOTION !== null ? ' · motion ' + MOTION : ''}</div>
+      <div>${name}${SPEED !== 1 ? ' · speed ' + SPEED : ''}${MOTION !== null ? ' · motion ' + MOTION : ''}${SHAKE !== null ? ' · shake ' + (SHAKE ? 1 : 0) : ''}${PRM ? ' · reduced-motion' : ''}</div>
       <div style="display:grid;grid-template-columns:repeat(5,384px);gap:10px">${files.map((x, i) => `<figure style="margin:0"><img src="${imgs[i]}" width="384" height="216" style="display:block"><figcaption>${x.t}ms</figcaption></figure>`).join('')}</div></body>`);
     await sp.waitForTimeout(100);
     await sp.screenshot({ path: path.join(OUT, `${name}-strip.png`), fullPage: true });
     await sp.close();
     console.log(name, files.length, 'frames');
   }
-  fs.writeFileSync(path.join(OUT, 'frames.json'), JSON.stringify({ speed: SPEED, motion: MOTION, step: STEP_MS, viewport: [W, H], scenes: index }, null, 1));
+  fs.writeFileSync(path.join(OUT, 'frames.json'), JSON.stringify({ speed: SPEED, motion: MOTION, shake: SHAKE, prm: PRM, step: STEP_MS, viewport: [W, H], scenes: index }, null, 1));
   console.log('retaken', JSON.stringify(unstable));
   console.log('errors', JSON.stringify(errs));
   await b.close();
