@@ -7100,7 +7100,7 @@ const tunerGet = (root, path) => path.reduce((o, k) => (o == null ? undefined : 
 function tunerSet(path, v){ const parent = tunerGet(JUICE_CONFIG, path.slice(0, -1)); if(parent && typeof parent[path[path.length - 1]] === 'number') parent[path[path.length - 1]] = v; if(path.length === 1 && DUR_LINKS[path[0]]) syncDurVars(); }
 /* JUICE_CONFIG ↔ :root --dur-* 묶음: 튜너로 바꾼 값을 CSS 애니메이션에도 (기본값은 CSS 쪽 하나) */
 const DUR_LINKS = { hazeInMs: 'haze-in', packFlipMs: 'pack-flip', mythSpinMs: 'myth-spin', comboCoolMs: 'combo-cool' };
-function syncDurVars(){ Object.keys(DUR_LINKS).forEach(k => document.documentElement.style.setProperty('--dur-' + DUR_LINKS[k], JUICE_CONFIG[k] + 'ms')); }
+function syncDurVars(){ Object.keys(DUR_LINKS).forEach(k => document.documentElement.style.setProperty('--dur-' + DUR_LINKS[k], JUICE_CONFIG[k] + 'ms')); Fx.refreshDur(); }
 function tunerLoad(){
   try {
     const saved = JSON.parse(localStorage.getItem(TUNER_KEY) || 'null');

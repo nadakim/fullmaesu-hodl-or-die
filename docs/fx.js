@@ -52,10 +52,13 @@ const Fx = (() => {
     }
   }
   const stagger = ms => { const p = policySrc(); return p.on ? ms * p.staggerMul : ms; };
+  let durCache = {};   // --dur-* 값은 한 번 읽어 둔다 (getComputedStyle은 스타일 재계산을 일으킨다 — 연출마다 부르면 무겁다). 튜너가 바꾸면 refreshDur
   function dur(name){
+    if(durCache[name] !== undefined) return durCache[name];
     const v = getComputedStyle(document.documentElement).getPropertyValue('--dur-' + name).trim(), n = parseFloat(v);
-    return Number.isFinite(n) ? (/ms$/.test(v) ? n : n * 1000) : 0;
+    return (durCache[name] = Number.isFinite(n) ? (/ms$/.test(v) ? n : n * 1000) : 0);
   }
+  const refreshDur = () => { durCache = {}; };
   function afterAnim(el, ms, fn, name){   // name = 기다릴 @keyframes 이름 (같은 요소의 다른 애니메이션이 먼저 끝나도 안 끊기게). fn(ff) — ff = 쌓임 정책으로 당겨 끝냄
     let done = false, t = 0, h = null;
     const fin = ff => { if(done) return; done = true; untrack(h); el.removeEventListener('animationend', onEnd); clearTimeout(t); fn(!!ff); };
@@ -453,7 +456,7 @@ const Fx = (() => {
   }
   const onSkip = fn => onSkipHooks.push(fn);
 
-  return { setOptions, setUiScale, dur, afterAnim, motionTime, setStackPolicy, stagger, get liveCount(){ return live.length; }, get ffCount(){ return ffCount; }, get ffing(){ return ffing; }, setMotionScale, get motionScale(){ return motionScale(); }, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
+  return { setOptions, setUiScale, dur, refreshDur, afterAnim, motionTime, setStackPolicy, stagger, get liveCount(){ return live.length; }, get ffCount(){ return ffCount; }, get ffing(){ return ffing; }, setMotionScale, get motionScale(){ return motionScale(); }, intensity, enqueue, pending, skipQueue, onSkip, setSpeed, setChainCounter, streak, chip,
            get queueBusy(){ return busy(); }, get queueLength(){ return queue.length + (playing ? 1 : 0); }, get chain(){ return chainN; },
            get speed(){ return speed; }, level, hitStop, frozenFor, afterStop, shake, coinRain, glitch, stamp, flash, jiggle, punch, cardFly,
            coinsTo, billRain, shatter, sparks, burst,
