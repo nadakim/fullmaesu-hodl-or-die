@@ -2426,7 +2426,7 @@ body.lay-f .sm-row-in{animation:smRowIn calc(var(--dur-sm-row) * var(--bm-k, 1))
 body.lay-f .result-bar i.sm-bar-in{transform-origin:left center;animation:smBarIn calc(var(--dur-sm-bar) * var(--bm-k, 1)) ease-out both;}
 @keyframes smBarIn{0%{scale:0 1;}75%{scale:var(--sm-bar-over, 1.04) 1;}100%{scale:1 1;}}
 /* 도장: 목표 달성(초록) · 목표 미달·파산(빨강). 1.8배에서 1배로 쾅 */
-.result-hero{position:relative;}
+.result-hero-box{position:relative;}
 /* 정산 장부 = 한 줄에 '항목 … 금액' (줄마다 등장) */
 .stat-grid.sm-ledger{grid-template-columns:1fr;gap:calc(3 * var(--u));margin:calc(8 * var(--u)) 0 calc(6 * var(--u));}
 .stat-grid.sm-ledger > div{display:flex;justify-content:space-between;align-items:baseline;gap:calc(10 * var(--u));padding:calc(3 * var(--u)) calc(9 * var(--u));line-height:1.3;}
@@ -5340,7 +5340,7 @@ function showGlossary(cat){
 function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && (currentTab === 'play' || currentTab === 'shop')); }
 function showOverlay(html){
   const wasOpen = overlayOpen || $('overlay').classList.contains('sm-closing');   // 열린 채 내용만 바뀌면 진입 연출 없음 (settle-motion)
-  smCloseCancel();
+  smSkip('ov'); smCloseCancel();   // 앞 내용의 연출은 그 자리에서 끝낸다
   glossaryOpen = false; $('overlay').classList.remove('pk-dark'); $('overlayBox').classList.remove('ov-wide'); $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); fitPages($('overlayBox'), { page: 0 });
   if(!wasOpen && $('overlay').classList.contains('show')) smModalIn();
 }
@@ -5425,7 +5425,8 @@ function fitActiveScreen(){   // 타이틀·전투 화면은 자체 배치 (넘�
   if(scr && scr.id !== 'screen-play' && scr.id !== 'screen-title' && !isMobileLayout()) fitPages(scr);
 }
 function hideOverlay(){
-  const fade = $('overlay').classList.contains('show') && smK() > 0;   // (settle-motion) 퇴장: 흐리며 내려간 뒤 정리 — 패널 폭은 그때 원래대로
+  smSkip('ov');   // (settle-motion) 모달 안 연출은 끝내고
+  const fade = $('overlay').classList.contains('show') && smK() > 0;   // 퇴장: 흐리며 내려간 뒤 정리 — 패널 폭은 그때 원래대로
   glossaryOpen = false; $('overlay').classList.remove('pk-dark'); overlayOpen = false; syncOverlay();
   if(fade) smModalOut(() => { if(!overlayOpen) $('overlayBox').classList.remove('ov-wide'); });
   else { smCloseCancel(); $('overlayBox').classList.remove('ov-wide'); }
@@ -6273,17 +6274,18 @@ const smOn = () => document.body.classList.contains('lay-f');
 const smK = () => smOn() ? bmK() : 0;
 const smMs = name => Fx.dur('sm-' + name) * smK();
 const smLive = new Set();   // { o, tw, block }
-function smTween(o){
-  const rec = { o, tw: null, block: !!o.block };
+function smTween(o){   // o.scope 'ov' = 모달 안 연출 — 모달 내용이 바뀌거나 닫히면 그 자리에서 끝낸다 (남아서 다음 클릭을 삼키지 않게)
+  const rec = { o, tw: null, block: !!o.block, scope: o.scope || '' };
   rec.tw = bmTween({ delay: o.delay, dur: o.dur, start: o.start, update: o.update, done: () => { smLive.delete(rec); if(o.done) o.done(); } });
   if(bmTweens.indexOf(rec.tw) >= 0) smLive.add(rec);
   return rec;
 }
 const smCancel = rec => { if(rec){ smLive.delete(rec); bmCancel(rec.tw); } };
 const smBlocking = () => [...smLive].some(r => r.block);
-function smSkip(){
-  for(let guard = 0; smLive.size && guard < 50; guard++){   // 끝내면서 다음 단계가 생길 수 있으니 빌 때까지
-    [...smLive].sort((a, b) => a.tw.t0 - b.tw.t0).forEach(rec => {
+function smSkip(scope){   // scope 없으면 전부, 'ov'면 모달 안 연출만
+  const mine = r => !scope || r.scope === scope;
+  for(let guard = 0; [...smLive].some(mine) && guard < 50; guard++){   // 끝내면서 다음 단계가 생길 수 있으니 빌 때까지
+    [...smLive].filter(mine).sort((a, b) => a.tw.t0 - b.tw.t0).forEach(rec => {
       if(!smLive.has(rec)) return;
       smLive.delete(rec); bmCancel(rec.tw);
       if(!rec.tw.started && rec.o.start) rec.o.start();
@@ -6291,6 +6293,7 @@ function smSkip(){
       if(rec.o.done) rec.o.done();
     });
   }
+  if(scope) return;
   document.getAnimations().forEach(a => {   // 남은 CSS·WAAPI 연출도 끝 상태로 (무한 반복 글로우는 그대로)
     if(!/^sm/.test(a.animationName || a.id || '')) return;
     try { if(Number.isFinite(a.effect.getComputedTiming().endTime)) a.finish(); } catch(e) {}
@@ -6314,7 +6317,7 @@ function smModalIn(){
   if(!(smK() > 0)) return;
   const ov = $('overlay'), box = $('overlayBox');
   bmRestart(ov, 'sm-dim-in'); bmRestart(box, 'sm-panel-in');
-  smTween({ dur: Math.max(smMs('dim'), smMs('panel')), block: true, done: () => { ov.classList.remove('sm-dim-in'); box.classList.remove('sm-panel-in'); } });
+  smTween({ dur: Math.max(smMs('dim'), smMs('panel')), block: true, scope: 'ov', done: () => { ov.classList.remove('sm-dim-in'); box.classList.remove('sm-panel-in'); } });
 }
 function smModalOut(after){   // after: 퇴장이 끝난 뒤 정리 (패널 폭 등 — 흐려지는 동안 모양이 바뀌지 않게)
   const ov = $('overlay');
@@ -6351,25 +6354,25 @@ function smSettleIn(box, opts){
   if(stamp) stamp.classList.add('sm-pre');
   if(bar) bar.classList.add('sm-pre');
   if(hero) smCount([hero], 0);
-  const slam = at => stamp && smTween({ delay: at, dur: smMs('stamp'), block: true,
+  const slam = at => stamp && smTween({ delay: at, dur: smMs('stamp'), block: true, scope: 'ov',
     start: () => { stamp.classList.remove('sm-pre'); stamp.classList.add('sm-stamp-in'); },
     done: () => {
       stamp.classList.remove('sm-stamp-in');
       Sound.play(stamp.classList.contains('bad') ? 'stampLoss' : 'stampWin');
       bmRestart(box, 'sm-thud');
-      smTween({ dur: smMs('thud'), block: true, done: () => box.classList.remove('sm-thud') });
+      smTween({ dur: smMs('thud'), block: true, scope: 'ov', done: () => box.classList.remove('sm-thud') });
     } });
   const rowsAt = at => rows.forEach((r, i) => {
     const nums = [...r.querySelectorAll('[data-smv]')];
-    smTween({ delay: at + i * gap, dur: rowMs, block: true,
+    smTween({ delay: at + i * gap, dur: rowMs, block: true, scope: 'ov',
       start: () => { r.classList.remove('sm-pre'); r.classList.add('sm-row-in'); smCount(nums, 0); Sound.play('cardDeal', { pitch: stagePitch(i) }); },
       update: p => smCount(nums, p), done: () => r.classList.remove('sm-row-in') });
   });
   if(opts.stampFirst){ slam(t0); rowsAt(t0 + smMs('stamp') + smMs('thud')); return; }
   rowsAt(t0);
   const tTot = t0 + rows.length * gap, totMs = smMs('total'), barMs = smMs('bar');
-  if(hero) smTween({ delay: tTot, dur: totMs, block: true, update: p => smCount([hero], p) });
-  if(bar) smTween({ delay: tTot, dur: barMs, block: true, start: () => { bar.classList.remove('sm-pre'); bar.classList.add('sm-bar-in'); }, done: () => bar.classList.remove('sm-bar-in') });
+  if(hero) smTween({ delay: tTot, dur: totMs, block: true, scope: 'ov', update: p => smCount([hero], p) });
+  if(bar) smTween({ delay: tTot, dur: barMs, block: true, scope: 'ov', start: () => { bar.classList.remove('sm-pre'); bar.classList.add('sm-bar-in'); }, done: () => bar.classList.remove('sm-bar-in') });
   slam(tTot + Math.max(hero ? totMs : 0, bar ? barMs : 0));
 }
 
@@ -6380,7 +6383,7 @@ function smRewardIn(box, delay){
   cards.forEach(c => { if(/\br-(legendary|mythic)\b/.test(c.className)) c.classList.add('sm-glow'); });
   if(!(smK() > 0) || !cards.length) return;
   cards.forEach((c, i) => { c.style.setProperty('--sm-i', String(i)); const b = document.createElement('div'); b.className = 'sm-back'; b.textContent = '?'; c.appendChild(b); });
-  smTween({ delay: delay || 0, dur: smMs('flip') + (cards.length - 1) * smMs('flip-gap'), block: true,
+  smTween({ delay: delay || 0, dur: smMs('flip') + (cards.length - 1) * smMs('flip-gap'), block: true, scope: 'ov',
     start: () => cards.forEach(c => c.classList.add('sm-flip')),
     done: () => cards.forEach(c => { c.classList.remove('sm-flip'); c.style.removeProperty('--sm-i'); const b = c.querySelector(':scope > .sm-back'); if(b) b.remove(); }) });
 }
@@ -6403,7 +6406,7 @@ function smDeckIn(){
   const cells = [...document.querySelectorAll('#deckGrid .deck-cell')].filter(c => !c.closest('.pg-hide')).slice(0, Math.round(JUICE_CONFIG.smDeckStaggerMax));
   if(!cells.length) return;
   cells.forEach((c, i) => { c.style.setProperty('--sm-i', String(i)); c.classList.add('sm-deck-in'); });
-  smTween({ dur: smMs('deck') + (cells.length - 1) * smMs('deck-gap'), done: () => cells.forEach(c => { c.classList.remove('sm-deck-in'); c.style.removeProperty('--sm-i'); }) });
+  smTween({ dur: smMs('deck') + (cells.length - 1) * smMs('deck-gap'), scope: 'ov', done: () => cells.forEach(c => { c.classList.remove('sm-deck-in'); c.style.removeProperty('--sm-i'); }) });
 }
 
 /* 4. 암시장: 비자금 카운트다운(바뀔 때마다) · 부족하면 잔액 흔들림 + 이유 · 낱장 구매 = 카드가 덱 아이콘으로 · 새로고침 = 슬라이드 교체 */
@@ -7005,7 +7008,7 @@ function showRoundResult(w){
       ${led(w.auditTax > 0, '🕵️ 세무조사 추징 (목표 초과분)', `<span class="pnl-down">−${smNum(w.auditTax, 'money')}</span>`)}
       ${led(w.slush > 0, '비자금 적립 (암시장 전용)', `<span class="slush-amt">+${smNum(w.slush, 'slush')}</span> · 잔액 ${fmtSlush(run.slush)}`, 'wide')}
     </div>
-    <div class="result-hero ${signCls(w.weekPnl)}">${smNum(w.eq, 'money', w.eq - w.weekPnl)}<div class="sm-stamp">목표 달성</div></div>
+    <div class="result-hero-box"><div class="result-hero ${signCls(w.weekPnl)}">${smNum(w.eq, 'money', w.eq - w.weekPnl)}</div><div class="sm-stamp">목표 달성</div></div>
     <div class="result-bar"><i class="${w.pct >= 1 ? 'done' : ''}" style="width:${barPct}%"></i><b></b></div>
     <div class="result-pct">목표 ${fmtMoney(w.target)} 대비 <span class="${w.pct >= 1 ? 'pnl-up' : 'pnl-down'}">${(w.pct * 100).toFixed(1)}%</span></div>
     ${w.nextBoss ? bossNotice(w.nextBoss, `⚠ WEEK ${w.round + 1} 보스 예고 — 보상·암시장에서 대비하세요`) : ''}
@@ -7400,7 +7403,7 @@ function showPackResult(d){
     <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
   if(T.myth && !isMotionReduced()) $('overlay').classList.add('pk-dark');   // 신화: 암전 (juicePack이 회전 등장 끝에 걷는다)
   packAnimUntil = performance.now() + T.reveal + 300;
-  if(smOn()) smTween({ dur: smK() > 0 ? T.reveal + 300 : 0, block: true, done: () => { if(packAnimUntil) skipPackAnim(); } });   // (settle-motion) 클릭·Space = 스킵, 끝까지 봐도 같은 최종 상태(pk-skip)
+  if(smOn()) smTween({ dur: smK() > 0 ? T.reveal + 300 : 0, block: true, scope: 'ov', done: () => { if(packAnimUntil) skipPackAnim(); } });   // (settle-motion) 클릭·Space = 스킵, 끝까지 봐도 같은 최종 상태(pk-skip)
 }
 let packAnimUntil = 0;   // 팩 개봉 연출이 끝나는 시각 (스킵 ▶ 버튼 표시용)
 function skipPackAnim(){

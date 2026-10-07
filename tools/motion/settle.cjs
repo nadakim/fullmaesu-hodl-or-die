@@ -69,7 +69,7 @@ const frame = p => p.evaluate(() => new Promise(r => requestAnimationFrame(() =>
 // 최종 상태 요약: 보이는 화면 요소마다 클래스·글자·표시·위치·변환 (파티클 캔버스·알림 제외)
 const DIGEST = () => [...document.querySelectorAll('.screen.active *, #overlay, #overlay *, body > .fx-card-ghost, body > .sm-wipe')].filter(e => !e.closest('.toast,.fx-canvas')).map(e => {
   const cs = getComputedStyle(e), r = e.getBoundingClientRect(), own = [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent.trim()).join('');
-  return [e.id || e.tagName, typeof e.className === 'string' ? e.className : '', own, cs.display, cs.visibility, cs.opacity, cs.transform, cs.translate, cs.scale, cs.rotate,
+  return [e.id || e.tagName, typeof e.className === 'string' ? e.className.trim().split(/\s+/).join(' ') : '', own, cs.display, cs.visibility, cs.opacity, cs.transform, cs.translate, cs.scale, cs.rotate,
     Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join('|');
 });
 const CLEAN = () => { Fx.skipQueue(); document.querySelectorAll('.toast,.fx-chip').forEach(e => e.remove()); const c = document.querySelector('.fx-canvas'); if(c) c.style.visibility = 'hidden';
@@ -128,7 +128,7 @@ async function skipCheck(b, name){
       await p.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
       out.after = await p.evaluate(() => smLive.size);
     }
-    await DRAIN(p);
+    await p.evaluate(CLEAN); await DRAIN(p);   // 큐를 비우면 다음 날 드로우 같은 연출이 시작될 수 있으니 → 비운 뒤 다시 흘린다
     await p.evaluate(CLEAN); await frame(p);
     out[mode] = { digest: await p.evaluate(DIGEST), png: await p.screenshot(), errs: p.errs.slice() };
     await p.close();
@@ -170,7 +170,7 @@ async function scrollCheck(b){
         moved = { before, after: await p.evaluate(() => [document.getElementById('screen-shop').scrollTop, document.scrollingElement.scrollTop]), liveDuring: await p.evaluate(() => smLive.size) };
       }
       await p.mouse.move(W - 2, 2);   // 휠 때문에 화면 가운데에 둔 마우스를 치운다 (호버 기울기는 비교에서 뺀다)
-      await DRAIN(p);
+      await p.evaluate(CLEAN); await DRAIN(p);
       await p.evaluate(CLEAN); await frame(p);
       out[mode] = { scr, moved, live: await p.evaluate(() => smLive.size), ghosts: await p.evaluate(() => document.querySelectorAll('body > .fx-card-ghost').length),
         digest: await p.evaluate(DIGEST), errs: p.errs.slice() };

@@ -33,6 +33,7 @@ const endNow = p => p.evaluate(() => { window.tipChance = () => 0; clearToasts()
       ok(W + ' 판 시작: 시드를 정해 둔다 (세션 1판째)', Number.isInteger(start.seed) && start.n === 1, start);
       await p.evaluate(() => { gainRelic('antFlag', 't'); });
       await endNow(p); await p.waitForFunction(() => overlayOpen && !!$('ptBox'), null, { timeout: 8000 }).catch(() => {});
+      await p.waitForFunction(() => typeof smBlocking !== 'function' || !smBlocking(), null, { timeout: 8000 }).catch(() => {});   // 게임오버 도장·원인 연출(settle-motion)이 끝난 뒤 — 그 사이 클릭은 스킵으로 쓰인다
       const box = await p.evaluate(() => ({ q: document.querySelectorAll('#ptBox .pt-q').length, btns: document.querySelectorAll('#ptBox [data-pt-v]').length, note: !!$('ptNote'), copy: !!document.querySelector('[data-act="ptCopy"]'),
         log: JSON.parse(localStorage.getItem('hodl.playtestLog') || '[]').length }));
       ok(W + ' 게임오버: 설문 3문항(1~5) · 한 줄 후기 · 📋 판 기록 복사 · 기록 1판 저장', box.q === 3 && box.btns === 15 && box.note && box.copy && box.log === 1, box);
