@@ -115,6 +115,30 @@ small{font-size:inherit;}   /* 브라우저 기본 smaller(83%)는 허용 크기
   --rar-w-rare:calc(1.75 * var(--u));
   --rar-w-legendary:calc(2 * var(--u));
   --rar-w-mythic:calc(2.3 * var(--u));
+  /* 연출 시간 단일 출처 (motion-cleanup): CSS 애니메이션과 그 뒷정리 JS가 같은 값을 쓴다 — JS는 Fx.dur('이름')으로 읽는다.
+     뒷정리는 Fx.afterAnim(animationend, 안 오면 이 값 + 여유 뒤). JUICE_CONFIG와 묶인 값(haze-in·pack-flip·myth-spin·combo-cool)은
+     여기 값으로 JUICE_CONFIG를 채우고, 튜너로 바꾸면 syncDurVars가 다시 여기에 쓴다 */
+  --dur-toast:2600ms;      /* 알림 (toastIn·toastInUp) */
+  --dur-red-flash:500ms;   /* 청산 적색 섬광 */
+  --dur-newhigh:600ms;     /* 포지션 신고가 번쩍 */
+  --dur-hit:450ms;         /* Fx.flash fx-hit */
+  --dur-goal:600ms;        /* Fx.flash fx-goal */
+  --dur-jiggle:300ms;      /* Fx.jiggle 금감원 게이지 */
+  --dur-relic-on:500ms;    /* Fx.flash 유물 발동 */
+  --dur-rm-up:600ms;       /* Fx.flash 내일 뉴스 버튼 */
+  --dur-shake-1:250ms;     /* .cabinet.shake-1 · .overlay-box.ov-shake-1 */
+  --dur-shake-2:400ms;     /* .cabinet.shake-2(.shake) · ov-shake-2 */
+  --dur-shake-3:560ms;     /* .cabinet.shake-3 · ov-shake-3 */
+  --dur-glitch:380ms;      /* .cabinet.fx-glitch · .fx-scan */
+  --dur-stamp:950ms;       /* 화면 가운데 도장 */
+  --dur-pop:900ms;         /* .popnum · COMBO ×n 태그 (pixelPop) */
+  --dur-chip:1100ms;       /* 효과 칩 */
+  --dur-shine:700ms;       /* 희귀 카드 드로우 반짝 (2회 반복) */
+  --dur-lost:1100ms;       /* 성장형 유물 초기화: 떨어지는 숫자 */
+  --dur-haze-in:1200ms;    /* 암시장 입장 (JUICE hazeInMs) */
+  --dur-pack-flip:600ms;   /* 팩 카드 뒤집기 (JUICE packFlipMs) */
+  --dur-myth-spin:1200ms;  /* 신화 회전 등장 (JUICE mythSpinMs) */
+  --dur-combo-cool:1600ms; /* 콤보 끊김 '최대 ×N' (JUICE comboCoolMs) */
 }
 
 .px-border{
@@ -164,8 +188,7 @@ small{font-size:inherit;}   /* 브라우저 기본 smaller(83%)는 허용 크기
 /* 숨쉬기: 누를 수 있는 중요 버튼(장 시작 · 정산 ▶ 다음 날) — 1.5초 주기 밝기, 흔들림 끔·동작 줄이기면 정지 */
 .btn-chunky.breathe:not(:disabled){animation:bkBreathe 1.5s steps(6) infinite;}
 @keyframes bkBreathe{0%,100%{filter:brightness(1);}50%{filter:brightness(1.35);}}
-body.no-motion .btn-chunky.breathe{animation:none;}
-@media (prefers-reduced-motion: reduce){.btn-chunky.breathe{animation:none;}}
+body.no-motion .btn-chunky.breathe{animation:none;}   /* body.no-motion = isMotionReduced() (흔들림 끔 · 시스템 동작 줄이기 · 모션 0%) — 모션 끔 CSS는 전부 이 클래스 하나로 */
 
 /* 패널 틀 3종: 기본 .px-panel(얇은 틀, 강조색 --pc로 바꿀 수 있음) · 강조 .px-panel-gold(보상·정산) · 위험 .px-panel-red(반대매매 경고) */
 .px-panel{--pc:var(--line);background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--pc),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
@@ -499,9 +522,8 @@ html,body{
 /* 추천: 지금 쓰면 오늘 예상 정산 배수가 오르는 카드 (previewSettlement 비교) */
 .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite;}
 .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite,handIdle 3.2s step-end infinite;}
-body.no-motion .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s steps(4) infinite;}
+body.no-motion .card.gcard.boost:not(.disabled),body.no-motion .hand .card.gcard.boost:not(.disabled){animation:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold);}   /* 모션 끔: 정지한 금빛 테두리 */
 @keyframes boostGlow{0%,100%{box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold2);}50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(5 * var(--u)) var(--gold);}}
-@media (prefers-reduced-motion: reduce){.card.gcard.boost:not(.disabled){animation:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold);}}
 /* 차트 크게 보기 (게임은 계속 진행 — 오버레이가 아니라 떠 있는 창) */
 .chart-zoom{position:fixed;left:15vw;top:12vh;width:70vw;height:76vh;z-index:70;background:var(--bg);display:flex;flex-direction:column;gap:calc(6 * var(--u));padding:calc(10 * var(--u));box-shadow:0 0 0 calc(3 * var(--u)) var(--cyan), calc(6 * var(--u)) calc(6 * var(--u)) 0 #000;}
 .chart-zoom[hidden]{display:none;}
@@ -655,7 +677,6 @@ body.no-motion .hand .card.gcard.boost:not(.disabled){animation:boostGlow 1.6s s
 .hand .card.gcard:nth-child(n+4):nth-child(-n+6){animation-duration:3.6s;}
 @keyframes handIdle{0%,100%{translate:0 0;}25%,75%{translate:0 calc(-1 * var(--u));}50%{translate:0 calc(-2 * var(--u));}}
 body.no-motion .hand .card.gcard{animation:none;}
-@media (prefers-reduced-motion: reduce){.hand .card.gcard{animation:none;} .hand .card.gcard.boost:not(.disabled){animation:none;box-shadow:0 0 0 calc(2 * var(--u)) var(--rc), 0 0 0 calc(4 * var(--u)) var(--gold);}}
 
 .positions-wrap{
   display:flex;flex-direction:column;gap:calc(6 * var(--u));
@@ -690,7 +711,6 @@ body.no-motion .hand .card.gcard{animation:none;}
 .fuse.hot .fz-cord::after{background:var(--red);animation:blink .4s step-end infinite;}
 .fuse.safe .fz-cord::after{display:none;}   /* 넉넉하면 불이 안 붙어 있다 */
 body.no-motion .fuse.hot .fz-cord::after{animation:none;}
-@media (prefers-reduced-motion: reduce){.fuse.hot .fz-cord::after{animation:none;}}
 .pnl-up{color:var(--green);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #003a14;}
 .pnl-down{color:var(--red);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #5c0010;}
 
@@ -719,7 +739,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
   position:absolute;
   font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);
   pointer-events:none;z-index:10;
-  animation:pixelPop .9s steps(8) forwards;
+  animation:pixelPop var(--dur-pop) steps(8) forwards;
   image-rendering:pixelated;
 }
 @keyframes pixelPop{
@@ -801,7 +821,7 @@ body.no-motion .fuse.hot .fz-cord::after{animation:none;}
 .fx-relic-big{position:fixed;left:50%;top:45%;z-index:96;font-size:var(--fs-xxl);line-height:1;pointer-events:none;transform:translate(-50%,-50%);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
 .fx-relic-big.crack{filter:grayscale(.7) contrast(1.6) brightness(.8);animation:relicCrack .12s steps(2) infinite;}
 @keyframes relicCrack{50%{margin-left:calc(3 * var(--u));}}
-.fx-lost{position:fixed;z-index:96;pointer-events:none;font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);line-height:1.2;color:var(--red);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;animation:lostFall 1.1s steps(11) forwards;}
+.fx-lost{position:fixed;z-index:96;pointer-events:none;font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);line-height:1.2;color:var(--red);text-shadow:calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;animation:lostFall var(--dur-lost) steps(11) forwards;}
 @keyframes lostFall{to{transform:translate(var(--dx),calc(160 * var(--u))) rotate(var(--rot));opacity:0;}}
 .relic-empty{font-family:'VT323',var(--gv-v1),monospace;font-size:var(--fs-v1);}
 /* 유물 칸 (RELIC_SLOTS): 빈 칸 점선 · 종류 표시(+ 합산 배수 / × 곱 배수 / ＋ 칩) · 끌어서 순서 바꾸기 (장전·암시장) */
@@ -920,7 +940,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .pack .pk-icon{font-size:var(--fs-v3);font-family:'VT323',var(--gv-v3),monospace;}
 .infl{color:var(--red);}
 .rm-next{color:var(--gold);display:inline-block;}
-.rm-next.rm-up{animation:rmUp .6s steps(6);}
+.rm-next.rm-up{animation:rmUp var(--dur-rm-up) steps(6);}
 @keyframes rmUp{0%,50%{color:var(--red);text-shadow:0 0 0 var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 var(--red-dim);}}
 .rm-ladder span{color:var(--muted);} .rm-ladder span.now{color:var(--gold);}
 .pack .pk-price{color:var(--gold);font-size:var(--fs-v2);font-family:'VT323',var(--gv-v2),monospace;line-height:1;}
@@ -972,7 +992,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 
 /* 팩 개봉: 카드가 한 번 뒤집히는 것뿐 */
 .flip-stage{perspective:calc(600 * var(--u));display:flex;justify-content:center;padding:calc(10 * var(--u)) 0 calc(16 * var(--u));}
-.flip-card{position:relative;width:calc(124 * var(--u));height:calc(180 * var(--u));transform-style:preserve-3d;animation:cardFlip .6s steps(6) .2s both;}
+.flip-card{position:relative;width:calc(124 * var(--u));height:calc(180 * var(--u));transform-style:preserve-3d;animation:cardFlip var(--dur-pack-flip) steps(6) .2s both;}
 @keyframes cardFlip{from{transform:rotateY(180deg);}to{transform:rotateY(0);}}
 .flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
 .flip-face .card{cursor:default;}
@@ -981,7 +1001,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
   background:var(--panel2);box-shadow:0 0 0 calc(2 * var(--u)) var(--purple),0 0 0 calc(4 * var(--u)) #000,calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
   font-family:'Press Start 2P',var(--gp-p3),monospace;font-size:var(--fs-p3);color:var(--purple);
 }
-@media (prefers-reduced-motion: reduce){ .flip-card{animation:none;} }
+body.no-motion .flip-card{animation:none;}
 /* 암시장 새로고침 */
 .shop-sec-head{display:flex;justify-content:space-between;align-items:center;gap:calc(8 * var(--u)) calc(12 * var(--u));flex-wrap:wrap;margin:calc(18 * var(--u)) 0 calc(10 * var(--u));}
 .shop-sec-head .section-label{margin:0;}
@@ -1008,7 +1028,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
   background-image:conic-gradient(var(--purple) 25%, transparent 0 50%, var(--purple) 0 75%, transparent 0);
   background-size:calc(16 * var(--u)) calc(16 * var(--u));animation:hazeDrift 14s steps(28) infinite;}
 @keyframes hazeDrift{from{background-position:0 0;}to{background-position:calc(32 * var(--u)) calc(-64 * var(--u));}}
-#screen-shop.haze-in #shopBox{animation:hazeIn 1.2s steps(8) both;}
+#screen-shop.haze-in #shopBox{animation:hazeIn var(--dur-haze-in) steps(8) both;}
 @keyframes hazeIn{0%{filter:saturate(.1) brightness(.6);}100%{filter:none;}}
 /* 호버: 진열된 카드가 둥실, 팩·유물은 아이콘만 (누르는 자리가 움직이지 않게) */
 #shopBox .shop-item:hover .card,#shopBox .pack:not(.disabled):hover .pk-icon,#shopBox .relic-row:not(.own-relics) .relic-tile:hover .rt-icon{animation:shopFloat 1.4s steps(8) infinite;}
@@ -1027,7 +1047,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 @keyframes pkPillar{0%{opacity:0;transform:scaleY(0);}15%{opacity:.75;transform:scaleY(1);}100%{opacity:.22;transform:scaleY(1);}}
 .flip-stage.common{--pk-col:var(--muted);}.flip-stage.uncommon{--pk-col:var(--green2);}.flip-stage.rare{--pk-col:var(--blue);}
 .flip-stage.legendary{--pk-col:var(--purple);}.flip-stage.mythic{--pk-col:var(--gold);}
-.flip-stage.mythic .pk-float .flip-card{animation:mythSpin 1.2s steps(12) var(--pk-shake) both;}
+.flip-stage.mythic .pk-float .flip-card{animation:mythSpin var(--dur-myth-spin) steps(12) var(--pk-shake) both;}
 @keyframes mythSpin{from{transform:rotateY(1260deg) scale(.6);}to{transform:rotateY(0) scale(1);}}
 .overlay.pk-dark{background:#000;}
 .overlay.pk-dark .overlay-box{background:#000;box-shadow:none;}
@@ -1036,7 +1056,8 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 /* 유물 구매: 칸에 "철컥" 꽂힘 */
 .relic-tile.slot-in{animation:slotIn .32s steps(4) backwards;}
 @keyframes slotIn{0%{transform:translateY(calc(-28 * var(--u))) scale(1.15);}70%{transform:translateY(calc(2 * var(--u)));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) #000;}}
-@media (prefers-reduced-motion: reduce){#screen-shop::after,#screen-shop.haze-in #shopBox,#shopBox .shop-item:hover .card,#shopBox .pack:hover .pk-icon,#shopBox .relic-row:not(.own-relics) .relic-tile:hover .rt-icon,.pk-float,.pk-shake,.pk-float .flip-card,.pk-pillar,.relic-tile.slot-in{animation:none !important;}.pk-pillar{opacity:.22;}}
+body.no-motion #screen-shop::after,body.no-motion #screen-shop.haze-in #shopBox,body.no-motion #shopBox .shop-item:hover .card,body.no-motion #shopBox .pack:hover .pk-icon,body.no-motion #shopBox .relic-row:not(.own-relics) .relic-tile:hover .rt-icon,body.no-motion .pk-float,body.no-motion .pk-shake,body.no-motion .pk-float .flip-card,body.no-motion .pk-pillar,body.no-motion .relic-tile.slot-in{animation:none !important;}
+body.no-motion .pk-pillar{opacity:.22;}
 
 .phone-noti{
   width:100%;max-width:calc(360 * var(--u));
@@ -1236,7 +1257,7 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
   background:#000;color:var(--cyan);
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.7;padding:calc(8 * var(--u)) calc(10 * var(--u));
   box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;
-  animation:toastIn 2.6s steps(13) forwards;
+  animation:toastIn var(--dur-toast) steps(13) forwards;
 }
 .toast.bad{color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
 .toast.good{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}
@@ -1351,18 +1372,20 @@ body:not(.playtest-on) #menuPlaytest{display:none;}
 .sh-steam i:nth-child(n + 5){width:calc(9 * var(--u));height:calc(9 * var(--u));}
 .stage-hero:not(.steaming) .sh-steam i{display:none;}
 @keyframes steamUp{0%{transform:translate(0,0);opacity:0;}15%{opacity:.9;}100%{transform:translate(calc(6 * var(--u) * var(--sway, 1)), calc(-1 * var(--steam-rise, 72) * var(--u)));opacity:0;}}
-@media (prefers-reduced-motion: reduce){.overlay-box.stage-live.stage-rage::before,.sh-steam i{animation:none;}.sh-steam i{display:none;}}
 body.no-motion .overlay-box.stage-live.stage-rage::before,body.no-motion .sh-steam i{animation:none;}
 body.no-motion .sh-steam i{display:none;}
-.overlay-box.ov-shake-1{animation:ovShake1 .25s steps(4);}
-.overlay-box.ov-shake-2{animation:ovShake2 .4s steps(6);}
-.overlay-box.ov-shake-3{animation:ovShake3 .56s steps(8);}
+/* 정산 상자 흔들림(ov-shake, transform)과 금액 직전 흔들림(pre-shake, 개별 속성 translate)은 칸을 따로 — 둘이 겹쳐도 합쳐진다.
+   폭주 배경(stage-rage)은 ::before 가상요소라 원래 충돌 없음 */
+.overlay-box{animation:var(--ov-shake, none),var(--ov-pre, none);}
+body.no-motion .overlay-box,body.no-motion .cabinet{animation:none;}   /* 모션 끔: 두 칸 다 (흔들림·직전 흔들림·글리치) */
+.overlay-box.ov-shake-1{--ov-shake:ovShake1 var(--dur-shake-1) steps(4);}
+.overlay-box.ov-shake-2{--ov-shake:ovShake2 var(--dur-shake-2) steps(6);}
+.overlay-box.ov-shake-3{--ov-shake:ovShake3 var(--dur-shake-3) steps(8);}
 @keyframes ovShake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}66%{transform:translate(calc(2 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}}
 @keyframes ovShake2{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}40%{transform:translate(calc(4 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}60%{transform:translate(calc(-3 * var(--u) * var(--ovk, 2)),calc(-1 * var(--u) * var(--ovk, 2)));}80%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
 @keyframes ovShake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u) * var(--ovk, 2)),calc(4 * var(--u) * var(--ovk, 2)));}25%{transform:translate(calc(7 * var(--u) * var(--ovk, 2)),calc(-5 * var(--u) * var(--ovk, 2)));}37%{transform:translate(calc(-6 * var(--u) * var(--ovk, 2)),calc(-3 * var(--u) * var(--ovk, 2)));}50%{transform:translate(calc(6 * var(--u) * var(--ovk, 2)),calc(3 * var(--u) * var(--ovk, 2)));}62%{transform:translate(calc(-4 * var(--u) * var(--ovk, 2)),calc(2 * var(--u) * var(--ovk, 2)));}75%{transform:translate(calc(3 * var(--u) * var(--ovk, 2)),calc(-2 * var(--u) * var(--ovk, 2)));}87%{transform:translate(calc(-2 * var(--u) * var(--ovk, 2)),calc(1 * var(--u) * var(--ovk, 2)));}}
 /* 동작 줄이기·흔들림 끔: 흔들림·팝·일렁임 없음. 불꽃은 정지한 모양으로 남는다 (정적 대체) */
-@media (prefers-reduced-motion: reduce){.sh-num.slam,.sh-num.pop,.sh-flame i,.overlay-box[class*="ov-shake-"]{animation:none;}}
-body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame i,body.no-motion .overlay-box[class*="ov-shake-"]{animation:none;}
+body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame i{animation:none;}
 .stage-reel{display:inline-block;min-width:calc(46 * var(--u));text-align:center;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);color:var(--bg);background:var(--gold);padding:calc(3 * var(--u)) calc(6 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 .stage-reel.spin{animation:stageJitter .06s steps(2) infinite;}
 .stage-pay{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text2);margin-top:calc(6 * var(--u));}
@@ -1382,11 +1405,9 @@ body.no-motion .sh-num.slam,body.no-motion .sh-num.pop,body.no-motion .sh-flame 
 .sf-hint{font-family:var(--gf-xs),monospace;font-size:var(--fs-xs);line-height:1.3;color:var(--muted);max-width:calc(84 * var(--u));white-space:normal;text-align:left;}
 @keyframes sfHit{0%{transform:none;}35%{transform:translateY(calc(-6 * var(--u))) scale(1.18);}100%{transform:none;}}
 .slot-d{display:inline-block;min-width:.5em;} .slot-d.spin{color:var(--text2);}
-.overlay-box.pre-shake{animation:preShake var(--shake-ms, .2s) steps(6);}
-@keyframes preShake{20%{transform:translate(var(--amp), 0);}40%{transform:translate(calc(-1 * var(--amp)), var(--amp));}60%{transform:translate(var(--amp), calc(-1 * var(--amp)));}80%{transform:translate(calc(-1 * var(--amp)), 0);}}
-@media (prefers-reduced-motion: reduce){.sf-box.hit,.overlay-box.pre-shake{animation:none;}}
-body.no-motion .sf-box.hit,body.no-motion .overlay-box.pre-shake{animation:none;}
-@media (prefers-reduced-motion: reduce){.stage-mult.f3,.stage-mult.f4,.stage-reel.spin{animation:none;}}
+.overlay-box.pre-shake{--ov-pre:preShake var(--shake-ms, .2s) steps(6);}
+@keyframes preShake{20%{translate:var(--amp) 0;}40%{translate:calc(-1 * var(--amp)) var(--amp);}60%{translate:var(--amp) calc(-1 * var(--amp));}80%{translate:calc(-1 * var(--amp)) 0;}}   /* translate 속성 = ov-shake의 transform과 합성 */
+body.no-motion .sf-box.hit{animation:none;}
 body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stage-reel.spin{animation:none;}
 .chain-list{display:flex;flex-direction:column;gap:calc(12 * var(--u));margin:calc(12 * var(--u)) 0;text-align:left;}
 .chain-row{position:relative;background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--line);padding:calc(9 * var(--u)) calc(10 * var(--u)) calc(8 * var(--u));animation:chainIn .24s steps(4) both;}
@@ -1424,7 +1445,6 @@ body.no-motion .stage-mult.f3,body.no-motion .stage-mult.f4,body.no-motion .stag
   animation:nextIn .36s steps(6) both,bkBreathe 1.5s steps(6) .4s infinite;   /* 숨쉬기(.breathe와 같은 밝기) — nextIn이 transform을 잡아 둬서 누르는 자리는 움직이지 않는다 */
 }
 body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
-@media (prefers-reduced-motion: reduce){.chain-next{animation:nextIn .36s steps(6) both;}}
 .chain-next.wait{cursor:default;}
 @keyframes nextIn{0%{opacity:0;transform:translateY(calc(18 * var(--u)));}60%{opacity:1;transform:translateY(calc(-5 * var(--u)));}100%{transform:none;}}
 @keyframes nextBlink{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green-dim),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;color:var(--text);}}
@@ -1514,32 +1534,33 @@ body.no-motion .chain-next{animation:nextIn .36s steps(6) both;}
   .rec-row .rr-stats{grid-column:2 / -1;}
 }
 
-.cabinet.shake{animation:shake .4s steps(6);}
 @keyframes shake{0%,100%{transform:none;}20%{transform:translate(calc(-4 * var(--u)),calc(2 * var(--u)));}40%{transform:translate(calc(4 * var(--u)),calc(-2 * var(--u)));}60%{transform:translate(calc(-3 * var(--u)),calc(-1 * var(--u)));}80%{transform:translate(calc(3 * var(--u)),calc(1 * var(--u)));}}
-.red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut .5s steps(5) forwards;}
+.red-flash{position:fixed;inset:0;z-index:85;pointer-events:none;background:rgba(255,26,60,.25);animation:fadeOut var(--dur-red-flash) steps(5) forwards;}
 @keyframes fadeOut{to{opacity:0;}}
 
 /* ── 타격감 (fx.js) — 흔들림 3단계 · 히트스톱 · 글리치 · 도장 · 번쩍임 · 파티클 캔버스. 전부 steps() 끊김 모션 ── */
-.cabinet.shake-1{animation:shake1 .25s steps(4);}
-.cabinet.shake-2{animation:shake .4s steps(6);}
-.cabinet.shake-3{animation:shake3 .56s steps(8);}
-.cabinet.fx-glitch{animation:fxGlitch .38s steps(6);}
-.cabinet.shake-3.fx-glitch{animation:shake3 .56s steps(8),fxGlitch .38s steps(6);}
+/* 흔들림(transform)과 글리치(filter)는 animation 목록의 칸을 하나씩 따로 쓴다 — 동시에 돌아도 서로 덮지 않는다.
+   칸 = 변수 하나 (--cab-shake · --cab-glitch). 예전엔 shake-1·2 + 글리치가 같은 animation 속성을 다퉈 나중 규칙(글리치)만 남았다 */
+.cabinet{animation:var(--cab-shake, none),var(--cab-glitch, none);}
+.cabinet.shake,.cabinet.shake-2{--cab-shake:shake var(--dur-shake-2) steps(6);}
+.cabinet.shake-1{--cab-shake:shake1 var(--dur-shake-1) steps(4);}
+.cabinet.shake-3{--cab-shake:shake3 var(--dur-shake-3) steps(8);}
+.cabinet.fx-glitch{--cab-glitch:fxGlitch var(--dur-glitch) steps(6);}
 @keyframes shake1{0%,100%{transform:none;}33%{transform:translate(calc(-2 * var(--u)),calc(1 * var(--u)));}66%{transform:translate(calc(2 * var(--u)),calc(-1 * var(--u)));}}
 @keyframes shake3{0%,100%{transform:none;}12%{transform:translate(calc(-8 * var(--u)),calc(4 * var(--u)));}25%{transform:translate(calc(7 * var(--u)),calc(-5 * var(--u)));}37%{transform:translate(calc(-6 * var(--u)),calc(-3 * var(--u)));}50%{transform:translate(calc(6 * var(--u)),calc(3 * var(--u)));}62%{transform:translate(calc(-4 * var(--u)),calc(2 * var(--u)));}75%{transform:translate(calc(3 * var(--u)),calc(-2 * var(--u)));}87%{transform:translate(calc(-2 * var(--u)),calc(1 * var(--u)));}}
 @keyframes fxGlitch{0%,100%{filter:none;}20%{filter:drop-shadow(calc(4 * var(--u)) 0 0 var(--red)) drop-shadow(calc(-4 * var(--u)) 0 0 var(--cyan));}40%{filter:drop-shadow(calc(-3 * var(--u)) 0 0 var(--red)) drop-shadow(calc(3 * var(--u)) 0 0 var(--cyan));}60%{filter:drop-shadow(calc(5 * var(--u)) 0 0 var(--red)) drop-shadow(calc(-2 * var(--u)) 0 0 var(--cyan));}80%{filter:none;}}
 body.fx-hitstop *,body.fx-hitstop *::before,body.fx-hitstop *::after{animation-play-state:paused !important;}   /* 히트스톱: 화면을 잠깐 얼린다 */
-.fx-scan{position:fixed;inset:0;z-index:86;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 calc(2 * var(--u)),transparent calc(2 * var(--u)) calc(4 * var(--u)));animation:fxScan .38s steps(6) forwards;}
+.fx-scan{position:fixed;inset:0;z-index:86;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 calc(2 * var(--u)),transparent calc(2 * var(--u)) calc(4 * var(--u)));animation:fxScan var(--dur-glitch) steps(6) forwards;}
 @keyframes fxScan{0%{transform:none;opacity:1;}25%{transform:translateY(calc(3 * var(--u)));}50%{transform:translate(calc(2 * var(--u)),calc(-2 * var(--u)));}75%{transform:translateY(calc(4 * var(--u)));}100%{transform:none;opacity:0;}}
 .fx-stamp{
   position:fixed;left:50%;top:44%;z-index:93;pointer-events:none;white-space:nowrap;
   font-family:var(--gf-xxl),monospace;font-size:var(--fs-xxl);line-height:1.2;padding:calc(14 * var(--u)) calc(18 * var(--u)) calc(10 * var(--u));
   color:var(--red);background:#000;box-shadow:0 0 0 calc(4 * var(--u)) var(--red2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;
-  transform:translate(-50%,-50%) rotate(-6deg);animation:fxStamp .95s steps(10) forwards;
+  transform:translate(-50%,-50%) rotate(-6deg);animation:fxStamp var(--dur-stamp) steps(10) forwards;
 }
 .fx-stamp.up{color:var(--green);box-shadow:0 0 0 calc(4 * var(--u)) var(--green2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;}
 @keyframes fxStamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(2.6);}15%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}75%{opacity:1;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) rotate(-6deg) scale(1);}}
-/* ── 연출 고조 (juice-escalation) ── 흔들림 끔(body.no-motion)·동작 줄이기면 번쩍임·암전·맥동 없이 (JS motionOK도 같이 막는다) */
+/* ── 연출 고조 (juice-escalation) ── 모션 끔(body.no-motion = isMotionReduced())이면 번쩍임·암전·맥동 없이 (JS motionOK도 같은 판정) */
 .fx-screen{position:fixed;inset:0;z-index:96;pointer-events:none;}
 .fx-screen.blackout{background:var(--bg);}
 .fx-screen.survive{background:color-mix(in srgb, var(--cyan) 28%, transparent);box-shadow:inset 0 0 0 calc(6 * var(--u)) var(--cyan);animation:fadeOut var(--fx-ms, .5s) steps(5) forwards;}
@@ -1564,16 +1585,16 @@ body.no-motion.closing #dayText,body.no-motion.closing #openBtn{animation:none;}
 #totalAssets.fx-pulse{display:inline-block;animation:totalPulse .16s steps(2);}
 @keyframes totalPulse{50%{transform:scale(1.14);}}
 body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed{display:none;}
-@media (prefers-reduced-motion: reduce){.fx-close-edge,.fx-screen,.fx-speed{display:none;} .unit-pop,body.closing #dayText,body.closing #openBtn{animation:none;}}
-.fx-hit{animation:fxHit .45s steps(4);}
+body.no-motion .unit-pop{animation:none;}
+.fx-hit{animation:fxHit var(--dur-hit) steps(4);}
 @keyframes fxHit{0%,50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(4 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--panel2);}}
-.balance-main.fx-goal{animation:fxGoal .6s steps(6);}
+.balance-main.fx-goal{animation:fxGoal var(--dur-goal) steps(6);}
 @keyframes fxGoal{0%,40%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green2),0 0 0 calc(6 * var(--u)) #000,calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;background:var(--green-dim);}}
-.fss-track.fx-jiggle{animation:fxJiggle .3s steps(4);}
+.fss-track.fx-jiggle{animation:fxJiggle var(--dur-jiggle) steps(4);}
 @keyframes fxJiggle{25%{transform:translate(calc(-2 * var(--u)),0);}50%{transform:translate(calc(2 * var(--u)),calc(-1 * var(--u)));}75%{transform:translate(calc(-1 * var(--u)),calc(1 * var(--u)));}}
 .fss.hot .fss-track{box-shadow:0 0 0 calc(2 * var(--u)) var(--red);animation:fssPulse 1s steps(2) infinite;}   /* 내사 착수: 테두리가 빨갛게 맥동 */
 @keyframes fssPulse{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),0 0 0 calc(4 * var(--u)) var(--red-dim);}}
-.fx-combo{position:fixed;z-index:94;pointer-events:none;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;animation:pixelPop .9s steps(8) forwards;}
+.fx-combo{position:fixed;z-index:94;pointer-events:none;font-family:'Press Start 2P',var(--gp-p1),monospace;font-size:var(--fs-p1);text-shadow:calc(1 * var(--u)) calc(1 * var(--u)) 0 #000;animation:pixelPop var(--dur-pop) steps(8) forwards;}
 .fx-card-ghost{position:fixed;z-index:91;pointer-events:none;margin:0;}
 .fx-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:92;pointer-events:none;image-rendering:pixelated;}
 
@@ -1590,17 +1611,17 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 .fx-chip{
   position:fixed;z-index:94;pointer-events:none;transform:translate(-50%,-100%);white-space:nowrap;padding:calc(3 * var(--u)) calc(6 * var(--u)) calc(2 * var(--u));
   font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);line-height:1.4;color:var(--red);background:#000;box-shadow:0 0 0 calc(2 * var(--u)) var(--red2);
-  animation:chipUp 1.1s steps(11) forwards;
+  animation:chipUp var(--dur-chip) steps(11) forwards;
 }
 .fx-chip.up{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green2);}
 .fx-chip.gold{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2);}
 @keyframes chipUp{0%{opacity:0;transform:translate(-50%,-60%) scale(1.6);}15%{opacity:1;transform:translate(-50%,-100%) scale(1);}80%{opacity:1;transform:translate(-50%,-180%);}100%{opacity:0;transform:translate(-50%,-200%);}}
 .fx-afterimage{filter:grayscale(1) brightness(1.5);}
-.relic.fx-relic-on{animation:relicOn .5s steps(5);}
+.relic.fx-relic-on{animation:relicOn var(--dur-relic-on) steps(5);}
 @keyframes relicOn{0%,40%{background:var(--text);transform:scale(1.6);box-shadow:0 0 0 calc(2 * var(--u)) var(--text),0 0 0 calc(4 * var(--u)) var(--gold);}}
 .fx-stamp.gold{color:var(--gold);box-shadow:0 0 0 calc(4 * var(--u)) var(--gold2),0 0 0 calc(8 * var(--u)) #000,calc(8 * var(--u)) calc(8 * var(--u)) 0 #000;}
 .fx-stamp.sm{top:22%;font-family:var(--gf-md),monospace;font-size:var(--fs-md);padding:calc(8 * var(--u)) calc(10 * var(--u)) calc(6 * var(--u));box-shadow:0 0 0 calc(2 * var(--u)) var(--gold2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
-.target-track.fx-goal{animation:fxGoal .6s steps(6);}
+.target-track.fx-goal{animation:fxGoal var(--dur-goal) steps(6);}
 .fx-blink-up{animation:blinkUp .25s steps(2) infinite;}
 .fx-blink-down{animation:blinkDown .25s steps(2) infinite;}
 @keyframes blinkUp{50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;background:var(--green-dim);}}
@@ -1610,7 +1631,7 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 /* (30) 장전 드로우: 손패 밑에서 부채꼴로 한 장씩 펼쳐진다. 희귀 이상은 등급 색으로 반짝 */
 #handBox .card.gcard.deal{animation:dealIn var(--deal-ms) steps(6) both;animation-delay:calc(var(--deal-i) * var(--deal-gap));}
 @keyframes dealIn{0%{opacity:0;transform:translate(calc(var(--deal-x) * var(--u)),calc(70 * var(--u))) rotate(var(--deal-r)) scale(.55);}60%{opacity:1;}100%{opacity:1;transform:none;}}
-#handBox .card.gcard.shine{animation:rareShine .7s steps(4) 2;}
+#handBox .card.gcard.shine{animation:rareShine var(--dur-shine) steps(4) 2;}
 @keyframes rareShine{50%{filter:brightness(1.7);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc),0 0 0 calc(5 * var(--u)) var(--rc),0 0 0 calc(7 * var(--u)) #000;}}
 /* (31) 장 시작 카운트다운 3·2·1 → OPEN */
 .countdown{position:fixed;inset:0;z-index:93;pointer-events:none;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);}
@@ -1625,7 +1646,7 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 .pos-item.flame-3{animation:flame3 .3s steps(2) infinite;}
 @keyframes flame2{0%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green2),0 0 0 calc(4 * var(--u)) var(--green-dim),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}50%{box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(4 * var(--u)) var(--green2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}}
 @keyframes flame3{0%{background:var(--panel);box-shadow:0 0 0 calc(2 * var(--u)) var(--green),0 0 0 calc(5 * var(--u)) var(--green2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}50%{background:var(--green-dim);box-shadow:0 0 0 calc(3 * var(--u)) var(--green),0 0 0 calc(6 * var(--u)) var(--green-dim),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}}
-.pos-item.fx-newhigh{animation:newHigh .6s steps(4);}
+.pos-item.fx-newhigh{animation:newHigh var(--dur-newhigh) steps(4);}
 @keyframes newHigh{0%,50%{background:var(--panel2);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold),0 0 0 calc(5 * var(--u)) var(--gold2),calc(3 * var(--u)) calc(3 * var(--u)) 0 #000;}}
 .pos-item.fx-danger{animation:dangerPulse var(--beat-ms,900ms) steps(2) infinite;}
 @keyframes dangerPulse{0%{box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}50%{background:var(--red-dim);box-shadow:0 0 0 calc(3 * var(--u)) var(--red2),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}}
@@ -1634,7 +1655,7 @@ body.no-motion .fx-close-edge,body.no-motion .fx-screen,body.no-motion .fx-speed
 .fx-danger-edge.beat{animation:edgeBeat .36s steps(3);}
 @keyframes edgeBeat{0%{opacity:.9;}100%{opacity:.35;}}
 body.no-motion .pos-item.flame-2,body.no-motion .pos-item.flame-3,body.no-motion .pos-item.fx-danger,body.no-motion .fx-danger-edge.beat,body.no-motion #handBox .card.gcard.shine{animation:none;}
-@media (prefers-reduced-motion: reduce){.pos-item.flame-2,.pos-item.flame-3,.pos-item.fx-danger,.fx-danger-edge.beat,#handBox .card.gcard.shine,#handBox .card.gcard.deal,.countdown .cd-num{animation:none;}}
+body.no-motion #handBox .card.gcard.deal,body.no-motion .countdown .cd-num{animation:none;}
 body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red),calc(2 * var(--u)) calc(2 * var(--u)) 0 #000;}
 
 /* 갭 중앙 경보: 줄무늬 테이프 · 종목명 · 변동률 카운트업 · 밈 문구. t1 약(작게, 시장 안 멈춤) · t2 중 · t3 강 */
@@ -1706,12 +1727,12 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 @keyframes jackpotFlash{50%{background:#000;color:var(--gold);}}
 .fx-streak.bump:not(.c4):not(.c5){animation:comboBump .22s steps(3);}
 @keyframes comboBump{0%{transform:scale(calc(var(--streak-scale,1) * 1.35));}100%{transform:scale(var(--streak-scale,1));}}
-.fx-streak.cool{color:var(--muted);box-shadow:0 0 0 calc(2 * var(--u)) var(--muted),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;animation:streakBreak 1.6s steps(8) forwards;}
+.fx-streak.cool{color:var(--muted);box-shadow:0 0 0 calc(2 * var(--u)) var(--muted),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;animation:streakBreak var(--dur-combo-cool) steps(8) forwards;}
 @keyframes rainbow{0%{color:var(--green);box-shadow:0 0 0 calc(2 * var(--u)) var(--green);}25%{color:var(--gold);box-shadow:0 0 0 calc(2 * var(--u)) var(--gold);}50%{color:var(--cyan);box-shadow:0 0 0 calc(2 * var(--u)) var(--cyan);}75%{color:var(--purple);box-shadow:0 0 0 calc(2 * var(--u)) var(--purple);}}
 .fx-streak.d1{color:var(--red);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
 .fx-streak.d2{color:var(--red2);background:var(--red-dim);box-shadow:0 0 0 calc(2 * var(--u)) var(--red2),calc(4 * var(--u)) calc(4 * var(--u)) 0 #000;}
 @keyframes streakBreak{0%,55%{clip-path:none;transform:none;}70%{clip-path:polygon(0 0,55% 0,40% 100%,0 100%);transform:rotate(-4deg);}100%{opacity:0;transform:translateY(calc(24 * var(--u))) rotate(-12deg);}}
-@media (prefers-reduced-motion: reduce){.fx-streak.c4,.fx-streak.c5,.fx-streak.bump{animation:none !important;}}
+body.no-motion .fx-streak.c4,body.no-motion .fx-streak.c5,body.no-motion .fx-streak.bump{animation:none !important;}
 .fx-vignette{position:fixed;inset:0;z-index:84;pointer-events:none;opacity:0;box-shadow:inset 0 0 calc(140 * var(--u)) calc(40 * var(--u)) #000;}
 
 /* (S9) 보스 주간: HUD 배지 · 예고 상자(결산·보상·암시장) · 도감 타일 · 거래정지 시세 · 중앙 경보 */
@@ -2022,7 +2043,6 @@ body.no-motion .pos-item.fx-danger{box-shadow:0 0 0 calc(2 * var(--u)) var(--red
 .card.cv.r-mythic .cv-gem{animation:gemTwinkle 3.2s steps(1) infinite;}   /* 신화: 3초에 한 번 짧게 반짝 (절제) */
 @keyframes gemTwinkle{0%,88%,100%{background:var(--bg);color:var(--rc);}90%,94%{background:var(--rc);color:var(--bg);}}
 body.no-motion .card.cv.r-mythic .cv-gem{animation:none;}
-@media (prefers-reduced-motion: reduce){.card.cv.r-mythic .cv-gem{animation:none;}}
 /* 코스트 배지 (좌상단, 큰 숫자 VT323) */
 .cv-cost{position:absolute;left:calc(-5 * var(--u));top:calc(-5 * var(--u));z-index:2;min-width:calc(30 * var(--u));height:calc(30 * var(--u));padding:0 calc(3 * var(--u));box-sizing:border-box;
   display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);box-shadow:0 0 0 calc(2 * var(--u)) var(--rc);z-index:3;
@@ -2072,7 +2092,7 @@ body.no-motion .card.cv.r-mythic .cv-gem{animation:none;}
 /* 도감·덱 확인(보기 전용)은 호버해도 안 움직인다 */
 .coll-grid .card.cv:hover,.deck-list:not(.shop-singles):not(.shop-remove) .card.cv:not([data-remove]):not([data-upgrade]):hover{transform:none;box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
 .card.cv.picked{box-shadow:var(--cv-glow),0 0 0 var(--rw) var(--rc),0 0 0 calc(var(--rw) + 1 * var(--u)) #000,0 0 0 calc(var(--rw) + 4 * var(--u)) var(--text),calc(5 * var(--u)) calc(5 * var(--u)) 0 #000;}
-@media (prefers-reduced-motion: reduce){.card.cv,.card.cv.tilt:not(.disabled){transition:none;}}
+body.no-motion .card.cv,body.no-motion .card.cv.tilt:not(.disabled){transition:none;}
 
 /* ══ 전투 화면 확정 레이아웃 (body.lay-f — 넓은 가로 화면에서만, 나머지는 위의 예전 레이아웃) ═══════════════════
    기준 1080p 시작값을 --u(= px ÷ 1.75)로 옮긴 것: 상단 바 96px = 55u · 좌측 열 300px = 171u · 차트 최소 400px = 229u · 손패 카드 190px = 108u · 호버 상승 24px = 14u
@@ -2726,7 +2746,7 @@ function fitNews(){
     box.classList.remove('wrap');   // 한 줄 길이로 잰다
     const over = inner.scrollWidth - box.clientWidth + 16 * uiScale;
     if(over > 16 * uiScale){
-      mode = !settings.shake || PREFERS_REDUCED_MOTION ? 'wrap' : 'marquee';
+      mode = isMotionReduced() ? 'wrap' : 'marquee';
       const shift = (-over) + 'px', dur = Math.max(6, over / (NEWS_MARQUEE_SPEED * uiScale) / 0.7).toFixed(1) + 's';
       if(box.style.getPropertyValue('--mq-shift') !== shift) box.style.setProperty('--mq-shift', shift);
       if(box.style.getPropertyValue('--mq-dur') !== dur) box.style.setProperty('--mq-dur', dur);
@@ -2962,7 +2982,7 @@ function toast(text, kind = 'info'){
   t.className = 'toast ' + kind;
   t.textContent = text;
   $('toastLayer').appendChild(t);
-  setTimeout(() => t.remove(), 2600);
+  Fx.afterAnim(t, Fx.dur('toast'), () => t.remove());
 }
 
 const posRowEl   = id => $('positionsBox').querySelector(`[data-id="${id}"]`);
@@ -3205,7 +3225,7 @@ function enqueueLiquidation(d){
     const T = FX_TIER[4];
     Sound.play('marginCall', { pitch: chainPitch(ctx) });
     Fx.hitStop(T.hs);
-    if(settings.shake){ const f = document.createElement('div'); f.className = 'red-flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 600); }
+    if(!isMotionReduced()){ const f = document.createElement('div'); f.className = 'red-flash'; document.body.appendChild(f); Fx.afterAnim(f, Fx.dur('red-flash'), () => f.remove()); }
     Fx.shatter(item.payload.rect, T.parts);
     Fx.afterStop(() => { Fx.shake(3); Fx.glitch(); });
     item.timers.push(setTimeout(() => Fx.stamp('청산'), Math.round(ctx.duration * 0.2)));
@@ -3361,7 +3381,7 @@ function enqueueRelicShatter(d){
         s.style.setProperty('--dx', Math.round((Math.random() - 0.5) * 200 * uiScale) + 'px');
         s.style.setProperty('--rot', Math.round((Math.random() - 0.5) * 120) + 'deg');
         document.body.appendChild(s);
-        setTimeout(() => s.remove(), 1200);
+        Fx.afterAnim(s, Fx.dur('lost'), () => s.remove());
       }
     }, Math.round(ctx.duration * 0.45)));
   };
@@ -3497,7 +3517,7 @@ function comboByGap(stockId, pct){   // 보유 종목 갭: 유리하면 +1, 불�
 /* ══ 연출 고조 (juice-escalation) — UI 전용: 엔진 상태·이벤트를 읽기만 한다. 수치는 JUICE_CONFIG (?tuner=1)
    세기 = 이번 판 기준(stageRatio·Fx.intensity), 가장 센 연출(암전·첫 단위 돌파·JACKPOT)은 드물게.
    흔들림 끔·동작 줄이기(motionOK = false)면 흔들림·번쩍임·암전·슬로모션 없이 숫자·소리만 ══ */
-const motionOK = () => settings.shake && !PREFERS_REDUCED_MOTION;
+const motionOK = () => !isMotionReduced();
 function screenFlash(cls, ms){   // 화면 전체 한 번 (암전 · 청록 번쩍)
   if(!motionOK()) return;
   const f = document.createElement('div');
@@ -3634,7 +3654,7 @@ function juiceSellAll(d){
   let k = 0;
   rows.forEach(el => {
     const v = posPnlSnap[el.dataset.id];
-    if(v > 0) cashout(rectOf(el), Fx.intensity(v, eq), k++ * JUICE_CONFIG.cashoutRowGapMs);
+    if(v > 0) cashout(rectOf(el), Fx.intensity(v, eq), Fx.stagger(k++ * JUICE_CONFIG.cashoutRowGapMs));
   });
   if(!k && d.pnl > 0) cashout(rectOf($('positionsBox')), Fx.intensity(d.pnl, eq), 0);
 }
@@ -3705,7 +3725,7 @@ function playDeal(box){
     setTimeout(() => Sound.play('cardDeal', { pitch: stagePitch(i) }), at);
     setTimeout(() => {
       el.classList.remove('deal');
-      if(J.shineRarities.indexOf(rarity) >= 0 && el.isConnected){ el.classList.add('shine'); Sound.play('rareDraw', { rarity }); setTimeout(() => el.classList.remove('shine'), 1400); }
+      if(J.shineRarities.indexOf(rarity) >= 0 && el.isConnected){ el.classList.add('shine'); Sound.play('rareDraw', { rarity }); Fx.afterAnim(el, 2 * Fx.dur('shine'), () => el.classList.remove('shine'), 'rareShine'); }
     }, at + J.dealMs);
   });
 }
@@ -3731,7 +3751,7 @@ function enqueueCountdown(){
     item.timers.push(setTimeout(() => {
       item.rang = true;
       el.innerHTML = '<div class="cd-num open">OPEN!</div>';
-      if(settings.shake) el.classList.add('flash');
+      if(!isMotionReduced()) el.classList.add('flash');
       Sound.play('drumRoll', { last: true });
       Sound.play('marketOpen');
     }, 3 * beat));
@@ -3755,7 +3775,7 @@ function notePosTicks(){
     if(pnl > s.best + 1e-9 && pnl > 0 && marketTickN - s.highTick >= J.newHighGapTicks && posFx.map[p.id]){
       s.highTick = marketTickN;
       const el = posRowEl(p.id);
-      if(el){ el.classList.remove('fx-newhigh'); void el.offsetWidth; el.classList.add('fx-newhigh'); setTimeout(() => el.classList.remove('fx-newhigh'), 650); }
+      if(el){ el.classList.remove('fx-newhigh'); void el.offsetWidth; el.classList.add('fx-newhigh'); Fx.afterAnim(el, Fx.dur('newhigh'), () => el.classList.remove('fx-newhigh'), 'newHigh'); }
     }
     s.best = Math.max(s.best, pnl);
     s.last = pnl;
@@ -3806,7 +3826,7 @@ function juiceBought(d){
   setTimeout(() => {
     Sound.play('buy', { lev: d.pos.lev, dir: d.pos.dir, pitch: Sound.semis(i) });
     if(i > 0) Fx.flash(posRowEl(d.pos.id), 'fx-hit');
-  }, i * 110);
+  }, Fx.stagger(i * 110));
 }
 
 /* 큐가 비면 실행 (게임오버·결산 화면은 연쇄가 끝난 뒤에) */
@@ -5626,13 +5646,13 @@ const JUICE_CONFIG = {
   newHighGapTicks: 4,            //      같은 포지션 신고가 번쩍 최소 간격 (틱)
   heartMs: [1100, 350],          //      심장 박동 간격: 경고선(MAINT_WARN_HEALTH) → 반대매매 직전(건강도 1)
   // ── S8 암시장 (33) ──
-  hazeInMs: 1200,                // 입장: 채도가 빠졌다 돌아오는 시간 (CSS hazeIn과 같게)
+  hazeInMs: Fx.dur('haze-in'),   // 입장: 채도가 빠졌다 돌아오는 시간 (값은 :root --dur-haze-in 하나 — 튜너로 바꾸면 syncDurVars가 CSS에 쓴다)
   shopPadVolume: 0.8,            // 입장 몽환 패드 볼륨
   hoverGapMs: 120,               // 호버 "띠잉~" 최소 간격
   packShakeMs: 520,              // 팩 개봉: 공중에서 흔들리는 시간 → 터짐
-  packFlipMs: 600,               //          터진 뒤 뒤집히는 시간 (CSS cardFlip과 같게)
+  packFlipMs: Fx.dur('pack-flip'),   //      터진 뒤 뒤집히는 시간 (값은 :root --dur-pack-flip 하나)
   mythDarkMs: 700,               // 신화: 암전 시간 → 금빛 기둥
-  mythSpinMs: 1200,              //       회전 등장 시간 (CSS mythSpin과 같게)
+  mythSpinMs: Fx.dur('myth-spin'),   //   회전 등장 시간 (값은 :root --dur-myth-spin 하나)
   // ── S8 수익 콤보 (46) ──
   comboTiers: [3, 5, 8, 12],     // 단계 경계: 1~2 / 3~4 / 5~7 / 8~11 / 12+ JACKPOT
   comboShowFrom: 2,              // 이 수부터 화면에 'COMBO ×n'
@@ -5641,7 +5661,7 @@ const JUICE_CONFIG = {
   comboShake: { 2: 0, 3: 1, 4: 2, 5: 3 },        // 단계가 오를 때 흔들림
   comboParts: { 2: 10, 3: 18, 4: 30, 5: 64 },    // 단계가 오를 때 파티클 수
   comboIdleMs: 6000,             // 수익 이벤트가 이 시간(ms) 동안 없으면 콤보 표시(JACKPOT 포함)가 식으며 사라진다 — 장이 끝나거나 멈춰도 안 남게
-  comboCoolMs: 1600,             // 끊긴 뒤 '최대 ×N'이 남아 있는 시간
+  comboCoolMs: Fx.dur('combo-cool'),   // 끊긴 뒤 '최대 ×N'이 남아 있는 시간 (값은 :root --dur-combo-cool 하나 — CSS streakBreak와 같은 값)
   // ── 손에 잡히는 화면 (ui-tactile) ──
   tiltMaxDeg: 8,                 // 카드 기울기 최대 각도 (도) — 손패·보상·암시장 카드
   btnHoverGapMs: 60,             // .btn-chunky 호버 틱 최소 간격 (연타 방지)
@@ -5674,8 +5694,20 @@ const JUICE_CONFIG = {
   survivedOpenMs: 90,            //       SURVIVED: 로우패스가 "확" 풀리는 시간
   squeakMax: 1.03,               // (D11) 턱걸이 통과: 목표의 100% ~ 이 비율
   slowMoMs: 300,                 //       슬로모션 시간
-  slowMoRate: 0.3                //       슬로모션 배속
+  slowMoRate: 0.3,               //       슬로모션 배속
+  // ── 모션 시간 스케일 (motionTime 한 곳) ── motionScale = 모션 강도 설정(%) × 장 속도 보정. 정산 무대·결산 체인·연쇄 연출 큐가 읽는다
+  motionSpeedScale: { x0_5: 1, x1: 1, x2: 0.7, x4: 0.4 },  // 장중 속도(0.5×·1×·2×·4×) → 연출 시간 배율 (1× = 1.0 기준, 표에 없는 속도는 1)
+  // ── 쌓임 정책 (Fx.setStackPolicy) ── 장중 속도가 이 이상이면: 연출 사이 간격 × stackStaggerMul, 동시 진행 연출 stackMax개 초과분은 가장 오래된 것부터 즉시 최종 상태로
+  stackFromSpeed: 2,             // 이 장중 속도(×)부터 켠다 (1×·0.5×는 꺼짐 = 원래 그대로)
+  stackMax: 6,                   // 동시 진행 연출 상한 (요소·클래스 연출 + 연출 큐 재생 항목 + 날아가는 카드)
+  stackStaggerMul: 0.5           // 연출 사이 간격(큐 간격·카드 잔상·칩 지연·동전 간격·전량 매도 행 간격·매수음 순번) 배율
 };
+/* 연출 시간 스케일: 이 값 하나를 Fx.motionTime(ms)이 읽는다 (fx.js). 1×·100% = 1 → 원래 시간 그대로 */
+const motionSpeedKey = v => 'x' + String(v).replace('.', '_');   // 0.5 → x0_5 (튜너 경로가 '.'로 나뉘므로 키에 점을 안 쓴다)
+const motionScaleNow = () => (settings.motion / 100) * (JUICE_CONFIG.motionSpeedScale[motionSpeedKey(settings.speed)] ?? 1);
+const motionTime = ms => Fx.motionTime(ms);
+Fx.setMotionScale(motionScaleNow);
+Fx.setStackPolicy(() => ({ on: settings.speed >= JUICE_CONFIG.stackFromSpeed, max: Math.round(JUICE_CONFIG.stackMax), staggerMul: JUICE_CONFIG.stackStaggerMul }));
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
 let stage = null;                // 재생 중·대기 중인 정산 무대 { run, d, rows, events, vt, speed, clicks, raf, last, hold, readyAt }
 let stageBest = { run: null, payout: 0 };   // 이번 판 최고 정산금 (세기 기준, UI 전용)
@@ -5903,7 +5935,7 @@ function playDayStage(d){
   on(0, () => Sound.play('settleThud'));
   ev.sort((a, b) => a.t - b.t);
   stage = { run, d, rows, events: ev, idx: 0, vt: 0, speed: small ? JUICE_CONFIG.smallSpeed : 1, clicks: 0, raf: 0, last: performance.now(), hold: false, readyAt: 0, end: t };
-  stage.raf = requestAnimationFrame(stageFrame);
+  stageStart();
 }
 /* 간이 무대 (stage-every-day): 보정 없는 날 — 포지션별 칩이 톡톡 → 배수 ×1 고정 → 합계 카운트업 → 순자산 → 낮은 "둥" (≈ 1초).
    불타기·크리티컬 릴·흔들림 없음. 손실 날은 빨간 숫자 + 내려가는 음. 클릭·SPACE 한 번 = 결과로 */
@@ -5966,6 +5998,10 @@ function playPlainStage(d){
   on(() => Sound.play('settleThud'));
   ev.sort((a, b) => a.t - b.t);
   stage = { run, d, rows, events: ev, idx: 0, vt: 0, speed: small ? JUICE_CONFIG.smallSpeed : 1, clicks: 0, raf: 0, last: performance.now(), hold: false, readyAt: 0, end: t, plain: true };
+  stageStart();
+}
+function stageStart(){   // 모션 0% = 재생 없이 결과로 ('결과로' 스킵과 같은 최종 상태)
+  if(Fx.motionScale === 0){ stageToResult(); return; }
   stage.raf = requestAnimationFrame(stageFrame);
 }
 function stageFrame(now){
@@ -5974,7 +6010,7 @@ function stageFrame(now){
   if(!$('stageList')){ stageClose(); return; }   // 다른 오버레이가 덮었으면 그만
   if(Fx.frozenFor() > 0){ s.last = now; s.raf = requestAnimationFrame(stageFrame); return; }   // 히트스톱 동안 무대 시간도 멈춘다
   s.vt += (now - s.last) * s.speed; s.last = now;
-  while(s.idx < s.events.length && s.events[s.idx].t <= s.vt) s.events[s.idx++].fn();
+  while(s.idx < s.events.length && motionTime(s.events[s.idx].t) <= s.vt) s.events[s.idx++].fn();   // 이벤트 시각(1배 기준 ms) → 모션 시간
   if(s.idx >= s.events.length){ stageHold(); return; }
   s.raf = requestAnimationFrame(stageFrame);
 }
@@ -5983,6 +6019,10 @@ function stageSkip(){   // 한 번 = 빨리 감기, 두 번 = 결과로 (소리�
   if(!s || s.hold) return;
   s.clicks++;
   if(s.clicks === 1 && !s.plain){ s.speed = Math.max(s.speed, JUICE_CONFIG.ffSpeed); return; }
+  stageToResult();
+}
+function stageToResult(){   // 남은 이벤트 중 최종 상태를 만드는 것(quiet)만 → 결과에서 멈춤
+  const s = stage;
   while(s.idx < s.events.length){ const e = s.events[s.idx++]; if(e.quiet) e.fn(); }
   Sound.play('settleThud');
   stageHold();
@@ -6064,11 +6104,11 @@ function playSettlementChain(chain, onDone, opts){
     </div>
     ${animate ? '<div class="chain-skip">클릭 · SPACE = 건너뛰기</div>' : ''}`);
   chainPlay = { run, timers: [], onDone, sum, rows, squeak: !!opts.squeak };
-  if(!animate){ enterChainHold(false); return; }
+  if(!animate || Fx.motionScale === 0){ enterChainHold(false); return; }   // 모션 0% = 재생 없이 최종 결과
   Music.duck('chain', 0.2);   // 결산 체인 효과음이 주인공
   const list = $('chainList');
   let t = 0;
-  const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, ms));   // 오버레이가 바뀌었으면 아무것도 안 한다
+  const at = (ms, fn) => chainPlay.timers.push(setTimeout(() => { if(chainPlay && $('chainList')) fn(); }, motionTime(ms)));   // 단계 시각(1배 기준 ms) → 모션 시간   // 오버레이가 바뀌었으면 아무것도 안 한다
   const setTotal = (el, v) => { el.textContent = fmtSigned(v); el.className = 'chain-total ' + (v >= 0 ? 'up' : 'down'); };
   const countUp = (elFn, from, to, start, dur, semi) => {   // 8칸 카운트업 + 칸마다 블립, 마지막 칸은 정확한 값
     for(let k = 1; k <= CHAIN_COUNT_STEPS; k++) at(start + dur * k / CHAIN_COUNT_STEPS, () => {
@@ -6129,7 +6169,7 @@ function playSettlementChain(chain, onDone, opts){
     list.querySelectorAll('.chain-row.playing').forEach(r => r.classList.remove('playing'));
     list.querySelectorAll('.chain-rest, .chain-sum').forEach(e => e.classList.remove('pending'));
   });
-  chainPlay.timers.push(setTimeout(() => enterChainHold(false), t));   // 다 보여주면 그대로 멈춘다 (자동으로 넘어가지 않음)
+  chainPlay.timers.push(setTimeout(() => enterChainHold(false), motionTime(t)));   // 다 보여주면 그대로 멈춘다 (자동으로 넘어가지 않음)
 }
 /* 최종 프레임: 모든 행의 칩·최종 손익·도장을 채운다 (스킵했을 때 여기로 점프) */
 function renderChainFinal(rows){
@@ -6581,7 +6621,7 @@ function showPackResult(d){
     </div>
     <div class="ov-sub"><span class="c-rar ${card.rarity}">${RARITY_LABEL[card.rarity]}</span> · ${card.name} — 덱에 추가 (덱 ${d.deckSize}장)</div>
     <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
-  if(T.myth && !PREFERS_REDUCED_MOTION) $('overlay').classList.add('pk-dark');   // 신화: 암전 (juicePack이 회전 등장 끝에 걷는다)
+  if(T.myth && !isMotionReduced()) $('overlay').classList.add('pk-dark');   // 신화: 암전 (juicePack이 회전 등장 끝에 걷는다)
   packAnimUntil = performance.now() + T.reveal + 300;
 }
 let packAnimUntil = 0;   // 팩 개봉 연출이 끝나는 시각 (스킵 ▶ 버튼 표시용)
@@ -6608,7 +6648,9 @@ $('shopBox').addEventListener('mouseover', e => {
 function enterShopHaze(){
   const el = $('screen-shop');
   el.classList.remove('haze-in'); void el.offsetWidth; el.classList.add('haze-in');
-  setTimeout(() => el.classList.remove('haze-in'), JUICE_CONFIG.hazeInMs + 50);
+  const box = $('shopBox');
+  if(box) Fx.afterAnim(box, JUICE_CONFIG.hazeInMs, () => el.classList.remove('haze-in'), 'hazeIn');   // 안개 애니메이션은 #shopBox에 걸린다
+  else el.classList.remove('haze-in');
   Sound.play('shopPad', { volume: JUICE_CONFIG.shopPadVolume });
 }
 let relicClackId = '';   // 방금 암시장에서 산 유물: renderShop 뒤 그 칸에 꽂는다
@@ -6700,6 +6742,7 @@ const SETTING_OPTIONS = {
   hitStop: [[true, '켜기'], [false, '끄기']],
   bgm: [[true, '켜기'], [false, '끄기']],
   fxSpeed: [['normal', '보통'], ['fast', '빠름'], ['min', '최소']],
+  motion: CRT_PCT,                            // 모션 강도 (0~100%, 10% 단위) — 연출 시간 배율. 0% = 연출 없이 최종 상태 (motionScaleNow)
   bgmVol: [[0, '0'], [25, '25'], [40, '40'], [50, '50'], [75, '75'], [100, '100']],
   uiSize: [['small', '작게'], ['auto', '자동'], ['large', '크게'], ['xlarge', '매우 크게']],
   fontSize: [['normal', '보통'], ['large', '크게']],
@@ -6707,8 +6750,10 @@ const SETTING_OPTIONS = {
 };
 // 시스템 '동작 줄이기'가 켜져 있으면 흔들림·글리치(·히트스톱)를 기본으로 끈다. 파티클·소리는 그대로
 const PREFERS_REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+/* 모션 끔 판정 하나: 설정 '화면 흔들림' 끔 · 시스템 동작 줄이기 · 모션 강도 0%. CSS는 body.no-motion(applySettings가 이 값으로), JS는 이 함수만 읽는다 */
+function isMotionReduced(){ return !settings.shake || PREFERS_REDUCED_MOTION || settings.motion === 0; }
 const DEFAULT_SETTINGS = { speed: 1, shake: !PREFERS_REDUCED_MOTION, crtOn: true, crtVig: 30, crtScan: 20, crtCurve: 30, crtRound: true, sound: true, chainFx: true, unlockTips: true, playtest: false,
-                           sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal',
+                           sfxVol: 50, tickSound: false, hitStop: true, bgm: true, bgmVol: 40, fxSpeed: 'normal', motion: 100,
                            uiSize: 'auto', fontSize: 'normal', quoteView: 'list' };
 function loadSettings(){
   const s = Object.assign({}, DEFAULT_SETTINGS);
@@ -6731,8 +6776,8 @@ function applySettings(){
   Sound.setVolume(settings.sfxVol / 100);
   Music.setEnabled(settings.sound && settings.bgm);   // 사운드를 끄면 배경음악도 꺼진다
   Music.setVolume(settings.bgmVol / 100);
-  Fx.setOptions({ motion: settings.shake, hitStop: settings.hitStop });
-  document.body.classList.toggle('no-motion', !settings.shake);   // 흔들림 끔 → 정산 무대 숫자 떨림도 끔 (숫자·소리는 그대로)
+  Fx.setOptions({ motion: !isMotionReduced(), hitStop: settings.hitStop });   // 모션 끔 → 흔들림·글리치·히트스톱도 끔 (파티클·소리는 그대로)
+  document.body.classList.toggle('no-motion', isMotionReduced());   // CSS 모션 끔 (정산 무대 숫자 떨림·맥동·반복 연출)
   Fx.setSpeed(settings.fxSpeed);   // 흔들림을 끄면 글리치·히트스톱도 꺼진다
   Fx.setChainCounter(false);   // (S8-46) 연쇄 'CHAIN ×n' 대신 수익 콤보 숫자 하나만
   document.documentElement.dataset.font = settings.fontSize;   // 글자 크기: --fs-* 한 단계 위 (CSS html[data-font="large"])
@@ -6898,8 +6943,9 @@ function buildSettings(){
     ${settingRow('fontSize', '글자 크기', '크게 = 한글·본문 글자를 한 단계씩 키웁니다 (영문 픽셀 글꼴은 선명한 크기 그대로).')}
     ${settingRow('speed', '장중 속도', `캔들 1개 ${TICK_MS}ms 기준 배율. 결과·확률은 그대로, 시간만 빨라집니다.`)}
     ${settingRow('shake', '화면 흔들림 · 번쩍임 · 글리치', '청산·갭 때 흔들림·번쩍임·글리치. 끄면 히트스톱도 꺼짐 (시스템 동작 줄이기면 기본 끔).')}
-    ${settingRow('hitStop', '히트스톱', '청산·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', !settings.shake)}
+    ${settingRow('hitStop', '히트스톱', '청산·갭·결산 도장·큰 익절 순간 화면을 0.1초쯤 멈춥니다. 결과는 그대로, 타이밍만 늦어집니다.', isMotionReduced())}
     ${settingRow('fxSpeed', '연쇄 연출 속도', '갭 경보·청산·유물 조명이 이어지는 속도. 최소 = 간격 0.1초, 갭 경보도 작게 (시장을 안 멈춤).')}
+    ${stepRow('motion', '모션 강도', '정산 무대·결산 체인·연쇄 연출의 재생 시간. 0%면 연출 없이 결과만. 장중 속도 2×·4×에선 자동으로 더 짧게. 기본 100%.')}
     ${settingRow('crtOn', '화면 효과', '옛 CRT 모니터 느낌(비네트·스캔라인·둥근 모서리·유리 반사). 끄면 효과가 하나도 없습니다.')}
     ${stepRow('crtVig', '비네트', '화면 가장자리를 어둡게. 기본 30%.', !settings.crtOn)}
     ${stepRow('crtScan', '스캔라인', '가는 가로줄. 작은 글자가 읽기 어려우면 낮추세요. 기본 20%.', !settings.crtOn)}
@@ -7018,7 +7064,7 @@ function showPopNum(text, isUp){
   pop.style.textShadow = isUp ? '1px 1px 0 #003a14' : '1px 1px 0 #5c0010';
   pop.textContent = text;
   document.getElementById('chartBox').appendChild(pop);
-  setTimeout(()=>pop.remove(), 900);
+  Fx.afterAnim(pop, Fx.dur('pop'), () => pop.remove());
 }
 
 function cashRain(n){ Fx.billRain(n || 40); }   // 지폐 비 — fx.js 파티클 캔버스 (예전 DOM 지폐 대신)
@@ -7051,7 +7097,10 @@ function tunerLeaves(obj, path, out){   // 숫자 칸 목록 [{ path: ['stageMs'
   return out;
 }
 const tunerGet = (root, path) => path.reduce((o, k) => (o == null ? undefined : o[k]), root);
-function tunerSet(path, v){ const parent = tunerGet(JUICE_CONFIG, path.slice(0, -1)); if(parent && typeof parent[path[path.length - 1]] === 'number') parent[path[path.length - 1]] = v; }
+function tunerSet(path, v){ const parent = tunerGet(JUICE_CONFIG, path.slice(0, -1)); if(parent && typeof parent[path[path.length - 1]] === 'number') parent[path[path.length - 1]] = v; if(path.length === 1 && DUR_LINKS[path[0]]) syncDurVars(); }
+/* JUICE_CONFIG ↔ :root --dur-* 묶음: 튜너로 바꾼 값을 CSS 애니메이션에도 (기본값은 CSS 쪽 하나) */
+const DUR_LINKS = { hazeInMs: 'haze-in', packFlipMs: 'pack-flip', mythSpinMs: 'myth-spin', comboCoolMs: 'combo-cool' };
+function syncDurVars(){ Object.keys(DUR_LINKS).forEach(k => document.documentElement.style.setProperty('--dur-' + DUR_LINKS[k], JUICE_CONFIG[k] + 'ms')); Fx.refreshDur(); }
 function tunerLoad(){
   try {
     const saved = JSON.parse(localStorage.getItem(TUNER_KEY) || 'null');
@@ -7441,7 +7490,7 @@ const TILT_SEL = '#handBox .card.gcard, #overlayBox .card[data-reward], #overlay
   + '#shopBox .pack, #shopBox .relic-row:not(.own-relics) .relic-tile, #overlayBox .relic-tile[data-relic-reward], #overlayBox .relic-tile[data-swap-pick]';   // 고를 수 있는 카드·팩·유물만 (덱 확인·도감·팩 구성·보유 유물은 제외)
 const HOVER_NONE = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
 let tiltEl = null, tiltRect = null, tiltPt = null, tiltRaf = 0;
-const tiltAllowed = () => settings.shake && !PREFERS_REDUCED_MOTION && !HOVER_NONE && selectedIdx < 0 && relicDragFrom < 0;
+const tiltAllowed = () => !isMotionReduced() && !HOVER_NONE && selectedIdx < 0 && relicDragFrom < 0;
 function tiltClear(){
   if(!tiltEl) return;
   tiltEl.classList.remove('tilt');
@@ -7569,7 +7618,7 @@ const TITLE_KO_BASE_PX = 15, TITLE_EN_BASE_PX = 8, TITLE_EN_RATIO = 0.3;   // Ga
 const TITLE_INTRO_MS = 1500, TITLE_INTRO_SHORT_MS = 300, TITLE_CONFIRM_MS = 200, TITLE_ARM_MS = 3000;
 const TITLE_NOISE_MS = 90;
 
-const titleMotion = () => settings.shake && !PREFERS_REDUCED_MOTION;
+const titleMotion = () => !isMotionReduced();
 let titleEntered = false, titleWoke = false, titleSwallowClick = false;
 let titleRaf = 0, titleLastT = 0, titleIntroTimer = null, titlePopTimer = null, titleNoiseTimer = null;
 let titleSel = -1, startArmed = false, startArmTimer = null;
@@ -7603,7 +7652,7 @@ function drawTitleChart(dtMs){
   if(cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
   const slot = TITLE_CANDLE_SLOT * uiScale * dpr, slots = W / slot;
   titleChartFill(Math.ceil(slots) + 2);
-  if(dtMs > 0 && !PREFERS_REDUCED_MOTION){
+  if(dtMs > 0 && !isMotionReduced()){
     tchart.offset += TITLE_SCROLL_SPEED * uiScale * dpr * dtMs / 1000;
     while(tchart.offset >= slot){   // 한 칸 지나가면 맨 왼쪽을 버리고 오른쪽에 새 캔들
       tchart.offset -= slot;
@@ -7793,7 +7842,7 @@ function enterTitle(){
   if(!titleRaf) titleRaf = requestAnimationFrame(titleFrame);
   clearInterval(titleNoiseTimer);
   drawTitleNoise();
-  if(!PREFERS_REDUCED_MOTION) titleNoiseTimer = setInterval(drawTitleNoise, TITLE_NOISE_MS);
+  if(!isMotionReduced()) titleNoiseTimer = setInterval(drawTitleNoise, TITLE_NOISE_MS);
   titlePopSchedule();
 }
 /* ── 연출 스킵 ▶ (클릭 전용 조작): Space/Enter로 넘기던 연출마다 같은 동작의 버튼을 화면 아래 가운데에 띄운다 ──
