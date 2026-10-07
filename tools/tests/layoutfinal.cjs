@@ -96,7 +96,7 @@ const measure = p => p.evaluate(() => {
       ok(`${t} (b) 비활성 카드 호버 → 툴팁에 이유`, tip.shown && tip.reason, tip);
     }
     // 호버 상승
-    const lift = await p.evaluate(async () => { const c = [...document.querySelectorAll('#handBox .card:not(.disabled)')].sort((a, b) => Math.abs(+a.style.getPropertyValue('--kx')) - Math.abs(+b.style.getPropertyValue('--kx')))[0]; if(!c) return null; const y0 = c.getBoundingClientRect().top; c.classList.add('is-hover'); await new Promise(r => setTimeout(r, 50)); const y1 = c.getBoundingClientRect().top; c.classList.remove('is-hover'); return (y0 - y1) / uiScale; });
+    const lift = await p.evaluate(async () => { const c = [...document.querySelectorAll('#handBox .card:not(.disabled)')].sort((a, b) => Math.abs(+a.style.getPropertyValue('--kx')) - Math.abs(+b.style.getPropertyValue('--kx')))[0]; if(!c) return null; const y0 = c.getBoundingClientRect().top; c.classList.add('is-hover'); await new Promise(r => setTimeout(r, 50 + Fx.dur('bm-hover') * bmK()));   /* 상승은 호버 모션 토큰만큼 (battle-motion) */ const y1 = c.getBoundingClientRect().top; c.classList.remove('is-hover'); return (y0 - y1) / uiScale; });
     ok(`${t} (b) 호버 시 약 14u(24px@1080p) 상승`, lift !== null && lift > 10 && lift < 20, lift);
     if (SHOTS) await p.screenshot({ path: `${SHOTS}/hand-${t}.png` });
     ok(`${t} pageerror 없음`, p.errs.length === 0, p.errs); await p.close();
