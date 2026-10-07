@@ -157,6 +157,32 @@ small{font-size:inherit;}   /* 브라우저 기본 smaller(83%)는 허용 크기
   --dur-bm-row-out:200ms;     /* 보유 행 페이드아웃 */
   --dur-bm-row-collapse:200ms;/* 아래 행이 접히며 올라옴 */
   --dur-bm-row-flash:150ms;   /* 손익 큰 변화(±10%) 행 테두리 */
+  /* 정산·보상·암시장 모션 (settle-motion, body.lay-f) — JUICE sm*Ms와 묶임, 실제 시간 = 이 값 × 모션 강도·장 속도(--bm-k) */
+  --dur-sm-dim:150ms;         /* 모달 진입: 딤 페이드 */
+  --dur-sm-panel:240ms;       /* 모달 진입: 패널 0.94→1 + 아래 12px에서 (back-out) */
+  --dur-sm-out:150ms;         /* 모달 퇴장 (ease-in) */
+  --dur-sm-wipe:360ms;        /* 화면 전환 와이프 (전투↔정산↔보상↔암시장) */
+  --dur-sm-row-gap:350ms;     /* 정산 장부 줄 사이 간격 */
+  --dur-sm-row:300ms;         /* 정산 장부 줄 슬라이드 + 금액 카운트업 */
+  --dur-sm-total:1000ms;      /* 정산 총합 카운트업 */
+  --dur-sm-bar:800ms;         /* 목표 바 채움 (오버슈트 약간) */
+  --dur-sm-stamp:200ms;       /* 도장 1.8배 → 1배 쾅 */
+  --dur-sm-thud:160ms;        /* 도장 직후 패널 4px 흔들림 */
+  --dur-sm-flip:300ms;        /* 보상 카드 뒤집기 (rotateY) */
+  --dur-sm-flip-gap:120ms;    /* 보상 카드 사이 간격 */
+  --dur-sm-glow:1200ms;       /* 전설 이상 글로우 펄스 한 바퀴 */
+  --dur-sm-pick:320ms;        /* 보상 선택: 고른 카드 확대 + 나머지 페이드 */
+  --dur-sm-deck-gap:40ms;     /* 덱 확인 카드 격자 간격 (처음 12장만) */
+  --dur-sm-deck:200ms;        /* 덱 확인 카드 한 장 등장 */
+  --dur-sm-buy:420ms;         /* 암시장 구매: 카드 → 덱 아이콘 */
+  --dur-sm-count:600ms;       /* 암시장 비자금 카운트다운 */
+  --dur-sm-deny:120ms;        /* 비자금 부족: 잔액 흔들림 */
+  --dur-sm-pack-common:260ms; /* 팩 개봉 흔들림 길이 — 등급별 (신화는 기존 암전 연출) */
+  --dur-sm-pack-uncommon:380ms;
+  --dur-sm-pack-rare:520ms;
+  --dur-sm-pack-legendary:720ms;
+  --dur-sm-reroll:240ms;      /* 새로고침: 상품 슬라이드 교체 */
+  --dur-sm-reroll-gap:60ms;   /*   상품 사이 간격 */
 }
 
 .px-border{
@@ -1394,7 +1420,7 @@ body.no-motion .overlay-box.stage-live.stage-rage::before,body.no-motion .sh-ste
 body.no-motion .sh-steam i{display:none;}
 /* 정산 상자 흔들림(ov-shake, transform)과 금액 직전 흔들림(pre-shake, 개별 속성 translate)은 칸을 따로 — 둘이 겹쳐도 합쳐진다.
    폭주 배경(stage-rage)은 ::before 가상요소라 원래 충돌 없음 */
-.overlay-box{animation:var(--ov-shake, none),var(--ov-pre, none);}
+.overlay-box{animation:var(--ov-shake, none),var(--ov-pre, none),var(--ov-sm, none);}   /* 3번째 칸 = 정산·보상 모션(진입·퇴장·도장 쾅, settle-motion) */
 body.no-motion .overlay-box,body.no-motion .cabinet{animation:none;}   /* 모션 끔: 두 칸 다 (흔들림·직전 흔들림·글리치) */
 .overlay-box.ov-shake-1{--ov-shake:ovShake1 var(--dur-shake-1) steps(4);}
 .overlay-box.ov-shake-2{--ov-shake:ovShake2 var(--dur-shake-2) steps(6);}
@@ -2376,6 +2402,72 @@ body.lay-f .hold-row.bm-row-flash::after{content:'';position:absolute;inset:0;po
 body.lay-f .hold-row.bm-row-flash.h-up::after{--bmf:var(--green);} body.lay-f .hold-row.bm-row-flash.h-down::after{--bmf:var(--red);}
 @keyframes bmRowFlash{0%,66%{opacity:1;box-shadow:inset 0 0 0 calc(2 * var(--u)) var(--bmf);}}
 .bm-row-ghost > .hold-row{height:100%;}
+
+/* ══ 정산·보상·암시장 모션 (settle-motion) — body.lay-f에서만. 시간 = 토큰(--dur-sm-*) × --bm-k (0이면 바로 최종 상태) ══
+   모달 패널은 .overlay-box의 3번째 animation 칸(--ov-sm)과 개별 속성 scale·translate·opacity만 쓴다 (흔들림 transform·직전 흔들림 translate와 칸이 따로) */
+body.lay-f .overlay.sm-dim-in{animation:smDimIn calc(var(--dur-sm-dim) * var(--bm-k, 1)) linear both;}
+@keyframes smDimIn{from{background-color:transparent;}}
+body.lay-f .overlay-box.sm-panel-in{--ov-sm:smPanelIn calc(var(--dur-sm-panel) * var(--bm-k, 1)) cubic-bezier(.34, 1.56, .64, 1) both;}
+@keyframes smPanelIn{from{scale:var(--sm-panel-scale, .94);translate:0 var(--sm-panel-rise, calc(6.857 * var(--u)));opacity:0;}to{scale:1;translate:0 0;opacity:1;}}
+body.lay-f .overlay.sm-closing{display:flex;pointer-events:none;animation:smDimOut calc(var(--dur-sm-out) * var(--bm-k, 1)) ease-in both;}
+body.lay-f .overlay.sm-closing .overlay-box{--ov-sm:smPanelOut calc(var(--dur-sm-out) * var(--bm-k, 1)) ease-in both;}
+@keyframes smDimOut{to{background-color:transparent;}}
+@keyframes smPanelOut{to{scale:var(--sm-panel-scale, .94);translate:0 var(--sm-panel-rise, calc(6.857 * var(--u)));opacity:0;}}
+body.lay-f .overlay-box.sm-thud{--ov-sm:smThud calc(var(--dur-sm-thud) * var(--bm-k, 1)) steps(4);}
+@keyframes smThud{25%{translate:calc(-1 * var(--sm-thud, calc(2.286 * var(--u)))) 0;}50%{translate:var(--sm-thud, calc(2.286 * var(--u))) 0;}75%{translate:calc(-.5 * var(--sm-thud, calc(2.286 * var(--u)))) 0;}}
+/* 화면 전환 와이프: 덮개가 왼쪽에서 오른쪽으로 빠지며 새 화면이 드러난다 (앞 가장자리 = 브랜드 초록 띠) */
+.sm-wipe{position:fixed;inset:0;z-index:150;pointer-events:none;background:var(--bg);animation:smWipe calc(var(--dur-sm-wipe) * var(--bm-k, 1)) steps(12) both;}
+.sm-wipe::before{content:'';position:absolute;top:0;bottom:0;left:0;width:calc(6 * var(--u));background:var(--green);}
+@keyframes smWipe{to{translate:100vw 0;}}
+/* 정산 장부: 줄마다 슬라이드 등장(350ms 간격), 줄이 오기 전엔 보이지 않는다 */
+.sm-pre{opacity:0;}
+body.lay-f .sm-row-in{animation:smRowIn calc(var(--dur-sm-row) * var(--bm-k, 1)) steps(6) both;}
+@keyframes smRowIn{from{translate:calc(-16 * var(--u)) 0;opacity:0;}to{translate:0 0;opacity:1;}}
+body.lay-f .result-bar i.sm-bar-in{transform-origin:left center;animation:smBarIn calc(var(--dur-sm-bar) * var(--bm-k, 1)) ease-out both;}
+@keyframes smBarIn{0%{scale:0 1;}75%{scale:var(--sm-bar-over, 1.04) 1;}100%{scale:1 1;}}
+/* 도장: 목표 달성(초록) · 목표 미달·파산(빨강). 1.8배에서 1배로 쾅 */
+.result-hero-box{position:relative;}
+/* 정산 장부 = 한 줄에 '항목 … 금액' (줄마다 등장) */
+.stat-grid.sm-ledger{grid-template-columns:1fr;gap:calc(3 * var(--u));margin:calc(8 * var(--u)) 0 calc(6 * var(--u));}
+.stat-grid.sm-ledger > div{display:flex;justify-content:space-between;align-items:baseline;gap:calc(10 * var(--u));padding:calc(3 * var(--u)) calc(9 * var(--u));line-height:1.3;}
+.stat-grid.sm-ledger > div b{display:inline;margin-top:0;text-align:right;white-space:nowrap;}
+.sm-stamp{position:absolute;right:calc(6 * var(--u));top:50%;translate:0 -50%;rotate:-10deg;z-index:2;pointer-events:none;white-space:nowrap;
+  font-family:var(--gf-md),monospace;font-size:var(--fs-md);line-height:1.3;padding:calc(3 * var(--u)) calc(9 * var(--u));text-shadow:none;
+  color:var(--green);box-shadow:inset 0 0 0 calc(3 * var(--u)) var(--green);background:color-mix(in srgb, var(--bg) 70%, transparent);}
+.sm-stamp.bad{color:var(--red);box-shadow:inset 0 0 0 calc(3 * var(--u)) var(--red);}
+.ending-stampbox{position:relative;min-height:calc(30 * var(--u));margin:calc(2 * var(--u)) 0 calc(6 * var(--u));}
+.ending-stampbox .sm-stamp{position:relative;display:inline-block;right:auto;top:auto;translate:none;}
+body.lay-f .sm-stamp.sm-stamp-in{animation:smStampIn calc(var(--dur-sm-stamp) * var(--bm-k, 1)) cubic-bezier(.5, 0, .75, 0) both;}
+@keyframes smStampIn{from{scale:var(--sm-stamp-scale, 1.8);opacity:0;}to{scale:1;opacity:1;}}
+.ending-tip{font-family:var(--gf-sm),monospace;font-size:var(--fs-sm);color:var(--text);line-height:1.5;margin:calc(4 * var(--u)) 0 calc(10 * var(--u));}
+.ending-tip b{color:var(--gold);font-weight:normal;}
+/* 보상 카드: 뒷면 → 앞면 (rotateY, 개별 속성 rotate — 기울기 transform과 합쳐진다) · 전설 이상 글로우 · 선택 확대 + 나머지 페이드 */
+.sm-back{position:absolute;inset:0;z-index:5;pointer-events:none;background:var(--panel2);box-shadow:inset 0 0 0 calc(3 * var(--u)) var(--rc, var(--muted));
+  display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',var(--gp-p2),monospace;font-size:var(--fs-p2);color:var(--rc, var(--muted));}
+body.lay-f .card.sm-flip{animation:smFlip calc(var(--dur-sm-flip) * var(--bm-k, 1)) linear both;animation-delay:calc(var(--sm-i, 0) * var(--dur-sm-flip-gap) * var(--bm-k, 1));}
+body.lay-f .card.sm-flip > .sm-back{animation:smBackOff calc(var(--dur-sm-flip) * var(--bm-k, 1)) steps(1) both;animation-delay:calc(var(--sm-i, 0) * var(--dur-sm-flip-gap) * var(--bm-k, 1));}
+@keyframes smFlip{0%{rotate:y 0deg;}50%{rotate:y 90deg;}100%{rotate:y 0deg;}}
+@keyframes smBackOff{0%{opacity:1;}50%,100%{opacity:0;}}
+body.lay-f .card.sm-glow{animation:smGlow var(--dur-sm-glow) steps(6) infinite;}
+body.lay-f .card.sm-glow.sm-flip{animation:smFlip calc(var(--dur-sm-flip) * var(--bm-k, 1)) linear both,smGlow var(--dur-sm-glow) steps(6) infinite;
+  animation-delay:calc(var(--sm-i, 0) * var(--dur-sm-flip-gap) * var(--bm-k, 1)),0s;}
+@keyframes smGlow{0%,100%{filter:drop-shadow(0 0 0 transparent);}50%{filter:drop-shadow(0 0 calc(6 * var(--u)) var(--rc, var(--gold)));}}
+body.no-motion .card.sm-glow{filter:drop-shadow(0 0 calc(4 * var(--u)) var(--rc, var(--gold)));}
+body.lay-f .card.sm-picked{z-index:5;transition:scale calc(var(--dur-sm-pick) * var(--bm-k, 1)) steps(4);scale:var(--sm-pick-scale, 1.12);}
+body.lay-f .card.sm-faded{transition:opacity calc(var(--dur-sm-pick) * var(--bm-k, 1)) steps(4);opacity:.2;}
+/* 덱 확인: 격자 첫 12장만 차례로 */
+body.lay-f .deck-cell.sm-deck-in{animation:smDeckIn calc(var(--dur-sm-deck) * var(--bm-k, 1)) steps(4) both;animation-delay:calc(var(--sm-i, 0) * var(--dur-sm-deck-gap) * var(--bm-k, 1));}
+@keyframes smDeckIn{from{translate:0 calc(8 * var(--u));opacity:0;}to{translate:0 0;opacity:1;}}
+/* 암시장: 비자금 카운트다운·부족 흔들림 · 새로고침 슬라이드 교체 · 구매 덱 아이콘 */
+body.lay-f .slush-amt.sm-count-dn{color:var(--red);}
+body.lay-f .slush-amt.sm-count-up{color:var(--green);}
+body.lay-f .slush-amt.sm-deny{display:inline-block;animation:bmDeny calc(var(--dur-sm-deny) * var(--bm-k, 1)) steps(4);}
+body.lay-f .sm-rr-out{animation:smRrOut calc(var(--dur-sm-reroll) * var(--bm-k, 1)) steps(4) both;}
+@keyframes smRrOut{to{translate:calc(-24 * var(--u)) 0;opacity:0;}}
+body.lay-f .sm-rr-in{animation:smRrIn calc(var(--dur-sm-reroll) * var(--bm-k, 1)) steps(4) both;animation-delay:calc(var(--sm-i, 0) * var(--dur-sm-reroll-gap) * var(--bm-k, 1));}
+@keyframes smRrIn{from{translate:calc(24 * var(--u)) 0;opacity:0;}to{translate:0 0;opacity:1;}}
+.shop-deck-ic{display:inline-block;}
+body.no-motion .sm-wipe{display:none;}
 </style>
 </head>
 <body>
@@ -4148,7 +4240,7 @@ function onGameEvent(type, d){
         : d.kind === 'remove' ? [`${CARD_BY_ID[d.cardId].name} 제거 · 덱 ${d.deckSize}장`, 'warn']
         : d.kind === 'upgrade' ? [`✦ ${CARD_BY_ID[d.cardId].name} 강화`, 'good'] : ['카드 보상 건너뜀', 'info']);
       break;
-    case 'relicRewardOpen': showRelicReward(); break;
+    case 'relicRewardOpen': showRelicReward(); smWipe(); break;   // 카드 보상 → 유물 보상 와이프
     case 'relicRewardChosen':
       pendingRewardToasts.push(d.relicId ? [`${RELIC_BY_ID[d.relicId].icon} 유물 획득: ${RELIC_BY_ID[d.relicId].name}`, 'good'] : ['유물 보상 건너뜀', 'info']);
       break;
@@ -4161,7 +4253,9 @@ function onGameEvent(type, d){
       pendingRewardToasts = [];
       toast('◈ 암시장 개장 — 다음 주 개장 전까지', 'info');
       break;
-    case 'shopRejected': toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
+    case 'shopRejected':
+      if(smOn() && d.reason === 'slush'){ smSlushDeny(); break; }   // (settle-motion) 비자금 부족 = 잔액이 흔들리고 이유는 고정 자리에
+      toast(SHOP_REJECT_TEXT[d.reason] || d.reason, 'bad'); Sound.play('cardReject'); break;
     case 'packOpened':   showPackResult(d); juicePack(d); break;
     case 'singleBought': toast(`${CARD_BY_ID[d.cardId].name} 구매 −${fmtSlush(d.price)} · 덱 ${d.deckSize}장`, 'good'); break;
     case 'shopRerolled': Sound.play('shopShuffle'); break;
@@ -5244,7 +5338,12 @@ function showGlossary(cat){
 
 /* ── 오버레이: 주간 보상 / 카드 제거 / 덱 확인 / 게임오버 ── */
 function syncOverlay(){ $('overlay').classList.toggle('show', overlayOpen && (currentTab === 'play' || currentTab === 'shop')); }
-function showOverlay(html){ glossaryOpen = false; $('overlay').classList.remove('pk-dark'); $('overlayBox').classList.remove('ov-wide'); $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); fitPages($('overlayBox'), { page: 0 }); }
+function showOverlay(html){
+  const wasOpen = overlayOpen || $('overlay').classList.contains('sm-closing');   // 열린 채 내용만 바뀌면 진입 연출 없음 (settle-motion)
+  smSkip('ov'); smCloseCancel();   // 앞 내용의 연출은 그 자리에서 끝낸다
+  glossaryOpen = false; $('overlay').classList.remove('pk-dark'); $('overlayBox').classList.remove('ov-wide'); $('overlayBox').innerHTML = html; overlayOpen = true; syncOverlay(); fitPages($('overlayBox'), { page: 0 });
+  if(!wasOpen && $('overlay').classList.contains('show')) smModalIn();
+}
 
 /* ══ 스크롤 없는 화면 (UI 전용): 칸보다 내용이 길면 쪽으로 나눈다 ══
    host = 높이가 정해진 칸(오버레이 상자 · 데스크톱 화면). 제목·필터·버튼(PG_KEEP)은 매 쪽에 남기고, 나머지 블록을 칸 높이에 맞춰 쪽으로 나눈다.
@@ -5325,11 +5424,17 @@ function fitActiveScreen(){   // 타이틀·전투 화면은 자체 배치 (넘�
   const scr = document.querySelector('.screen.active');
   if(scr && scr.id !== 'screen-play' && scr.id !== 'screen-title' && !isMobileLayout()) fitPages(scr);
 }
-function hideOverlay(){ $('overlayBox').classList.remove('ov-wide'); glossaryOpen = false; $('overlay').classList.remove('pk-dark'); overlayOpen = false; syncOverlay(); }
+function hideOverlay(){
+  smSkip('ov');   // (settle-motion) 모달 안 연출은 끝내고
+  const fade = $('overlay').classList.contains('show') && smK() > 0;   // 퇴장: 흐리며 내려간 뒤 정리 — 패널 폭은 그때 원래대로
+  glossaryOpen = false; $('overlay').classList.remove('pk-dark'); overlayOpen = false; syncOverlay();
+  if(fade) smModalOut(() => { if(!overlayOpen) $('overlayBox').classList.remove('ov-wide'); });
+  else { smCloseCancel(); $('overlayBox').classList.remove('ov-wide'); }
+}
 function statRow(label, value){ return `<div>${label}<b>${value}</b></div>`; }
 const sortedCardIds = ids => ids.slice().sort((a, b) => CARD_ORDER[a] - CARD_ORDER[b]);
 
-function showReward(d){
+function showReward(d, delay){   // delay: 앞 와이프가 걷힐 때까지 카드 뒤집기를 미룬다 (settle-motion)
   showOverlay(`
     <div class="ov-title" style="color:var(--green)">WEEK ${run.round} 보상</div>
     <div class="ov-sub">카드 1장을 고르세요. 덱 ${run.masterDeck.length}장 · 다음 주 목표 <span style="color:var(--gold)">${fmtMoney(ROUND_TARGETS[run.round])}</span></div>
@@ -5343,6 +5448,7 @@ function showReward(d){
       <button class="btn-chunky ov-btn alt" data-act="removeMode" title="덱에서 카드 1장 빼기 (덱 압축)" ${run.masterDeck.length <= MIN_DECK_SIZE ? 'disabled' : ''}>✂ 카드 제거</button>
       <button class="btn-chunky ov-btn alt" data-act="skip">▷ 건너뛰기</button>
     </div>`);   /* 버튼 한 줄 — 카드 3장이 쪽 넘김 없이 첫 화면에 보이게 */
+  smRewardIn($('overlayBox'), delay);
 }
 
 /* 보상 대신 카드 강화: 덱에서 강화할 수 있는 카드 1장 (이미 +인 카드·상태 카드 제외) */
@@ -5408,6 +5514,7 @@ function showDeck(tab, pickId){
   $('overlayBox').classList.add('ov-wide');
   fitPages($('overlayBox'), { page: 0 });
   fitPages($('deckGrid'), { page: 0 });
+  smDeckIn();   // (settle-motion) 보이는 쪽 처음 12장만 차례로
 }
 function deckDetailHtml(id){
   const c = CARD_BY_ID[id];
@@ -5473,6 +5580,25 @@ const ENDINGS = {
                    sub:`${MAX_ROUND}주 연속 목표 달성. 이제 당신이 세력입니다.`,
                    cause:() => '모든 주간 목표를 넘겼습니다.' }
 };
+/* 게임오버 '다음엔 이렇게' 힌트 한 줄 (일반인 친화 규칙 6 — 규칙 설명은 담백하게, 밈 없이). 엔딩마다 하나, 없으면 ENDING_TIP_DEFAULT */
+const ENDING_TIPS = {
+  YOLO_BUST:      '3배 레버리지는 조금만 내려도 청산됩니다. 1~2배로 나눠 사 보세요.',
+  SHORT_SQUEEZE:  '숏(하락 베팅)은 손실에 끝이 없습니다. 작게 걸고 손절 예약을 함께 걸어 보세요.',
+  MARGIN_CALL:    '심지 게이지가 주황색이 되면 일부를 팔아 빌린 돈을 줄여 보세요.',
+  DEBT_SPIRAL:    '빌린 돈에는 매일 이자가 붙습니다. 빚으로 산 포지션은 오래 들고 있지 마세요.',
+  NEAR_MISS:      '거의 닿았습니다. 정산 배수를 올리는 유물·카드를 하나 더 챙겨 보세요.',
+  HODL_FAIL:      '물린 종목을 버티기보다 손절 예약으로 손실 한도를 미리 정해 두세요.',
+  LIQ_ADDICT:     '레버리지를 낮출수록 청산이 줄어듭니다. 한 주는 1배로 버텨 보세요.',
+  SIDELINED:      '현금만으로는 목표에 닿지 않습니다. 종목 카드로 매수해 보세요.',
+  ROUND_TRIP:     '목표를 넘긴 날엔 일부를 팔아 이익을 확정해 두세요.',
+  FSS_FINED:      '감시 게이지가 절반을 넘으면 작전 카드를 쉬거나 자진 신고 카드를 써 보세요.',
+  TIP_VICTIM:     '확률이 낮은 찌라시는 안전한 쪽(B)을 고르세요.',
+  INTEREST_DRAIN: '빌린 돈이 클수록 이자가 커집니다. 레버리지를 낮춰 보세요.',
+  PANIC_SELL:     '조금 내렸다고 바로 팔지 말고, 손절 기준을 미리 정해 두세요.',
+  TOO_SLOW:       '수익은 나고 있습니다. 정산 배수를 올리는 유물로 속도를 높여 보세요.',
+  SLOW_BLEED:     '시그널이 하락인 종목은 피하고, 오르는 종목에 집중해 보세요.'
+};
+const ENDING_TIP_DEFAULT = '레버리지를 낮추고, 한 종목에 몰지 말고 나눠 사 보세요.';
 
 /* 생존 주 수에 따른 등급 */
 function antGrade(weeks){
@@ -5678,7 +5804,9 @@ function showRunOver(reason){
     <div class="result-kicker">GAME OVER · WEEK ${run.round} DAY ${run.day}</div>
     <div class="ov-title ending-title" style="color:${e.color}" data-cause="${cause}">${e.title}</div>
     <div class="ov-sub">${e.sub}</div>
-    <div class="ending-cause">${e.cause(w)}</div>
+    ${cause === 'VICTORY' ? '' : `<div class="ending-stampbox"><div class="sm-stamp bad">${e.group === 'bust' ? '파산' : '목표 미달'}</div></div>`}
+    <div class="ending-cause${cause === 'VICTORY' ? '' : ' sm-led'}">${e.cause(w)}</div>
+    ${cause === 'VICTORY' ? '' : `<div class="ending-tip sm-led"><b>다음엔:</b> ${ENDING_TIPS[cause] || ENDING_TIP_DEFAULT}</div>`}
     ${run.endBoss ? `<div class="ending-badge ending-boss">🏴 사인: ${bossText(run.endBoss)} (WEEK ${run.round} ${BOSS_BY_ID[run.endBoss].final ? '최종 ' : ''}보스)</div>` : ''}
     <div class="ending-badge">${cause === 'VICTORY' ? `개미 ${n}회차 만에 졸업` : `당신은 이제 개미 ${n}회차`} · 등급: ${antGrade(weeks)}</div>
     ${firstTime ? `<div class="ending-badge ending-new">★ 새 엔딩 해금 · 파산 기록 ${unlocked} / ${Object.keys(ENDINGS).length}</div>` : ''}
@@ -5696,6 +5824,7 @@ function showRunOver(reason){
     <button class="btn-chunky ov-btn" data-act="restart">↺ 다시 시작</button>
     <button class="btn-chunky ov-btn alt" data-act="title">◀ 타이틀로</button>`);
   if(reason === 'VICTORY') cashRain();
+  else smSettleIn($('overlayBox'), { stampFirst: true, delay: smMs('panel') });   // (settle-motion) 붉은 도장 쾅 → 원인 한 줄 → 힌트
 }
 
 /* ══ 장 마감 정산 무대 (S6, docs/design/JUICE_BIBLE.md §2) ══
@@ -5840,7 +5969,22 @@ const JUICE_CONFIG = {
   bmFloatMin: 0.5,               //   이 금액(만 원) 미만 변화는 띄우지 않는다
   bmBlinkPct: 0.01,              // 종목 행 점멸: 틱 변동 이 비율 이상만
   bmBlinkMax: 6,                 //   한 틱에 최대 행 수 (변동 큰 순)
-  bmRowFlashPct: 0.10            // 보유 행 테두리 플래시: 수익률이 한 번에 이만큼(10%p) 이상 바뀌면
+  bmRowFlashPct: 0.10,           // 보유 행 테두리 플래시: 수익률이 한 번에 이만큼(10%p) 이상 바뀌면
+  // ── 정산·보상·암시장 모션 (settle-motion) — 시간은 :root --dur-sm-* 한 곳 (튜너로 바꾸면 CSS에도) ──
+  smDimMs: Fx.dur('sm-dim'), smPanelMs: Fx.dur('sm-panel'), smOutMs: Fx.dur('sm-out'), smWipeMs: Fx.dur('sm-wipe'),
+  smRowGapMs: Fx.dur('sm-row-gap'), smRowMs: Fx.dur('sm-row'), smTotalMs: Fx.dur('sm-total'), smBarMs: Fx.dur('sm-bar'),
+  smStampMs: Fx.dur('sm-stamp'), smThudMs: Fx.dur('sm-thud'), smFlipMs: Fx.dur('sm-flip'), smFlipGapMs: Fx.dur('sm-flip-gap'),
+  smGlowMs: Fx.dur('sm-glow'), smPickMs: Fx.dur('sm-pick'), smDeckGapMs: Fx.dur('sm-deck-gap'), smDeckMs: Fx.dur('sm-deck'),
+  smBuyMs: Fx.dur('sm-buy'), smCountMs: Fx.dur('sm-count'), smDenyMs: Fx.dur('sm-deny'),
+  smPackCommonMs: Fx.dur('sm-pack-common'), smPackUncommonMs: Fx.dur('sm-pack-uncommon'), smPackRareMs: Fx.dur('sm-pack-rare'), smPackLegendaryMs: Fx.dur('sm-pack-legendary'),
+  smRerollMs: Fx.dur('sm-reroll'), smRerollGapMs: Fx.dur('sm-reroll-gap'),
+  smPanelScale: 0.94,            // 모달 진입 시작 크기
+  smPanelRisePx: 12,             //   시작 위치 (아래로, 1080p px)
+  smStampScale: 1.8,             // 도장 시작 크기
+  smThudPx: 4,                   // 도장 쾅 흔들림 폭 (1080p px)
+  smBarOvershoot: 1.04,          // 목표 바 오버슈트 (채움 끝에서 이만큼 넘었다가 돌아온다)
+  smPickScale: 1.12,             // 보상 선택 카드 확대
+  smDeckStaggerMax: 12           // 덱 확인: 처음 이 장수만 연출 (나머지·다른 쪽은 바로)
 };
 /* 연출 시간 스케일: 이 값 하나를 Fx.motionTime(ms)이 읽는다 (fx.js). 1×·100% = 1 → 원래 시간 그대로 */
 const motionSpeedKey = v => 'x' + String(v).replace('.', '_');   // 0.5 → x0_5 (튜너 경로가 '.'로 나뉘므로 키에 점을 안 쓴다)
@@ -5863,6 +6007,12 @@ function syncBmVars(){
   r.setProperty('--bm-press-scale', String(J.bmPressScale));
   r.setProperty('--bm-pop-scale', String(J.bmPopScale));
   r.setProperty('--bm-hand-lift', `calc(${(J.bmHandLiftPx / 1.75).toFixed(3)} * var(--u))`);   // 1080p = 배율 1.75
+  r.setProperty('--sm-panel-scale', String(J.smPanelScale));
+  r.setProperty('--sm-panel-rise', `calc(${(J.smPanelRisePx / 1.75).toFixed(3)} * var(--u))`);
+  r.setProperty('--sm-stamp-scale', String(J.smStampScale));
+  r.setProperty('--sm-thud', `calc(${(J.smThudPx / 1.75).toFixed(3)} * var(--u))`);
+  r.setProperty('--sm-bar-over', String(J.smBarOvershoot));
+  r.setProperty('--sm-pick-scale', String(J.smPickScale));
 }
 /* 모션 시계 + 트윈: bmTween({ delay, dur, update(p), done() }) — p 0→1. dur·delay가 0이면 그 자리에서 끝 */
 let bmClock = 0, bmRaf = 0;
@@ -6114,6 +6264,210 @@ function bmQuoteBlink(){
   if(!bmOn()) return;
   moved.sort((a, b) => Math.abs(b.ch) - Math.abs(a.ch)).slice(0, Math.round(J.bmBlinkMax))
     .forEach(m => bmFlashClass(m.row, m.ch > 0 ? 'bm-qb-up' : 'bm-qb-down', 'blink', m.ch > 0 ? 'bm-qb-down' : 'bm-qb-up'));
+}
+
+/* ══ 정산·보상·암시장 모션 (settle-motion, UI 전용 — body.lay-f. 게임 로직·값은 그대로, 보여 주는 시간만) ══════════════════
+   시간 = 토큰 --dur-sm-* (JUICE sm*Ms) × bmK() (모션 강도·장 속도 — 모션 끔이면 0 → 바로 최종 상태). 시계 = 전투 화면과 같은 bmTween (?motion=step 공용).
+   진행 중인 연출은 smLive에 모인다 — 클릭·Space·Enter·'스킵 ▶' = smSkip(): 남은 단계를 시간 순서대로 즉시 끝까지 돌린다 (끝까지 본 것과 같은 최종 상태).
+   막는 연출(모달 진입·와이프·정산 장부·보상 뒤집기·선택·새로고침)은 그 클릭을 삼키고, 막지 않는 연출(퇴장·구매 비행·잔액 카운트·덱 격자)은 끝내고 클릭을 그대로 보낸다 */
+const smOn = () => document.body.classList.contains('lay-f');
+const smK = () => smOn() ? bmK() : 0;
+const smMs = name => Fx.dur('sm-' + name) * smK();
+const smLive = new Set();   // { o, tw, block }
+function smTween(o){   // o.scope 'ov' = 모달 안 연출 — 모달 내용이 바뀌거나 닫히면 그 자리에서 끝낸다 (남아서 다음 클릭을 삼키지 않게)
+  const rec = { o, tw: null, block: !!o.block, scope: o.scope || '' };
+  rec.tw = bmTween({ delay: o.delay, dur: o.dur, start: o.start, update: o.update, done: () => { smLive.delete(rec); if(o.done) o.done(); } });
+  if(bmTweens.indexOf(rec.tw) >= 0) smLive.add(rec);
+  return rec;
+}
+const smCancel = rec => { if(rec){ smLive.delete(rec); bmCancel(rec.tw); } };
+const smBlocking = () => [...smLive].some(r => r.block);
+function smSkip(scope){   // scope 없으면 전부, 'ov'면 모달 안 연출만
+  const mine = r => !scope || r.scope === scope;
+  for(let guard = 0; [...smLive].some(mine) && guard < 50; guard++){   // 끝내면서 다음 단계가 생길 수 있으니 빌 때까지
+    [...smLive].filter(mine).sort((a, b) => a.tw.t0 - b.tw.t0).forEach(rec => {
+      if(!smLive.has(rec)) return;
+      smLive.delete(rec); bmCancel(rec.tw);
+      if(!rec.tw.started && rec.o.start) rec.o.start();
+      if(rec.o.update) rec.o.update(1);
+      if(rec.o.done) rec.o.done();
+    });
+  }
+  if(scope) return;
+  document.getAnimations().forEach(a => {   // 남은 CSS·WAAPI 연출도 끝 상태로 (무한 반복 글로우는 그대로)
+    if(!/^sm/.test(a.animationName || a.id || '')) return;
+    try { if(Number.isFinite(a.effect.getComputedTiming().endTime)) a.finish(); } catch(e) {}
+  });
+}
+document.addEventListener('click', e => {
+  if(e.target.closest && e.target.closest('#fxSkipBtn')) return;
+  if(!smLive.size) return;
+  const block = smBlocking();
+  smSkip();
+  if(block){ e.stopPropagation(); e.preventDefault(); }
+}, true);
+document.addEventListener('keydown', e => {
+  if(!smBlocking() || !(e.code === 'Space' || e.key === ' ' || e.key === 'Enter')) return;
+  e.preventDefault(); e.stopImmediatePropagation(); smSkip();
+}, true);
+
+/* 1. 모달: 진입 = 딤 페이드 + 패널 0.94→1·아래 12px에서 (back-out) · 퇴장 = ease-in으로 흐리며 내려간다 (그동안 클릭은 아래로) */
+let smCloseRec = null;
+function smModalIn(){
+  if(!(smK() > 0)) return;
+  const ov = $('overlay'), box = $('overlayBox');
+  bmRestart(ov, 'sm-dim-in'); bmRestart(box, 'sm-panel-in');
+  smTween({ dur: Math.max(smMs('dim'), smMs('panel')), block: true, scope: 'ov', done: () => { ov.classList.remove('sm-dim-in'); box.classList.remove('sm-panel-in'); } });
+}
+function smModalOut(after){   // after: 퇴장이 끝난 뒤 정리 (패널 폭 등 — 흐려지는 동안 모양이 바뀌지 않게)
+  const ov = $('overlay');
+  smCancel(smCloseRec);
+  ov.classList.remove('sm-dim-in'); $('overlayBox').classList.remove('sm-panel-in');
+  bmRestart(ov, 'sm-closing');
+  smCloseRec = smTween({ dur: smMs('out'), done: () => { smCloseRec = null; ov.classList.remove('sm-closing'); if(after) after(); } });
+}
+function smCloseCancel(){ if(smCloseRec){ const r = smCloseRec; smCloseRec = null; smCancel(r); $('overlay').classList.remove('sm-closing'); } }
+
+/* 5. 화면 전환 와이프 (전투 ↔ 정산 ↔ 보상 ↔ 암시장): 새 화면을 다 그린 뒤 덮개가 왼쪽에서 오른쪽으로 빠진다 */
+function smWipe(){
+  if(!(smK() > 0)) return;
+  const old = $('smWipe'); if(old) old.remove();
+  const w = document.createElement('div');
+  w.id = 'smWipe'; w.className = 'sm-wipe'; w.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(w);
+  smTween({ dur: smMs('wipe'), block: true, done: () => w.remove() });
+  return smMs('wipe');
+}
+
+/* 2. 정산 장부: 줄(.sm-led)이 350ms 간격으로 슬라이드 등장 + 금액 카운트업 → 총합 카운트업(≈1초)·목표 바 채움(오버슈트) → 도장 쾅 + 4px 흔들림.
+   실패(게임오버)는 도장이 먼저, 원인·힌트 줄이 뒤에. 숫자는 smNum으로 그린 [data-smv] (최종 글자가 처음부터 들어 있다 — 모션 끔 = 그대로) */
+const SM_FMT = { signed: fmtSigned, money: fmtMoney, slush: fmtSlush, pct: fmtPct, int: v => String(Math.round(v)) };
+const smNum = (v, f, from) => `<span data-smv="${v}" data-smf="${f}"${from !== undefined ? ` data-sm0="${from}"` : ''}>${SM_FMT[f](v)}</span>`;
+const smEase = p => 1 - (1 - p) * (1 - p);
+function smCount(els, p){ els.forEach(el => { const v = +el.dataset.smv, a = +(el.dataset.sm0 || 0), f = SM_FMT[el.dataset.smf]; el.textContent = f(p >= 1 ? v : a + (v - a) * smEase(p)); }); }
+function smSettleIn(box, opts){
+  if(!(smK() > 0)) return;
+  opts = opts || {};
+  const rows = [...box.querySelectorAll('.sm-led')], hero = box.querySelector('.result-hero [data-smv]'), bar = box.querySelector('.result-bar i'), stamp = box.querySelector('.sm-stamp');
+  const gap = smMs('row-gap'), rowMs = smMs('row'), t0 = opts.delay || 0;
+  rows.forEach(r => r.classList.add('sm-pre'));
+  if(stamp) stamp.classList.add('sm-pre');
+  if(bar) bar.classList.add('sm-pre');
+  if(hero) smCount([hero], 0);
+  const slam = at => stamp && smTween({ delay: at, dur: smMs('stamp'), block: true, scope: 'ov',
+    start: () => { stamp.classList.remove('sm-pre'); stamp.classList.add('sm-stamp-in'); },
+    done: () => {
+      stamp.classList.remove('sm-stamp-in');
+      Sound.play(stamp.classList.contains('bad') ? 'stampLoss' : 'stampWin');
+      bmRestart(box, 'sm-thud');
+      smTween({ dur: smMs('thud'), block: true, scope: 'ov', done: () => box.classList.remove('sm-thud') });
+    } });
+  const rowsAt = at => rows.forEach((r, i) => {
+    const nums = [...r.querySelectorAll('[data-smv]')];
+    smTween({ delay: at + i * gap, dur: rowMs, block: true, scope: 'ov',
+      start: () => { r.classList.remove('sm-pre'); r.classList.add('sm-row-in'); smCount(nums, 0); Sound.play('cardDeal', { pitch: stagePitch(i) }); },
+      update: p => smCount(nums, p), done: () => r.classList.remove('sm-row-in') });
+  });
+  if(opts.stampFirst){ slam(t0); rowsAt(t0 + smMs('stamp') + smMs('thud')); return; }
+  rowsAt(t0);
+  const tTot = t0 + rows.length * gap, totMs = smMs('total'), barMs = smMs('bar');
+  if(hero) smTween({ delay: tTot, dur: totMs, block: true, scope: 'ov', update: p => smCount([hero], p) });
+  if(bar) smTween({ delay: tTot, dur: barMs, block: true, scope: 'ov', start: () => { bar.classList.remove('sm-pre'); bar.classList.add('sm-bar-in'); }, done: () => bar.classList.remove('sm-bar-in') });
+  slam(tTot + Math.max(hero ? totMs : 0, bar ? barMs : 0));
+}
+
+/* 3. 보상 카드: 뒷면 → 앞면 (rotateY 300ms, 120ms 간격) · 전설 이상 글로우 펄스 · 고르면 그 카드 확대 + 나머지 페이드 → 그다음 화면 */
+function smRewardIn(box, delay){
+  const cards = [...box.querySelectorAll('.ov-cards .card[data-reward]')];
+  if(!smOn()) return;
+  cards.forEach(c => { if(/\br-(legendary|mythic)\b/.test(c.className)) c.classList.add('sm-glow'); });
+  if(!(smK() > 0) || !cards.length) return;
+  cards.forEach((c, i) => { c.style.setProperty('--sm-i', String(i)); const b = document.createElement('div'); b.className = 'sm-back'; b.textContent = '?'; c.appendChild(b); });
+  smTween({ delay: delay || 0, dur: smMs('flip') + (cards.length - 1) * smMs('flip-gap'), block: true, scope: 'ov',
+    start: () => cards.forEach(c => c.classList.add('sm-flip')),
+    done: () => cards.forEach(c => { c.classList.remove('sm-flip'); c.style.removeProperty('--sm-i'); const b = c.querySelector(':scope > .sm-back'); if(b) b.remove(); }) });
+}
+let smPicking = false;
+function smPick(el, then){   // true면 연출이 then을 부른다 (호출 측은 바로 돌아간다)
+  if(!(smK() > 0) || !el) return false;
+  if(smPicking) return true;
+  smPicking = true;
+  const box = el.closest('.ov-cards');
+  el.classList.add('sm-picked');
+  if(box) box.querySelectorAll('.card').forEach(c => { if(c !== el) c.classList.add('sm-faded'); });
+  Sound.play('cardDeal', { pitch: stagePitch(4) });
+  smTween({ dur: smMs('pick'), block: true, done: () => { smPicking = false; then(); } });
+  return true;
+}
+
+/* 덱 확인: 지금 보이는 쪽의 처음 12장만 40ms 간격으로 (화면 밖·다른 쪽 카드는 연출 없이 바로) */
+function smDeckIn(){
+  if(!(smK() > 0)) return;
+  const cells = [...document.querySelectorAll('#deckGrid .deck-cell')].filter(c => !c.closest('.pg-hide')).slice(0, Math.round(JUICE_CONFIG.smDeckStaggerMax));
+  if(!cells.length) return;
+  cells.forEach((c, i) => { c.style.setProperty('--sm-i', String(i)); c.classList.add('sm-deck-in'); });
+  smTween({ dur: smMs('deck') + (cells.length - 1) * smMs('deck-gap'), scope: 'ov', done: () => cells.forEach(c => { c.classList.remove('sm-deck-in'); c.style.removeProperty('--sm-i'); }) });
+}
+
+/* 4. 암시장: 비자금 카운트다운(바뀔 때마다) · 부족하면 잔액 흔들림 + 이유 · 낱장 구매 = 카드가 덱 아이콘으로 · 새로고침 = 슬라이드 교체 */
+let smSlush = { run: null, shown: 0, target: 0, rec: null, cls: '' };
+function smSlushSync(){   // renderShop 끝에서 (다시 그려도 카운트가 이어진다)
+  const el = $('shopSlush');
+  if(!el || !run) return;
+  const v = run.slush;
+  if(smSlush.run !== run || !(smK() > 0) || currentTab !== 'shop'){
+    smCancel(smSlush.rec); smSlush = { run, shown: v, target: v, rec: null, cls: '' }; return;
+  }
+  if(v === smSlush.target){ if(smSlush.rec){ el.textContent = fmtSlush(smSlush.shown); el.classList.add(smSlush.cls); } return; }
+  const from = smSlush.shown, cls = v < smSlush.target ? 'sm-count-dn' : 'sm-count-up';
+  smCancel(smSlush.rec);
+  smSlush.target = v; smSlush.cls = cls;
+  const paint = (t, on) => { const e = $('shopSlush'); if(!e) return; e.textContent = fmtSlush(t); e.classList.remove('sm-count-dn', 'sm-count-up'); if(on) e.classList.add(cls); };
+  smSlush.rec = smTween({ dur: smMs('count'),
+    update: p => { smSlush.shown = p >= 1 ? v : from + (v - from) * smEase(p); paint(smSlush.shown, p < 1); },
+    done: () => { smSlush.rec = null; smSlush.shown = v; paint(v, false); } });
+}
+function smSlushDeny(need){
+  const el = $('shopSlush');
+  if(el && smK() > 0){ el.classList.remove('sm-deny'); void el.offsetWidth; el.classList.add('sm-deny'); smTween({ dur: smMs('deny'), done: () => { const e = $('shopSlush'); if(e) e.classList.remove('sm-deny'); } }); }
+  bmDeny(null, `비자금이 부족합니다${need ? ` — 필요 ${fmtSlush(need)} · 보유 ${fmtSlush(run.slush)}` : ''}`);
+}
+function smShopPrice(b){   // 꺼진 버튼이 '돈 때문'이면 그 가격, 아니면 0
+  const sh = run.shop;
+  if(b.dataset.single !== undefined){ const i = +b.dataset.single, id = sh.singles[i]; return sh.singlesBought.indexOf(i) >= 0 || inDeck(id) ? 0 : singlePrice(id); }
+  if(b.dataset.buyRelic) return hasRelic(b.dataset.buyRelic) ? 0 : relicPrice(b.dataset.buyRelic);
+  if(b.dataset.reroll) return rerollAvailable(b.dataset.reroll) ? shopRerollCost(b.dataset.reroll) : 0;
+  if(b.id === 'shopRemoveBtn') return run.masterDeck.length > MIN_DECK_SIZE && shopPickIdx >= 0 ? shopRemoveCost() : 0;
+  if(b.dataset.service) return shopPickIdx >= 0 && canService(b.dataset.service, shopPickIdx) ? shopServiceCost(b.dataset.service) : 0;
+  return 0;
+}
+$('shopBox').addEventListener('pointerdown', e => {
+  if(!smOn() || e.button !== 0 || !run || !run.shop) return;
+  const b = e.target.closest('button:disabled');
+  if(!b) return;
+  const need = smShopPrice(b);
+  if(need > run.slush) smSlushDeny(need);
+}, true);
+function smBuyFly(ghost, from){   // 다시 그린 뒤(다음 프레임) 덱 아이콘 자리를 잰다
+  if(!(smK() > 0) || !ghost || !from || !from.width) return;
+  const dur = smMs('buy');
+  let a = null;
+  smTween({ dur, start: () => {
+    const to = rectOf($('shopDeckIc'));
+    if(!to){ return; }
+    Object.assign(ghost.style, { left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px' });
+    ghost.classList.add('fx-card-ghost'); ghost.removeAttribute('data-reward'); ghost.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(ghost);
+    const dx = Math.round(to.left + to.width / 2 - (from.left + from.width / 2)), dy = Math.round(to.top + to.height / 2 - (from.top + from.height / 2));
+    a = ghost.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(0,${-Math.round(from.height * 0.12)}px) scale(1.05)`, offset: 0.2 },
+      { transform: `translate(${dx}px,${dy}px) scale(.2)`, opacity: .3 }], { duration: dur, easing: 'steps(8)', fill: 'forwards', id: 'smBuy' });
+  }, done: () => { if(a) a.cancel(); ghost.remove(); const ic = $('shopDeckIc'); if(ic) Fx.flash(ic, 'fx-hit'); } });
+}
+let smRerollIn = '';   // 방금 새로고침한 진열 — renderShop이 그 칸들에 sm-rr-in을 건다
+function smRerollAfter(kind){
+  const els = kind === 'single' ? [...document.querySelectorAll('#shopBox .shop-singles .shop-item.sm-rr-in')] : [...document.querySelectorAll('#shopBox .relic-row:not(.own-relics) .relic-tile.sm-rr-in')];
+  if(!els.length) return;
+  smTween({ dur: smMs('reroll') + (els.length - 1) * smMs('reroll-gap'), block: true, done: () => els.forEach(el => { el.classList.remove('sm-rr-in'); el.style.removeProperty('--sm-i'); }) });
 }
 
 let stageSources = null;         // 무대를 여는 날: 정산에 들어간 유물 id — 같은 틱의 relicTriggered 연출을 건너뛴다
@@ -6635,27 +6989,29 @@ function skipSettlementChain(){
 
 function showRoundResult(w){
   const barPct = Math.min(1.5, w.pct) / 1.5 * 100;   // 막대 끝 = 목표의 150%, 흰 선 = 목표
+  const led = (on, label, value, cls) => on ? statTile(label, value, 'sm-led' + (cls ? ' ' + cls : '')) : '';   // 장부 줄: 값이 0인 줄은 숨긴다 (settle-motion)
+  const nz = v => Math.abs(v) >= 0.5;
   showOverlay(`
     <div class="result-kicker">WEEK ${w.round} / ${MAX_ROUND} 결산</div>
     <div class="ov-title" style="color:var(--green)">목표 달성 ✓</div>
     <div class="ov-sub">${roundResultLine(w)}</div>
     ${w.boss ? `<div class="boss-beaten">🏆 보스 격파 — ${bossText(w.boss)} · 비자금 +${fmtSlush(BOSS_SLUSH_BONUS)} · 유물 선택지 +${BOSS_RELIC_CHOICE_BONUS}</div>` : ''}
-    <div class="result-hero ${signCls(w.weekPnl)}">${fmtMoney(w.eq)}</div>
+    <div class="stat-grid sm-ledger">
+      ${led(nz(w.weekPnl), '이번 주 수익', `<span class="${signCls(w.weekPnl)}">${smNum(w.weekPnl, 'signed')} (${smNum(w.weekReturn, 'pct')})</span>`)}
+      ${led(nz(w.realized), '이번 주 확정손익', `<span class="${signCls(w.realized)}">${smNum(w.realized, 'signed')}</span>`)}
+      ${led(w.liquidations > 0, '이번 주 청산', smNum(w.liquidations, 'int') + '회')}
+      ${led(nz(w.interest), '이번 주 이자', smNum(w.interest, 'money'))}
+      ${led(w.positions > 0, '이월 포지션', `${w.positions}개 · 평가 <span class="${signCls(w.unrealized)}">${smNum(w.unrealized, 'signed')}</span>`, 'wide')}
+      ${led(nz(w.settled), '💰 장 마감 정산 보너스', `<span class="${signCls(w.settled)}">${smNum(w.settled, 'signed')}</span>`)}
+      ${led(w.diamondBonus > 0, '💎 다이아몬드 보너스', '+' + smNum(w.diamondBonus, 'money'))}
+      ${led(w.bailout > 0, '💌 부모님 카드', '+' + smNum(w.bailout, 'money'))}
+      ${led(w.auditTax > 0, '🕵️ 세무조사 추징 (목표 초과분)', `<span class="pnl-down">−${smNum(w.auditTax, 'money')}</span>`)}
+      ${led(w.slush > 0, '비자금 적립 (암시장 전용)', `<span class="slush-amt">+${smNum(w.slush, 'slush')}</span> · 잔액 ${fmtSlush(run.slush)}`, 'wide')}
+    </div>
+    <div class="result-hero-box"><div class="result-hero ${signCls(w.weekPnl)}">${smNum(w.eq, 'money', w.eq - w.weekPnl)}</div><div class="sm-stamp">목표 달성</div></div>
     <div class="result-bar"><i class="${w.pct >= 1 ? 'done' : ''}" style="width:${barPct}%"></i><b></b></div>
     <div class="result-pct">목표 ${fmtMoney(w.target)} 대비 <span class="${w.pct >= 1 ? 'pnl-up' : 'pnl-down'}">${(w.pct * 100).toFixed(1)}%</span></div>
     ${w.nextBoss ? bossNotice(w.nextBoss, `⚠ WEEK ${w.round + 1} 보스 예고 — 보상·암시장에서 대비하세요`) : ''}
-    <div class="stat-grid">
-      ${statTile('이번 주 수익', `<span class="${signCls(w.weekPnl)}">${fmtSigned(w.weekPnl)} (${fmtPct(w.weekReturn)})</span>`)}
-      ${statTile('이번 주 확정손익', `<span class="${signCls(w.realized)}">${fmtSigned(w.realized)}</span>`)}
-      ${statTile('이번 주 청산', w.liquidations + '회')}
-      ${statTile('이번 주 이자', fmtMoney(w.interest))}
-      ${statTile('이월 포지션', `${w.positions}개 · 평가 <span class="${signCls(w.unrealized)}">${fmtSigned(w.unrealized)}</span>`, 'wide')}
-      ${Math.abs(w.settled) >= 0.5 ? statTile('💰 장 마감 정산 보너스', `<span class="${signCls(w.settled)}">${fmtSigned(w.settled)}</span>`) : ''}
-      ${w.diamondBonus > 0 ? statTile('💎 다이아몬드 보너스', '+' + fmtMoney(w.diamondBonus)) : ''}
-      ${w.bailout > 0 ? statTile('💌 부모님 카드', '+' + fmtMoney(w.bailout)) : ''}
-      ${w.auditTax > 0 ? statTile('🕵️ 세무조사 추징 (목표 초과분)', `<span class="pnl-down">−${fmtMoney(w.auditTax)}</span>`) : ''}
-      ${statTile('비자금 적립 (암시장 전용)', `<span class="slush-amt">+${fmtSlush(w.slush)}</span> · 잔액 ${fmtSlush(run.slush)}`, 'wide')}
-    </div>
     <div class="stat-caption">▌ 이번 판 누적</div>
     <div class="stat-grid">
       ${statTile('최고 순자산', fmtMoney(run.peakEquity))}
@@ -6665,6 +7021,7 @@ function showRoundResult(w){
     </div>
     <button class="btn-chunky ov-btn" data-act="toReward">▶ 보상 고르고 WEEK ${w.round + 1}로</button>
     <button class="btn-chunky ov-btn warn" data-act="restartAsk">↺ 다시 시작</button>`);
+  smSettleIn($('overlayBox'), { delay: smMs('panel') });   // (settle-motion) 장부 줄 → 총합·목표 바 → 도장
 }
 
 /* ── 찌라시 ── */
@@ -6913,6 +7270,18 @@ function rerollBoxHtml(kind){
 function doReroll(kind){
   if(!rerollAvailable(kind) || run.slush < shopRerollCost(kind)) return;
   const before = shopRerollCost(kind);
+  if(smOn()){   // (settle-motion) 안 산 상품이 왼쪽으로 빠지고 → 새 상품이 오른쪽에서 차례로 (모션 끔이면 바로)
+    const outs = kind === 'single'
+      ? [...document.querySelectorAll('#shopBox .shop-singles .shop-item')].filter((_, i) => run.shop.singlesBought.indexOf(i) < 0)
+      : [...document.querySelectorAll('#shopBox .relic-row:not(.own-relics) .relic-tile')];
+    if(smK() > 0) outs.forEach(el => el.classList.add('sm-rr-out'));
+    smTween({ dur: smMs('reroll'), block: true, done: () => {
+      if(!rerollShop(kind)){ renderShop(); return; }
+      smRerollIn = kind; renderShop(); renderNav(); smRerollIn = '';
+      Fx.punch($('rrCost-' + kind), -(shopRerollCost(kind) - before), 0.7);
+    } });
+    return;
+  }
   const olds = kind === 'single'   // 안 산 칸만 뒤집혀 사라지고 (산 칸은 그대로)
     ? [...document.querySelectorAll('#shopBox .shop-singles .shop-item')].filter((_, i) => run.shop.singlesBought.indexOf(i) < 0).map(it => it.firstElementChild)
     : [...document.querySelectorAll('#shopBox .relic-row .relic-tile')];
@@ -6938,7 +7307,7 @@ function renderShop(){
   if(shopPickIdx >= run.masterDeck.length) shopPickIdx = -1;
   box.innerHTML = `
     <div class="shop-bar px-panel">
-      <span>WEEK ${run.round} 결산 완료 · 비자금 <b class="slush-amt" id="shopSlush">${fmtSlush(run.slush)}</b> · 덱 <b>${run.masterDeck.length}장</b><br>
+      <span>WEEK ${run.round} 결산 완료 · 비자금 <b class="slush-amt" id="shopSlush">${fmtSlush(run.slush)}</b> · <span class="shop-deck-ic" id="shopDeckIc">🃏 덱 <b>${run.masterDeck.length}장</b></span><br>
         다음 주 목표 <b>${fmtMoney(ROUND_TARGETS[run.round])}</b> · 순자산 <b>${fmtMoney(netEquity())}</b><br>
         물가 상승률: 1주차 대비 <b class="infl">+${Math.round(shopInflation('pack') * 100)}%</b> (팩·낱장 · 유물 +${Math.round(shopInflation('relic') * 100)}%)</span>
       <button class="btn-chunky open-btn" id="shopLeaveBtn">▶ WEEK ${run.round + 1} 개장</button>
@@ -6954,7 +7323,8 @@ function renderShop(){
       const bought = sh.singlesBought.indexOf(i) >= 0, owned = !bought && inDeck(id), price = singlePrice(id);
       const label = bought ? '구매 완료' : owned ? '덱에 있음' : `${fmtPrice2(price, 'single')} 구매`;
       const fresh = shopFlipIn === 'single' && !bought;   // 방금 새로 뽑은 칸: 뒤집히며 나타난다 (팩 개봉 flip-card 재사용)
-      return `<div class="shop-item">${fresh ? `<div class="flip-card"><div class="flip-face flip-back">?</div><div class="flip-face flip-front">${cardHtml(CARD_BY_ID[id], {})}</div></div>` : cardHtml(CARD_BY_ID[id], {})}
+      const slide = smRerollIn === 'single' && !bought ? ` sm-rr-in" style="--sm-i:${i}` : '';   // (settle-motion) 전투 화면 레이아웃: 슬라이드로 교체
+      return `<div class="shop-item${slide}">${fresh ? `<div class="flip-card"><div class="flip-face flip-back">?</div><div class="flip-face flip-front">${cardHtml(CARD_BY_ID[id], {})}</div></div>` : cardHtml(CARD_BY_ID[id], {})}
         <button class="btn-chunky buy-btn" data-single="${i}" ${bought || owned || run.slush < price ? 'disabled' : ''}>${label}</button></div>`;
     }).join('')}</div>
 
@@ -6962,7 +7332,7 @@ function renderShop(){
     ${relicOddsHtml()}
     <div class="relic-row">${sh.relics.length ? sh.relics.map(id => {
       const r = RELIC_BY_ID[id], price = relicPrice(id), owned = hasRelic(id);
-      return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : '', extra: `<button class="btn-chunky buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
+      return relicTile(r, { cls: shopFlipIn === 'relic' ? 'rr-in' : smRerollIn === 'relic' ? 'sm-rr-in' : '', extra: `<button class="btn-chunky buy-btn" data-buy-relic="${id}" ${owned || run.slush < price ? 'disabled' : ''}>${owned ? '보유 중' : `${fmtPrice2(price, 'relic')} 구매`}</button>` });
     }).join('') : '<div class="shop-note">더 들여올 유물이 없습니다. 전부 모았습니다.</div>'}</div>
 
     <span class="section-label">▌ 보유 유물 ${run.relics.length}/${RELIC_SLOTS}칸 — 정산은 왼쪽(1번 칸)부터 차례로 · 더하기(+)는 앞, 곱하기(×)는 뒤가 유리 · 판매 = 얻을 때 값의 ${Math.round(RELIC_SELL_RATE * 100)}%</span>
@@ -6994,6 +7364,8 @@ function renderShop(){
     if(el){ el.classList.add('slot-in'); setTimeout(() => { Sound.play('relicClack'); const r = rectOf(el); if(r) Fx.sparks(r, 1, 10, '--gold'); }, 230); }
   }
   if(currentTab === 'shop') fitActiveScreen();   // 스크롤 없음: 넘치면 쪽으로
+  smSlushSync();   // (settle-motion) 비자금이 바뀌었으면 카운트 (다시 그려도 이어진다)
+  if(smRerollIn){ box.querySelectorAll('.relic-row:not(.own-relics) .relic-tile.sm-rr-in').forEach((el, i) => el.style.setProperty('--sm-i', String(i))); smRerollAfter(smRerollIn); }
 }
 
 const SHOP_SERVICES = [['upgrade', '✦ 리모델링', '고른 카드를 강화(+)'], ['transform', '🔀 변환', '같은 등급의 다른 카드로 무작위 교체 (태그 가중)'],
@@ -7002,8 +7374,8 @@ const PACK_BURST = { common: [8, ['--muted', '--line2']], uncommon: [16, ['--gre
                      legendary: [42, ['--purple', '--gold']], mythic: [80, ['--gold', '--gold2', '--text']] };   // 등급별 파티클 수 · 색
 /* (S8-33) 팩 개봉: 공중에서 흔들림(달그락) → 터짐(펑 + 파티클 + 등급 색 빛기둥) → 기둥 속에서 카드가 내려오며 뒤집힘(등급 음).
    신화 = 암전 → 금빛 기둥 + 합창 → 회전 등장 → 화면이 돌아온다. 시간은 JUICE_CONFIG (CSS 변수 --pk-shake로 넘김) */
-const packTiming = rarity => {
-  const J = JUICE_CONFIG, myth = rarity === 'mythic', start = myth ? J.mythDarkMs : J.packShakeMs;
+const packTiming = rarity => {   // (settle-motion) 전투 화면 레이아웃이면 흔들림 길이가 등급별 (토큰 --dur-sm-pack-<등급>)
+  const J = JUICE_CONFIG, myth = rarity === 'mythic', start = myth ? J.mythDarkMs : smOn() ? smMs('pack-' + rarity) : J.packShakeMs;
   return { myth, start, reveal: start + (myth ? J.mythSpinMs : J.packFlipMs / 2) };
 };
 function juicePack(d){
@@ -7031,6 +7403,7 @@ function showPackResult(d){
     <button class="btn-chunky ov-btn" data-act="close">확인</button>`);
   if(T.myth && !isMotionReduced()) $('overlay').classList.add('pk-dark');   // 신화: 암전 (juicePack이 회전 등장 끝에 걷는다)
   packAnimUntil = performance.now() + T.reveal + 300;
+  if(smOn()) smTween({ dur: smK() > 0 ? T.reveal + 300 : 0, block: true, scope: 'ov', done: () => { if(packAnimUntil) skipPackAnim(); } });   // (settle-motion) 클릭·Space = 스킵, 끝까지 봐도 같은 최종 상태(pk-skip)
 }
 let packAnimUntil = 0;   // 팩 개봉 연출이 끝나는 시각 (스킵 ▶ 버튼 표시용)
 function skipPackAnim(){
@@ -7084,7 +7457,12 @@ $('shopBox').addEventListener('click', e => {
     buyRelic(relic.dataset.buyRelic);
   }
   else if(pk) buyPack(pk.dataset.pack);
-  else if(single) buySingle(+single.dataset.single);
+  else if(single){
+    const card = single.closest('.shop-item') && single.closest('.shop-item').querySelector('.card'), from = rectOf(card), n0 = run.shop.singlesBought.length;
+    const ghost = card && smK() > 0 ? card.cloneNode(true) : null;
+    buySingle(+single.dataset.single);
+    if(ghost && run.shop.singlesBought.length > n0) smBuyFly(ghost, from);   // (settle-motion) 산 카드가 덱 아이콘으로
+  }
   else if(rm){ const i = +rm.dataset.shopRemove; shopPickIdx = shopPickIdx === i ? -1 : i; }
   else if(e.target.closest('[data-service]')){
     const b = e.target.closest('[data-service]');
@@ -7509,7 +7887,7 @@ const tunerGet = (root, path) => path.reduce((o, k) => (o == null ? undefined : 
 function tunerSet(path, v){ const parent = tunerGet(JUICE_CONFIG, path.slice(0, -1)); if(parent && typeof parent[path[path.length - 1]] === 'number') parent[path[path.length - 1]] = v; if(path.length === 1 && DUR_LINKS[path[0]]) syncDurVars(); else syncBmVars(); }
 /* JUICE_CONFIG ↔ :root --dur-* 묶음: 튜너로 바꾼 값을 CSS 애니메이션에도 (기본값은 CSS 쪽 하나) */
 const DUR_LINKS = { hazeInMs: 'haze-in', packFlipMs: 'pack-flip', mythSpinMs: 'myth-spin', comboCoolMs: 'combo-cool' };
-Object.keys(JUICE_CONFIG).forEach(k => { const m = /^bm(\w+)Ms$/.exec(k); if(m) DUR_LINKS[k] = 'bm-' + m[1].replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(); });   // bmRowInMs → bm-row-in
+Object.keys(JUICE_CONFIG).forEach(k => { const m = /^(bm|sm)(\w+)Ms$/.exec(k); if(m) DUR_LINKS[k] = m[1] + '-' + m[2].replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(); });   // bmRowInMs → bm-row-in · smPackRareMs → sm-pack-rare
 function syncDurVars(){ Object.keys(DUR_LINKS).forEach(k => document.documentElement.style.setProperty('--dur-' + DUR_LINKS[k], JUICE_CONFIG[k] + 'ms')); Fx.refreshDur(); syncBmVars(); }
 function tunerLoad(){
   try {
@@ -7726,6 +8104,7 @@ function switchTab(s){
   syncOverlay();
   updateMusic();
   fitActiveScreen();
+  if(prevTab !== s && /^(play|shop)$/.test(prevTab) && /^(play|shop)$/.test(s)) smWipe();   // (settle-motion) 전투 ↔ 암시장 와이프
 }
 
 /* ≡ 메뉴 (TR룸 HUD 왼쪽). Esc로도 열고 닫는다 — 대상 지정 중이면 Esc는 지정 취소가 먼저 */
@@ -7983,7 +8362,7 @@ $('overlay').addEventListener('click', e => {
     renderAll(); return;
   }
   const r = e.target.closest('[data-reward]');
-  if(r){ hideOverlay(); chooseReward('take', r.dataset.reward); renderAll(); return; }
+  if(r){ const go = () => { hideOverlay(); chooseReward('take', r.dataset.reward); renderAll(); }; if(!smPick(r, go)) go(); return; }   // (settle-motion) 고른 카드 확대 + 나머지 페이드 뒤
   const rm = e.target.closest('[data-remove]');
   if(rm){ hideOverlay(); chooseReward('remove', +rm.dataset.remove); renderAll(); return; }
   const ptq = e.target.closest('[data-pt-q]');
@@ -8008,7 +8387,7 @@ $('overlay').addEventListener('click', e => {
   else if(act === 'close') hideOverlay();
   else if(act === 'unlockNext'){ hideOverlay(); renderAll(); showNextUnlock(); }
   else if(act === 'restart') startRun();
-  else if(act === 'toReward') showReward(lastRoundClear);
+  else if(act === 'toReward'){ showReward(lastRoundClear, smWipe()); }   // 정산 → 보상 와이프 (카드는 와이프가 걷힌 뒤 뒤집힌다)
   else if(act === 'restartAsk'){ b.dataset.act = 'restart'; b.textContent = '↺ 정말 처음부터? 한 번 더 누르면 새 판'; }
   else if(act === 'title'){ hideOverlay(); switchTab('title'); }
 });
@@ -8259,6 +8638,7 @@ function enterTitle(){
 /* ── 연출 스킵 ▶ (클릭 전용 조작): Space/Enter로 넘기던 연출마다 같은 동작의 버튼을 화면 아래 가운데에 띄운다 ──
    연쇄 연출 큐(갭 경보·카운트다운·보스 경보·찌라시 결과) · 장 마감 정산 무대(재생 중) · 주간 결산 체인(재생 중) · 팩 개봉 · 타이틀 등장 */
 function skipTarget(){
+  if(smBlocking()) return () => smSkip();   // (settle-motion) 정산·보상·암시장 연출
   if(Fx.queueLength) return () => Fx.skipQueue();
   if(stage && !stage.hold) return () => stageSkip();
   if(chainPlay) return () => skipSettlementChain();
