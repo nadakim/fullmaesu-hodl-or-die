@@ -194,16 +194,16 @@ const Fx = (() => {
   }
 
   /* ── 카드 사용: 살짝 눌렸다 늘어나며(스쿼시&스트레치) 대상 쪽으로 날아가 사라진다 ── */
-  function cardFly(ghost, fromRect, targetEl, onHit, trail){   // trail: 잔상 수 (카드 연쇄 2장째부터)
+  function cardFly(ghost, fromRect, targetEl, onHit, trail, ms){   // trail: 잔상 수 (카드 연쇄 2장째부터), ms: 비행 시간 (없으면 420 — 전투 화면은 모션 토큰)
     for(let k = 1; k <= (trail || 0); k++){
       const g2 = ghost.cloneNode(true);
       g2.classList.add('fx-afterimage');
       g2.style.opacity = String(0.45 / k);
-      setTimeout(() => cardFlyOne(g2, fromRect, targetEl, null), stagger(k * 45));
+      setTimeout(() => cardFlyOne(g2, fromRect, targetEl, null, false, ms), stagger(k * 45));
     }
-    cardFlyOne(ghost, fromRect, targetEl, onHit, true);
+    cardFlyOne(ghost, fromRect, targetEl, onHit, true, ms);
   }
-  function cardFlyOne(ghost, fromRect, targetEl, onHit, main){
+  function cardFlyOne(ghost, fromRect, targetEl, onHit, main, ms){
     if(!ghost.animate || !shown(fromRect)){ if(onHit) onHit(); return; }
     Object.assign(ghost.style, { left: fromRect.left + 'px', top: fromRect.top + 'px', width: fromRect.width + 'px', height: fromRect.height + 'px' });
     ghost.classList.add('fx-card-ghost');
@@ -217,7 +217,7 @@ const Fx = (() => {
       { transform: 'translate(0,-6px) scale(1.12,0.9)', offset: 0.18 },
       { transform: 'translate(0,-14px) scale(0.92,1.1)', offset: 0.36 },
       { transform: `translate(${dx}px,${dy}px) scale(0.3,0.3)`, opacity: 0.2 }
-    ], { duration: 420, easing: 'steps(9)' });
+    ], { duration: ms > 0 ? ms : 420, easing: 'steps(9)' });
     const h = track(() => a.finish(), 'cardFly');   // 당겨 끝내면 도착 상태로 (onfinish가 그대로 이어서 처리)
     a.onfinish = () => {
       untrack(h);
